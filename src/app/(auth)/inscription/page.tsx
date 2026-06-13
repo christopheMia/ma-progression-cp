@@ -17,7 +17,7 @@ export default function InscriptionPage() {
     setError('')
     const supabase = createClient()
     const { error } = await supabase.auth.signUp({ email, password })
-    if (error) { setError(error.message); setLoading(false) }
+    if (error) { setError('La création du compte a échoué. Vérifiez votre email et réessayez.'); setLoading(false) }
     else router.push('/setup')
   }
 

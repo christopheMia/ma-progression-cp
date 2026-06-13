@@ -49,6 +49,6 @@ export type SeanceJournal = {
 }
 
 export type JourJournal = {
-  jour: string
+  jour: 'lundi' | 'mardi' | 'mercredi' | 'jeudi' | 'vendredi'
   seances: SeanceJournal[]
 }

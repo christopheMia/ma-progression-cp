@@ -14,7 +14,7 @@ export const RIBAMBELLE: ProgressionManuel = {
     { numero: 9, graphemes: ['p'], pages: 'p. 42-45', mots_exemple: ['papa', 'poire', 'lapin'] },
     { numero: 10, graphemes: ['b'], pages: 'p. 46-49', mots_exemple: ['ballon', 'bateau', 'bébé'] },
     { numero: 11, graphemes: ['f'], pages: 'p. 50-53', mots_exemple: ['feu', 'forêt', 'café'] },
-    { numero: 12, graphemes: ['v'], pages: 'p. 54-57', mots_exemple: ['vase', 'velo', 'cave'] },
+    { numero: 12, graphemes: ['v'], pages: 'p. 54-57', mots_exemple: ['vase', 'vélo', 'cave'] },
     { numero: 13, graphemes: ['d'], pages: 'p. 58-61', mots_exemple: ['dodo', 'dame', 'mode'] },
     { numero: 14, graphemes: ['t'], pages: 'p. 62-65', mots_exemple: ['tata', 'table', 'loto'] },
     { numero: 15, graphemes: ['n'], pages: 'p. 66-69', mots_exemple: ['nuit', 'nage', 'banane'] },
