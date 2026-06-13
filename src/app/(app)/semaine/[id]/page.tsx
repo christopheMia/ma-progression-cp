@@ -34,7 +34,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       <LectureBlock semaine={semaine} />
       <EdmBlock semaine={semaine} />
       <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} />
-      <CahierJournalEditor />
+      <CahierJournalEditor semaineId={semaine.id} numeroSemaine={semaine.numero} />
     </div>
   )
 }

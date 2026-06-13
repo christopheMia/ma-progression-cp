@@ -1,7 +1,93 @@
-export default function CahierJournalEditor() {
+'use client'
+import { useState, useTransition } from 'react'
+import { JourJournal } from '@/types'
+import { genererOuChargerJournal, sauvegarderJournal } from '@/lib/actions/journal'
+import { exporterJournalWord } from '@/lib/export-word'
+
+export default function CahierJournalEditor({ semaineId, numeroSemaine }: { semaineId: string; numeroSemaine: number }) {
+  const [journal, setJournal] = useState<JourJournal[] | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function generer() {
+    startTransition(async () => {
+      const data = await genererOuChargerJournal(semaineId)
+      setJournal(data)
+    })
+  }
+
+  function updateSeance(jourIdx: number, seanceIdx: number, field: string, value: string) {
+    setJournal(prev => {
+      if (!prev) return prev
+      const next = prev.map((j, ji) =>
+        ji !== jourIdx ? j : {
+          ...j,
+          seances: j.seances.map((s, si) =>
+            si !== seanceIdx ? s : { ...s, [field]: value }
+          )
+        }
+      )
+      startTransition(() => sauvegarderJournal(semaineId, next))
+      return next
+    })
+  }
+
+  if (!journal) {
+    return (
+      <div className="bg-white border rounded-2xl p-5 text-center">
+        <h2 className="font-bold text-gray-700 mb-3">📋 Cahier journal</h2>
+        <button onClick={generer} disabled={isPending}
+          className="bg-blue-700 text-white rounded-xl px-6 py-3 font-semibold hover:bg-blue-800 disabled:opacity-50">
+          {isPending ? 'Génération...' : 'Générer le cahier journal'}
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="bg-white border rounded-2xl p-5 text-center text-gray-400">
-      Cahier journal — à venir
+    <div className="bg-white border rounded-2xl p-5 space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="font-bold text-gray-700">📋 Cahier journal</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => exporterJournalWord(journal, numeroSemaine)}
+            disabled={!journal}
+            className="text-sm border border-blue-300 text-blue-700 rounded-lg px-3 py-1.5 hover:bg-blue-50 disabled:opacity-30">
+            📄 Word
+          </button>
+          <button id="btn-export-pdf"
+            onClick={() => window.print()}
+            className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+            🖨️ PDF
+          </button>
+        </div>
+      </div>
+
+      {journal.map((jour, ji) => (
+        <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
+          <div className="bg-blue-50 px-4 py-2 font-semibold text-blue-800 capitalize">{jour.jour}</div>
+          <div className="divide-y">
+            {jour.seances.map((seance, si) => (
+              <div key={si} className="p-4 grid grid-cols-[auto_1fr] gap-3">
+                <div className="text-xs text-gray-400 whitespace-nowrap mt-1">
+                  {seance.heure_debut}–{seance.heure_fin}<br/>
+                  <span className="font-semibold text-gray-600">{seance.matiere}</span>
+                </div>
+                <div className="space-y-2">
+                  <input value={seance.objectif} placeholder="Objectif"
+                    onChange={e => updateSeance(ji, si, 'objectif', e.target.value)}
+                    className="w-full border rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-400 outline-none" />
+                  <input value={seance.activite} placeholder="Activité principale"
+                    onChange={e => updateSeance(ji, si, 'activite', e.target.value)}
+                    className="w-full border rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-400 outline-none" />
+                  <input value={seance.materiel} placeholder="Matériel"
+                    onChange={e => updateSeance(ji, si, 'materiel', e.target.value)}
+                    className="w-full border rounded-lg p-2 text-sm text-gray-500 focus:ring-1 focus:ring-blue-400 outline-none" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

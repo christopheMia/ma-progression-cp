@@ -1,0 +1,28 @@
+'use server'
+import { createClient } from '@/lib/supabase/server'
+import { genererCahierJournal } from '@/lib/cahier-journal'
+import { JourJournal } from '@/types'
+import { revalidatePath } from 'next/cache'
+
+export async function genererOuChargerJournal(semaineId: string) {
+  const supabase = await createClient()
+
+  const { data: semaine } = await supabase.from('semaines').select('*').eq('id', semaineId).single()
+  if (!semaine) throw new Error('Semaine introuvable')
+
+  const { data: existing } = await supabase.from('cahier_journal').select('*').eq('semaine_id', semaineId).single()
+  if (existing) return existing.contenu as JourJournal[]
+
+  const { data: edt } = await supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id)
+  const contenu = genererCahierJournal(semaine, edt ?? [])
+
+  await supabase.from('cahier_journal').insert({ semaine_id: semaineId, contenu })
+  return contenu
+}
+
+export async function sauvegarderJournal(semaineId: string, contenu: JourJournal[]) {
+  const supabase = await createClient()
+  await supabase.from('cahier_journal')
+    .upsert({ semaine_id: semaineId, contenu, updated_at: new Date().toISOString() }, { onConflict: 'semaine_id' })
+  revalidatePath(`/semaine/${semaineId}`)
+}
