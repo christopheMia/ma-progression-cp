@@ -28,13 +28,13 @@ export default function TimetableEditor({ onFinish, loading }: {
 
       <div className="grid grid-cols-2 gap-2">
         <select value={jour} onChange={e => setJour(e.target.value)}
-          className="border rounded-lg p-2 col-span-2">
+          className="border rounded-lg p-2 col-span-2 text-gray-900 bg-white">
           {JOURS.map(j => <option key={j}>{j}</option>)}
         </select>
-        <input type="time" value={debut} onChange={e => setDebut(e.target.value)} className="border rounded-lg p-2" />
-        <input type="time" value={fin} onChange={e => setFin(e.target.value)} className="border rounded-lg p-2" />
+        <input type="time" value={debut} onChange={e => setDebut(e.target.value)} className="border rounded-lg p-2 text-gray-900 bg-white" />
+        <input type="time" value={fin} onChange={e => setFin(e.target.value)} className="border rounded-lg p-2 text-gray-900 bg-white" />
         <select value={matiere} onChange={e => setMatiere(e.target.value)}
-          className="border rounded-lg p-2 col-span-2">
+          className="border rounded-lg p-2 col-span-2 text-gray-900 bg-white">
           {MATIERES.map(m => <option key={m}>{m}</option>)}
         </select>
         <button onClick={ajouter} className="col-span-2 bg-gray-100 border-2 border-dashed rounded-lg p-2 hover:bg-gray-200">

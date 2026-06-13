@@ -20,7 +20,7 @@ export default function StudentListEditor({ onSelect }: { onSelect: (eleves: str
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && ajouterEleve()}
           placeholder="Prénom de l'élève"
-          className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none" />
+          className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white" />
         <button onClick={ajouterEleve}
           className="bg-blue-600 text-white rounded-xl px-4 font-semibold hover:bg-blue-700">
           Ajouter

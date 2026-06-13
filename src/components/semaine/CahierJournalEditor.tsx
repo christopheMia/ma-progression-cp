@@ -1,5 +1,5 @@
 'use client'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { JourJournal } from '@/types'
 import { genererOuChargerJournal, sauvegarderJournal } from '@/lib/actions/journal'
 import { exporterJournalWord } from '@/lib/export-word'
@@ -7,6 +7,17 @@ import { exporterJournalWord } from '@/lib/export-word'
 export default function CahierJournalEditor({ semaineId, numeroSemaine }: { semaineId: string; numeroSemaine: number }) {
   const [journal, setJournal] = useState<JourJournal[] | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+  const wasPending = useRef(false)
+
+  useEffect(() => {
+    if (wasPending.current && !isPending && journal !== null) {
+      setSaved(true)
+      const t = setTimeout(() => setSaved(false), 2000)
+      return () => clearTimeout(t)
+    }
+    wasPending.current = isPending
+  }, [isPending, journal])
 
   function generer() {
     startTransition(async () => {
@@ -46,7 +57,11 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
   return (
     <div className="bg-white border rounded-2xl p-5 space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="font-bold text-gray-700">📋 Cahier journal</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-bold text-gray-700">📋 Cahier journal</h2>
+          {isPending && <span className="text-xs text-gray-400">Enregistrement...</span>}
+          {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => exporterJournalWord(journal, numeroSemaine)}
@@ -75,13 +90,13 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
                 <div className="space-y-2">
                   <input value={seance.objectif} placeholder="Objectif"
                     onChange={e => updateSeance(ji, si, 'objectif', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-400 outline-none" />
+                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-blue-400 outline-none" />
                   <input value={seance.activite} placeholder="Activité principale"
                     onChange={e => updateSeance(ji, si, 'activite', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm focus:ring-1 focus:ring-blue-400 outline-none" />
+                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-blue-400 outline-none" />
                   <input value={seance.materiel} placeholder="Matériel"
                     onChange={e => updateSeance(ji, si, 'materiel', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-500 focus:ring-1 focus:ring-blue-400 outline-none" />
+                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-blue-400 outline-none" />
                 </div>
               </div>
             ))}

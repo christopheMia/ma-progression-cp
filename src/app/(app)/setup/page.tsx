@@ -34,7 +34,15 @@ export default function SetupPage() {
             <div key={i} className={`flex-1 h-2 rounded-full ${i + 1 <= step ? 'bg-blue-600' : 'bg-gray-200'}`} />
           ))}
         </div>
-        <p className="text-sm text-gray-500 mt-2">Étape {step}/4 — {stepTitles[step - 1]}</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-sm text-gray-500">Étape {step}/4 — {stepTitles[step - 1]}</p>
+          {step > 1 && !loading && (
+            <button onClick={() => setStep(s => s - 1)}
+              className="text-sm text-blue-600 hover:underline">
+              ← Étape précédente
+            </button>
+          )}
+        </div>
       </div>
 
       {step === 1 && (
