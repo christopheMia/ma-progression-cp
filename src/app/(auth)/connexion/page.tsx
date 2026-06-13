@@ -41,4 +41,7 @@ export default function ConnexionPage() {
       </button>
       <p className="text-center text-sm text-gray-500">
         Pas de compte ? <Link href="/inscription" className="text-blue-700 font-medium">S'inscrire</Link>
- 
+      </p>
+    </form>
+  )
+}
