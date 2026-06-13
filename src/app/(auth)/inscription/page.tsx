@@ -18,9 +18,7 @@ export default function InscriptionPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     try {
-      // Créer l'utilisateur via Edge Function (sans confirmation email)
       const res = await fetch(`${SUPABASE_URL}/functions/v1/create-user`, {
         method: 'POST',
         headers: {
@@ -30,26 +28,11 @@ export default function InscriptionPage() {
         },
         body: JSON.stringify({ email, password }),
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'La création du compte a échoué.')
-        setLoading(false)
-        return
-      }
-
-      // Connexion automatique après création
+      if (!res.ok) { setError(data.error || 'La création du compte a échoué.'); setLoading(false); return }
       const supabase = createClient()
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-      if (signInError) {
-        setError('Compte créé ! Connecte-toi maintenant.')
-        setLoading(false)
-        router.push('/connexion')
-        return
-      }
-
+      if (signInError) { setError('Compte créé ! Connecte-toi maintenant.'); setLoading(false); router.push('/connexion'); return }
       router.refresh()
       router.push('/planning')
     } catch {
@@ -63,4 +46,21 @@ export default function InscriptionPage() {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-          c
+          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe (6 caractères min.)</label>
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
+          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none" />
+      </div>
+      {error && <p className="text-red-600 text-sm">{error}</p>}
+      <button type="submit" disabled={loading}
+        className="w-full bg-blue-700 text-white rounded-lg p-3 font-semibold hover:bg-blue-800 disabled:opacity-50">
+        {loading ? 'Création...' : 'Créer mon compte'}
+      </button>
+      <p className="text-center text-sm text-gray-500">
+        Déjà un compte ? <Link href="/connexion" className="text-blue-700 font-medium">Se connecter</Link>
+      </p>
+    </form>
+  )
+}
