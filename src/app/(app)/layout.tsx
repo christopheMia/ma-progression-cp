@@ -1,0 +1,18 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/connexion')
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-blue-800 text-white px-6 py-4 flex justify-between items-center">
+        <h1 className="font-bold text-lg">🍎 Ma Progression CP</h1>
+        <a href="/parametres" className="text-blue-200 hover:text-white text-sm">⚙️ Emploi du temps</a>
+      </header>
+      <main className="max-w-5xl mx-auto p-6">{children}</main>
+    </div>
+  )
+}
