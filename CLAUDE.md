@@ -19,13 +19,15 @@
 - NEXT_PUBLIC_SUPABASE_URL
 - NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-## État actuel (session 2026-06-13)
+## État actuel (session 2026-06-14)
 - Build : propre ✅ (`npx next build` → Compiled successfully)
 - Texte visible sur toutes les pages ✅
 - Edge Function `create-user` v2 active ✅
 - Compte Cécile : `azylis69@hotmail.fr` ✅
 - middleware.ts supprimé (conflictait avec proxy.ts — Next.js 16 utilise proxy.ts)
 - `@anthropic-ai/sdk` installé mais non utilisé (décision : pas d'API payante)
+- Code poussé sur GitHub ✅ (commit `c511ebf`)
+- push-fix.bat et DEPLOY.md supprimés ✅
 
 ## Manuels disponibles — 2 manuels vérifiés dans `src/data/manuels/`
 | Manuel | Éditeur | Progression |
@@ -66,18 +68,8 @@ Toujours utiliser le terminal VS Code avec `!` :
 - Indicateur ✓ Sauvegardé dans CahierJournalEditor et StudentTracking
 
 ## À faire prochaine session
-1. **Pousser le code** — les fichiers suivants n'ont pas encore été poussés sur GitHub :
-   - `src/app/api/parse-manuel-pdf/route.ts` (nouvelle route)
-   - `src/components/setup/ManualSelector.tsx` (import PDF + CSV)
-   - `next.config.ts` (serverExternalPackages)
-   - `package.json` + `package-lock.json` (pdf-parse, @anthropic-ai/sdk ajoutés)
-   - `CLAUDE.md`, `AGENTS.md` (mis à jour)
-   - Commande : `git add -A && git commit -m "feat: import PDF gratuit + suppression manuels approximatifs" && git push`
+1. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`
 
-2. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`
+2. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
 
-3. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
-
-4. **Supprimer `push-fix.bat` et `DEPLOY.md`** — fichiers inutiles à la racine
-
-5. **Tester l'import PDF** — essayer avec un vrai manuel numérique CP pour vérifier la détection des semaines
+3. **Tester l'import PDF** — essayer avec un vrai manuel numérique CP pour vérifier la détection des semaines
