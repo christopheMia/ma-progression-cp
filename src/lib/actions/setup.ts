@@ -1,0 +1,36 @@
+'use server'
+import { createClient } from '@/lib/supabase/server'
+import { genererProgression } from '@/lib/progression'
+import { redirect } from 'next/navigation'
+
+export async function creerClasse(formData: {
+  manuelId: string
+  rentreeDate: string
+  eleves: string[]
+  emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }>
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non connecté')
+
+  const { data: classe, error: classError } = await supabase
+    .from('classes')
+    .insert({ user_id: user.id, manuel_id: formData.manuelId, rentree_date: formData.rentreeDate })
+    .select().single()
+
+  if (classError || !classe) throw new Error('Erreur création classe')
+
+  const elevesData = formData.eleves.map((prenom, i) => ({
+    class_id: classe.id, prenom, ordre: i
+  }))
+  await supabase.from('eleves').insert(elevesData)
+
+  const progression = genererProgression(formData.manuelId, formData.rentreeDate)
+  const semainesData = progression.map(s => ({ ...s, class_id: classe.id }))
+  await supabase.from('semaines').insert(semainesData)
+
+  const edtData = formData.emploiDuTemps.map(c => ({ ...c, class_id: classe.id }))
+  if (edtData.length > 0) await supabase.from('emploi_du_temps').insert(edtData)
+
+  redirect('/planning')
+}
