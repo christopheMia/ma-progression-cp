@@ -20,11 +20,20 @@
 - NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 ## État actuel (session 2026-06-13)
-- Build Vercel : dernier commit poussé = `7dd4a5e` (corrections UI)
+- Build Vercel : dernier commit poussé = `65d9fb7` (8 manuels + corrections UI + CLAUDE.md)
 - Texte visible sur toutes les pages ✅
+- 8 manuels de lecture disponibles dans le sélecteur ✅
 - Edge Function `create-user` v2 active ✅
 - Compte Cécile : `azylis69@hotmail.fr` ✅
 - middleware.ts supprimé (conflictait avec proxy.ts — Next.js 16 utilise proxy.ts)
+
+## Règle token GitHub
+Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
+Toujours utiliser le terminal VS Code avec `!` :
+```
+! git remote set-url origin https://christopheMia:TOKEN@github.com/christopheMia/ma-progression-cp.git
+! git push origin main
+```
 
 ## Token GitHub
 - Le token PAT est dans l'URL remote git
@@ -50,8 +59,7 @@
 - Indicateur ✓ Sauvegardé dans CahierJournalEditor et StudentTracking
 
 ## À faire prochaine session
-1. **Pousser le commit manuels** — `e41dbb5` en attente (besoin nouveau token GitHub)
-2. **Page "Mot de passe oublié"** — supabase.auth.resetPasswordForEmail() + page /reset-password
-3. **Vérifier progressions manuels** — corriger graphèmes semaine/semaine avec vrais manuels
-4. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
-5. Supprimer `push-fix.bat` et `DEPLOY.md` (inutiles)
+1. **Page "Mot de passe oublié"** — supabase.auth.resetPasswordForEmail() + page /reset-password
+2. **Vérifier progressions manuels** — corriger graphèmes semaine/semaine avec vrais manuels
+3. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
+4. Supprimer `push-fix.bat` et `DEPLOY.md` (inutiles)
