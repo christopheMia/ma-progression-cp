@@ -2,6 +2,11 @@ import { addWeeks, format } from 'date-fns'
 import { LECTURE_PIANO } from '@/data/manuels/lecture-piano'
 import { AU_CP_AVEC_MELI } from '@/data/manuels/au-cp-avec-meli'
 import { RIBAMBELLE } from '@/data/manuels/ribambelle'
+import { CALIMOTS } from '@/data/manuels/calimots'
+import { TAOKI } from '@/data/manuels/taoki'
+import { TIMINI } from '@/data/manuels/timini'
+import { LUNE } from '@/data/manuels/lune'
+import { A_MOI_DE_LIRE } from '@/data/manuels/a-moi-de-lire'
 import { EDM_PROGRESSION_CP } from '@/data/edm/progression-cp'
 import { Semaine } from '@/types'
 
@@ -9,6 +14,11 @@ const MANUELS_DATA = {
   'lecture-piano': LECTURE_PIANO,
   'au-cp-avec-meli': AU_CP_AVEC_MELI,
   'ribambelle': RIBAMBELLE,
+  'calimots': CALIMOTS,
+  'taoki': TAOKI,
+  'timini': TIMINI,
+  'lune': LUNE,
+  'a-moi-de-lire': A_MOI_DE_LIRE,
 }
 
 export function genererProgression(

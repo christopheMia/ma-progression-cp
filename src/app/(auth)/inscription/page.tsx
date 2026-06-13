@@ -18,6 +18,7 @@ export default function InscriptionPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/create-user`, {
         method: 'POST',
