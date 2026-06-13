@@ -26,13 +26,13 @@ export default function ConnexionPage() {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-          className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
           placeholder="cecile@ecole.fr" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-          className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" />
+          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none" />
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <button type="submit" disabled={loading}
@@ -41,7 +41,4 @@ export default function ConnexionPage() {
       </button>
       <p className="text-center text-sm text-gray-500">
         Pas de compte ? <Link href="/inscription" className="text-blue-700 font-medium">S'inscrire</Link>
-      </p>
-    </form>
-  )
-}
+ 
