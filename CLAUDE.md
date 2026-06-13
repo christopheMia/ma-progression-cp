@@ -20,12 +20,31 @@
 - NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 ## État actuel (session 2026-06-13)
-- Build Vercel : dernier commit poussé = `65d9fb7` (8 manuels + corrections UI + CLAUDE.md)
+- Build : propre ✅ (`npx next build` → Compiled successfully)
 - Texte visible sur toutes les pages ✅
-- 8 manuels de lecture disponibles dans le sélecteur ✅
 - Edge Function `create-user` v2 active ✅
 - Compte Cécile : `azylis69@hotmail.fr` ✅
 - middleware.ts supprimé (conflictait avec proxy.ts — Next.js 16 utilise proxy.ts)
+- `@anthropic-ai/sdk` installé mais non utilisé (décision : pas d'API payante)
+
+## Manuels disponibles — 2 manuels vérifiés dans `src/data/manuels/`
+| Manuel | Éditeur | Progression |
+|--------|---------|-------------|
+| Lecture Piano | Retz (2025) | ✅ vérifiée |
+| Au CP avec Méli | Lelivrescolaire | ✅ vérifiée |
+
+**Les 6 autres manuels (Calimots, Taoki, Timini, 1.2.3 Lune!, À moi de lire!, Ribambelle) ont été supprimés — leurs progressions étaient approximatives et inventées.**
+
+Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-parse`) ou import CSV (modèle téléchargeable) dans `src/components/setup/ManualSelector.tsx`.
+
+## Import PDF — fonctionnement
+- Route : `src/app/api/parse-manuel-pdf/route.ts`
+- Package : `pdf-parse` (gratuit, extraction de texte côté serveur)
+- `serverExternalPackages: ['pdf-parse', 'pdfjs-dist']` dans `next.config.ts` (requis pour le build Turbopack)
+- Fonctionne uniquement avec PDF numériques (texte sélectionnable), pas les PDF scannés
+- Détection par regex des "Semaine N" + graphèmes courants CP
+- Si 0 semaines détectées : affiche l'aperçu du texte extrait + suggère le CSV
+- ⚠ Résultat approximatif — avertissement affiché à l'enseignant avant confirmation
 
 ## Règle token GitHub
 Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
@@ -41,25 +60,24 @@ Toujours utiliser le terminal VS Code avec `!` :
 - **Procédure renouvellement** : github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token (scope: repo)
 - Puis : `git remote set-url origin https://christopheMia:TOKEN@github.com/christopheMia/ma-progression-cp.git`
 
-## Manuels disponibles — 8 manuels dans `src/data/manuels/`
-| Manuel | Éditeur | Progression |
-|--------|---------|-------------|
-| Lecture Piano | Retz (2025) | ✅ vérifiée |
-| Calimots | Retz (2025) | ⚠️ approximative |
-| Taoki et compagnie | Hachette (2025) | ⚠️ approximative |
-| Timini | Nathan (2025) | ⚠️ approximative |
-| 1.2.3 Lune! | Bordas (2024) | ⚠️ approximative |
-| À moi de lire! | Magnard (2024) | ⚠️ approximative |
-| Ribambelle | Hatier | ⚠️ approximative |
-| Au CP avec Méli | Lelivrescolaire | ✅ vérifiée |
-
-## Corrections UI appliquées
+## Corrections UI déjà appliquées
 - Texte noir (text-gray-900 bg-white) sur tous les inputs/selects
 - Bouton ← Étape précédente dans le wizard de configuration
 - Indicateur ✓ Sauvegardé dans CahierJournalEditor et StudentTracking
 
 ## À faire prochaine session
-1. **Page "Mot de passe oublié"** — supabase.auth.resetPasswordForEmail() + page /reset-password
-2. **Vérifier progressions manuels** — corriger graphèmes semaine/semaine avec vrais manuels
+1. **Pousser le code** — les fichiers suivants n'ont pas encore été poussés sur GitHub :
+   - `src/app/api/parse-manuel-pdf/route.ts` (nouvelle route)
+   - `src/components/setup/ManualSelector.tsx` (import PDF + CSV)
+   - `next.config.ts` (serverExternalPackages)
+   - `package.json` + `package-lock.json` (pdf-parse, @anthropic-ai/sdk ajoutés)
+   - `CLAUDE.md`, `AGENTS.md` (mis à jour)
+   - Commande : `git add -A && git commit -m "feat: import PDF gratuit + suppression manuels approximatifs" && git push`
+
+2. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`
+
 3. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
-4. Supprimer `push-fix.bat` et `DEPLOY.md` (inutiles)
+
+4. **Supprimer `push-fix.bat` et `DEPLOY.md`** — fichiers inutiles à la racine
+
+5. **Tester l'import PDF** — essayer avec un vrai manuel numérique CP pour vérifier la détection des semaines

@@ -16,6 +16,7 @@
     "docx": "^9.7.1",
     "file-saver": "^2.0.5",
     "next": "16.2.9",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -23,6 +24,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "jest": "^30.4.2",

@@ -2,12 +2,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { genererProgression } from '@/lib/progression'
 import { redirect } from 'next/navigation'
+import type { ProgressionSemaine } from '@/data/manuels'
 
 export async function creerClasse(formData: {
   manuelId: string
   rentreeDate: string
   eleves: string[]
   emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }>
+  customProgression?: ProgressionSemaine[]
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -25,7 +27,7 @@ export async function creerClasse(formData: {
   }))
   await supabase.from('eleves').insert(elevesData)
 
-  const progression = genererProgression(formData.manuelId, formData.rentreeDate)
+  const progression = genererProgression(formData.manuelId, formData.rentreeDate, formData.customProgression)
   const semainesData = progression.map(s => ({ ...s, class_id: classe.id }))
   await supabase.from('semaines').insert(semainesData)
 

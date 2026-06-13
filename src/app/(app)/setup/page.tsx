@@ -5,12 +5,14 @@ import RentreeDatePicker from '@/components/setup/RentreeDatePicker'
 import StudentListEditor from '@/components/setup/StudentListEditor'
 import TimetableEditor from '@/components/setup/TimetableEditor'
 import { creerClasse } from '@/lib/actions/setup'
+import type { ProgressionSemaine } from '@/data/manuels'
 
 type WizardData = {
   manuelId: string
   rentreeDate: string
   eleves: string[]
   emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }>
+  customProgression?: ProgressionSemaine[]
 }
 
 export default function SetupPage() {
@@ -46,7 +48,10 @@ export default function SetupPage() {
       </div>
 
       {step === 1 && (
-        <ManualSelector onSelect={manuelId => { setData(d => ({ ...d, manuelId })); setStep(2) }} />
+        <ManualSelector onSelect={(manuelId, customProgression) => {
+          setData(d => ({ ...d, manuelId, customProgression }))
+          setStep(2)
+        }} />
       )}
       {step === 2 && (
         <RentreeDatePicker onSelect={rentreeDate => { setData(d => ({ ...d, rentreeDate })); setStep(3) }} />
