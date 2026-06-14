@@ -27,9 +27,12 @@ export default function TimetableEditor({ onFinish, loading }: {
   const [debut, setDebut] = useState('09:00')
   const [fin, setFin] = useState('09:45')
   const [matiere, setMatiere] = useState('Lecture')
+  const [matiereCustom, setMatiereCustom] = useState('')
 
   function ajouter() {
-    setCreneaux(c => [...c, { jour, heure_debut: debut, heure_fin: fin, matiere, ordre: c.length }])
+    const m = matiere === '__autre__' ? matiereCustom.trim() : matiere
+    if (!m) return
+    setCreneaux(c => [...c, { jour, heure_debut: debut, heure_fin: fin, matiere: m, ordre: c.length }])
     // Enchaîne : le prochain créneau démarre à la fin de celui-ci (même durée)
     const duree = Math.max(15, diffMinutes(debut, fin))
     setDebut(fin)
@@ -61,7 +64,13 @@ export default function TimetableEditor({ onFinish, loading }: {
         <select value={matiere} onChange={e => setMatiere(e.target.value)}
           className="border rounded-lg p-2 col-span-2 text-gray-900 bg-white">
           {MATIERES.map(m => <option key={m}>{m}</option>)}
+          <option value="__autre__">✏️ Autre (préciser)…</option>
         </select>
+        {matiere === '__autre__' && (
+          <input value={matiereCustom} onChange={e => setMatiereCustom(e.target.value)}
+            placeholder="Nom de la matière à ajouter"
+            className="border rounded-lg p-2 col-span-2 text-gray-900 bg-white" />
+        )}
         <button onClick={ajouter}
           className="col-span-2 bg-violet-600 text-white rounded-lg p-2.5 font-semibold hover:bg-violet-700">
           + Ajouter ce créneau
