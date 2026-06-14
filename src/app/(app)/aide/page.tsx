@@ -11,7 +11,7 @@ function Bloc({ titre, children }: { titre: string; children: React.ReactNode })
 
 function Exemple({ children }: { children: React.ReactNode }) {
   return (
-    <p className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-indigo-900">
+    <p className="bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 text-rose-900">
       <span className="font-semibold">Exemple :</span> {children}
     </p>
   )
@@ -21,7 +21,7 @@ export default function AidePage() {
   return (
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/planning" className="text-indigo-600 hover:underline text-sm">← Planning</Link>
+        <Link href="/planning" className="text-rose-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Mode d&apos;emploi</h1>
       </div>
 

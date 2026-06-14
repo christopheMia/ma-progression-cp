@@ -49,7 +49,7 @@ export default async function PlanningPage() {
             <span className="font-medium text-slate-700">Avancement de l&apos;année</span>
             <span className="text-slate-500">Semaine {courante.numero} / {total}</span>
           </div>
-          <ProgressBar value={courante.numero} max={total} color="bg-indigo-500" />
+          <ProgressBar value={courante.numero} max={total} color="bg-rose-500" />
         </div>
       )}
 

@@ -49,7 +49,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
       <div className="bg-white border rounded-2xl p-5 text-center shadow-sm">
         <h2 className="font-bold text-gray-700 mb-3">📋 Cahier journal</h2>
         <button onClick={generer} disabled={isPending}
-          className="bg-indigo-700 text-white rounded-xl px-6 py-3 font-semibold hover:bg-indigo-800 disabled:opacity-50">
+          className="bg-rose-700 text-white rounded-xl px-6 py-3 font-semibold hover:bg-rose-800 disabled:opacity-50">
           {isPending ? 'Génération...' : 'Générer le cahier journal'}
         </button>
       </div>
@@ -68,7 +68,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
           <button
             onClick={() => exporterJournalWord(journal, numeroSemaine)}
             disabled={!journal}
-            className="text-sm border border-indigo-300 text-indigo-700 rounded-lg px-3 py-1.5 hover:bg-indigo-50 disabled:opacity-30">
+            className="text-sm border border-rose-300 text-rose-700 rounded-lg px-3 py-1.5 hover:bg-rose-50 disabled:opacity-30">
             📄 Word
           </button>
           <button
@@ -81,7 +81,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
 
       {journal.map((jour, ji) => (
         <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
-          <div className="bg-indigo-50 px-4 py-2 font-semibold text-indigo-800 capitalize">{jour.jour}</div>
+          <div className="bg-rose-50 px-4 py-2 font-semibold text-rose-800 capitalize">{jour.jour}</div>
           <div className="divide-y">
             {jour.seances.map((seance, si) => (
               <div key={si} className="p-4 grid grid-cols-[auto_1fr] gap-3">
@@ -92,13 +92,13 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
                 <div className="space-y-2">
                   <input value={seance.objectif} placeholder="Objectif"
                     onChange={e => updateSeance(ji, si, 'objectif', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-indigo-400 outline-none" />
+                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-rose-400 outline-none" />
                   <input value={seance.activite} placeholder="Activité principale"
                     onChange={e => updateSeance(ji, si, 'activite', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-indigo-400 outline-none" />
+                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-rose-400 outline-none" />
                   <input value={seance.materiel} placeholder="Matériel"
                     onChange={e => updateSeance(ji, si, 'materiel', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-indigo-400 outline-none" />
+                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-rose-400 outline-none" />
                 </div>
               </div>
             ))}

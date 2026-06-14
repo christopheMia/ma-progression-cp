@@ -26,7 +26,7 @@ export default function ManuelEditor({ currentNom }: { currentNom: string }) {
       <div className="space-y-3">
         <p className="text-gray-700">Manuel actuel : <span className="font-semibold">{currentNom}</span></p>
         <button onClick={() => setEditing(true)}
-          className="text-sm border border-indigo-300 text-indigo-700 rounded-lg px-4 py-2 hover:bg-indigo-50">
+          className="text-sm border border-rose-300 text-rose-700 rounded-lg px-4 py-2 hover:bg-rose-50">
           Changer de manuel
         </button>
       </div>
@@ -52,7 +52,7 @@ export default function ManuelEditor({ currentNom }: { currentNom: string }) {
           </button>
         </div>
       ) : isPending ? (
-        <p className="text-sm text-indigo-700">Régénération de la progression…</p>
+        <p className="text-sm text-rose-700">Régénération de la progression…</p>
       ) : (
         <>
           <ManualSelector onSelect={changer} />

@@ -1,7 +1,7 @@
 export default function ProgressBar({
   value,
   max,
-  color = 'bg-indigo-500',
+  color = 'bg-rose-500',
 }: {
   value: number
   max: number

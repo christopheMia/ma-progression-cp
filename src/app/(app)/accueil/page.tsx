@@ -42,9 +42,9 @@ export default async function AccueilPage() {
       {/* Semaine en cours */}
       {courante && (
         <Link href={`/semaine/${courante.id}`}
-          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-sm transition-all">
+          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-rose-300 hover:shadow-sm transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+            <span className="text-xs font-semibold uppercase tracking-wide text-rose-600">
               {getStatus(courante) === 'current' ? 'Cette semaine' : 'Prochaine semaine'}
             </span>
             <span className="text-slate-400 text-sm">Semaine {courante.numero}</span>
@@ -53,7 +53,7 @@ export default async function AccueilPage() {
             {courante.graphemes.length ? courante.graphemes.join(', ') : 'Révisions'}
           </div>
           <div className="text-sm text-slate-500 mt-1">🌍 {courante.edm_theme}</div>
-          <div className="text-sm text-indigo-600 font-medium mt-3 group-hover:translate-x-0.5 transition-transform">Ouvrir la fiche →</div>
+          <div className="text-sm text-rose-600 font-medium mt-3 group-hover:translate-x-0.5 transition-transform">Ouvrir la fiche →</div>
         </Link>
       )}
 
@@ -62,7 +62,7 @@ export default async function AccueilPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{courante?.numero ?? 0}<span className="text-base font-normal text-slate-400">/{total}</span></div>
           <div className="text-sm text-slate-500 mt-1 mb-3">Semaine de l&apos;année</div>
-          <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-indigo-500" />
+          <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-rose-500" />
         </div>
 
         <div className="bg-white border border-slate-200 rounded-2xl p-5">
@@ -85,7 +85,7 @@ export default async function AccueilPage() {
           { href: '/aide', emoji: '❓', titre: 'Aide', sous: "Mode d'emploi" },
         ].map(c => (
           <Link key={c.href} href={c.href}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-sm transition-all">
+            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-rose-300 hover:shadow-sm transition-all">
             <div className="text-2xl">{c.emoji}</div>
             <div className="font-semibold text-slate-900 mt-1">{c.titre}</div>
             <div className="text-sm text-slate-500">{c.sous}</div>

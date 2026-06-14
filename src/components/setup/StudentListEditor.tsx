@@ -21,24 +21,24 @@ export default function StudentListEditor({ onSelect }: { onSelect: (eleves: str
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && ajouterEleve()}
           placeholder="Prénom de l'élève"
-          className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 bg-white" />
+          className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-rose-500 outline-none text-gray-900 bg-white" />
         <button onClick={ajouterEleve}
-          className="bg-indigo-600 text-white rounded-xl px-4 font-semibold hover:bg-indigo-700">
+          className="bg-rose-600 text-white rounded-xl px-4 font-semibold hover:bg-rose-700">
           Ajouter
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
         {eleves.map((e, i) => (
-          <span key={i} className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full flex items-center gap-2">
+          <span key={i} className="bg-rose-100 text-rose-800 px-3 py-1 rounded-full flex items-center gap-2">
             {e}
             <button onClick={() => setEleves(ev => ev.filter((_, j) => j !== i))}
-              className="text-indigo-400 hover:text-red-500">×</button>
+              className="text-rose-400 hover:text-red-500">×</button>
           </span>
         ))}
       </div>
       {eleves.length > 0 && (
         <button onClick={() => onSelect(eleves)}
-          className="w-full bg-indigo-700 text-white rounded-xl p-4 font-semibold hover:bg-indigo-800">
+          className="w-full bg-rose-700 text-white rounded-xl p-4 font-semibold hover:bg-rose-800">
           Continuer avec {eleves.length} élève{eleves.length > 1 ? 's' : ''} →
         </button>
       )}

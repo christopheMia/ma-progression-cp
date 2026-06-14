@@ -33,9 +33,11 @@
     toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
 - **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
 
-## Thème minimaliste moderne (révisé session 2026-06-14)
-- **Refonte vers minimaliste** (après retour : dégradé pas joli) : fond `bg-slate-50`, header **blanc** `sticky` + `border-b border-slate-200` (plus de dégradé), accent unique **indigo-600**, cartes `border-slate-200`
-- Swap global `blue-*` → `indigo-*` dans tout `src` pour unifier l'accent
+## Thème rose (révisé session 2026-06-14)
+- **Accent rose** (après retour « trop blanc ») : fond dégradé `from-rose-100 via-pink-50 to-fuchsia-50`, header `bg-white/70 backdrop-blur border-rose-100`, accent unique **rose-600**, cartes blanches sur fond rosé
+- Connexion : fond dégradé rose, carte `bg-white/90`
+- Swap global des accents : `blue-*` → `indigo-*` → `rose-*` dans tout `src`
+- **Emploi du temps amélioré** (setup + paramètres) : bouton « + Ajouter ce créneau » bien visible (rose plein), **enchaînement auto des horaires** (le créneau suivant démarre à la fin du précédent), suppression par créneau, génération bloquée tant qu'aucun créneau (helpers `addMinutes`/`diffMinutes` locaux)
 - **Menu adaptatif** `src/components/HeaderNav.tsx` (client, `usePathname` pour lien actif) : si pas de classe, n'affiche que « Configurer ma classe » + Aide + Déconnexion → corrige le bug « Accueil/Paramètres ne s'ouvrent pas » (en réalité : redirigeaient vers /setup faute de classe après reset)
 - Layout `(app)/layout.tsx` charge la classe et passe `hasClass` à HeaderNav
 

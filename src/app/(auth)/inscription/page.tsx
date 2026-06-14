@@ -47,20 +47,20 @@ export default function InscriptionPage() {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-rose-500 outline-none" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe (6 caractères min.)</label>
         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
-          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+          className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-rose-500 outline-none" />
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <button type="submit" disabled={loading}
-        className="w-full bg-indigo-700 text-white rounded-lg p-3 font-semibold hover:bg-indigo-800 disabled:opacity-50">
+        className="w-full bg-rose-700 text-white rounded-lg p-3 font-semibold hover:bg-rose-800 disabled:opacity-50">
         {loading ? 'Création...' : 'Créer mon compte'}
       </button>
       <p className="text-center text-sm text-gray-500">
-        Déjà un compte ? <Link href="/connexion" className="text-indigo-700 font-medium">Se connecter</Link>
+        Déjà un compte ? <Link href="/connexion" className="text-rose-700 font-medium">Se connecter</Link>
       </p>
     </form>
   )

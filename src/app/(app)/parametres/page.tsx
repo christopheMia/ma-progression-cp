@@ -36,7 +36,7 @@ export default async function ParametresPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Link href="/planning" className="text-indigo-600 hover:underline text-sm">← Planning</Link>
+        <Link href="/planning" className="text-rose-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Paramètres de ma classe</h1>
       </div>
 
