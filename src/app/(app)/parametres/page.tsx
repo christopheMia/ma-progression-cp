@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { MANUELS } from '@/data/manuels'
+import PrenomEnseignantEditor from '@/components/parametres/PrenomEnseignantEditor'
 import ElevesEditor from '@/components/parametres/ElevesEditor'
 import EmploiDuTempsEditor from '@/components/parametres/EmploiDuTempsEditor'
 import RentreeEditor from '@/components/parametres/RentreeEditor'
@@ -41,6 +42,10 @@ export default async function ParametresPage() {
         <h1 className="text-xl font-bold text-gray-800">Paramètres de ma classe</h1>
       </div>
 
+      <Section titre="👤 Mon prénom">
+        <PrenomEnseignantEditor initial={classe.prenom_enseignant ?? ''} />
+      </Section>
+
       <Section titre="👧 Mes élèves">
         <ElevesEditor initial={(eleves ?? []).map(e => e.prenom)} />
       </Section>
@@ -56,7 +61,7 @@ export default async function ParametresPage() {
       </Section>
 
       <Section titre="📖 Manuel de lecture">
-        <ManuelEditor currentNom={manuelNom} />
+        <ManuelEditor currentNom={manuelNom} prenom={(classe.prenom_enseignant ?? '').trim() || undefined} />
       </Section>
 
       <section className="bg-white border border-violet-200 rounded-2xl p-5">

@@ -31,6 +31,7 @@ export default async function AccueilPage() {
   const possible = totalGraphemes * nbEleves
   const acquisCount = acquis?.length ?? 0
   const aujourdhui = format(new Date(), 'EEEE d MMMM', { locale: fr })
+  const prenom = (classe.prenom_enseignant ?? '').trim()
 
   const progressionActuelle = (semaines ?? []).map(s => ({
     numero: s.numero,
@@ -50,7 +51,7 @@ export default async function AccueilPage() {
         </svg>
         <div className="relative z-10 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bonjour 👋</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bonjour {prenom ? `${prenom} ` : ''}👋</h1>
             <p className="text-white/80 mt-1 capitalize">{aujourdhui}</p>
           </div>
           <div className="hidden sm:block text-4xl select-none">📚🍎✏️</div>
@@ -59,7 +60,7 @@ export default async function AccueilPage() {
 
       {/* Correction IA de la progression (non destructif) */}
       <div className="flex justify-end">
-        <ProgressionCorrector classId={classe.id} progression={progressionActuelle} />
+        <ProgressionCorrector classId={classe.id} progression={progressionActuelle} prenom={prenom || undefined} />
       </div>
 
       {/* Semaine en cours */}

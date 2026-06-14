@@ -18,6 +18,14 @@ async function getClasse() {
   return { supabase, classe }
 }
 
+/** Enregistre le prénom de l'enseignant (pour le « Bonjour … » et l'assistant IA). */
+export async function updatePrenomEnseignant(prenom: string) {
+  const { supabase, classe } = await getClasse()
+  await supabase.from('classes').update({ prenom_enseignant: prenom.trim() || null }).eq('id', classe.id)
+  revalidatePath('/accueil')
+  revalidatePath('/parametres')
+}
+
 /**
  * Met à jour la liste des élèves en préservant le suivi des élèves conservés.
  * Identité par prénom : on garde ceux dont le prénom existe encore (donc leurs acquisitions),

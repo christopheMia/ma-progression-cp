@@ -34,6 +34,7 @@ export default async function PlanningPage() {
   const courante = semaineEnCours(semaines ?? [])
   const total = semaines?.length ?? 0
 
+  const prenom = (classe.prenom_enseignant ?? '').trim()
   const progressionActuelle = (semaines ?? []).map(s => ({
     numero: s.numero,
     graphemes: s.graphemes,
@@ -49,7 +50,7 @@ export default async function PlanningPage() {
           <p className="text-slate-500 text-sm">📖 {manuelNom} · {total} semaines</p>
         </div>
         <div className="flex gap-2 items-center">
-          <ProgressionCorrector classId={classe.id} progression={progressionActuelle} />
+          <ProgressionCorrector classId={classe.id} progression={progressionActuelle} prenom={prenom || undefined} />
           <PrintButton label="🖨️ Imprimer le planning" />
         </div>
       </div>

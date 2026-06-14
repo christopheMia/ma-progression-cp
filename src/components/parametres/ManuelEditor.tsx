@@ -5,7 +5,7 @@ import ManualSelector from '@/components/setup/ManualSelector'
 import { updateManuel } from '@/lib/actions/parametres'
 import type { ProgressionSemaine } from '@/data/manuels'
 
-export default function ManuelEditor({ currentNom }: { currentNom: string }) {
+export default function ManuelEditor({ currentNom, prenom }: { currentNom: string; prenom?: string }) {
   const [editing, setEditing] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -55,7 +55,7 @@ export default function ManuelEditor({ currentNom }: { currentNom: string }) {
         <p className="text-sm text-violet-700">Régénération de la progression…</p>
       ) : (
         <>
-          <ManualSelector onSelect={changer} />
+          <ManualSelector onSelect={changer} prenom={prenom} />
           <button onClick={() => { setConfirmed(false); setEditing(false) }}
             className="text-sm text-gray-500 hover:text-gray-700">
             ← Annuler
