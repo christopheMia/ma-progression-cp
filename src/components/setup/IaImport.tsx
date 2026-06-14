@@ -27,7 +27,7 @@ export default function IaImport({
       let data: { progression?: ProgressionSemaine[]; error?: string } | null = null
       try { data = JSON.parse(raw) } catch { data = null }
       if (!res.ok || !data || !data.progression) {
-        setError(`Erreur ${res.status} : ${data?.error ?? raw.slice(0, 150) || 'réponse vide'}`)
+        setError(`Erreur ${res.status} : ${data?.error ?? (raw.slice(0, 150) || 'réponse vide')}`)
       } else {
         setProgression(data.progression)
         setChat([{ role: 'assistant', content: prenom
