@@ -1,6 +1,7 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { genererProgression } from '@/lib/progression'
+import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import { redirect } from 'next/navigation'
 import type { ProgressionSemaine } from '@/data/manuels'
 
@@ -14,6 +15,9 @@ export async function creerClasse(formData: {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Non connecté')
+
+  // Évite l'accumulation de classes en double : on repart d'une base propre
+  await supprimerClassesUtilisateur(supabase, user.id)
 
   const { data: classe, error: classError } = await supabase
     .from('classes')

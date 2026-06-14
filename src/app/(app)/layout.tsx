@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/connexion')
 
-  const { data: classe } = await supabase.from('classes').select('id').eq('user_id', user.id).single()
+  const { data: classe } = await supabase.from('classes').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-200 via-purple-100 to-violet-100">

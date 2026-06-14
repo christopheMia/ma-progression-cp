@@ -4,6 +4,7 @@ import { genererProgression } from '@/lib/progression'
 import { addWeeks, format } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import type { ProgressionSemaine } from '@/data/manuels'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }
@@ -12,7 +13,7 @@ async function getClasse() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Non connecté')
-  const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).single()
+  const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
   if (!classe) throw new Error('Classe introuvable')
   return { supabase, classe }
 }
@@ -114,18 +115,11 @@ export async function updateManuel(manuelId: string, customProgression?: Progres
  * puis renvoie vers l'assistant de configuration. ⚠️ Irréversible.
  */
 export async function reinitialiserConfiguration() {
-  const { supabase, classe } = await getClasse()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non connecté')
 
-  const { data: semaines } = await supabase.from('semaines').select('id').eq('class_id', classe.id)
-  const semaineIds = (semaines ?? []).map(s => s.id)
-  if (semaineIds.length) {
-    await supabase.from('acquisitions').delete().in('semaine_id', semaineIds)
-    await supabase.from('cahier_journal').delete().in('semaine_id', semaineIds)
-    await supabase.from('semaines').delete().in('id', semaineIds)
-  }
-  await supabase.from('eleves').delete().eq('class_id', classe.id)
-  await supabase.from('emploi_du_temps').delete().eq('class_id', classe.id)
-  await supabase.from('classes').delete().eq('id', classe.id)
+  await supprimerClassesUtilisateur(supabase, user.id)
 
   revalidatePath('/planning')
   revalidatePath('/parametres')
