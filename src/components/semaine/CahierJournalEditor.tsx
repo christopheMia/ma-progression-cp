@@ -9,8 +9,23 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
   const [journal, setJournal] = useState<JourJournal[] | null>(null)
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [exported, setExported] = useState(false)
   const wasPending = useRef(false)
   const journalRef = useRef<HTMLDivElement>(null)
+
+  async function handleExportWord() {
+    if (!journal) return
+    setExporting(true)
+    setExported(false)
+    try {
+      await exporterJournalWord(journal, numeroSemaine)
+      setExported(true)
+      setTimeout(() => setExported(false), 6000)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   useEffect(() => {
     if (wasPending.current && !isPending && journal !== null) {
@@ -66,10 +81,11 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
         </div>
         <div className="flex gap-2 no-print">
           <button
-            onClick={() => exporterJournalWord(journal, numeroSemaine)}
-            disabled={!journal}
+            onClick={handleExportWord}
+            disabled={!journal || exporting}
+            title="Télécharge un document Word (.docx). Ouvrez-le avec Word, ou importez-le dans Google Docs (Fichier → Importer)."
             className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50 disabled:opacity-30">
-            📄 Word
+            {exporting ? 'Génération…' : '⬇️ Word (.docx)'}
           </button>
           <button
             onClick={() => imprimerElement(journalRef.current)}
@@ -82,6 +98,13 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
       <p className="text-xs text-gray-400 -mt-3 no-print">
         💡 Complétez chaque séance : remplissez l&apos;objectif, l&apos;activité et le matériel. Tout se sauvegarde automatiquement.
       </p>
+
+      {exported && (
+        <div className="no-print -mt-2 text-sm bg-green-50 border border-green-200 text-green-800 rounded-lg px-3 py-2">
+          ✓ Document <strong>cahier-journal-semaine-{numeroSemaine}.docx</strong> téléchargé (dossier « Téléchargements »).
+          Double-cliquez dessus pour l&apos;ouvrir dans Word, ou dans Google Docs : <em>Fichier → Importer</em>.
+        </div>
+      )}
 
       {journal.map((jour, ji) => (
         <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
