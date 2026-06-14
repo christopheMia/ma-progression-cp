@@ -166,6 +166,12 @@ Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-p
     sons acquis/non + statut, écrit le bilan avec le placeholder `[ELEVE]`, et le navigateur
     remplace `[ELEVE]` par le vrai prénom à l'affichage (validé en prod).
   - Le bilan généré remplit le champ « Commentaire » (éditable, sauvegardé via `upsertAppreciation`).
+- **Correction IA non destructive** (`src/components/ProgressionCorrector.tsx`) : bouton
+  **« 🤖 Corriger la progression »** sur **Planning ET Accueil**. Ouvre le chat IA sur la
+  progression EXISTANTE (chargée depuis les semaines) et, à l'enregistrement, met à jour
+  **uniquement** graphèmes/pages/mots via `corrigerProgression` (`src/lib/actions/progression-ia.ts`)
+  — SANS toucher au suivi élèves / journaux / dates. À l'inverse de « Changer de manuel » (destructif).
+  Réutilise la route `api/ia-chat`.
 
 ## Règle token GitHub
 Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
