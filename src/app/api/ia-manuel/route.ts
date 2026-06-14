@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     const message = await client.messages.create({
       model: MODELE_IMPORT,
       max_tokens: 16000,
-      thinking: { type: 'adaptive' },
+      // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
+      // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
       system: SYSTEM_IMPORT,
       output_config: {
         format: {
