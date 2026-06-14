@@ -4,6 +4,7 @@ import ManualSelector from '@/components/setup/ManualSelector'
 import RentreeDatePicker from '@/components/setup/RentreeDatePicker'
 import StudentListEditor from '@/components/setup/StudentListEditor'
 import TimetableEditor from '@/components/setup/TimetableEditor'
+import DemoButton from '@/components/DemoButton'
 import { creerClasse } from '@/lib/actions/setup'
 import type { ProgressionSemaine } from '@/data/manuels'
 
@@ -29,6 +30,14 @@ export default function SetupPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {step === 1 && !loading && (
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 bg-violet-50 border border-violet-200 rounded-xl p-4">
+          <div className="text-sm text-violet-900">
+            <strong>Juste pour découvrir l&apos;outil ?</strong> Chargez une classe d&apos;exemple, déjà remplie partout.
+          </div>
+          <div className="sm:ml-auto"><DemoButton /></div>
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-violet-800 mb-2">Configuration de ma classe</h1>
         <div className="flex gap-2">

@@ -7,6 +7,7 @@ import EmploiDuTempsEditor from '@/components/parametres/EmploiDuTempsEditor'
 import RentreeEditor from '@/components/parametres/RentreeEditor'
 import ManuelEditor from '@/components/parametres/ManuelEditor'
 import ResetButton from '@/components/parametres/ResetButton'
+import DemoButton from '@/components/DemoButton'
 
 function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
   return (
@@ -57,6 +58,14 @@ export default async function ParametresPage() {
       <Section titre="📖 Manuel de lecture">
         <ManuelEditor currentNom={manuelNom} />
       </Section>
+
+      <section className="bg-white border border-violet-200 rounded-2xl p-5">
+        <h2 className="font-bold text-violet-700 mb-2">🎓 Mode démonstration</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Remplit une classe d&apos;exemple complète (élèves, emploi du temps, progression, suivi) pour la formation.
+        </p>
+        <DemoButton confirmer />
+      </section>
 
       <section className="bg-white border-2 border-red-200 rounded-2xl p-5">
         <h2 className="font-bold text-red-700 mb-4">🗑️ Repartir de zéro</h2>
