@@ -135,14 +135,24 @@ Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-p
 - But : l'IA **lit/comprend** le manuel (PDF ou sommaire collé) → progression
   structurée **éditable**, + **chat de correction** personnalisé (boîte de dialogue).
 - Fichiers créés :
-  - `src/lib/ia/anthropic.ts` (client + `MODELE_IMPORT=claude-opus-4-8`, `MODELE_CHAT=claude-sonnet-4-6`)
+  - `src/lib/ia/anthropic.ts` (client + `MODELE_IMPORT` + `MODELE_CHAT`)
   - `src/lib/ia/schema.ts` (schéma JSON imposé + `normalizeProgression`, max 36 semaines)
   - `src/lib/ia/prompts.ts` (`SYSTEM_IMPORT`, `userImport`, `systemChat`)
-  - `src/app/api/ia-manuel/route.ts` (Opus, sorties structurées) — PDF (pdf-parse) ou texte
-  - `src/app/api/ia-chat/route.ts` (Sonnet, prompt caching, historique borné 10)
+  - `src/lib/ia/pdf-client.ts` (extraction texte PDF **côté navigateur** via pdfjs)
+  - `src/app/api/ia-manuel/route.ts` (sorties structurées) — reçoit du TEXTE
+  - `src/app/api/ia-chat/route.ts` (prompt caching, historique borné 10)
   - `src/components/setup/IaImport.tsx` (tableau éditable + boîte de dialogue violette)
+  - `public/pdf.worker.min.mjs` (worker pdfjs auto-hébergé, copié de node_modules)
   - 3ᵉ onglet « 🤖 Import IA » dans `ManualSelector.tsx` (par défaut)
-- `@anthropic-ai/sdk` installé (`^0.104.x`). Tests : `src/lib/ia/__tests__/`.
+- `@anthropic-ai/sdk` installé (`^0.104.x`). Tests : `src/lib/ia/__tests__/` (19 tests).
+- ⚠️ **Leçons de prod (2026-06-14)** :
+  - **Import = Sonnet** (`claude-sonnet-4-6`), PAS Opus : Opus dépasse le temps max des
+    fonctions serverless Vercel (≈10 s plan gratuit) → « erreur réseau ». Pas de `thinking`.
+    Repasser à Opus seulement si plan Vercel supérieur.
+  - **PDF extrait dans le NAVIGATEUR** (pdf-client.ts) puis on n'envoie que le texte :
+    Vercel limite le corps des requêtes à ~4,5 Mo (sinon `413 FUNCTION_PAYLOAD_TOO_LARGE`).
+    Un PDF de manuel dépasse souvent. Le worker pdfjs est servi depuis `/public`.
+  - IA **confirmée fonctionnelle en prod** (import texte OK).
 - **RGPD** : ce sous-système n'envoie AUCUNE donnée élève (seulement sons/semaines/pages).
   L'anonymisation des prénoms concerne le sous-système 2 (bilans élèves, à venir).
 - ⚠️ **À FAIRE (utilisateur)** : ajouter `ANTHROPIC_API_KEY` (secrète, PAS `NEXT_PUBLIC_`)
