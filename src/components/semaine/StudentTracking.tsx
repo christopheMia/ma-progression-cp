@@ -17,6 +17,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
 }) {
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
+  const [bilanLoading, setBilanLoading] = useState<string | null>(null)
   const wasPending = useRef(false)
   const blocRef = useRef<HTMLDivElement>(null)
 
@@ -67,6 +68,38 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
   function saveComment(eleveId: string) {
     const a = getAppr(eleveId)
     startTransition(() => upsertAppreciation(semaine.id, eleveId, a.statut, a.commentaire))
+  }
+
+  async function generateBilan(eleve: Eleve) {
+    const current = getAppr(eleve.id)
+    const sonsAcquis = semaine.graphemes.filter(g => isAcquis(eleve.id, g))
+    const sonsNonAcquis = semaine.graphemes.filter(g => !isAcquis(eleve.id, g))
+    setBilanLoading(eleve.id)
+    try {
+      const res = await fetch('/api/ia-bilan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          numeroSemaine: semaine.numero,
+          sonsAcquis,
+          sonsNonAcquis,
+          statut: current.statut,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok && typeof data.bilan === 'string') {
+        // Le prénom ne quitte jamais le navigateur : remplacement local du placeholder.
+        const texte = data.bilan.replaceAll('[ELEVE]', eleve.prenom)
+        setAppr(p => ({ ...p, [eleve.id]: { ...current, commentaire: texte } }))
+        startTransition(() => upsertAppreciation(semaine.id, eleve.id, current.statut, texte))
+      } else {
+        alert(data.error ?? 'Erreur lors de la génération du bilan.')
+      }
+    } catch {
+      alert('Erreur réseau lors de la génération du bilan.')
+    } finally {
+      setBilanLoading(null)
+    }
   }
 
   function statutLabel(statut: string | null) {
@@ -186,12 +219,21 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
                     <span className="print-only text-sm text-gray-800">{statutLabel(a.statut)}</span>
                   </td>
                   <td className="pl-3 py-2">
-                    <input
-                      value={a.commentaire}
-                      onChange={e => handleComment(eleve.id, e.target.value)}
-                      onBlur={() => saveComment(eleve.id)}
-                      placeholder="Remarque libre…"
-                      className="no-print w-44 border border-gray-200 rounded-lg p-1.5 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none" />
+                    <div className="no-print flex flex-col gap-1 w-48">
+                      <textarea
+                        value={a.commentaire}
+                        onChange={e => handleComment(eleve.id, e.target.value)}
+                        onBlur={() => saveComment(eleve.id)}
+                        placeholder="Remarque libre…"
+                        rows={2}
+                        className="w-full border border-gray-200 rounded-lg p-1.5 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none resize-y" />
+                      <button type="button" onClick={() => generateBilan(eleve)}
+                        disabled={bilanLoading === eleve.id || isPending}
+                        title="Rédige un bilan automatiquement (le prénom n'est jamais envoyé à l'IA)"
+                        className="self-start text-[11px] text-violet-700 border border-violet-200 rounded-lg px-2 py-0.5 hover:bg-violet-50 disabled:opacity-50">
+                        {bilanLoading === eleve.id ? '✨ rédaction…' : '✨ Bilan IA'}
+                      </button>
+                    </div>
                     <span className="print-only text-sm text-gray-800">{a.commentaire || '—'}</span>
                   </td>
                 </tr>
