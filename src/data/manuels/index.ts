@@ -1,9 +1,10 @@
 import { Manuel } from '@/types'
 
-export const MANUELS: Manuel[] = [
-  { id: 'lecture-piano', nom: 'Lecture Piano', editeur: 'Retz (2025)' },
-  { id: 'au-cp-avec-meli', nom: 'Au CP avec Méli', editeur: 'Lelivrescolaire' },
-]
+// Liste des manuels proposés au choix : VIDE volontairement.
+// Les progressions « écrites » n'étaient pas fiables → l'enseignant importe la sienne
+// via l'IA. (La progression Lecture Piano reste dans le code, utilisée uniquement
+// par le mode démonstration — voir src/lib/progression.ts.)
+export const MANUELS: Manuel[] = []
 
 export type ProgressionSemaine = {
   numero: number

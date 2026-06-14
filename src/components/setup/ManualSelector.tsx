@@ -49,7 +49,7 @@ export default function ManualSelector({
   onSelect: (id: string, customProgression?: ProgressionSemaine[]) => void
   prenom?: string
 }) {
-  const [showImport, setShowImport] = useState(false)
+  const [showImport, setShowImport] = useState(MANUELS.length === 0)
   const [importMode, setImportMode] = useState<'ia' | 'pdf' | 'csv'>('ia')
   const [error, setError] = useState<string | null>(null)
   const [parsed, setParsed] = useState<ProgressionSemaine[] | null>(null)
@@ -121,24 +121,32 @@ export default function ManualSelector({
 
   const csvFilledWeeks = parsed?.filter(s => s.graphemes.length > 0).length ?? 0
 
+  const hasManuels = MANUELS.length > 0
+
   return (
     <div className="space-y-4">
-      <p className="text-gray-600">Quel manuel de lecture utilisez-vous cette année ?</p>
-      <div className="grid gap-3">
-        {MANUELS.map(manuel => (
-          <button key={manuel.id} onClick={() => onSelect(manuel.id)}
-            className="flex items-center justify-between p-4 border-2 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left">
-            <div>
-              <div className="font-semibold text-gray-800">{manuel.nom}</div>
-              <div className="text-sm text-gray-500">{manuel.editeur}</div>
-            </div>
-            <span className="text-violet-500">→</span>
-          </button>
-        ))}
-      </div>
+      {hasManuels ? (
+        <>
+          <p className="text-gray-600">Quel manuel de lecture utilisez-vous cette année ?</p>
+          <div className="grid gap-3">
+            {MANUELS.map(manuel => (
+              <button key={manuel.id} onClick={() => onSelect(manuel.id)}
+                className="flex items-center justify-between p-4 border-2 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left">
+                <div>
+                  <div className="font-semibold text-gray-800">{manuel.nom}</div>
+                  <div className="text-sm text-gray-500">{manuel.editeur}</div>
+                </div>
+                <span className="text-violet-500">→</span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="text-gray-600">Importez votre méthode de lecture : l&apos;IA la lit et construit votre progression, que vous pourrez corriger.</p>
+      )}
 
-      <div className="border-t pt-4">
-        {!showImport ? (
+      <div className={hasManuels ? 'border-t pt-4' : ''}>
+        {hasManuels && !showImport ? (
           <button onClick={() => setShowImport(true)}
             className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors text-left">
             <div className="font-semibold text-gray-700">Mon manuel n'est pas dans la liste</div>
@@ -259,9 +267,11 @@ export default function ManualSelector({
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <button onClick={resetImport} className="text-sm text-gray-500 hover:text-gray-700">
-              ← Retour
-            </button>
+            {hasManuels && (
+              <button onClick={resetImport} className="text-sm text-gray-500 hover:text-gray-700">
+                ← Retour
+              </button>
+            )}
           </div>
         )}
       </div>

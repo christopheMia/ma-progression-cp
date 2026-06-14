@@ -105,18 +105,14 @@
 - **Cahier journal** : le bouton PDF n'imprime que le journal ; export **Word (.docx)** via `src/lib/export-word.ts` (`genererBlobWord` réutilisable + `exporterJournalWord` qui `saveAs`), avec libellé clair + confirmation de téléchargement ; bouton **Google Docs** (voir section dédiée)
 - ⚠️ Limite navigateur : un site web ne peut PAS lancer un .exe local ni pousser vers Google Docs sans OAuth (cf. intégration Google Docs)
 
-## Manuels disponibles dans `src/data/manuels/`
-| Manuel | Éditeur | Progression |
-|--------|---------|-------------|
-| Lecture Piano | Retz (2025) | ✅ vérifiée |
-| Au CP avec Méli | Lelivrescolaire | ⚠️ NON conforme (à corriger) |
-
-**⚠️ Correction 2026-06-14** : vérification en ligne (site éditeur) → la progression
-`au-cp-avec-meli.ts` ne correspond PAS au vrai manuel (officiel : 32 semaines,
-2 graphèmes/semaine, 54 études ; fichier : 36 semaines, 1/semaine). L'ancien label
-« ✅ vérifiée » était faux. À corriger via l'import IA ou retrait du label.
-
-**Les 6 autres manuels (Calimots, Taoki, Timini, 1.2.3 Lune!, À moi de lire!, Ribambelle) ont été supprimés — leurs progressions étaient approximatives et inventées.**
+## Manuels — liste de choix VIDE (session 2026-06-14)
+- **`MANUELS = []`** dans `src/data/manuels/index.ts` : plus aucun manuel proposé au choix.
+  Les progressions « écrites » n'étaient pas fiables (Méli non conforme : 36 sem. au lieu de 32 ;
+  les autres approximatives) → l'enseignant **importe sa méthode via l'IA** (manuelId `'custom'`).
+- `au-cp-avec-meli.ts` **supprimé**. `lecture-piano.ts` **conservé mais masqué** : utilisé
+  **uniquement** pour le **mode démo** (`MANUELS_DATA` dans `src/lib/progression.ts` → `chargerClasseDemo`).
+- `ManualSelector` : si `MANUELS` vide, affiche directement l'import (pas de « pas dans la liste »).
+- *(Historique : les 6 manuels Calimots/Taoki/Timini/1.2.3 Lune!/À moi de lire!/Ribambelle avaient déjà été retirés.)*
 
 Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-parse`) ou import CSV (modèle téléchargeable) dans `src/components/setup/ManualSelector.tsx`.
 
@@ -220,7 +216,7 @@ Toujours utiliser le terminal VS Code avec `!` :
 
 2. **Demander le prénom dès le setup** (optionnel) — aujourd'hui il se saisit dans Paramètres ; on pourrait l'ajouter comme 1ʳᵉ étape du wizard `/setup`.
 
-3. **Corriger la progression « Au CP avec Méli »** — soit via l'import IA d'un vrai sommaire, soit retirer le label (le fichier en dur reste non conforme : 36 sem. au lieu de 32).
+3. **Manuels écrits retirés** ✅ — `MANUELS = []`, Méli supprimé, Lecture Piano gardé pour la démo seulement. Les enseignants importent via l'IA.
 
 4. **Configurer Google Docs** — Client ID OAuth + `NEXT_PUBLIC_GOOGLE_CLIENT_ID` sur Vercel (bouton 📝 masqué sans ça).
 

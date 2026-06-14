@@ -1,13 +1,13 @@
 import { addWeeks, format } from 'date-fns'
 import { LECTURE_PIANO } from '@/data/manuels/lecture-piano'
-import { AU_CP_AVEC_MELI } from '@/data/manuels/au-cp-avec-meli'
 import { EDM_PROGRESSION_CP } from '@/data/edm/progression-cp'
 import { ProgressionSemaine } from '@/data/manuels'
 import { Semaine } from '@/types'
 
+// Seule progression « écrite » conservée : sert UNIQUEMENT au mode démonstration
+// (les enseignants importent leur méthode via l'IA → manuelId 'custom').
 const MANUELS_DATA = {
   'lecture-piano': LECTURE_PIANO,
-  'au-cp-avec-meli': AU_CP_AVEC_MELI,
 }
 
 export function genererProgression(
