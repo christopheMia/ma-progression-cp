@@ -60,6 +60,13 @@
 - Helper partagé `src/lib/semaines.ts` (`getStatus`, `semaineEnCours`)
 - *(historique couleurs : thème chaleureux dégradé ambre/indigo → rose → violet)*
 
+## Suivi des élèves — bilan + commentaire (par élève/semaine)
+- Table Supabase **`appreciations`** (semaine_id, eleve_id, statut, commentaire, unique(semaine_id,eleve_id), RLS identique à acquisitions, FK on delete cascade)
+- Action : `src/lib/actions/appreciation.ts` → `upsertAppreciation(semaineId, eleveId, statut, commentaire)` (envoie toujours les 2 champs pour ne pas en écraser un)
+- `StudentTracking` : par ligne d'élève → étoiles par graphème (table `acquisitions`) + **Bilan** (boutons « ✓ Acquis » / « Pas encore ») + **Commentaire** libre (save au blur)
+- En-têtes clarifiés : graphèmes en badges violets (label « son »), titres en gras
+- Rappel : graphème « d » (ex. semaine 13 Lecture Piano) = colonne normale, pas un bug
+
 ## Mode d'emploi / Aide (ajouté session 2026-06-14)
 - Page : `src/app/(app)/aide/page.tsx` — accessible via ❓ Aide dans le header
 - Contenu simple pour Cécile : remplir manuel/CSV, date, élèves, emploi du temps, suivi, journal, impression, paramètres
