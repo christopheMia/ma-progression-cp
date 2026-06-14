@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { MANUELS } from '@/data/manuels'
 import type { ProgressionSemaine } from '@/data/manuels'
+import IaImport from './IaImport'
 
 function generateCsvTemplate(): string {
   const header = 'semaine;graphemes;pages;mots_exemple'
@@ -43,11 +44,13 @@ type PdfResult = {
 
 export default function ManualSelector({
   onSelect,
+  prenom,
 }: {
   onSelect: (id: string, customProgression?: ProgressionSemaine[]) => void
+  prenom?: string
 }) {
   const [showImport, setShowImport] = useState(false)
-  const [importMode, setImportMode] = useState<'pdf' | 'csv'>('pdf')
+  const [importMode, setImportMode] = useState<'ia' | 'pdf' | 'csv'>('ia')
   const [error, setError] = useState<string | null>(null)
   const [parsed, setParsed] = useState<ProgressionSemaine[] | null>(null)
   const [pdfResult, setPdfResult] = useState<PdfResult | null>(null)
@@ -110,7 +113,7 @@ export default function ManualSelector({
     if (pdfRef.current) pdfRef.current.value = ''
   }
 
-  function switchMode(mode: 'pdf' | 'csv') {
+  function switchMode(mode: 'ia' | 'pdf' | 'csv') {
     setImportMode(mode); setError(null); setParsed(null); setPdfResult(null)
     if (csvRef.current) csvRef.current.value = ''
     if (pdfRef.current) pdfRef.current.value = ''
@@ -147,17 +150,22 @@ export default function ManualSelector({
 
             {/* Sélecteur de mode */}
             <div className="flex gap-2">
-              {(['pdf', 'csv'] as const).map(mode => (
+              {(['ia', 'pdf', 'csv'] as const).map(mode => (
                 <button key={mode} onClick={() => switchMode(mode)}
                   className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border-2 transition-colors ${
                     importMode === mode
                       ? 'bg-violet-600 text-white border-violet-600'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'
                   }`}>
-                  {mode === 'pdf' ? 'PDF (manuel numérique)' : 'CSV (tableur)'}
+                  {mode === 'ia' ? '🤖 Import IA' : mode === 'pdf' ? 'PDF (regex)' : 'CSV (tableur)'}
                 </button>
               ))}
             </div>
+
+            {/* Mode IA */}
+            {importMode === 'ia' && (
+              <IaImport prenom={prenom} onSelect={(id, prog) => onSelect(id, prog)} />
+            )}
 
             {/* Mode PDF */}
             {importMode === 'pdf' && (
