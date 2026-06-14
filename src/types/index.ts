@@ -28,6 +28,14 @@ export type Acquisition = {
   acquis: boolean
 }
 
+export type Appreciation = {
+  id: string
+  semaine_id: string
+  eleve_id: string
+  statut: string | null // 'acquis' | 'pas_acquis' | null
+  commentaire: string | null
+}
+
 export type CreneauHoraire = {
   id: string
   class_id: string

@@ -24,6 +24,9 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const { data: acquisitions } = await supabase.from('acquisitions')
     .select('*').eq('semaine_id', id)
 
+  const { data: appreciations } = await supabase.from('appreciations')
+    .select('*').eq('semaine_id', id)
+
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
 
   return (
@@ -37,7 +40,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       </div>
       <LectureBlock semaine={semaine} />
       <EdmBlock semaine={semaine} />
-      <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} />
+      <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} appreciations={appreciations ?? []} />
       <CahierJournalEditor semaineId={semaine.id} numeroSemaine={semaine.numero} />
     </div>
   )
