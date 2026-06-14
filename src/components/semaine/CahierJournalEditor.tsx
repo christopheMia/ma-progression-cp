@@ -3,12 +3,14 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { JourJournal } from '@/types'
 import { genererOuChargerJournal, sauvegarderJournal } from '@/lib/actions/journal'
 import { exporterJournalWord } from '@/lib/export-word'
+import { imprimerElement } from '@/lib/print'
 
 export default function CahierJournalEditor({ semaineId, numeroSemaine }: { semaineId: string; numeroSemaine: number }) {
   const [journal, setJournal] = useState<JourJournal[] | null>(null)
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const wasPending = useRef(false)
+  const journalRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (wasPending.current && !isPending && journal !== null) {
@@ -55,22 +57,22 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
   }
 
   return (
-    <div className="bg-white border rounded-2xl p-5 space-y-6">
+    <div ref={journalRef} className="bg-white border rounded-2xl p-5 space-y-6">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h2 className="font-bold text-gray-700">📋 Cahier journal</h2>
           {isPending && <span className="text-xs text-gray-400">Enregistrement...</span>}
           {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 no-print">
           <button
             onClick={() => exporterJournalWord(journal, numeroSemaine)}
             disabled={!journal}
             className="text-sm border border-blue-300 text-blue-700 rounded-lg px-3 py-1.5 hover:bg-blue-50 disabled:opacity-30">
             📄 Word
           </button>
-          <button id="btn-export-pdf"
-            onClick={() => window.print()}
+          <button
+            onClick={() => imprimerElement(journalRef.current)}
             className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
             🖨️ PDF
           </button>

@@ -28,9 +28,7 @@ body {
 @media print {
   header,
   nav,
-  .no-print,
-  #btn-export-word,
-  #btn-export-pdf {
+  .no-print {
     display: none !important;
   }
 
@@ -42,6 +40,21 @@ body {
     break-inside: avoid;
     page-break-inside: avoid;
     margin-bottom: 1rem;
+  }
+
+  /* Impression d'un seul bloc : on masque tout, puis on ré-affiche la cible */
+  body.print-isolated * {
+    visibility: hidden !important;
+  }
+  body.print-isolated .print-target,
+  body.print-isolated .print-target * {
+    visibility: visible !important;
+  }
+  body.print-isolated .print-target {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 
   @page {

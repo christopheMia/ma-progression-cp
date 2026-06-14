@@ -1,6 +1,7 @@
 'use client'
 import { Eleve, Acquisition, Semaine } from '@/types'
 import { toggleAcquisition } from '@/lib/actions/semaine'
+import { imprimerElement } from '@/lib/print'
 import { useTransition, useState, useEffect, useRef } from 'react'
 
 export default function StudentTracking({ semaine, eleves, acquisitions }: {
@@ -11,6 +12,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions }: {
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const wasPending = useRef(false)
+  const blocRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (wasPending.current && !isPending) {
@@ -32,11 +34,16 @@ export default function StudentTracking({ semaine, eleves, acquisitions }: {
   }
 
   return (
-    <div className="bg-white border rounded-2xl p-5">
+    <div ref={blocRef} className="bg-white border rounded-2xl p-5">
       <div className="flex items-center gap-3 mb-4">
         <h2 className="font-bold text-gray-700">✅ Suivi des élèves</h2>
         {isPending && <span className="text-xs text-gray-400">Enregistrement...</span>}
         {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
+        <button
+          onClick={() => imprimerElement(blocRef.current)}
+          className="no-print ml-auto text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+          🖨️ Imprimer
+        </button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">

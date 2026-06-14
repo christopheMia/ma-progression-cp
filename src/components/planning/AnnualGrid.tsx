@@ -13,11 +13,11 @@ export default function AnnualGrid({ semaines }: { semaines: Semaine[] }) {
   return (
     <div className="space-y-6">
       {PERIODES.map(periode => (
-        <div key={periode.nom}>
+        <div key={periode.nom} className="print-section">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
             {periode.nom}
           </h2>
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-7 print:grid-cols-7 gap-2">
             {semaines
               .filter(s => s.numero >= periode.debut && s.numero <= periode.fin)
               .map(s => <WeekCard key={s.id} semaine={s} />)}

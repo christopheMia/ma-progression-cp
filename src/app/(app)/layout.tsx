@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import LogoutButton from '@/components/LogoutButton'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -10,7 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-gray-50">
       <header className="bg-blue-800 text-white px-6 py-4 flex justify-between items-center">
         <h1 className="font-bold text-lg">🍎 Ma Progression CP</h1>
-        <a href="/parametres" className="text-blue-200 hover:text-white text-sm">⚙️ Emploi du temps</a>
+        <div className="flex items-center gap-5">
+          <a href="/planning" className="text-blue-200 hover:text-white text-sm">📅 Planning</a>
+          <LogoutButton />
+        </div>
       </header>
       <main className="max-w-5xl mx-auto p-6">{children}</main>
     </div>

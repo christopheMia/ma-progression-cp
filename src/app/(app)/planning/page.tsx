@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import AnnualGrid from '@/components/planning/AnnualGrid'
+import PrintButton from '@/components/PrintButton'
 
 export default async function PlanningPage() {
   const supabase = await createClient()
@@ -15,8 +16,13 @@ export default async function PlanningPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-1">Planning annuel</h1>
-      <p className="text-gray-500 text-sm mb-6">Manuel : {classe.manuel_id} · {semaines?.length ?? 0} semaines</p>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Planning annuel</h1>
+          <p className="text-gray-500 text-sm">Manuel : {classe.manuel_id} · {semaines?.length ?? 0} semaines</p>
+        </div>
+        <PrintButton label="🖨️ Imprimer le planning" />
+      </div>
       <AnnualGrid semaines={semaines ?? []} />
     </div>
   )

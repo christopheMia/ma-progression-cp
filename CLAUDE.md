@@ -28,6 +28,20 @@
 - `@anthropic-ai/sdk` installé mais non utilisé (décision : pas d'API payante)
 - Code poussé sur GitHub ✅ (commit `c511ebf`)
 - push-fix.bat et DEPLOY.md supprimés ✅
+- **Bouton déconnexion ajouté** ✅ (`src/components/LogoutButton.tsx` dans le header)
+  → corrige « la page de connexion a disparu » : sans déconnexion, le proxy renvoyait
+    toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
+- **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
+
+## Impression (ajoutée session 2026-06-14)
+- Helpers : `src/lib/print.ts` → `imprimerPage()` (toute la page) et `imprimerElement(el)` (un seul bloc)
+- CSS : `@media print` dans `globals.css` (classe `.no-print` pour masquer les boutons,
+  `body.print-isolated` + `.print-target` pour n'imprimer qu'un bloc via visibility)
+- Bouton réutilisable : `src/components/PrintButton.tsx` (pour pages serveur)
+- **Planning annuel** : bouton 🖨️ + grille forcée 7 colonnes (`print:grid-cols-7`) anti-coupure
+- **Fiche semaine complète** : bouton 🖨️ dans l'en-tête de la page semaine (lecture + EDM + suivi + journal)
+- **Suivi des élèves** : bouton 🖨️ qui n'imprime que le tableau (StudentTracking)
+- **Cahier journal** : le bouton PDF n'imprime plus que le journal (avant : toute la page) — export Word inchangé
 
 ## Manuels disponibles — 2 manuels vérifiés dans `src/data/manuels/`
 | Manuel | Éditeur | Progression |
@@ -73,3 +87,6 @@ Toujours utiliser le terminal VS Code avec `!` :
 2. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
 
 3. **Tester l'import PDF** — essayer avec un vrai manuel numérique CP pour vérifier la détection des semaines
+
+4. **Tester le rendu d'impression** — avec le compte Cécile, cliquer chaque bouton 🖨️
+   (planning, fiche semaine, suivi élèves, cahier journal) et vérifier l'aperçu avant impression

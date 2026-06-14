@@ -7,6 +7,7 @@ import LectureBlock from '@/components/semaine/LectureBlock'
 import EdmBlock from '@/components/semaine/EdmBlock'
 import StudentTracking from '@/components/semaine/StudentTracking'
 import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
+import PrintButton from '@/components/PrintButton'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -30,6 +31,9 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       <div className="flex items-center gap-3">
         <Link href="/planning" className="text-blue-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Semaine {semaine.numero} — {dateFormatee}</h1>
+        <div className="ml-auto">
+          <PrintButton label="🖨️ Imprimer la fiche" />
+        </div>
       </div>
       <LectureBlock semaine={semaine} />
       <EdmBlock semaine={semaine} />
