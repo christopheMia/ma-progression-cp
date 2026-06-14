@@ -4,6 +4,7 @@ import { JourJournal } from '@/types'
 import { genererOuChargerJournal, sauvegarderJournal } from '@/lib/actions/journal'
 import { exporterJournalWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
+import GoogleDocsButton from './GoogleDocsButton'
 
 export default function CahierJournalEditor({ semaineId, numeroSemaine }: { semaineId: string; numeroSemaine: number }) {
   const [journal, setJournal] = useState<JourJournal[] | null>(null)
@@ -87,6 +88,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
             className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50 disabled:opacity-30">
             {exporting ? 'Génération…' : '⬇️ Word (.docx)'}
           </button>
+          <GoogleDocsButton journal={journal} numeroSemaine={numeroSemaine} />
           <button
             onClick={() => imprimerElement(journalRef.current)}
             className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">

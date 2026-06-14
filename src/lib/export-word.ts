@@ -30,7 +30,8 @@ function makeCell(text: string, bold = false): TableCell {
   })
 }
 
-export async function exporterJournalWord(journal: JourJournal[], numeroSemaine: number): Promise<void> {
+/** Génère le document Word en mémoire (Blob .docx), réutilisable pour le téléchargement ou l'envoi vers Google Docs. */
+export async function genererBlobWord(journal: JourJournal[], numeroSemaine: number): Promise<Blob> {
   const sections: (Paragraph | Table)[] = [
     new Paragraph({
       text: `Cahier journal — Semaine ${numeroSemaine}`,
@@ -85,6 +86,10 @@ export async function exporterJournalWord(journal: JourJournal[], numeroSemaine:
     sections: [{ children: sections }],
   })
 
-  const blob = await Packer.toBlob(doc)
+  return Packer.toBlob(doc)
+}
+
+export async function exporterJournalWord(journal: JourJournal[], numeroSemaine: number): Promise<void> {
+  const blob = await genererBlobWord(journal, numeroSemaine)
   saveAs(blob, `cahier-journal-semaine-${numeroSemaine}.docx`)
 }
