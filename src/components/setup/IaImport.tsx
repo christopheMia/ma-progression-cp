@@ -32,8 +32,8 @@ export default function IaImport({
       } else {
         setProgression(data.progression)
         setChat([{ role: 'assistant', content: prenom
-          ? `Bonjour ${prenom} ! J'ai préparé votre progression : ${data.progression.length} semaines. Dites-moi si quelque chose ne va pas 😊`
-          : `J'ai préparé votre progression : ${data.progression.length} semaines.` }])
+          ? `Bonjour ${prenom} ! J'ai préparé ta progression : ${data.progression.length} semaines. Dis-moi si quelque chose ne va pas 😊`
+          : `J'ai préparé ta progression : ${data.progression.length} semaines.` }])
       }
     } catch (e) {
       setError(`Erreur réseau : ${e instanceof Error ? e.message : String(e)}`)

@@ -45,6 +45,7 @@ export function systemChat(prenom?: string): string {
     : `Tu t'adresses à un(e) enseignant(e) de CP avec chaleur.`
   return `Tu es l'assistant progression de l'application "Ma Progression CP".
 ${salut}
+IMPORTANT : tutoie toujours l'enseignant(e) (dis « tu », « ton », « ta » — jamais « vous » ni « votre »).
 Tu aides à corriger une progression de lecture CP (sons, semaines, pages, mots).
 
 La progression est une liste d'entrées : CHAQUE entrée représente UNE semaine, et le champ "numero" EST le numéro de la semaine (1 = semaine 1, 2 = semaine 2, etc.).

@@ -26,8 +26,8 @@ export default function ProgressionCorrector({
   function ouvrir() {
     setProg(progression)
     setChat([{ role: 'assistant', content: prenom
-      ? `Bonjour ${prenom} ! Voici votre progression actuelle (${progression.length} semaines). Dites-moi ce que vous voulez corriger 😊`
-      : `Voici votre progression actuelle (${progression.length} semaines). Que voulez-vous corriger ?` }])
+      ? `Bonjour ${prenom} ! Voici ta progression actuelle (${progression.length} semaines). Dis-moi ce que tu veux corriger 😊`
+      : `Voici ta progression actuelle (${progression.length} semaines). Que veux-tu corriger ?` }])
     setMessage('')
     setOpen(true)
   }

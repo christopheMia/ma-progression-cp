@@ -172,6 +172,20 @@ Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-p
   **uniquement** graphèmes/pages/mots via `corrigerProgression` (`src/lib/actions/progression-ia.ts`)
   — SANS toucher au suivi élèves / journaux / dates. À l'inverse de « Changer de manuel » (destructif).
   Réutilise la route `api/ia-chat`.
+- **Tutoiement** : l'assistant IA **tutoie** l'enseignant (consigne dans `systemChat`,
+  bulles d'accueil de `ProgressionCorrector`/`IaImport` en « tu »).
+
+## Prénom de l'enseignant (« Bonjour Cécile ») — session 2026-06-14
+- Colonne **`prenom_enseignant`** ajoutée à `classes` (migration `supabase/migrations/002_prenom_enseignant.sql`, appliquée en prod).
+- Saisie : **Paramètres → 👤 Mon prénom** (`PrenomEnseignantEditor.tsx` + action `updatePrenomEnseignant` dans `parametres.ts`).
+- Utilisé : en-tête **Accueil** (« Bonjour {prenom} 👋 ») + passé en prop `prenom` à
+  `ProgressionCorrector` (Planning/Accueil) et `ManuelEditor`→`ManualSelector` → l'IA salue par le prénom.
+
+## Matière libre dans l'emploi du temps — session 2026-06-14
+- `TimetableEditor` (setup) + `EmploiDuTempsEditor` (paramètres) : option **« ✏️ Autre (préciser)… »**
+  dans la liste des matières → champ texte libre.
+- Les matières personnalisées sont **mémorisées** : la liste = `MATIERES` de base + celles déjà
+  utilisées dans les créneaux (donc elles réapparaissent, et persistent via les créneaux enregistrés).
 
 ## Règle token GitHub
 Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
@@ -192,15 +206,26 @@ Toujours utiliser le terminal VS Code avec `!` :
 - Bouton ← Étape précédente dans le wizard de configuration
 - Indicateur ✓ Sauvegardé dans CahierJournalEditor et StudentTracking
 
+## État IA (session 2026-06-14) — RÉCAP
+- ✅ Import IA des manuels (PDF extrait **navigateur** + texte) → progression éditable
+- ✅ Chat de correction (Sonnet) + **correction non destructive** (Planning/Accueil)
+- ✅ Bilan IA par élève (placeholder `[ELEVE]`, prénom jamais envoyé)
+- ✅ Prénom enseignant (« Bonjour Cécile ») + **tutoiement** de l'IA
+- ✅ Matière libre dans l'emploi du temps
+- ✅ Clé `ANTHROPIC_API_KEY` sur Vercel, budget plafonné (carte 8 €)
+- ✅ Import = `claude-sonnet-4-6` (Opus dépasse le timeout serverless Vercel)
+
 ## À faire prochaine session
-1. **Configurer Google Docs** — créer le Client ID OAuth (Google Cloud) + ajouter `NEXT_PUBLIC_GOOGLE_CLIENT_ID` sur Vercel et redéployer (cf. section Intégration Google Docs). Sans ça, bouton 📝 masqué.
+1. **Sous-système 2 — déjà fait** ✅ (bilan IA). Pas d'action.
 
-2. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`
+2. **Demander le prénom dès le setup** (optionnel) — aujourd'hui il se saisit dans Paramètres ; on pourrait l'ajouter comme 1ʳᵉ étape du wizard `/setup`.
 
-3. **Tester le mode démo** — Paramètres → 🎓 charger la démo → vérifier planning vivant, suivi, stats, impression, export Word
+3. **Corriger la progression « Au CP avec Méli »** — soit via l'import IA d'un vrai sommaire, soit retirer le label (le fichier en dur reste non conforme : 36 sem. au lieu de 32).
 
-4. **Tester l'import PDF** — avec un vrai manuel numérique CP pour vérifier la détection des semaines
+4. **Configurer Google Docs** — Client ID OAuth + `NEXT_PUBLIC_GOOGLE_CLIENT_ID` sur Vercel (bouton 📝 masqué sans ça).
 
-5. **Tester l'impression** — chaque bouton 🖨️ (planning, fiche semaine, suivi, cahier journal)
+5. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`.
 
-6. **Tester Paramètres** — modifier élèves / emploi du temps / date et vérifier que le suivi est préservé ; changement de manuel (destructif, confirmation)
+6. **Tests manuels** : mode démo, import PDF (vrai manuel numérique), impression (🖨️), changement de manuel (destructif).
+
+7. **Surveiller le coût IA** sur console.anthropic.com (le plafond mensuel protège, mais vérifier de temps en temps).
