@@ -18,7 +18,6 @@ describe('normalizeProgression', () => {
 
   test('nettoie les champs manquants ou invalides', () => {
     const out = normalizeProgression([
-      // @ts-expect-error — entrée volontairement incomplète
       { numero: 1, graphemes: null, pages: undefined },
     ])
     expect(out[0]).toEqual({ numero: 1, graphemes: [], pages: '', mots_exemple: [] })
