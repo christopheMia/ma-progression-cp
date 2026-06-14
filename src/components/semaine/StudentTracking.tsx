@@ -54,6 +54,10 @@ export default function StudentTracking({ semaine, eleves, acquisitions }: {
           🖨️ Imprimer
         </button>
       </div>
+      <p className="text-xs text-gray-400 mb-3">
+        💡 Cliquez sur une étoile pour marquer un graphème comme acquis (★ = acquis, ☆ = pas encore).
+        Survolez une étoile pour voir le détail.
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -84,6 +88,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions }: {
                           onClick={() => handleToggle(eleve.id, grapheme, acquis)}
                           disabled={isPending}
                           aria-label={acquis ? 'Acquis' : 'Non acquis'}
+                          title={`${eleve.prenom} · « ${grapheme} » — ${acquis ? 'acquis ✓ (cliquer pour annuler)' : 'cliquer pour marquer comme acquis'}`}
                           className={`text-xl leading-none transition-transform hover:scale-125 disabled:opacity-50 ${acquis ? 'text-amber-400' : 'text-gray-300'}`}>
                           {acquis ? '★' : '☆'}
                         </button>

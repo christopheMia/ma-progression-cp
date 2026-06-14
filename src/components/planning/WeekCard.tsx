@@ -4,8 +4,8 @@ import { getStatus, type Status } from '@/lib/semaines'
 
 const statusStyles: Record<Status, string> = {
   done: 'bg-white border-slate-200 text-slate-500 hover:border-emerald-300',
-  current: 'bg-rose-50/60 border-rose-300 ring-1 ring-rose-200 text-slate-900',
-  upcoming: 'bg-white border-slate-200 text-slate-600 hover:border-rose-300',
+  current: 'bg-violet-50/60 border-violet-300 ring-1 ring-violet-200 text-slate-900',
+  upcoming: 'bg-white border-slate-200 text-slate-600 hover:border-violet-300',
 }
 
 export default function WeekCard({
@@ -29,7 +29,7 @@ export default function WeekCard({
           <span className="font-bold text-sm">S{semaine.numero}</span>
           {complete && <span title="Semaine complète" className="text-xs">🏆</span>}
           {!complete && status === 'done' && <span className="text-emerald-500 text-xs">✓</span>}
-          {!complete && status === 'current' && <span className="text-rose-600 text-xs font-bold">▶</span>}
+          {!complete && status === 'current' && <span className="text-violet-600 text-xs font-bold">▶</span>}
         </div>
         <div className="text-xs font-medium min-h-[1rem]">{semaine.graphemes.join(', ')}</div>
         <div className="text-xs text-gray-500 mt-1 truncate">🌍 {semaine.edm_theme}</div>

@@ -2,7 +2,7 @@ import { Semaine } from '@/types'
 import WeekCard from './WeekCard'
 
 const PERIODES = [
-  { nom: 'Période 1 — Septembre / Octobre', debut: 1, fin: 7, dot: 'bg-rose-400' },
+  { nom: 'Période 1 — Septembre / Octobre', debut: 1, fin: 7, dot: 'bg-violet-400' },
   { nom: 'Période 2 — Novembre / Décembre', debut: 8, fin: 14, dot: 'bg-orange-400' },
   { nom: 'Période 3 — Janvier / Février', debut: 15, fin: 21, dot: 'bg-emerald-400' },
   { nom: 'Période 4 — Mars / Avril', debut: 22, fin: 28, dot: 'bg-sky-400' },

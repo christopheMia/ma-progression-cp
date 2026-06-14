@@ -124,12 +124,12 @@ export default function ManualSelector({
       <div className="grid gap-3">
         {MANUELS.map(manuel => (
           <button key={manuel.id} onClick={() => onSelect(manuel.id)}
-            className="flex items-center justify-between p-4 border-2 rounded-xl hover:border-rose-500 hover:bg-rose-50 transition-colors text-left">
+            className="flex items-center justify-between p-4 border-2 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left">
             <div>
               <div className="font-semibold text-gray-800">{manuel.nom}</div>
               <div className="text-sm text-gray-500">{manuel.editeur}</div>
             </div>
-            <span className="text-rose-500">→</span>
+            <span className="text-violet-500">→</span>
           </button>
         ))}
       </div>
@@ -137,12 +137,12 @@ export default function ManualSelector({
       <div className="border-t pt-4">
         {!showImport ? (
           <button onClick={() => setShowImport(true)}
-            className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-rose-400 hover:bg-rose-50 transition-colors text-left">
+            className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors text-left">
             <div className="font-semibold text-gray-700">Mon manuel n'est pas dans la liste</div>
             <div className="text-sm text-gray-500">Importer ma progression (PDF ou CSV)</div>
           </button>
         ) : (
-          <div className="border-2 border-rose-200 rounded-xl p-4 space-y-3 bg-rose-50">
+          <div className="border-2 border-violet-200 rounded-xl p-4 space-y-3 bg-violet-50">
             <div className="font-semibold text-gray-800">Importer votre progression</div>
 
             {/* Sélecteur de mode */}
@@ -151,8 +151,8 @@ export default function ManualSelector({
                 <button key={mode} onClick={() => switchMode(mode)}
                   className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border-2 transition-colors ${
                     importMode === mode
-                      ? 'bg-rose-600 text-white border-rose-600'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-rose-300'
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'
                   }`}>
                   {mode === 'pdf' ? 'PDF (manuel numérique)' : 'CSV (tableur)'}
                 </button>
@@ -171,11 +171,11 @@ export default function ManualSelector({
                 <input
                   ref={pdfRef} type="file" accept=".pdf"
                   onChange={handlePdfFile} disabled={loading}
-                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-rose-700 hover:file:bg-rose-100 file:cursor-pointer disabled:opacity-50"
+                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer disabled:opacity-50"
                 />
                 {loading && (
-                  <div className="flex items-center gap-2 text-sm text-rose-700">
-                    <span className="animate-spin inline-block w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full" />
+                  <div className="flex items-center gap-2 text-sm text-violet-700">
+                    <span className="animate-spin inline-block w-4 h-4 border-2 border-violet-600 border-t-transparent rounded-full" />
                     Extraction du texte en cours…
                   </div>
                 )}
@@ -189,7 +189,7 @@ export default function ManualSelector({
                     </p>
                     <button
                       onClick={() => onSelect('custom', pdfResult.progression)}
-                      className="w-full py-2 px-4 bg-rose-600 text-white rounded-lg hover:bg-rose-700 font-semibold">
+                      className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold">
                       Utiliser cette progression →
                     </button>
                   </div>
@@ -226,13 +226,13 @@ export default function ManualSelector({
                   Colonne <strong>mots_exemple</strong> : séparés par des espaces (ex : <code>enfant dent</code>)
                 </p>
                 <button onClick={downloadTemplate}
-                  className="text-sm text-rose-600 underline hover:text-rose-800">
+                  className="text-sm text-violet-600 underline hover:text-violet-800">
                   ↓ Télécharger le modèle CSV
                 </button>
                 <input
                   ref={csvRef} type="file" accept=".csv,.txt"
                   onChange={handleCsvFile}
-                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-rose-700 hover:file:bg-rose-100 file:cursor-pointer"
+                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
                 />
                 {csvFilledWeeks > 0 && (
                   <>
@@ -241,7 +241,7 @@ export default function ManualSelector({
                     </div>
                     <button
                       onClick={() => onSelect('custom', parsed!)}
-                      className="w-full py-2 px-4 bg-rose-600 text-white rounded-lg hover:bg-rose-700 font-semibold">
+                      className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold">
                       Utiliser cette progression →
                     </button>
                   </>

@@ -18,7 +18,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
     <nav className="flex items-center gap-1 text-sm">
       {!hasClass && (
         <Link href="/setup"
-          className="px-3 py-1.5 rounded-lg font-semibold text-rose-600 bg-white hover:bg-white/90 transition-colors">
+          className="px-3 py-1.5 rounded-lg font-semibold text-violet-600 bg-white hover:bg-white/90 transition-colors">
           Configurer ma classe
         </Link>
       )}
@@ -28,7 +28,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
           <Link key={l.href} href={l.href}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
               active
-                ? 'bg-white text-rose-600 font-medium'
+                ? 'bg-white text-violet-600 font-medium'
                 : 'text-white/85 hover:bg-white/15 hover:text-white'
             }`}>
             {l.label}

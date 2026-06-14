@@ -7,7 +7,7 @@ export default function LectureBlock({ semaine }: { semaine: Semaine }) {
         <h2 className="font-bold text-gray-700">📖 Lecture</h2>
         {semaine.manuel_pages && <span className="text-xs text-gray-400">{semaine.manuel_pages}</span>}
       </div>
-      <p className="text-lg font-semibold text-rose-700">
+      <p className="text-lg font-semibold text-violet-700">
         Graphème{semaine.graphemes.length > 1 ? 's' : ''} : {semaine.graphemes.map(g => `"${g}"`).join(' et ')}
       </p>
       {semaine.mots_exemple && semaine.mots_exemple.length > 0 && (

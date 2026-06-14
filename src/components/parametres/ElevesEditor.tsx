@@ -30,25 +30,25 @@ export default function ElevesEditor({ initial }: { initial: string[] }) {
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), ajouter())}
           placeholder="Prénom de l'élève"
-          className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-rose-500 outline-none text-gray-900 bg-white" />
+          className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-violet-500 outline-none text-gray-900 bg-white" />
         <button onClick={ajouter}
-          className="bg-rose-600 text-white rounded-xl px-4 font-semibold hover:bg-rose-700">
+          className="bg-violet-600 text-white rounded-xl px-4 font-semibold hover:bg-violet-700">
           Ajouter
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
         {eleves.map((e, i) => (
-          <span key={i} className="bg-rose-100 text-rose-800 px-3 py-1 rounded-full flex items-center gap-2">
+          <span key={i} className="bg-violet-100 text-violet-800 px-3 py-1 rounded-full flex items-center gap-2">
             {e}
             <button onClick={() => setEleves(ev => ev.filter((_, j) => j !== i))}
-              className="text-rose-400 hover:text-red-500">×</button>
+              className="text-violet-400 hover:text-red-500">×</button>
           </span>
         ))}
         {eleves.length === 0 && <span className="text-sm text-gray-400">Aucun élève.</span>}
       </div>
       <div className="flex items-center gap-3">
         <button onClick={enregistrer} disabled={isPending}
-          className="bg-rose-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-rose-800 disabled:opacity-50">
+          className="bg-violet-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-violet-800 disabled:opacity-50">
           {isPending ? 'Enregistrement...' : 'Enregistrer les élèves'}
         </button>
         {saved && !isPending && <span className="text-sm text-green-600">✓ Enregistré</span>}
