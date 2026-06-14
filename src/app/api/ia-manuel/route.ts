@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
 import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
 import { SYSTEM_IMPORT, userImport } from '@/lib/ia/prompts'
-// pdf-parse est CJS — import statique pour l'interop ESM (même pattern que parse-manuel-pdf)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse') as (b: Buffer) => Promise<{ text: string }>
 
 export const maxDuration = 60
 
@@ -21,6 +18,10 @@ export async function POST(request: Request) {
         if (file.size > 30 * 1024 * 1024) {
           return NextResponse.json({ error: 'Fichier trop volumineux (max 30 Mo)' }, { status: 400 })
         }
+        // Chargement paresseux de pdf-parse : uniquement quand un vrai PDF est déposé
+        // (évite tout plantage du module pour le simple collage de texte).
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const pdfParse = require('pdf-parse') as (b: Buffer) => Promise<{ text: string }>
         const data = await pdfParse(Buffer.from(await file.arrayBuffer()))
         texte = data.text ?? ''
       } else {

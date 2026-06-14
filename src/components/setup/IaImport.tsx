@@ -23,15 +23,20 @@ export default function IaImport({
     setError(null); setLoading(true); setProgression(null)
     try {
       const res = await fetch('/api/ia-manuel', { method: 'POST', body: form })
-      const data = await res.json()
-      if (!res.ok) setError(data.error ?? 'Erreur')
-      else {
+      const raw = await res.text()
+      let data: { progression?: ProgressionSemaine[]; error?: string } | null = null
+      try { data = JSON.parse(raw) } catch { data = null }
+      if (!res.ok || !data || !data.progression) {
+        setError(`Erreur ${res.status} : ${data?.error ?? raw.slice(0, 150) || 'réponse vide'}`)
+      } else {
         setProgression(data.progression)
         setChat([{ role: 'assistant', content: prenom
           ? `Bonjour ${prenom} ! J'ai préparé votre progression : ${data.progression.length} semaines. Dites-moi si quelque chose ne va pas 😊`
           : `J'ai préparé votre progression : ${data.progression.length} semaines.` }])
       }
-    } catch { setError('Erreur réseau.') } finally { setLoading(false) }
+    } catch (e) {
+      setError(`Erreur réseau : ${e instanceof Error ? e.message : String(e)}`)
+    } finally { setLoading(false) }
   }
 
   function importPdf(e: React.ChangeEvent<HTMLInputElement>) {
