@@ -34,5 +34,5 @@ export async function creerClasse(formData: {
   const edtData = formData.emploiDuTemps.map(c => ({ ...c, class_id: classe.id }))
   if (edtData.length > 0) await supabase.from('emploi_du_temps').insert(edtData)
 
-  redirect('/planning')
+  redirect('/accueil')
 }

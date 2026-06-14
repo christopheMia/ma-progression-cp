@@ -33,6 +33,14 @@
     toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
 - **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
 
+## Relooking UX / thème (ajouté session 2026-06-14)
+- **Thème chaleureux** : header en dégradé indigo→violet→purple, fond `from-amber-50 via-rose-50`, cartes `rounded-2xl shadow-sm`, accents colorés (bordures gauche par bloc), page connexion en dégradé + titre `bg-clip-text`
+- **Tableau de bord** : `src/app/(app)/accueil/page.tsx` — nouvelle landing page (Bonjour + date, semaine en cours, stats : semaine X/36, % graphèmes acquis, nb élèves, raccourcis). Redirections après connexion/inscription/setup → `/accueil` (proxy.ts + connexion + (app)/page.tsx + setup.ts)
+- **Planning vivant** : barre de progression annuelle, `WeekCard` recolorée par statut (done=emerald, current=amber ring, upcoming), pastille couleur par période, mini-barre d'avancement par semaine, 🏆 si semaine complète, hover -translate-y
+- **Progression motivante** : `src/components/ProgressBar.tsx`, suivi élèves avec **étoiles ★/☆** (au lieu de cases), progression par élève (x/total + barre), 🏆 si complet
+- **Confettis** : `src/lib/confetti.ts` (sans dépendance, DOM + keyframe `confetti-fall` dans globals.css) — déclenché quand un élève valide le dernier graphème de la semaine
+- Helper partagé `src/lib/semaines.ts` (`getStatus`, `semaineEnCours`)
+
 ## Mode d'emploi / Aide (ajouté session 2026-06-14)
 - Page : `src/app/(app)/aide/page.tsx` — accessible via ❓ Aide dans le header
 - Contenu simple pour Cécile : remplir manuel/CSV, date, élèves, emploi du temps, suivi, journal, impression, paramètres

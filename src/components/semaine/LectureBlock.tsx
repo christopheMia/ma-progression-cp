@@ -2,7 +2,7 @@ import { Semaine } from '@/types'
 
 export default function LectureBlock({ semaine }: { semaine: Semaine }) {
   return (
-    <div className="bg-white border rounded-2xl p-5 space-y-2">
+    <div className="bg-white border rounded-2xl p-5 space-y-2 shadow-sm border-l-4 border-l-sky-400">
       <div className="flex justify-between items-center">
         <h2 className="font-bold text-gray-700">📖 Lecture</h2>
         {semaine.manuel_pages && <span className="text-xs text-gray-400">{semaine.manuel_pages}</span>}

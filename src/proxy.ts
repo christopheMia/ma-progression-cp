@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/connexion', request.url))
   }
   if (user && isAuthRoute) {
-    return NextResponse.redirect(new URL('/planning', request.url))
+    return NextResponse.redirect(new URL('/accueil', request.url))
   }
 
   return response

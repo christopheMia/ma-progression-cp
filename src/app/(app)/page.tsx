@@ -7,5 +7,5 @@ export default async function HomePage() {
   if (!user) redirect('/connexion')
   const { data: classe } = await supabase.from('classes').select('id').eq('user_id', user.id).single()
   if (!classe) redirect('/setup')
-  redirect('/planning')
+  redirect('/accueil')
 }

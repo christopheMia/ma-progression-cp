@@ -46,7 +46,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
 
   if (!journal) {
     return (
-      <div className="bg-white border rounded-2xl p-5 text-center">
+      <div className="bg-white border rounded-2xl p-5 text-center shadow-sm">
         <h2 className="font-bold text-gray-700 mb-3">📋 Cahier journal</h2>
         <button onClick={generer} disabled={isPending}
           className="bg-blue-700 text-white rounded-xl px-6 py-3 font-semibold hover:bg-blue-800 disabled:opacity-50">
@@ -57,7 +57,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
   }
 
   return (
-    <div ref={journalRef} className="bg-white border rounded-2xl p-5 space-y-6">
+    <div ref={journalRef} className="bg-white border rounded-2xl p-5 space-y-6 shadow-sm border-l-4 border-l-violet-400">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h2 className="font-bold text-gray-700">📋 Cahier journal</h2>

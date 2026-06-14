@@ -1,36 +1,43 @@
 import Link from 'next/link'
 import { Semaine } from '@/types'
-
-type Status = 'done' | 'current' | 'upcoming'
-
-function getStatus(semaine: Semaine): Status {
-  const today = new Date()
-  const debut = new Date(semaine.date_debut)
-  const fin = new Date(debut)
-  fin.setDate(fin.getDate() + 4)
-  if (fin < today) return 'done'
-  if (debut <= today) return 'current'
-  return 'upcoming'
-}
+import { getStatus, type Status } from '@/lib/semaines'
 
 const statusStyles: Record<Status, string> = {
-  done: 'bg-green-50 border-green-300 text-green-800',
-  current: 'bg-blue-50 border-blue-500 border-2 shadow-md',
-  upcoming: 'bg-white border-gray-200 text-gray-600',
+  done: 'bg-emerald-50 border-emerald-200 text-emerald-900 hover:border-emerald-400',
+  current: 'bg-amber-50 border-amber-400 border-2 shadow-md ring-2 ring-amber-200 text-amber-900',
+  upcoming: 'bg-white border-gray-200 text-gray-600 hover:border-violet-300',
 }
 
-export default function WeekCard({ semaine }: { semaine: Semaine }) {
+export default function WeekCard({
+  semaine,
+  acquiredCount = 0,
+  elevesCount = 0,
+}: {
+  semaine: Semaine
+  acquiredCount?: number
+  elevesCount?: number
+}) {
   const status = getStatus(semaine)
+  const total = semaine.graphemes.length * elevesCount
+  const pct = total > 0 ? Math.round((acquiredCount / total) * 100) : 0
+  const complete = total > 0 && acquiredCount >= total
+
   return (
     <Link href={`/semaine/${semaine.id}`}>
-      <div className={`border rounded-xl p-3 cursor-pointer hover:shadow transition-shadow ${statusStyles[status]}`}>
+      <div className={`border rounded-xl p-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md ${statusStyles[status]}`}>
         <div className="flex justify-between items-start mb-1">
           <span className="font-bold text-sm">S{semaine.numero}</span>
-          {status === 'done' && <span className="text-green-600 text-xs">✓</span>}
-          {status === 'current' && <span className="text-blue-600 text-xs font-bold">▶</span>}
+          {complete && <span title="Semaine complète" className="text-xs">🏆</span>}
+          {!complete && status === 'done' && <span className="text-emerald-600 text-xs">✓</span>}
+          {!complete && status === 'current' && <span className="text-amber-600 text-xs font-bold">▶</span>}
         </div>
-        <div className="text-xs font-medium">{semaine.graphemes.join(', ')}</div>
+        <div className="text-xs font-medium min-h-[1rem]">{semaine.graphemes.join(', ')}</div>
         <div className="text-xs text-gray-500 mt-1 truncate">🌍 {semaine.edm_theme}</div>
+        {total > 0 && (
+          <div className="mt-2 h-1.5 w-full bg-black/5 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${complete ? 'bg-amber-400' : 'bg-emerald-400'}`} style={{ width: `${pct}%` }} />
+          </div>
+        )}
       </div>
     </Link>
   )

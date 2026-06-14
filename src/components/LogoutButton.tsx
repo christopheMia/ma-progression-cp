@@ -19,7 +19,7 @@ export default function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="text-blue-200 hover:text-white text-sm disabled:opacity-50">
+      className="px-3 py-1.5 rounded-lg text-white/85 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50">
       {loading ? 'Déconnexion...' : '↪ Déconnexion'}
     </button>
   )
