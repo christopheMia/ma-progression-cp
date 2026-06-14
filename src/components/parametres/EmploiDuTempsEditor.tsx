@@ -33,6 +33,7 @@ export default function EmploiDuTempsEditor({ initial }: { initial: Creneau[] })
     const m = matiere === '__autre__' ? matiereCustom.trim() : matiere
     if (!m) return
     setCreneaux(c => [...c, { jour, heure_debut: debut, heure_fin: fin, matiere: m }])
+    if (matiere === '__autre__') { setMatiere(m); setMatiereCustom('') } // garde la matière ajoutée sélectionnée
     const duree = Math.max(15, diffMinutes(debut, fin))
     setDebut(fin)
     setFin(addMinutes(fin, duree))
@@ -55,6 +56,9 @@ export default function EmploiDuTempsEditor({ initial }: { initial: Creneau[] })
     items: creneaux.map((c, i) => ({ ...c, i })).filter(c => c.jour === j),
   }))
 
+  // Liste = matières de base + celles déjà enregistrées/ajoutées (mémorisées)
+  const matieresDisponibles = Array.from(new Set([...MATIERES, ...creneaux.map(c => c.matiere)]))
+
   return (
     <div className="space-y-4">
       <p className="text-xs text-gray-400">Ajoutez autant de créneaux que nécessaire pour bâtir vos journées. L&apos;heure de début du suivant se positionne automatiquement.</p>
@@ -67,7 +71,7 @@ export default function EmploiDuTempsEditor({ initial }: { initial: Creneau[] })
         <input type="time" value={fin} onChange={e => setFin(e.target.value)} className="border rounded-lg p-2 text-gray-900 bg-white" />
         <select value={matiere} onChange={e => setMatiere(e.target.value)}
           className="border rounded-lg p-2 col-span-2 text-gray-900 bg-white">
-          {MATIERES.map(m => <option key={m}>{m}</option>)}
+          {matieresDisponibles.map(m => <option key={m}>{m}</option>)}
           <option value="__autre__">✏️ Autre (préciser)…</option>
         </select>
         {matiere === '__autre__' && (
