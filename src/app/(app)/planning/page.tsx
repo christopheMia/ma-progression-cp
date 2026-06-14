@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import AnnualGrid from '@/components/planning/AnnualGrid'
 import PrintButton from '@/components/PrintButton'
 import ProgressBar from '@/components/ProgressBar'
+import ProgressionCorrector from '@/components/ProgressionCorrector'
 import { MANUELS } from '@/data/manuels'
 import { semaineEnCours } from '@/lib/semaines'
 
@@ -33,6 +34,13 @@ export default async function PlanningPage() {
   const courante = semaineEnCours(semaines ?? [])
   const total = semaines?.length ?? 0
 
+  const progressionActuelle = (semaines ?? []).map(s => ({
+    numero: s.numero,
+    graphemes: s.graphemes,
+    pages: s.manuel_pages ?? '',
+    mots_exemple: s.mots_exemple ?? [],
+  }))
+
   return (
     <div className="animate-pop-in">
       <div className="flex justify-between items-start mb-4">
@@ -40,7 +48,10 @@ export default async function PlanningPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">Planning annuel</h1>
           <p className="text-slate-500 text-sm">📖 {manuelNom} · {total} semaines</p>
         </div>
-        <PrintButton label="🖨️ Imprimer le planning" />
+        <div className="flex gap-2 items-center">
+          <ProgressionCorrector classId={classe.id} progression={progressionActuelle} />
+          <PrintButton label="🖨️ Imprimer le planning" />
+        </div>
       </div>
 
       {courante && (

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import ProgressBar from '@/components/ProgressBar'
+import ProgressionCorrector from '@/components/ProgressionCorrector'
 import { semaineEnCours, getStatus } from '@/lib/semaines'
 
 export default async function AccueilPage() {
@@ -31,6 +32,13 @@ export default async function AccueilPage() {
   const acquisCount = acquis?.length ?? 0
   const aujourdhui = format(new Date(), 'EEEE d MMMM', { locale: fr })
 
+  const progressionActuelle = (semaines ?? []).map(s => ({
+    numero: s.numero,
+    graphemes: s.graphemes,
+    pages: s.manuel_pages ?? '',
+    mots_exemple: s.mots_exemple ?? [],
+  }))
+
   return (
     <div className="space-y-8 animate-pop-in">
       {/* Bandeau d'accueil illustré */}
@@ -47,6 +55,11 @@ export default async function AccueilPage() {
           </div>
           <div className="hidden sm:block text-4xl select-none">📚🍎✏️</div>
         </div>
+      </div>
+
+      {/* Correction IA de la progression (non destructif) */}
+      <div className="flex justify-end">
+        <ProgressionCorrector classId={classe.id} progression={progressionActuelle} />
       </div>
 
       {/* Semaine en cours */}
