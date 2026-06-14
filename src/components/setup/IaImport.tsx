@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import type { ProgressionSemaine } from '@/data/manuels'
+import { extractPdfText } from '@/lib/ia/pdf-client'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -39,9 +40,23 @@ export default function IaImport({
     } finally { setLoading(false) }
   }
 
-  function importPdf(e: React.ChangeEvent<HTMLInputElement>) {
+  async function importPdf(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
-    const form = new FormData(); form.append('pdf', file); lancerImport(form)
+    setError(null); setLoading(true); setProgression(null)
+    try {
+      // Extraction du texte DANS le navigateur → on n'envoie que le texte (léger).
+      const txt = await extractPdfText(file)
+      if (txt.trim().length < 20) {
+        setError('Ce PDF ne contient pas de texte sélectionnable (PDF scanné ?). Collez plutôt le sommaire en texte.')
+        setLoading(false)
+        return
+      }
+      const form = new FormData(); form.append('texte', txt)
+      await lancerImport(form)
+    } catch (err) {
+      setError(`Lecture du PDF impossible : ${err instanceof Error ? err.message : String(err)}`)
+      setLoading(false)
+    }
   }
 
   function importTexte() {
