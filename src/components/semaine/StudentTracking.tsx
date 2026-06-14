@@ -2,6 +2,7 @@
 import { Eleve, Acquisition, Semaine, Appreciation } from '@/types'
 import { toggleAcquisition } from '@/lib/actions/semaine'
 import { upsertAppreciation } from '@/lib/actions/appreciation'
+import { exporterSuiviWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import { celebrate } from '@/lib/confetti'
 import { useTransition, useState, useEffect, useRef } from 'react'
@@ -68,17 +69,42 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
     startTransition(() => upsertAppreciation(semaine.id, eleveId, a.statut, a.commentaire))
   }
 
+  function statutLabel(statut: string | null) {
+    return statut === 'acquis' ? 'Acquis' : statut === 'pas_acquis' ? 'Pas encore' : '—'
+  }
+
+  function exportWord() {
+    exporterSuiviWord({
+      numeroSemaine: semaine.numero,
+      graphemes: semaine.graphemes,
+      lignes: eleves.map(e => ({
+        prenom: e.prenom,
+        acquis: semaine.graphemes.map(g => isAcquis(e.id, g)),
+        progres: `${nbAcquis(e.id)}/${semaine.graphemes.length}`,
+        bilan: getAppr(e.id).statut ? statutLabel(getAppr(e.id).statut) : '',
+        commentaire: getAppr(e.id).commentaire,
+      })),
+    })
+  }
+
   return (
     <div ref={blocRef} className="bg-white border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center gap-3 mb-2">
         <h2 className="font-bold text-gray-700">✅ Suivi des élèves</h2>
         {isPending && <span className="text-xs text-gray-400">Enregistrement...</span>}
         {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
-        <button
-          onClick={() => imprimerElement(blocRef.current)}
-          className="no-print ml-auto text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-          🖨️ Imprimer
-        </button>
+        <div className="no-print ml-auto flex gap-2">
+          <button
+            onClick={exportWord}
+            className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50">
+            📄 Word
+          </button>
+          <button
+            onClick={() => imprimerElement(blocRef.current)}
+            className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+            🖨️ Imprimer
+          </button>
+        </div>
       </div>
       <p className="text-xs text-gray-400 mb-4">
         Pour chaque élève : cliquez l&apos;<strong>étoile</strong> du graphème acquis (★), donnez un
@@ -139,7 +165,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
                     </div>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex gap-1 justify-center">
+                    <div className="no-print flex gap-1 justify-center">
                       <button type="button" onClick={() => handleStatut(eleve.id, 'acquis')} disabled={isPending}
                         className={`text-xs rounded-full px-2.5 py-1 border transition-colors disabled:opacity-50 ${
                           a.statut === 'acquis'
@@ -157,6 +183,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
                         Pas encore
                       </button>
                     </div>
+                    <span className="print-only text-sm text-gray-800">{statutLabel(a.statut)}</span>
                   </td>
                   <td className="pl-3 py-2">
                     <input
@@ -164,7 +191,8 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
                       onChange={e => handleComment(eleve.id, e.target.value)}
                       onBlur={() => saveComment(eleve.id)}
                       placeholder="Remarque libre…"
-                      className="w-44 border border-gray-200 rounded-lg p-1.5 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none" />
+                      className="no-print w-44 border border-gray-200 rounded-lg p-1.5 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none" />
+                    <span className="print-only text-sm text-gray-800">{a.commentaire || '—'}</span>
                   </td>
                 </tr>
               )

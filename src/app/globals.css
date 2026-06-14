@@ -42,11 +42,20 @@ body {
   animation: pop-in 0.25s ease-out both;
 }
 
+/* Visible uniquement à l'impression */
+.print-only {
+  display: none;
+}
+
 @media print {
   header,
   nav,
   .no-print {
     display: none !important;
+  }
+
+  .print-only {
+    display: revert !important;
   }
 
   body {

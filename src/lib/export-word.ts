@@ -93,3 +93,52 @@ export async function exporterJournalWord(journal: JourJournal[], numeroSemaine:
   const blob = await genererBlobWord(journal, numeroSemaine)
   saveAs(blob, `cahier-journal-semaine-${numeroSemaine}.docx`)
 }
+
+/** Export Word du suivi des élèves (graphèmes acquis + bilan + commentaire). */
+export async function exporterSuiviWord(opts: {
+  numeroSemaine: number
+  graphemes: string[]
+  lignes: Array<{ prenom: string; acquis: boolean[]; progres: string; bilan: string; commentaire: string }>
+}): Promise<void> {
+  const { numeroSemaine, graphemes, lignes } = opts
+
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: [
+      makeCell('Élève', true),
+      ...graphemes.map(g => makeCell(`"${g}"`, true)),
+      makeCell('Progrès', true),
+      makeCell('Bilan', true),
+      makeCell('Commentaire', true),
+    ],
+  })
+
+  const dataRows = lignes.map(l =>
+    new TableRow({
+      children: [
+        makeCell(l.prenom, true),
+        ...l.acquis.map(a => makeCell(a ? '✓' : '–')),
+        makeCell(l.progres),
+        makeCell(l.bilan),
+        makeCell(l.commentaire),
+      ],
+    })
+  )
+
+  const doc = new Document({
+    sections: [{
+      children: [
+        new Paragraph({
+          text: `Suivi des élèves — Semaine ${numeroSemaine}`,
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 300 },
+        }),
+        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...dataRows] }),
+      ],
+    }],
+  })
+
+  const blob = await Packer.toBlob(doc)
+  saveAs(blob, `suivi-eleves-semaine-${numeroSemaine}.docx`)
+}
