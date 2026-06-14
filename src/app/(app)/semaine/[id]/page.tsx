@@ -29,7 +29,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Link href="/planning" className="text-blue-600 hover:underline text-sm">← Planning</Link>
+        <Link href="/planning" className="text-indigo-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Semaine {semaine.numero} — {dateFormatee}</h1>
         <div className="ml-auto">
           <PrintButton label="🖨️ Imprimer la fiche" />

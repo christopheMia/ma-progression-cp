@@ -32,68 +32,65 @@ export default async function AccueilPage() {
   const aujourdhui = format(new Date(), 'EEEE d MMMM', { locale: fr })
 
   return (
-    <div className="space-y-6 animate-pop-in">
-      {/* Bandeau d'accueil */}
-      <div className="rounded-2xl p-6 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-md">
-        <h1 className="text-2xl font-bold">Bonjour ! 👋</h1>
-        <p className="text-white/85 capitalize">{aujourdhui}</p>
+    <div className="space-y-8 animate-pop-in">
+      {/* Accueil */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bonjour 👋</h1>
+        <p className="text-slate-500 mt-1 capitalize">{aujourdhui}</p>
       </div>
 
       {/* Semaine en cours */}
       {courante && (
         <Link href={`/semaine/${courante.id}`}
-          className="block bg-white border-2 border-amber-300 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-sm transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-amber-600">
-              {getStatus(courante) === 'current' ? '▶ Cette semaine' : '📌 Prochaine semaine'}
+            <span className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+              {getStatus(courante) === 'current' ? 'Cette semaine' : 'Prochaine semaine'}
             </span>
-            <span className="text-gray-400 text-sm">Semaine {courante.numero}</span>
+            <span className="text-slate-400 text-sm">Semaine {courante.numero}</span>
           </div>
-          <div className="mt-2 text-lg font-bold text-gray-800">
+          <div className="mt-2 text-xl font-semibold text-slate-900">
             {courante.graphemes.length ? courante.graphemes.join(', ') : 'Révisions'}
           </div>
-          <div className="text-sm text-gray-500 mt-1">🌍 {courante.edm_theme}</div>
-          <div className="text-sm text-amber-700 font-medium mt-3">Ouvrir la fiche →</div>
+          <div className="text-sm text-slate-500 mt-1">🌍 {courante.edm_theme}</div>
+          <div className="text-sm text-indigo-600 font-medium mt-3 group-hover:translate-x-0.5 transition-transform">Ouvrir la fiche →</div>
         </Link>
       )}
 
       {/* Statistiques */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="bg-white border rounded-2xl p-5 shadow-sm">
-          <div className="text-3xl font-bold text-violet-600">{courante?.numero ?? 0}<span className="text-base text-gray-400">/{total}</span></div>
-          <div className="text-sm text-gray-500 mt-1 mb-3">Semaine de l&apos;année</div>
-          <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-violet-500" />
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="text-3xl font-bold text-slate-900">{courante?.numero ?? 0}<span className="text-base font-normal text-slate-400">/{total}</span></div>
+          <div className="text-sm text-slate-500 mt-1 mb-3">Semaine de l&apos;année</div>
+          <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-indigo-500" />
         </div>
 
-        <div className="bg-white border rounded-2xl p-5 shadow-sm">
-          <div className="text-3xl font-bold text-emerald-600">{Math.round((acquisCount / (possible || 1)) * 100)}<span className="text-base text-gray-400">%</span></div>
-          <div className="text-sm text-gray-500 mt-1 mb-3">Graphèmes acquis (classe)</div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="text-3xl font-bold text-slate-900">{Math.round((acquisCount / (possible || 1)) * 100)}<span className="text-base font-normal text-slate-400">%</span></div>
+          <div className="text-sm text-slate-500 mt-1 mb-3">Graphèmes acquis (classe)</div>
           <ProgressBar value={acquisCount} max={possible} color="bg-emerald-500" />
         </div>
 
-        <div className="bg-white border rounded-2xl p-5 shadow-sm flex flex-col">
-          <div className="text-3xl font-bold text-rose-500">{nbEleves}</div>
-          <div className="text-sm text-gray-500 mt-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe</div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+          <div className="text-3xl font-bold text-slate-900">{nbEleves}</div>
+          <div className="text-sm text-slate-500 mt-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe</div>
         </div>
       </div>
 
       {/* Raccourcis */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <Link href="/planning" className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div className="text-2xl">📅</div>
-          <div className="font-semibold text-gray-800 mt-1">Planning annuel</div>
-          <div className="text-sm text-gray-500">Voir les 36 semaines</div>
-        </Link>
-        <Link href="/parametres" className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div className="text-2xl">⚙️</div>
-          <div className="font-semibold text-gray-800 mt-1">Paramètres</div>
-          <div className="text-sm text-gray-500">Élèves, emploi du temps…</div>
-        </Link>
-        <Link href="/aide" className="bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-          <div className="text-2xl">❓</div>
-          <div className="font-semibold text-gray-800 mt-1">Aide</div>
-          <div className="text-sm text-gray-500">Mode d&apos;emploi</div>
-        </Link>
+        {[
+          { href: '/planning', emoji: '📅', titre: 'Planning annuel', sous: 'Voir les 36 semaines' },
+          { href: '/parametres', emoji: '⚙️', titre: 'Paramètres', sous: 'Élèves, emploi du temps…' },
+          { href: '/aide', emoji: '❓', titre: 'Aide', sous: "Mode d'emploi" },
+        ].map(c => (
+          <Link key={c.href} href={c.href}
+            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-sm transition-all">
+            <div className="text-2xl">{c.emoji}</div>
+            <div className="font-semibold text-slate-900 mt-1">{c.titre}</div>
+            <div className="text-sm text-slate-500">{c.sous}</div>
+          </Link>
+        ))}
       </div>
     </div>
   )

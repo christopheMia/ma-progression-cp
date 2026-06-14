@@ -33,8 +33,14 @@
     toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
 - **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
 
-## Relooking UX / thème (ajouté session 2026-06-14)
-- **Thème chaleureux** : header en dégradé indigo→violet→purple, fond `from-amber-50 via-rose-50`, cartes `rounded-2xl shadow-sm`, accents colorés (bordures gauche par bloc), page connexion en dégradé + titre `bg-clip-text`
+## Thème minimaliste moderne (révisé session 2026-06-14)
+- **Refonte vers minimaliste** (après retour : dégradé pas joli) : fond `bg-slate-50`, header **blanc** `sticky` + `border-b border-slate-200` (plus de dégradé), accent unique **indigo-600**, cartes `border-slate-200`
+- Swap global `blue-*` → `indigo-*` dans tout `src` pour unifier l'accent
+- **Menu adaptatif** `src/components/HeaderNav.tsx` (client, `usePathname` pour lien actif) : si pas de classe, n'affiche que « Configurer ma classe » + Aide + Déconnexion → corrige le bug « Accueil/Paramètres ne s'ouvrent pas » (en réalité : redirigeaient vers /setup faute de classe après reset)
+- Layout `(app)/layout.tsx` charge la classe et passe `hasClass` à HeaderNav
+
+### (historique) 1re version — thème chaleureux (remplacée)
+- header en dégradé indigo→violet→purple, fond `from-amber-50 via-rose-50`, page connexion en dégradé + titre `bg-clip-text`
 - **Tableau de bord** : `src/app/(app)/accueil/page.tsx` — nouvelle landing page (Bonjour + date, semaine en cours, stats : semaine X/36, % graphèmes acquis, nb élèves, raccourcis). Redirections après connexion/inscription/setup → `/accueil` (proxy.ts + connexion + (app)/page.tsx + setup.ts)
 - **Planning vivant** : barre de progression annuelle, `WeekCard` recolorée par statut (done=emerald, current=amber ring, upcoming), pastille couleur par période, mini-barre d'avancement par semaine, 🏆 si semaine complète, hover -translate-y
 - **Progression motivante** : `src/components/ProgressBar.tsx`, suivi élèves avec **étoiles ★/☆** (au lieu de cases), progression par élève (x/total + barre), 🏆 si complet

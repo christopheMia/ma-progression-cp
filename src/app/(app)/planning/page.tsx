@@ -37,19 +37,19 @@ export default async function PlanningPage() {
     <div className="animate-pop-in">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">Planning annuel</h1>
-          <p className="text-gray-500 text-sm">📖 {manuelNom} · {total} semaines</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">Planning annuel</h1>
+          <p className="text-slate-500 text-sm">📖 {manuelNom} · {total} semaines</p>
         </div>
         <PrintButton label="🖨️ Imprimer le planning" />
       </div>
 
       {courante && (
-        <div className="bg-white border rounded-2xl p-4 mb-6 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-6">
           <div className="flex justify-between text-sm mb-2">
-            <span className="font-medium text-gray-700">Avancement de l&apos;année</span>
-            <span className="text-gray-500">Semaine {courante.numero} / {total}</span>
+            <span className="font-medium text-slate-700">Avancement de l&apos;année</span>
+            <span className="text-slate-500">Semaine {courante.numero} / {total}</span>
           </div>
-          <ProgressBar value={courante.numero} max={total} color="bg-gradient-to-r from-violet-500 to-fuchsia-500" />
+          <ProgressBar value={courante.numero} max={total} color="bg-indigo-500" />
         </div>
       )}
 

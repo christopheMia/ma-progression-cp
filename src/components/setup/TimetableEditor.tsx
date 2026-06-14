@@ -48,7 +48,7 @@ export default function TimetableEditor({ onFinish, loading }: {
           <div key={jour}>
             <div className="text-sm font-semibold text-gray-500 uppercase mb-1">{jour}</div>
             {creneaux.map((c, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm bg-blue-50 rounded p-2 mb-1">
+              <div key={i} className="flex items-center gap-2 text-sm bg-indigo-50 rounded p-2 mb-1">
                 <span className="text-gray-500">{c.heure_debut}–{c.heure_fin}</span>
                 <span className="font-medium">{c.matiere}</span>
               </div>

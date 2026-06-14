@@ -11,7 +11,7 @@ function Bloc({ titre, children }: { titre: string; children: React.ReactNode })
 
 function Exemple({ children }: { children: React.ReactNode }) {
   return (
-    <p className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-blue-900">
+    <p className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-indigo-900">
       <span className="font-semibold">Exemple :</span> {children}
     </p>
   )
@@ -21,7 +21,7 @@ export default function AidePage() {
   return (
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/planning" className="text-blue-600 hover:underline text-sm">← Planning</Link>
+        <Link href="/planning" className="text-indigo-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Mode d&apos;emploi</h1>
       </div>
 
@@ -89,8 +89,9 @@ export default function AidePage() {
       </Bloc>
 
       <Bloc titre="✅ Le suivi des élèves">
-        <p>Dans une semaine, cochez la case quand un élève a <strong>acquis</strong> le graphème
-          correspondant. La sauvegarde est automatique (✓ Sauvegardé s&apos;affiche).</p>
+        <p>Dans une semaine, cliquez sur l&apos;<strong>étoile</strong> quand un élève a
+          <strong> acquis</strong> le graphème correspondant (★ = acquis, ☆ = pas encore).
+          La sauvegarde est automatique. Quand un élève a tout acquis, une petite animation 🎉 apparaît !</p>
       </Bloc>
 
       <Bloc titre="📋 Le cahier journal">

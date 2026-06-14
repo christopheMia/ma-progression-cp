@@ -3,9 +3,9 @@ import { Semaine } from '@/types'
 import { getStatus, type Status } from '@/lib/semaines'
 
 const statusStyles: Record<Status, string> = {
-  done: 'bg-emerald-50 border-emerald-200 text-emerald-900 hover:border-emerald-400',
-  current: 'bg-amber-50 border-amber-400 border-2 shadow-md ring-2 ring-amber-200 text-amber-900',
-  upcoming: 'bg-white border-gray-200 text-gray-600 hover:border-violet-300',
+  done: 'bg-white border-slate-200 text-slate-500 hover:border-emerald-300',
+  current: 'bg-indigo-50/60 border-indigo-300 ring-1 ring-indigo-200 text-slate-900',
+  upcoming: 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300',
 }
 
 export default function WeekCard({
@@ -28,13 +28,13 @@ export default function WeekCard({
         <div className="flex justify-between items-start mb-1">
           <span className="font-bold text-sm">S{semaine.numero}</span>
           {complete && <span title="Semaine complète" className="text-xs">🏆</span>}
-          {!complete && status === 'done' && <span className="text-emerald-600 text-xs">✓</span>}
-          {!complete && status === 'current' && <span className="text-amber-600 text-xs font-bold">▶</span>}
+          {!complete && status === 'done' && <span className="text-emerald-500 text-xs">✓</span>}
+          {!complete && status === 'current' && <span className="text-indigo-600 text-xs font-bold">▶</span>}
         </div>
         <div className="text-xs font-medium min-h-[1rem]">{semaine.graphemes.join(', ')}</div>
         <div className="text-xs text-gray-500 mt-1 truncate">🌍 {semaine.edm_theme}</div>
         {total > 0 && (
-          <div className="mt-2 h-1.5 w-full bg-black/5 rounded-full overflow-hidden">
+          <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${complete ? 'bg-amber-400' : 'bg-emerald-400'}`} style={{ width: `${pct}%` }} />
           </div>
         )}

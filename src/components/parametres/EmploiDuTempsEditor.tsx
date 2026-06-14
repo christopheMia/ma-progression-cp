@@ -61,11 +61,11 @@ export default function EmploiDuTempsEditor({ initial }: { initial: Creneau[] })
           <div key={jour}>
             <div className="text-sm font-semibold text-gray-500 uppercase mb-1">{jour}</div>
             {items.map(c => (
-              <div key={c.i} className="flex items-center gap-2 text-sm bg-blue-50 rounded p-2 mb-1">
+              <div key={c.i} className="flex items-center gap-2 text-sm bg-indigo-50 rounded p-2 mb-1">
                 <span className="text-gray-500">{c.heure_debut}–{c.heure_fin}</span>
                 <span className="font-medium text-gray-700">{c.matiere}</span>
                 <button onClick={() => supprimer(c.i)}
-                  className="ml-auto text-blue-400 hover:text-red-500">×</button>
+                  className="ml-auto text-indigo-400 hover:text-red-500">×</button>
               </div>
             ))}
           </div>
@@ -75,7 +75,7 @@ export default function EmploiDuTempsEditor({ initial }: { initial: Creneau[] })
 
       <div className="flex items-center gap-3">
         <button onClick={enregistrer} disabled={isPending}
-          className="bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-blue-800 disabled:opacity-50">
+          className="bg-indigo-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-indigo-800 disabled:opacity-50">
           {isPending ? 'Enregistrement...' : "Enregistrer l'emploi du temps"}
         </button>
         {saved && !isPending && <span className="text-sm text-green-600">✓ Enregistré</span>}

@@ -18,10 +18,10 @@ export default function RentreeEditor({ initial }: { initial: string }) {
   return (
     <div className="space-y-3">
       <input type="date" value={date} onChange={e => setDate(e.target.value)}
-        className="w-full border-2 rounded-xl p-3 text-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 bg-white" />
+        className="w-full border-2 rounded-xl p-3 text-lg focus:ring-2 focus:ring-indigo-500 outline-none text-gray-900 bg-white" />
       <div className="flex items-center gap-3">
         <button onClick={enregistrer} disabled={isPending}
-          className="bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-blue-800 disabled:opacity-50">
+          className="bg-indigo-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-indigo-800 disabled:opacity-50">
           {isPending ? 'Recalcul...' : 'Enregistrer la date'}
         </button>
         {saved && !isPending && <span className="text-sm text-green-600">✓ Dates recalculées</span>}
