@@ -27,7 +27,14 @@
 - Après ajout de la variable sur Vercel : redéployer pour qu'elle soit prise en compte (NEXT_PUBLIC_* inliné au build)
 
 ## État actuel (session 2026-06-14)
-- Build : propre ✅ (`npx next build` → Compiled successfully)
+- **Grosse session IA** : import IA des manuels (PDF navigateur + texte), chat de correction
+  **non destructif** (Planning/Accueil), bilan IA par élève (anonymisé), prénom enseignant
+  (« Bonjour Cécile ») + **tutoiement**, matière libre dans l'EDT, liste de manuels vidée
+  (import IA only ; Lecture Piano gardé pour la démo). Tout **déployé en prod** sur Vercel.
+  → détails dans les sections dédiées + « État IA — RÉCAP » + « À faire prochaine session ».
+- Clé `ANTHROPIC_API_KEY` configurée sur Vercel (carte plafonnée ~8 €). Import = `claude-sonnet-4-6`
+  (Opus dépasse le timeout serverless). Migration `002_prenom_enseignant.sql` appliquée.
+- Build : propre ✅ (`npx next build` → Compiled successfully), 21 tests OK
 - Texte visible sur toutes les pages ✅
 - Edge Function `create-user` v2 active ✅
 - Compte Cécile : `azylis69@hotmail.fr` ✅
