@@ -160,7 +160,12 @@ Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-p
   une erreur claire (le reste de l'appli fonctionne).
 - Console Anthropic : charger des crédits + **plafond mensuel** (garde-fou). Coût ~0,7-2 €/an/enseignante.
 - Clé API : fournir via terminal `!` (jamais dans le chat), comme le token GitHub.
-- Sous-système 2 (PLANIFIÉ) : tableaux/bilans élèves avec anonymisation `Élève N`.
+- **Sous-système 2 (IMPLÉMENTÉ)** : bouton **« ✨ Bilan IA »** par élève dans `StudentTracking.tsx`.
+  - Route `src/app/api/ia-bilan/route.ts` (Sonnet) + `SYSTEM_BILAN`/`userBilan` dans prompts.ts.
+  - **RGPD maximal** : le prénom ne quitte JAMAIS le navigateur. L'IA reçoit seulement les
+    sons acquis/non + statut, écrit le bilan avec le placeholder `[ELEVE]`, et le navigateur
+    remplace `[ELEVE]` par le vrai prénom à l'affichage (validé en prod).
+  - Le bilan généré remplit le champ « Commentaire » (éditable, sauvegardé via `upsertAppreciation`).
 
 ## Règle token GitHub
 Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
