@@ -33,10 +33,20 @@ export default async function AccueilPage() {
 
   return (
     <div className="space-y-8 animate-pop-in">
-      {/* Accueil */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bonjour 👋</h1>
-        <p className="text-slate-500 mt-1 capitalize">{aujourdhui}</p>
+      {/* Bandeau d'accueil illustré */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-purple-600 text-white p-6 sm:p-8 shadow-md">
+        <svg aria-hidden="true" viewBox="0 0 200 200" className="pointer-events-none absolute -right-8 -top-10 w-52 h-52 opacity-25">
+          <circle cx="140" cy="60" r="60" fill="white" />
+          <circle cx="60" cy="150" r="34" fill="white" opacity="0.6" />
+          <circle cx="180" cy="150" r="18" fill="white" opacity="0.5" />
+        </svg>
+        <div className="relative z-10 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bonjour 👋</h1>
+            <p className="text-white/80 mt-1 capitalize">{aujourdhui}</p>
+          </div>
+          <div className="hidden sm:block text-4xl select-none">📚🍎✏️</div>
+        </div>
       </div>
 
       {/* Semaine en cours */}
