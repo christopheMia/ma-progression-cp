@@ -13,7 +13,8 @@
 - Inscription : appel Edge Function `POST /functions/v1/create-user` avec anon key JWT
   → La Edge Function utilise `SUPABASE_SERVICE_ROLE_KEY` + `email_confirm: true`
 - Protection routes : `src/proxy.ts` (Next.js 16 — PAS middleware.ts, supprimé)
-  → redirige vers /connexion si non connecté, vers /planning si déjà connecté
+  → redirige vers /connexion si non connecté, vers /accueil si déjà connecté
+- Landing après connexion/inscription/setup : **/accueil** (tableau de bord)
 
 ## Variables d'environnement Vercel (déjà configurées)
 - NEXT_PUBLIC_SUPABASE_URL
@@ -39,30 +40,46 @@
     toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
 - **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
 
-## Thème rose (révisé session 2026-06-14)
-- **Accent rose** (après retour « trop blanc ») : fond dégradé `from-rose-100 via-pink-50 to-fuchsia-50`, header `bg-white/70 backdrop-blur border-rose-100`, accent unique **rose-600**, cartes blanches sur fond rosé
-- Connexion : fond dégradé rose, carte `bg-white/90`
-- Swap global des accents : `blue-*` → `indigo-*` → `rose-*` dans tout `src`
+## Thème VIOLET (état actuel — révisé session 2026-06-14)
+- **Accent violet** (évolution : blanc minimaliste → rose → violet, « plus doux/pro »)
+- Fond app : dégradé `from-violet-200 via-purple-100 to-violet-100` ; header **solide** (non transparent) `from-violet-600 to-purple-600`, texte blanc, `sticky`, bien séparé
+- Connexion : fond `from-violet-300 via-purple-200 to-fuchsia-200` + cercles décoratifs
+- Accent unique **violet-600** ; swap global historique des accents : `blue-*` → `indigo-*` → `rose-*` → `violet-*` dans tout `src`
+- **Illustrations** : bandeau d'accueil dégradé violet avec formes SVG + motif 📚🍎✏️ ; cercles déco sur la connexion
+- **Bulles d'aide au survol** (`title`) + ligne d'aide sur les tableaux à remplir : suivi des élèves (étoiles) et cahier journal (champs)
+- **Panneau « Mes outils »** sur /accueil : boutons **Gemini** + **NotebookLM** (ouverture nouvel onglet), carte violette délimitée avec pastilles dégradées
 - **Emploi du temps amélioré** (setup + paramètres) : bouton « + Ajouter ce créneau » bien visible (rose plein), **enchaînement auto des horaires** (le créneau suivant démarre à la fin du précédent), suppression par créneau, génération bloquée tant qu'aucun créneau (helpers `addMinutes`/`diffMinutes` locaux)
 - **Menu adaptatif** `src/components/HeaderNav.tsx` (client, `usePathname` pour lien actif) : si pas de classe, n'affiche que « Configurer ma classe » + Aide + Déconnexion → corrige le bug « Accueil/Paramètres ne s'ouvrent pas » (en réalité : redirigeaient vers /setup faute de classe après reset)
 - Layout `(app)/layout.tsx` charge la classe et passe `hasClass` à HeaderNav
 
-### (historique) 1re version — thème chaleureux (remplacée)
-- header en dégradé indigo→violet→purple, fond `from-amber-50 via-rose-50`, page connexion en dégradé + titre `bg-clip-text`
-- **Tableau de bord** : `src/app/(app)/accueil/page.tsx` — nouvelle landing page (Bonjour + date, semaine en cours, stats : semaine X/36, % graphèmes acquis, nb élèves, raccourcis). Redirections après connexion/inscription/setup → `/accueil` (proxy.ts + connexion + (app)/page.tsx + setup.ts)
-- **Planning vivant** : barre de progression annuelle, `WeekCard` recolorée par statut (done=emerald, current=amber ring, upcoming), pastille couleur par période, mini-barre d'avancement par semaine, 🏆 si semaine complète, hover -translate-y
-- **Progression motivante** : `src/components/ProgressBar.tsx`, suivi élèves avec **étoiles ★/☆** (au lieu de cases), progression par élève (x/total + barre), 🏆 si complet
-- **Confettis** : `src/lib/confetti.ts` (sans dépendance, DOM + keyframe `confetti-fall` dans globals.css) — déclenché quand un élève valide le dernier graphème de la semaine
+### Fonctionnalités UX (actuelles)
+- **Tableau de bord** : `src/app/(app)/accueil/page.tsx` — landing page (Bonjour + date, semaine en cours, stats : semaine X/36, % graphèmes acquis, nb élèves, raccourcis, panneau « Mes outils »)
+- **Planning vivant** : barre de progression annuelle, `WeekCard` recolorée par statut, pastille couleur par période, mini-barre d'avancement par semaine, 🏆 si semaine complète, hover -translate-y
+- **Progression motivante** : `src/components/ProgressBar.tsx`, suivi élèves avec **étoiles ★/☆**, progression par élève (x/total + barre), 🏆 si complet
+- **Confettis** : `src/lib/confetti.ts` (sans dépendance, keyframe `confetti-fall` dans globals.css) — quand un élève valide le dernier graphème de la semaine
 - Helper partagé `src/lib/semaines.ts` (`getStatus`, `semaineEnCours`)
+- *(historique couleurs : thème chaleureux dégradé ambre/indigo → rose → violet)*
 
 ## Mode d'emploi / Aide (ajouté session 2026-06-14)
 - Page : `src/app/(app)/aide/page.tsx` — accessible via ❓ Aide dans le header
 - Contenu simple pour Cécile : remplir manuel/CSV, date, élèves, emploi du temps, suivi, journal, impression, paramètres
 - Bulles d'aide courtes ajoutées : StudentListEditor + TimetableEditor (setup) et EmploiDuTempsEditor (paramètres)
 
+## Classes en double — corrigé (important)
+- Bug historique : `creerClasse` ne faisait que des INSERT → chaque génération créait une classe, et les lectures `.single()` plantaient (boucle de redirection vers /setup, planning jamais affiché).
+- Correctifs :
+  - Lectures de classe **tolérantes** : `.eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()` (prend la plus récente) dans layout, accueil, planning, parametres, (app)/page, getClasse
+  - `src/lib/reset-classe.ts` → `supprimerClassesUtilisateur()` supprime TOUTES les classes + données dépendantes
+  - `creerClasse` et `reinitialiserConfiguration` appellent ce helper (idempotent → plus d'accumulation)
+- Note : suppression directe en base via MCP bloquée par sécurité ; nettoyage via le bouton « Repartir de zéro ».
+
+## Mode démonstration (formation)
+- Action : `src/lib/actions/demo.ts` → `chargerClasseDemo()` : classe d'exemple **entièrement pré-remplie** avec de VRAIES données (10 élèves, emploi du temps, 36 semaines, rentrée placée ~11 semaines avant aujourd'hui, suivi pré-coché) → tout fonctionne réellement
+- Bouton : `src/components/DemoButton.tsx` — dans l'assistant `/setup` (sans confirmation) et dans Paramètres (prop `confirmer` → remplace la classe existante)
+
 ## Page Paramètres (ajoutée session 2026-06-14)
 - Route : `src/app/(app)/parametres/page.tsx` — accessible via ⚙️ Paramètres dans le header
-- Actions : `src/lib/actions/parametres.ts` (⚠️ `creerClasse` ne fait que des INSERT — ne PAS y renvoyer, ça duplique la classe)
+- Actions : `src/lib/actions/parametres.ts`
 - Composants : `src/components/parametres/{ElevesEditor,EmploiDuTempsEditor,RentreeEditor,ManuelEditor}.tsx`
 - **Élèves** : `updateEleves` — préserve le suivi par prénom (garde / ajoute / supprime), efface les acquisitions des élèves retirés
 - **Emploi du temps** : `updateEmploiDuTemps` — delete + insert (sans impact sur progression / journaux déjà générés)
@@ -78,7 +95,8 @@
 - **Planning annuel** : bouton 🖨️ + grille forcée 7 colonnes (`print:grid-cols-7`) anti-coupure
 - **Fiche semaine complète** : bouton 🖨️ dans l'en-tête de la page semaine (lecture + EDM + suivi + journal)
 - **Suivi des élèves** : bouton 🖨️ qui n'imprime que le tableau (StudentTracking)
-- **Cahier journal** : le bouton PDF n'imprime plus que le journal (avant : toute la page) — export Word inchangé
+- **Cahier journal** : le bouton PDF n'imprime que le journal ; export **Word (.docx)** via `src/lib/export-word.ts` (`genererBlobWord` réutilisable + `exporterJournalWord` qui `saveAs`), avec libellé clair + confirmation de téléchargement ; bouton **Google Docs** (voir section dédiée)
+- ⚠️ Limite navigateur : un site web ne peut PAS lancer un .exe local ni pousser vers Google Docs sans OAuth (cf. intégration Google Docs)
 
 ## Manuels disponibles — 2 manuels vérifiés dans `src/data/manuels/`
 | Manuel | Éditeur | Progression |
@@ -119,14 +137,14 @@ Toujours utiliser le terminal VS Code avec `!` :
 - Indicateur ✓ Sauvegardé dans CahierJournalEditor et StudentTracking
 
 ## À faire prochaine session
-1. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`
+1. **Configurer Google Docs** — créer le Client ID OAuth (Google Cloud) + ajouter `NEXT_PUBLIC_GOOGLE_CLIENT_ID` sur Vercel et redéployer (cf. section Intégration Google Docs). Sans ça, bouton 📝 masqué.
 
-2. **Tester le planning** — vérifier que Cécile voit son tableau de bord après connexion
+2. **Page "Mot de passe oublié"** — `supabase.auth.resetPasswordForEmail()` + page `/reset-password`
 
-3. **Tester l'import PDF** — essayer avec un vrai manuel numérique CP pour vérifier la détection des semaines
+3. **Tester le mode démo** — Paramètres → 🎓 charger la démo → vérifier planning vivant, suivi, stats, impression, export Word
 
-4. **Tester le rendu d'impression** — avec le compte Cécile, cliquer chaque bouton 🖨️
-   (planning, fiche semaine, suivi élèves, cahier journal) et vérifier l'aperçu avant impression
+4. **Tester l'import PDF** — avec un vrai manuel numérique CP pour vérifier la détection des semaines
 
-5. **Tester la page Paramètres** — modifier élèves / emploi du temps / date de rentrée et vérifier
-   que le suivi est préservé ; tester le changement de manuel (destructif, avec confirmation)
+5. **Tester l'impression** — chaque bouton 🖨️ (planning, fiche semaine, suivi, cahier journal)
+
+6. **Tester Paramètres** — modifier élèves / emploi du temps / date et vérifier que le suivi est préservé ; changement de manuel (destructif, confirmation)
