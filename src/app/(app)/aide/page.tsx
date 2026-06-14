@@ -115,6 +115,8 @@ export default function AidePage() {
           ⚠️ <strong>Changer de manuel</strong> régénère toute la progression et efface le suivi des élèves
           ainsi que les cahiers journaux déjà remplis. Une confirmation vous est demandée.
         </p>
+        <p>Tout en bas de la page Paramètres, <strong>🗑️ Repartir de zéro</strong> efface entièrement la
+          configuration et relance l&apos;assistant — pratique pour refaire une installation propre.</p>
       </Bloc>
     </div>
   )

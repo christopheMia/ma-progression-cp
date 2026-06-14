@@ -6,6 +6,7 @@ import ElevesEditor from '@/components/parametres/ElevesEditor'
 import EmploiDuTempsEditor from '@/components/parametres/EmploiDuTempsEditor'
 import RentreeEditor from '@/components/parametres/RentreeEditor'
 import ManuelEditor from '@/components/parametres/ManuelEditor'
+import ResetButton from '@/components/parametres/ResetButton'
 
 function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
   return (
@@ -56,6 +57,11 @@ export default async function ParametresPage() {
       <Section titre="📖 Manuel de lecture">
         <ManuelEditor currentNom={manuelNom} />
       </Section>
+
+      <section className="bg-white border-2 border-red-200 rounded-2xl p-5">
+        <h2 className="font-bold text-red-700 mb-4">🗑️ Repartir de zéro</h2>
+        <ResetButton />
+      </section>
     </div>
   )
 }

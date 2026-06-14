@@ -46,6 +46,7 @@
 - **Emploi du temps** : `updateEmploiDuTemps` — delete + insert (sans impact sur progression / journaux déjà générés)
 - **Date de rentrée** : `updateRentreeDate` — recalcule `date_debut` de chaque semaine SANS supprimer les semaines (préserve suivi + journaux)
 - **Manuel** : `updateManuel` — ⚠️ DESTRUCTIF : supprime acquisitions + cahier_journal + semaines puis régénère ; double confirmation dans l'UI ; réutilise `ManualSelector` (donc import PDF/CSV possible)
+- **Repartir de zéro** : `reinitialiserConfiguration` — supprime TOUT (classe + toutes données) puis `redirect('/setup')` ; bouton `ResetButton.tsx` en bas de /parametres (zone rouge, double confirmation)
 
 ## Impression (ajoutée session 2026-06-14)
 - Helpers : `src/lib/print.ts` → `imprimerPage()` (toute la page) et `imprimerElement(el)` (un seul bloc)

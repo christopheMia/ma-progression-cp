@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { genererProgression } from '@/lib/progression'
 import { addWeeks, format } from 'date-fns'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import type { ProgressionSemaine } from '@/data/manuels'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }
@@ -105,4 +106,28 @@ export async function updateManuel(manuelId: string, customProgression?: Progres
 
   revalidatePath('/parametres')
   revalidatePath('/planning')
+}
+
+/**
+ * Réinitialise TOUTE la configuration : supprime la classe et toutes ses données
+ * (semaines, suivi des élèves, cahiers journaux, élèves, emploi du temps),
+ * puis renvoie vers l'assistant de configuration. ⚠️ Irréversible.
+ */
+export async function reinitialiserConfiguration() {
+  const { supabase, classe } = await getClasse()
+
+  const { data: semaines } = await supabase.from('semaines').select('id').eq('class_id', classe.id)
+  const semaineIds = (semaines ?? []).map(s => s.id)
+  if (semaineIds.length) {
+    await supabase.from('acquisitions').delete().in('semaine_id', semaineIds)
+    await supabase.from('cahier_journal').delete().in('semaine_id', semaineIds)
+    await supabase.from('semaines').delete().in('id', semaineIds)
+  }
+  await supabase.from('eleves').delete().eq('class_id', classe.id)
+  await supabase.from('emploi_du_temps').delete().eq('class_id', classe.id)
+  await supabase.from('classes').delete().eq('id', classe.id)
+
+  revalidatePath('/planning')
+  revalidatePath('/parametres')
+  redirect('/setup')
 }
