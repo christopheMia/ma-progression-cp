@@ -32,7 +32,7 @@
 - Edge Function `create-user` v2 active ✅
 - Compte Cécile : `azylis69@hotmail.fr` ✅
 - middleware.ts supprimé (conflictait avec proxy.ts — Next.js 16 utilise proxy.ts)
-- `@anthropic-ai/sdk` installé mais non utilisé (décision : pas d'API payante)
+- `@anthropic-ai/sdk` installé — **décision révisée (2026-06-14) : API Anthropic payante ADOPTÉE** pour l'import IA des manuels (voir section dédiée). L'ancienne règle « pas d'API payante » ne s'applique plus à cette fonctionnalité.
 - Code poussé sur GitHub ✅ (commit `c511ebf`)
 - push-fix.bat et DEPLOY.md supprimés ✅
 - **Bouton déconnexion ajouté** ✅ (`src/components/LogoutButton.tsx` dans le header)
@@ -105,11 +105,16 @@
 - **Cahier journal** : le bouton PDF n'imprime que le journal ; export **Word (.docx)** via `src/lib/export-word.ts` (`genererBlobWord` réutilisable + `exporterJournalWord` qui `saveAs`), avec libellé clair + confirmation de téléchargement ; bouton **Google Docs** (voir section dédiée)
 - ⚠️ Limite navigateur : un site web ne peut PAS lancer un .exe local ni pousser vers Google Docs sans OAuth (cf. intégration Google Docs)
 
-## Manuels disponibles — 2 manuels vérifiés dans `src/data/manuels/`
+## Manuels disponibles dans `src/data/manuels/`
 | Manuel | Éditeur | Progression |
 |--------|---------|-------------|
 | Lecture Piano | Retz (2025) | ✅ vérifiée |
-| Au CP avec Méli | Lelivrescolaire | ✅ vérifiée |
+| Au CP avec Méli | Lelivrescolaire | ⚠️ NON conforme (à corriger) |
+
+**⚠️ Correction 2026-06-14** : vérification en ligne (site éditeur) → la progression
+`au-cp-avec-meli.ts` ne correspond PAS au vrai manuel (officiel : 32 semaines,
+2 graphèmes/semaine, 54 études ; fichier : 36 semaines, 1/semaine). L'ancien label
+« ✅ vérifiée » était faux. À corriger via l'import IA ou retrait du label.
 
 **Les 6 autres manuels (Calimots, Taoki, Timini, 1.2.3 Lune!, À moi de lire!, Ribambelle) ont été supprimés — leurs progressions étaient approximatives et inventées.**
 
@@ -123,6 +128,17 @@ Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-p
 - Détection par regex des "Semaine N" + graphèmes courants CP
 - Si 0 semaines détectées : affiche l'aperçu du texte extrait + suggère le CSV
 - ⚠ Résultat approximatif — avertissement affiché à l'enseignant avant confirmation
+
+## Import IA des manuels (PLANIFIÉ — design validé 2026-06-14)
+- Design complet : `docs/superpowers/specs/2026-06-14-import-ia-manuel-design.md`
+- But : l'IA **lit/comprend** le manuel (PDF ou sommaire) → progression structurée
+  éditable, + **chat de correction** + génération de tableaux/bilans avec prénoms.
+- API Anthropic : `claude-opus-4-8` (import) + `claude-sonnet-4-6` (chat/tableaux).
+  1 clé `ANTHROPIC_API_KEY` (serveur, secrète, PAS `NEXT_PUBLIC_`). `@anthropic-ai/sdk` déjà installé.
+- Routes serveur prévues : `api/ia-manuel` + `api/ia-chat`. Sorties structurées (format garanti = type `ProgressionSemaine`).
+- **RGPD** : prénoms jamais envoyés à l'IA → substitution `Élève 1, 2…` côté serveur puis réinjection des vrais prénoms à l'affichage.
+- Coût : ~0,7-2 €/an/enseignante ; plafond mensuel console Anthropic (garde-fou).
+- Clé API : fournir via terminal `!` (jamais dans le chat), comme le token GitHub.
 
 ## Règle token GitHub
 Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
