@@ -92,6 +92,26 @@ export default async function AccueilPage() {
           </Link>
         ))}
       </div>
+
+      {/* Mes outils externes */}
+      <div>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">Mes outils</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            { href: 'https://gemini.google.com', emoji: '✨', titre: 'Gemini', sous: "Assistant IA de Google" },
+            { href: 'https://notebooklm.google.com', emoji: '📓', titre: 'NotebookLM', sous: 'Bloc-notes IA de Google' },
+          ].map(o => (
+            <a key={o.href} href={o.href} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+              <div className="text-2xl">{o.emoji}</div>
+              <div>
+                <div className="font-semibold text-slate-900">{o.titre} <span className="text-slate-400 text-xs font-normal">↗</span></div>
+                <div className="text-sm text-slate-500">{o.sous}</div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
