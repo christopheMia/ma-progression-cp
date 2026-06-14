@@ -19,6 +19,12 @@
 - NEXT_PUBLIC_SUPABASE_URL
 - NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+## Intégration Google Docs (cahier journal)
+- Composant : `src/components/semaine/GoogleDocsButton.tsx` — OAuth navigateur (Google Identity Services, scope `drive.file`), upload du .docx vers Drive avec conversion en Google Doc, puis ouverture
+- Variable requise : `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (Client ID OAuth Web, PUBLIC — pas un secret). Sans elle, le bouton « 📝 Google Docs » ne s'affiche pas.
+- Config Google Cloud : activer Google Drive API, écran de consentement en mode Test (ajouter les emails utilisateurs comme testeurs), créer un ID client OAuth « Application Web », origines JS autorisées = https://ma-progression-cp.vercel.app + http://localhost:3000
+- Après ajout de la variable sur Vercel : redéployer pour qu'elle soit prise en compte (NEXT_PUBLIC_* inliné au build)
+
 ## État actuel (session 2026-06-14)
 - Build : propre ✅ (`npx next build` → Compiled successfully)
 - Texte visible sur toutes les pages ✅
