@@ -25,6 +25,7 @@ export default function TimetableEditor({ onFinish, loading }: {
   return (
     <div className="space-y-4">
       <p className="text-gray-600">Saisissez votre emploi du temps type. Vous pourrez le modifier plus tard.</p>
+      <p className="text-xs text-gray-400">Pour chaque créneau : jour + heure de début + heure de fin + matière, puis « + Ajouter ce créneau ». Ex : lundi · 09:00–09:45 · Lecture.</p>
 
       <div className="grid grid-cols-2 gap-2">
         <select value={jour} onChange={e => setJour(e.target.value)}

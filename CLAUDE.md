@@ -33,6 +33,11 @@
     toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
 - **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
 
+## Mode d'emploi / Aide (ajouté session 2026-06-14)
+- Page : `src/app/(app)/aide/page.tsx` — accessible via ❓ Aide dans le header
+- Contenu simple pour Cécile : remplir manuel/CSV, date, élèves, emploi du temps, suivi, journal, impression, paramètres
+- Bulles d'aide courtes ajoutées : StudentListEditor + TimetableEditor (setup) et EmploiDuTempsEditor (paramètres)
+
 ## Page Paramètres (ajoutée session 2026-06-14)
 - Route : `src/app/(app)/parametres/page.tsx` — accessible via ⚙️ Paramètres dans le header
 - Actions : `src/lib/actions/parametres.ts` (⚠️ `creerClasse` ne fait que des INSERT — ne PAS y renvoyer, ça duplique la classe)

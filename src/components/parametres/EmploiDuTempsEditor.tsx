@@ -39,6 +39,7 @@ export default function EmploiDuTempsEditor({ initial }: { initial: Creneau[] })
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-gray-400">Choisissez jour + horaires + matière, puis « + Ajouter ce créneau ». Ex : lundi · 09:00–09:45 · Lecture.</p>
       <div className="grid grid-cols-2 gap-2">
         <select value={jour} onChange={e => setJour(e.target.value)}
           className="border rounded-lg p-2 col-span-2 text-gray-900 bg-white">
