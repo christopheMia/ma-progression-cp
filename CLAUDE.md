@@ -33,6 +33,15 @@
     toujours l'utilisateur connecté vers /planning, impossible de revoir /connexion
 - **Lien cassé `/parametres` corrigé** → remplacé par `/planning` dans le header (page parametres inexistante)
 
+## Page Paramètres (ajoutée session 2026-06-14)
+- Route : `src/app/(app)/parametres/page.tsx` — accessible via ⚙️ Paramètres dans le header
+- Actions : `src/lib/actions/parametres.ts` (⚠️ `creerClasse` ne fait que des INSERT — ne PAS y renvoyer, ça duplique la classe)
+- Composants : `src/components/parametres/{ElevesEditor,EmploiDuTempsEditor,RentreeEditor,ManuelEditor}.tsx`
+- **Élèves** : `updateEleves` — préserve le suivi par prénom (garde / ajoute / supprime), efface les acquisitions des élèves retirés
+- **Emploi du temps** : `updateEmploiDuTemps` — delete + insert (sans impact sur progression / journaux déjà générés)
+- **Date de rentrée** : `updateRentreeDate` — recalcule `date_debut` de chaque semaine SANS supprimer les semaines (préserve suivi + journaux)
+- **Manuel** : `updateManuel` — ⚠️ DESTRUCTIF : supprime acquisitions + cahier_journal + semaines puis régénère ; double confirmation dans l'UI ; réutilise `ManualSelector` (donc import PDF/CSV possible)
+
 ## Impression (ajoutée session 2026-06-14)
 - Helpers : `src/lib/print.ts` → `imprimerPage()` (toute la page) et `imprimerElement(el)` (un seul bloc)
 - CSS : `@media print` dans `globals.css` (classe `.no-print` pour masquer les boutons,
@@ -90,3 +99,6 @@ Toujours utiliser le terminal VS Code avec `!` :
 
 4. **Tester le rendu d'impression** — avec le compte Cécile, cliquer chaque bouton 🖨️
    (planning, fiche semaine, suivi élèves, cahier journal) et vérifier l'aperçu avant impression
+
+5. **Tester la page Paramètres** — modifier élèves / emploi du temps / date de rentrée et vérifier
+   que le suivi est préservé ; tester le changement de manuel (destructif, avec confirmation)

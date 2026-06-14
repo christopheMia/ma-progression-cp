@@ -13,6 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <h1 className="font-bold text-lg">🍎 Ma Progression CP</h1>
         <div className="flex items-center gap-5">
           <a href="/planning" className="text-blue-200 hover:text-white text-sm">📅 Planning</a>
+          <a href="/parametres" className="text-blue-200 hover:text-white text-sm">⚙️ Paramètres</a>
           <LogoutButton />
         </div>
       </header>
