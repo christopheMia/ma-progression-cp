@@ -57,7 +57,7 @@ export default function SetupPage() {
       </div>
 
       {step === 1 && (
-        <ManualSelector onSelect={(manuelId, customProgression) => {
+        <ManualSelector prenom={undefined} onSelect={(manuelId, customProgression) => {
           setData(d => ({ ...d, manuelId, customProgression }))
           setStep(2)
         }} />

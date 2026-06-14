@@ -129,16 +129,28 @@ Pour les autres manuels : import PDF (extraction automatique gratuite via `pdf-p
 - Si 0 semaines détectées : affiche l'aperçu du texte extrait + suggère le CSV
 - ⚠ Résultat approximatif — avertissement affiché à l'enseignant avant confirmation
 
-## Import IA des manuels (PLANIFIÉ — design validé 2026-06-14)
-- Design complet : `docs/superpowers/specs/2026-06-14-import-ia-manuel-design.md`
-- But : l'IA **lit/comprend** le manuel (PDF ou sommaire) → progression structurée
-  éditable, + **chat de correction** + génération de tableaux/bilans avec prénoms.
-- API Anthropic : `claude-opus-4-8` (import) + `claude-sonnet-4-6` (chat/tableaux).
-  1 clé `ANTHROPIC_API_KEY` (serveur, secrète, PAS `NEXT_PUBLIC_`). `@anthropic-ai/sdk` déjà installé.
-- Routes serveur prévues : `api/ia-manuel` + `api/ia-chat`. Sorties structurées (format garanti = type `ProgressionSemaine`).
-- **RGPD** : prénoms jamais envoyés à l'IA → substitution `Élève 1, 2…` côté serveur puis réinjection des vrais prénoms à l'affichage.
-- Coût : ~0,7-2 €/an/enseignante ; plafond mensuel console Anthropic (garde-fou).
+## Import IA des manuels (IMPLÉMENTÉ — sous-système 1, 2026-06-14)
+- Design : `docs/superpowers/specs/2026-06-14-import-ia-manuel-design.md`
+  Plan : `docs/superpowers/plans/2026-06-14-import-ia-manuel.md`
+- But : l'IA **lit/comprend** le manuel (PDF ou sommaire collé) → progression
+  structurée **éditable**, + **chat de correction** personnalisé (boîte de dialogue).
+- Fichiers créés :
+  - `src/lib/ia/anthropic.ts` (client + `MODELE_IMPORT=claude-opus-4-8`, `MODELE_CHAT=claude-sonnet-4-6`)
+  - `src/lib/ia/schema.ts` (schéma JSON imposé + `normalizeProgression`, max 36 semaines)
+  - `src/lib/ia/prompts.ts` (`SYSTEM_IMPORT`, `userImport`, `systemChat`)
+  - `src/app/api/ia-manuel/route.ts` (Opus, sorties structurées) — PDF (pdf-parse) ou texte
+  - `src/app/api/ia-chat/route.ts` (Sonnet, prompt caching, historique borné 10)
+  - `src/components/setup/IaImport.tsx` (tableau éditable + boîte de dialogue violette)
+  - 3ᵉ onglet « 🤖 Import IA » dans `ManualSelector.tsx` (par défaut)
+- `@anthropic-ai/sdk` installé (`^0.104.x`). Tests : `src/lib/ia/__tests__/`.
+- **RGPD** : ce sous-système n'envoie AUCUNE donnée élève (seulement sons/semaines/pages).
+  L'anonymisation des prénoms concerne le sous-système 2 (bilans élèves, à venir).
+- ⚠️ **À FAIRE (utilisateur)** : ajouter `ANTHROPIC_API_KEY` (secrète, PAS `NEXT_PUBLIC_`)
+  en local (`.env.local`) ET sur Vercel → redéployer. Sans la clé, les routes renvoient
+  une erreur claire (le reste de l'appli fonctionne).
+- Console Anthropic : charger des crédits + **plafond mensuel** (garde-fou). Coût ~0,7-2 €/an/enseignante.
 - Clé API : fournir via terminal `!` (jamais dans le chat), comme le token GitHub.
+- Sous-système 2 (PLANIFIÉ) : tableaux/bilans élèves avec anonymisation `Élève N`.
 
 ## Règle token GitHub
 Ne jamais coller le token dans le chat — GitHub le révoque automatiquement.
