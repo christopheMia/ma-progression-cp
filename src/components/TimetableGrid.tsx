@@ -2,6 +2,12 @@
 import { useState } from 'react'
 import { couleurMatiere } from '@/data/trame-edt'
 
+function addMinutes(t: string, mins: number): string {
+  const [h, m] = t.split(':').map(Number)
+  const tot = h * 60 + m + mins
+  return `${String(Math.floor(tot / 60) % 24).padStart(2, '0')}:${String(tot % 60).padStart(2, '0')}`
+}
+
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 const LABELS: Record<string, string> = { lundi: 'Lundi', mardi: 'Mardi', mercredi: 'Mercredi', jeudi: 'Jeudi', vendredi: 'Vendredi' }
 const MATIERES = ['Appropriation des graphèmes', 'Écriture', 'Phonologie', 'Vocabulaire', 'Lecture-écriture', 'Lecture compréhension', "Production d'écrits", 'Chut je lis', 'Calcul mental', 'Mathématiques', 'Histoire géographie', 'Sciences et technologie', 'Arts visuels', 'EPS', 'Anglais', 'EMC']
@@ -58,15 +64,27 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   }
 
   function ajouterLigne() {
-    const debut = '12:00', fin = '12:30'
-    setCreneaux(prev => prev.some(c => c.heure_debut === debut)
-      ? prev
-      : [...prev, ...cols.map(jour => ({ jour, heure_debut: debut, heure_fin: fin, matiere: '', couleur: null, type: 'cours' as const }))])
+    setCreneaux(prev => {
+      const lastFin = prev.reduce((max, c) => (c.heure_fin > max ? c.heure_fin : max), '08:00')
+      const debut = lastFin, fin = addMinutes(lastFin, 30)
+      if (prev.some(c => c.heure_debut === debut && c.heure_fin === fin)) return prev
+      return [...prev, ...cols.map(jour => ({ jour, heure_debut: debut, heure_fin: fin, matiere: '', couleur: null, type: 'cours' as const }))]
+    })
   }
 
   function setHoraire(debutOld: string, finOld: string, field: 'heure_debut' | 'heure_fin', value: string) {
-    setCreneaux(prev => prev.map(c =>
-      c.heure_debut === debutOld && c.heure_fin === finOld ? { ...c, [field]: value } : c))
+    setCreneaux(prev => {
+      const newDebut = field === 'heure_debut' ? value : debutOld
+      const newFin = field === 'heure_fin' ? value : finOld
+      // Rejette une édition qui ferait coïncider cette tranche avec une AUTRE tranche existante
+      // (sinon deux jeux de créneaux partagent la même clé horaire → corruption silencieuse).
+      const collision = prev.some(c =>
+        !(c.heure_debut === debutOld && c.heure_fin === finOld) &&
+        c.heure_debut === newDebut && c.heure_fin === newFin)
+      if (collision) return prev
+      return prev.map(c =>
+        c.heure_debut === debutOld && c.heure_fin === finOld ? { ...c, [field]: value } : c)
+    })
   }
 
   return (
@@ -104,6 +122,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                         <select
                           value={c?.matiere ?? ''}
                           onChange={e => setMatiere(jour, debut, fin, e.target.value)}
+                          aria-label={`${LABELS[jour]} ${debut}-${fin}`}
                           className="w-full bg-transparent text-gray-900 text-xs p-1 outline-none">
                           <option value="">—</option>
                           {Array.from(new Set([...MATIERES, c?.matiere].filter(Boolean) as string[])).map(m => <option key={m} value={m}>{m}</option>)}
