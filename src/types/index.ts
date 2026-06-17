@@ -44,6 +44,8 @@ export type CreneauHoraire = {
   heure_fin: string
   matiere: string
   ordre: number
+  couleur: string | null
+  type: 'cours' | 'routine'
 }
 
 export type SeanceJournal = {
