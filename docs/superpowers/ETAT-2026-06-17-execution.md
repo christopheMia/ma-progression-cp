@@ -26,19 +26,24 @@ Exécution via **subagent-driven-development** (1 sous-agent implémenteur par t
 - Commits : `cdbee8a` (logique), `5e621d8` (import statique + guard insert).
 - Revue spec ✅ + revue qualité ✅ (`src/lib/actions/setup.ts`, `src/lib/actions/parametres.ts`).
 
-### ⏳ Task 4 — Éditeur grille `TimetableGrid` (remplace les 2 éditeurs liste)
-- **Implémentée + commitée `3714962`. Build `npx next build` = Compiled successfully.**
-- **RESTE À FAIRE : revue spec + revue qualité** (non faites avant l'écriture de ce fichier).
-- Fichiers : créés `src/components/TimetableGrid.tsx`, `src/components/parametres/EmploiDuTempsGrille.tsx` ; supprimés `src/components/setup/TimetableEditor.tsx`, `src/components/parametres/EmploiDuTempsEditor.tsx` ; modifiés `src/app/(app)/setup/page.tsx`, `src/app/(app)/parametres/page.tsx`, `src/lib/actions/setup.ts` (signature `emploiDuTemps` élargie à `couleur?`/`type?`, branche « EDT fourni » préserve `c.couleur`/`c.type`).
-- Points à vérifier en revue : la grille du setup préserve bien les couleurs jusqu'en base ; la page paramètres charge bien `couleur`/`type` existants ; pas de régression d'impression couleur.
+### ✅ Task 4 — Éditeur grille `TimetableGrid` (remplace les 2 éditeurs liste)
+- Commits : `3714962` (implémentation), `597d785` (correctifs revue qualité).
+- Revue spec ✅ (couleurs préservées jusqu'en base, anciens éditeurs supprimés, build vert) + revue qualité ✅ (corrigé : garde anti-collision dans `setHoraire`, `ajouterLigne` après la dernière tranche, `aria-label`, suppression du `key` bump mort).
+- Fichiers : créés `src/components/TimetableGrid.tsx`, `src/components/parametres/EmploiDuTempsGrille.tsx` ; supprimés `src/components/setup/TimetableEditor.tsx`, `src/components/parametres/EmploiDuTempsEditor.tsx` ; modifiés `src/app/(app)/setup/page.tsx`, `src/app/(app)/parametres/page.tsx`, `src/lib/actions/setup.ts`.
 
-## ACTIONS À FAIRE (dans l'ordre)
+## ✅ PHASE A TERMINÉE ET DÉPLOYABLE
+- Build `npx next build` vert ; suite de tests `npx jest` = **27/27 verts**.
+- À faire pour DÉPLOYER la Phase A seule : pousser la branche + appliquer la migration `005_emploi_du_temps_grille.sql` en prod (MCP Supabase / dashboard). Indépendant de multi-méthodes.
 
-1. **Finir Task 4** : revue spec (lire `git show 3714962`, vérifier conformité au plan Task 4) + revue qualité (`git diff 5e621d8 3714962`). Corriger si besoin. → **Phase A terminée et déployable.**
-2. **Tester/valider Phase A en local** (optionnel) : `npm test` (doit être vert) + `npm run dev` → /setup grille pré-remplie, /parametres édition couleurs + routine + recharger.
-3. **Décider l'ordre de la suite** : recommandé = implémenter le **plan multi-méthodes** (`2026-06-16-multi-methodes.md`, Tasks 1→14) AVANT la Phase B. Sinon, faire Phase C (crédit, indépendante) puis B après multi-méthodes.
+## ACTIONS À FAIRE (dans l'ordre) — reprise
+
+1. **(optionnel) Valider Phase A en local** : `npm run dev` → /setup grille pré-remplie ; /parametres édition couleurs + routine + recharger l'EDT type.
+2. **(optionnel) Déployer la Phase A seule** : push branche + appliquer `005_emploi_du_temps_grille.sql` en prod. Donne tout de suite à Cécile l'EDT en grille pré-rempli.
+3. **Décider l'ordre de la suite** : recommandé = implémenter le **plan multi-méthodes** (`2026-06-16-multi-methodes.md`, Tasks 1→14) AVANT la Phase B (qui dépend de `progression`). La **Phase C (crédit)** est indépendante et peut se faire à tout moment.
 4. **Phase B du plan EDT/journal (Tasks 5-8)** : format journal 3 colonnes, `genererCahierJournal(edt, progression)`, route `api/ia-journal`, bouton « ✨ Générer la journée ». **NÉCESSITE la table `progression`** (multi-méthodes).
-5. **Phase C (Tasks 9-10)** : `messageErreurIA` (épuisement crédit) dans toutes les routes IA ; jauge budget estimée (`ia_usage` migration `006`, `estimerCoutEuros`, `BudgetIaIndicator` sur l'accueil). Indépendante — peut se faire à tout moment.
+5. **Phase C (Tasks 9-10)** : `messageErreurIA` (épuisement crédit) dans toutes les routes IA ; jauge budget estimée (`ia_usage` migration `006`, `estimerCoutEuros`, `BudgetIaIndicator` sur l'accueil). Indépendante.
+
+Reprise via subagent-driven-development : commencer par le plan multi-méthodes (ou la Phase C si on veut un autre incrément indépendant).
 
 ## Migrations à appliquer EN PROD (MCP Supabase / dashboard) — quand le code est en ligne
 
