@@ -4,6 +4,7 @@ import { genererProgression } from '@/lib/progression'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import { redirect } from 'next/navigation'
 import type { ProgressionSemaine } from '@/data/manuels'
+import { TRAME_EDT_CP } from '@/data/trame-edt'
 
 export async function creerClasse(formData: {
   manuelId: string
@@ -35,7 +36,6 @@ export async function creerClasse(formData: {
   const semainesData = progression.map(s => ({ ...s, class_id: classe.id }))
   await supabase.from('semaines').insert(semainesData)
 
-  const { TRAME_EDT_CP } = await import('@/data/trame-edt')
   const source = formData.emploiDuTemps.length > 0
     ? formData.emploiDuTemps.map(c => ({
         jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,

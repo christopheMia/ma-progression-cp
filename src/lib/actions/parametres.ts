@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import type { ProgressionSemaine } from '@/data/manuels'
+import { TRAME_EDT_CP } from '@/data/trame-edt'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; type: 'cours' | 'routine' }
 
@@ -76,10 +77,11 @@ export async function updateEmploiDuTemps(creneaux: Omit<Creneau, 'ordre'>[]) {
 
 /** Repart de la trame CP par défaut (efface l'EDT courant). */
 export async function rechargerEmploiDuTempsType() {
-  const { TRAME_EDT_CP } = await import('@/data/trame-edt')
   const { supabase, classe } = await getClasse()
   await supabase.from('emploi_du_temps').delete().eq('class_id', classe.id)
-  await supabase.from('emploi_du_temps').insert(TRAME_EDT_CP.map(c => ({ ...c, class_id: classe.id })))
+  if (TRAME_EDT_CP.length) {
+    await supabase.from('emploi_du_temps').insert(TRAME_EDT_CP.map(c => ({ ...c, class_id: classe.id })))
+  }
   revalidatePath('/parametres')
 }
 
