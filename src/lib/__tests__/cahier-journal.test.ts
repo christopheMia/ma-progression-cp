@@ -15,9 +15,9 @@ const semaine: Semaine = {
 }
 
 const emploiDuTemps: CreneauHoraire[] = [
-  { id: 'c1', class_id: 'cls-1', jour: 'lundi', heure_debut: '09:00', heure_fin: '09:45', matiere: 'Lecture', ordre: 0 },
-  { id: 'c2', class_id: 'cls-1', jour: 'lundi', heure_debut: '10:00', heure_fin: '10:45', matiere: 'Mathématiques', ordre: 1 },
-  { id: 'c3', class_id: 'cls-1', jour: 'mardi', heure_debut: '09:00', heure_fin: '09:45', matiere: 'Explorer le monde', ordre: 0 },
+  { id: 'c1', class_id: 'cls-1', jour: 'lundi', heure_debut: '09:00', heure_fin: '09:45', matiere: 'Lecture', ordre: 0, couleur: null, type: 'cours' },
+  { id: 'c2', class_id: 'cls-1', jour: 'lundi', heure_debut: '10:00', heure_fin: '10:45', matiere: 'Mathématiques', ordre: 1, couleur: null, type: 'cours' },
+  { id: 'c3', class_id: 'cls-1', jour: 'mardi', heure_debut: '09:00', heure_fin: '09:45', matiere: 'Explorer le monde', ordre: 0, couleur: null, type: 'cours' },
 ]
 
 describe('genererCahierJournal', () => {
