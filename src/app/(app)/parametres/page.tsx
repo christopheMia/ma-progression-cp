@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { MANUELS } from '@/data/manuels'
 import PrenomEnseignantEditor from '@/components/parametres/PrenomEnseignantEditor'
 import ElevesEditor from '@/components/parametres/ElevesEditor'
-import EmploiDuTempsEditor from '@/components/parametres/EmploiDuTempsEditor'
+import EmploiDuTempsGrille from '@/components/parametres/EmploiDuTempsGrille'
 import RentreeEditor from '@/components/parametres/RentreeEditor'
 import ManuelEditor from '@/components/parametres/ManuelEditor'
 import ResetButton from '@/components/parametres/ResetButton'
@@ -51,8 +51,9 @@ export default async function ParametresPage() {
       </Section>
 
       <Section titre="🕐 Emploi du temps">
-        <EmploiDuTempsEditor initial={(edt ?? []).map(c => ({
-          jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, matiere: c.matiere,
+        <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
+          jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
+          matiere: c.matiere, couleur: c.couleur ?? null, type: (c.type ?? 'cours') as 'cours' | 'routine',
         }))} />
       </Section>
 

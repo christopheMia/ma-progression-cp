@@ -10,7 +10,7 @@ export async function creerClasse(formData: {
   manuelId: string
   rentreeDate: string
   eleves: string[]
-  emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }>
+  emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur?: string | null; type?: 'cours' | 'routine' }>
   customProgression?: ProgressionSemaine[]
 }) {
   const supabase = await createClient()
@@ -39,7 +39,7 @@ export async function creerClasse(formData: {
   const source = formData.emploiDuTemps.length > 0
     ? formData.emploiDuTemps.map(c => ({
         jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
-        matiere: c.matiere, ordre: c.ordre, couleur: null as string | null, type: 'cours' as const,
+        matiere: c.matiere, ordre: c.ordre, couleur: c.couleur ?? null, type: c.type ?? 'cours' as const,
       }))
     : TRAME_EDT_CP
   await supabase.from('emploi_du_temps').insert(source.map(c => ({ ...c, class_id: classe.id })))

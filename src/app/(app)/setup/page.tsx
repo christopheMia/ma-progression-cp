@@ -3,7 +3,8 @@ import { useState } from 'react'
 import ManualSelector from '@/components/setup/ManualSelector'
 import RentreeDatePicker from '@/components/setup/RentreeDatePicker'
 import StudentListEditor from '@/components/setup/StudentListEditor'
-import TimetableEditor from '@/components/setup/TimetableEditor'
+import TimetableGrid from '@/components/TimetableGrid'
+import { TRAME_EDT_CP } from '@/data/trame-edt'
 import DemoButton from '@/components/DemoButton'
 import { creerClasse } from '@/lib/actions/setup'
 import type { ProgressionSemaine } from '@/data/manuels'
@@ -12,7 +13,7 @@ type WizardData = {
   manuelId: string
   rentreeDate: string
   eleves: string[]
-  emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number }>
+  emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur?: string | null; type?: 'cours' | 'routine' }>
   customProgression?: ProgressionSemaine[]
 }
 
@@ -69,7 +70,12 @@ export default function SetupPage() {
         <StudentListEditor onSelect={eleves => { setData(d => ({ ...d, eleves })); setStep(4) }} />
       )}
       {step === 4 && (
-        <TimetableEditor onFinish={handleFinish} loading={loading} />
+        <TimetableGrid
+          initial={TRAME_EDT_CP.map(c => ({ jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, matiere: c.matiere, couleur: c.couleur, type: c.type }))}
+          saving={loading}
+          finishLabel="🎉 Générer ma progression annuelle"
+          onSave={(creneaux) => handleFinish(creneaux.map((c, i) => ({ ...c, ordre: i })))}
+        />
       )}
     </div>
   )
