@@ -35,8 +35,14 @@ export async function creerClasse(formData: {
   const semainesData = progression.map(s => ({ ...s, class_id: classe.id }))
   await supabase.from('semaines').insert(semainesData)
 
-  const edtData = formData.emploiDuTemps.map(c => ({ ...c, class_id: classe.id }))
-  if (edtData.length > 0) await supabase.from('emploi_du_temps').insert(edtData)
+  const { TRAME_EDT_CP } = await import('@/data/trame-edt')
+  const source = formData.emploiDuTemps.length > 0
+    ? formData.emploiDuTemps.map(c => ({
+        jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
+        matiere: c.matiere, ordre: c.ordre, couleur: null as string | null, type: 'cours' as const,
+      }))
+    : TRAME_EDT_CP
+  await supabase.from('emploi_du_temps').insert(source.map(c => ({ ...c, class_id: classe.id })))
 
   redirect('/accueil')
 }
