@@ -36,12 +36,20 @@ export default function StudentListEditor({ onSelect }: { onSelect: (eleves: str
           </span>
         ))}
       </div>
-      {eleves.length > 0 && (
+      {eleves.length > 0 ? (
         <button onClick={() => onSelect(eleves)}
           className="w-full bg-violet-700 text-white rounded-xl p-4 font-semibold hover:bg-violet-800">
           Continuer avec {eleves.length} élève{eleves.length > 1 ? 's' : ''} →
         </button>
+      ) : (
+        <button onClick={() => onSelect([])}
+          className="w-full border-2 border-violet-300 text-violet-700 rounded-xl p-4 font-semibold hover:bg-violet-50">
+          Je les ajouterai plus tard →
+        </button>
       )}
+      <p className="text-xs text-gray-400 text-center">
+        Pas encore la liste ? Commencez sans, vous les ajouterez dans <strong>Paramètres → Élèves</strong> (le suivi est conservé).
+      </p>
     </div>
   )
 }

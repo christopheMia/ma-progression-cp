@@ -27,10 +27,11 @@ export async function creerClasse(formData: {
 
   if (classError || !classe) throw new Error('Erreur création classe')
 
-  const elevesData = formData.eleves.map((prenom, i) => ({
+  const elevesData = (formData.eleves ?? []).map((prenom, i) => ({
     class_id: classe.id, prenom, ordre: i
   }))
-  await supabase.from('eleves').insert(elevesData)
+  // Démarrage possible sans élèves : ils s'ajoutent ensuite dans Paramètres → Élèves.
+  if (elevesData.length) await supabase.from('eleves').insert(elevesData)
 
   const progression = genererProgression(formData.manuelId, formData.rentreeDate, formData.customProgression)
   const semainesData = progression.map(s => ({ ...s, class_id: classe.id }))
