@@ -27,4 +27,8 @@ describe('TRAME_EDT_CP', () => {
     expect(m).toBeTruthy()
     expect(m?.couleur).toBe('#fbcfe8')
   })
+
+  test('18 tranches × 4 jours = 72 créneaux', () => {
+    expect(TRAME_EDT_CP).toHaveLength(72)
+  })
 })

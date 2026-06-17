@@ -10,18 +10,12 @@ export function couleurMatiere(matiere: string): string | null {
   if (m.includes('arts')) return '#ddd6fe' // violet
   if (m.includes('anglais')) return '#fed7aa' // orange
   if (m.includes('eps')) return '#fef08a' // jaune
-  return null
+  return null // EMC, Histoire géographie, Sciences, Lecture compréhension… : pas de teinte définie
 }
 
-type LigneTrame = {
-  debut: string
-  fin: string
-  type: 'cours' | 'routine'
-  /** Même contenu sur les 4 jours. */
-  commun?: string
-  /** Contenu différent par jour (ordre : lundi, mardi, jeudi, vendredi). */
-  parJour?: [string, string, string, string]
-}
+type LigneTrame =
+  | { debut: string; fin: string; type: 'cours' | 'routine'; commun: string }
+  | { debut: string; fin: string; type: 'cours' | 'routine'; parJour: [string, string, string, string] }
 
 const JOURS_TRAME = ['lundi', 'mardi', 'jeudi', 'vendredi'] as const
 
@@ -62,7 +56,7 @@ export const TRAME_EDT_CP: CreneauTrame[] = (() => {
   let ordre = 0
   for (const ligne of LIGNES) {
     JOURS_TRAME.forEach((jour, idx) => {
-      const matiere = ligne.commun ?? ligne.parJour![idx]
+      const matiere = 'commun' in ligne ? ligne.commun : ligne.parJour[idx]
       out.push({
         jour,
         heure_debut: ligne.debut,
