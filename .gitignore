@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Brainstorming visual companion
 .superpowers/
+
+# Méthodes fournies (PDF d'entrée pour l'import IA — gardés en local, hors dépôt)
+docsmethodes/
