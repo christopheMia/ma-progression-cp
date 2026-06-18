@@ -2,25 +2,33 @@
 import { useState } from 'react'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
+import { MATIERES_METHODE, LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
 export default function IaImport({
   prenom,
+  matiereFixe,
   onSelect,
+  onSave,
 }: {
   prenom?: string
-  onSelect: (id: string, progression: ProgressionSemaine[]) => void
+  matiereFixe?: MatiereMethode
+  onSelect?: (id: string, progression: ProgressionSemaine[]) => void
+  onSave?: (matiere: MatiereMethode, progression: ProgressionSemaine[]) => Promise<void> | void
 }) {
   const [texte, setTexte] = useState('')
+  const [matiere, setMatiere] = useState<MatiereMethode>(matiereFixe ?? 'francais')
   const [progression, setProgression] = useState<ProgressionSemaine[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chat, setChat] = useState<ChatTurn[]>([])
   const [message, setMessage] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
 
   async function lancerImport(form: FormData) {
+    form.append('matiere', matiere)
     setError(null); setLoading(true); setProgression(null)
     try {
       const res = await fetch('/api/ia-manuel', { method: 'POST', body: form })
@@ -41,17 +49,22 @@ export default function IaImport({
   }
 
   async function importPdf(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return
+    const files = e.target.files
+    if (!files || files.length === 0) return
     setError(null); setLoading(true); setProgression(null)
     try {
       // Extraction du texte DANS le navigateur → on n'envoie que le texte (léger).
-      const txt = await extractPdfText(file)
-      if (txt.trim().length < 20) {
+      const textes: string[] = []
+      for (const file of Array.from(files)) {
+        textes.push(await extractPdfText(file))
+      }
+      const combine = textes.join('\n\n--- fichier suivant ---\n\n')
+      if (combine.trim().length < 20) {
         setError('Ce PDF ne contient pas de texte sélectionnable (PDF scanné ?). Collez plutôt le sommaire en texte.')
         setLoading(false)
         return
       }
-      const form = new FormData(); form.append('texte', txt)
+      const form = new FormData(); form.append('texte', combine)
       await lancerImport(form)
     } catch (err) {
       setError(`Lecture du PDF impossible : ${err instanceof Error ? err.message : String(err)}`)
@@ -62,6 +75,17 @@ export default function IaImport({
   function importTexte() {
     if (texte.trim().length < 20) { setError('Collez le sommaire (texte un peu plus long).'); return }
     const form = new FormData(); form.append('texte', texte); lancerImport(form)
+  }
+
+  async function valider() {
+    if (!progression) return
+    if (onSave) {
+      setSaving(true)
+      try { await onSave(matiere, progression) }
+      finally { setSaving(false) }
+    } else if (onSelect) {
+      onSelect('custom', progression)
+    }
   }
 
   async function envoyerCorrection() {
@@ -81,15 +105,31 @@ export default function IaImport({
     finally { setChatLoading(false) }
   }
 
+  const totalNotions = progression?.reduce((n, s) => n + s.items.length, 0) ?? 0
+
   return (
     <div className="space-y-4">
       {!progression && (
         <div className="space-y-3">
+          {!matiereFixe && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quelle méthode importes-tu ?</label>
+              <select value={matiere} onChange={e => setMatiere(e.target.value as MatiereMethode)} disabled={loading}
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white">
+                {MATIERES_METHODE.map(m => (
+                  <option key={m} value={m}>{LABELS_MATIERE[m]}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <p className="text-sm text-gray-600">
             Déposez le PDF de votre manuel <strong>ou</strong> collez son sommaire. L&apos;IA reconstruit la progression — vous pourrez tout corriger ensuite.
           </p>
-          <input type="file" accept=".pdf" onChange={importPdf} disabled={loading}
+          <input type="file" accept=".pdf" multiple onChange={importPdf} disabled={loading}
             className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer disabled:opacity-50" />
+          <p className="text-xs text-gray-500">
+            Tu peux déposer plusieurs PDF (ex : les pages de programmation). Inutile d&apos;envoyer le manuel entier.
+          </p>
           <textarea value={texte} onChange={e => setTexte(e.target.value)} disabled={loading}
             placeholder="…ou collez ici le sommaire du manuel"
             className="w-full h-28 border border-gray-200 rounded-lg p-2 text-sm text-gray-900 bg-white" />
@@ -104,12 +144,16 @@ export default function IaImport({
 
       {progression && (
         <div className="space-y-4">
+          <p className="text-sm text-violet-700 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
+            {progression.length} semaines · {totalNotions} {matiere === 'maths' ? 'notions' : 'sons'} répartis
+          </p>
+
           {/* Tableau éditable */}
           <div className="max-h-72 overflow-y-auto border rounded-xl">
             <table className="w-full text-sm">
               <thead className="bg-violet-50 sticky top-0">
                 <tr className="text-left text-violet-800">
-                  <th className="px-2 py-1 w-12">Sem.</th><th className="px-2 py-1">Sons</th>
+                  <th className="px-2 py-1 w-12">Sem.</th><th className="px-2 py-1">{matiere === 'maths' ? 'Notions' : 'Sons'}</th>
                   <th className="px-2 py-1">Pages</th><th className="px-2 py-1">Mots</th>
                 </tr>
               </thead>
@@ -166,9 +210,9 @@ export default function IaImport({
             </div>
           </div>
 
-          <button onClick={() => onSelect('custom', progression)}
-            className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold">
-            ✅ Utiliser cette progression
+          <button onClick={valider} disabled={saving}
+            className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-50">
+            {saving ? 'Enregistrement…' : onSave ? '✅ Enregistrer cette méthode' : '✅ Utiliser cette progression'}
           </button>
         </div>
       )}

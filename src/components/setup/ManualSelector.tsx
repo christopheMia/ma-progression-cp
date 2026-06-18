@@ -172,7 +172,7 @@ export default function ManualSelector({
 
             {/* Mode IA */}
             {importMode === 'ia' && (
-              <IaImport prenom={prenom} onSelect={(id, prog) => onSelect(id, prog)} />
+              <IaImport prenom={prenom} matiereFixe="francais" onSelect={(id, prog) => onSelect(id, prog)} />
             )}
 
             {/* Mode PDF */}
