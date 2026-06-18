@@ -1,6 +1,6 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
-import { genererProgression } from '@/lib/progression'
+import { genererProgression, genererProgressionFrancais } from '@/lib/progression'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import { redirect } from 'next/navigation'
 import type { ProgressionSemaine } from '@/data/manuels'
@@ -36,6 +36,13 @@ export async function creerClasse(formData: {
   const progression = genererProgression(formData.manuelId, formData.rentreeDate, formData.customProgression)
   const semainesData = progression.map(s => ({ ...s, class_id: classe.id }))
   await supabase.from('semaines').insert(semainesData)
+
+  const progFr = genererProgressionFrancais(formData.manuelId, formData.customProgression)
+  if (progFr.length > 0) {
+    await supabase.from('progression').insert(
+      progFr.map(p => ({ ...p, class_id: classe.id, matiere: 'francais' as const }))
+    )
+  }
 
   const source = formData.emploiDuTemps.length > 0
     ? formData.emploiDuTemps.map(c => ({

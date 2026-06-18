@@ -37,3 +37,17 @@ export function genererProgression(
     }
   })
 }
+
+export function genererProgressionFrancais(
+  manuelId: string,
+  customProgression?: ProgressionSemaine[],
+): Array<{ numero: number; items: string[]; pages: string | null; mots_exemple: string[] | null }> {
+  const semaines = customProgression ?? MANUELS_DATA[manuelId as keyof typeof MANUELS_DATA]?.semaines
+  if (!semaines) return []
+  return semaines.slice(0, 36).map((s, i) => ({
+    numero: i + 1,
+    items: s.items,
+    pages: s.pages || null,
+    mots_exemple: s.mots_exemple ?? null,
+  }))
+}
