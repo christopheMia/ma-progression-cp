@@ -8,8 +8,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const numeroSemaine = typeof body.numeroSemaine === 'number' ? body.numeroSemaine : 0
-    const sonsAcquis = Array.isArray(body.sonsAcquis) ? body.sonsAcquis.filter((s: unknown) => typeof s === 'string') : []
-    const sonsNonAcquis = Array.isArray(body.sonsNonAcquis) ? body.sonsNonAcquis.filter((s: unknown) => typeof s === 'string') : []
+    const matiere = typeof body.matiere === 'string' ? body.matiere : 'francais'
+    const itemsAcquis = Array.isArray(body.itemsAcquis) ? body.itemsAcquis.filter((s: unknown) => typeof s === 'string') : []
+    const itemsNonAcquis = Array.isArray(body.itemsNonAcquis) ? body.itemsNonAcquis.filter((s: unknown) => typeof s === 'string') : []
     const statut = typeof body.statut === 'string' ? body.statut : null
 
     const client = getAnthropicClient()
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
       model: MODELE_CHAT,
       max_tokens: 1000,
       system: SYSTEM_BILAN,
-      messages: [{ role: 'user', content: userBilan({ numeroSemaine, sonsAcquis, sonsNonAcquis, statut }) }],
+      messages: [{ role: 'user', content: userBilan({ numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut }) }],
     })
 
     const block = result.content.find(b => b.type === 'text')

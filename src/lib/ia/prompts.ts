@@ -1,4 +1,4 @@
-import type { MatiereMethode } from '@/lib/matieres'
+import { LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
 
 const REGLE_EXHAUSTIVITE = `Procède en deux temps, sans rien oublier :
 1) Recense d'ABORD la liste complète des contenus du document (aucun ne doit manquer).
@@ -39,7 +39,7 @@ export function userImport(texteManuel: string): string {
 /** Bilan d'un élève. On ne transmet JAMAIS son prénom : l'IA écrit "[ELEVE]",
  *  remplacé par le vrai prénom côté navigateur. */
 export const SYSTEM_BILAN = `Tu es un enseignant de CP bienveillant.
-Rédige un court bilan (2 à 3 phrases) pour un élève, à partir des sons travaillés cette semaine.
+Rédige un court bilan (2 à 3 phrases) pour un élève, à partir des notions travaillées cette semaine dans la matière indiquée.
 Règles :
 - Désigne TOUJOURS l'élève par le mot exact "[ELEVE]" (jamais un vrai prénom, jamais "l'élève").
 - Ton positif, encourageant et concret ; mentionne les réussites puis ce qui reste à consolider.
@@ -47,15 +47,17 @@ Règles :
 
 export function userBilan(opts: {
   numeroSemaine: number
-  sonsAcquis: string[]
-  sonsNonAcquis: string[]
+  matiere: string
+  itemsAcquis: string[]
+  itemsNonAcquis: string[]
   statut: string | null
 }): string {
-  const { numeroSemaine, sonsAcquis, sonsNonAcquis, statut } = opts
+  const { numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut } = opts
+  const label = LABELS_MATIERE[matiere as MatiereMethode] ?? matiere
   const bilanGlobal = statut === 'acquis' ? 'objectifs atteints' : statut === 'pas_acquis' ? 'objectifs non encore atteints' : 'non précisé'
-  return `Semaine ${numeroSemaine}.
-Sons maîtrisés : ${sonsAcquis.length ? sonsAcquis.join(', ') : 'aucun pour l’instant'}.
-Sons à retravailler : ${sonsNonAcquis.length ? sonsNonAcquis.join(', ') : 'aucun'}.
+  return `Semaine ${numeroSemaine} — ${label}.
+Notions maîtrisées : ${itemsAcquis.length ? itemsAcquis.join(', ') : 'aucune pour l’instant'}.
+Notions à retravailler : ${itemsNonAcquis.length ? itemsNonAcquis.join(', ') : 'aucune'}.
 Bilan global de l’enseignant : ${bilanGlobal}.`
 }
 

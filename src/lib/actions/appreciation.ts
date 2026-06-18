@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 export async function upsertAppreciation(
   semaineId: string,
   eleveId: string,
+  matiere: string,
   statut: string | null,
   commentaire: string | null
 ) {
@@ -14,11 +15,12 @@ export async function upsertAppreciation(
     {
       semaine_id: semaineId,
       eleve_id: eleveId,
+      matiere,
       statut,
       commentaire,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: 'semaine_id,eleve_id' }
+    { onConflict: 'semaine_id,eleve_id,matiere' }
   )
   revalidatePath(`/semaine/${semaineId}`)
 }

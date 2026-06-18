@@ -35,6 +35,11 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const progFrancais = progression?.find(p => p.matiere === 'francais') ?? null
   const progMaths = progression?.find(p => p.matiere === 'maths') ?? null
 
+  const methodes = [
+    { matiere: 'francais' as const, items: progFrancais?.items ?? semaine.graphemes },
+    ...(progMaths ? [{ matiere: 'maths' as const, items: progMaths.items }] : []),
+  ]
+
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
 
   return (
@@ -61,7 +66,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
         />
       )}
       <EdmBlock semaine={semaine} />
-      <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} appreciations={appreciations ?? []} />
+      <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} appreciations={appreciations ?? []} methodes={methodes} />
       <CahierJournalEditor semaineId={semaine.id} numeroSemaine={semaine.numero} />
     </div>
   )

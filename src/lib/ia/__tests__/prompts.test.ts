@@ -34,8 +34,8 @@ describe('prompts', () => {
     expect(SYSTEM_BILAN).toContain('[ELEVE]')
   })
 
-  test('userBilan liste les sons acquis et à retravailler', () => {
-    const u = userBilan({ numeroSemaine: 3, sonsAcquis: ['a', 'i'], sonsNonAcquis: ['r'], statut: 'acquis' })
+  test('userBilan liste les notions acquises et à retravailler', () => {
+    const u = userBilan({ numeroSemaine: 3, matiere: 'francais', itemsAcquis: ['a', 'i'], itemsNonAcquis: ['r'], statut: 'acquis' })
     expect(u).toContain('Semaine 3')
     expect(u).toContain('a, i')
     expect(u).toContain('r')
