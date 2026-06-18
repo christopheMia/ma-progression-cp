@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: classe } = await supabase.from('classes').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-200 via-purple-100 to-violet-100">
+    <div className="min-h-screen bg-gradient-to-br from-violet-300 via-purple-200 to-fuchsia-200">
       <header className="sticky top-0 z-20 bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg">
         <div className="max-w-5xl mx-auto px-6 h-14 flex justify-between items-center">
           <Link href={classe ? '/accueil' : '/setup'} className="font-semibold text-white hover:opacity-90 transition-opacity">
