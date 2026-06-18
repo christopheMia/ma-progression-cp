@@ -1,5 +1,7 @@
 import type { ProgressionSemaine } from '@/data/manuels'
 
+// Anthropic exige un OBJET racine pour les sorties structurées (un array nu est
+// refusé) : on enveloppe la liste des semaines dans { semaines: [...] }.
 export const PROGRESSION_JSON_SCHEMA = {
   type: 'object',
   additionalProperties: false,
