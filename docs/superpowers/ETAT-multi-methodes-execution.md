@@ -25,13 +25,21 @@ Le plan voulait renommer `genererProgression`→`genererSemaines`, arrêter d'é
 
 **Reporté à un nettoyage final** (hors plan listé, à faire seulement quand TOUS les lecteurs de `Semaine.graphemes` seront migrés vers `progression`) : migration `004_semaines_cleanup.sql` + retrait des champs `graphemes`/`manuel_pages`/`mots_exemple` du type `Semaine`.
 
-## Reste à faire
+- ✅ **Task 10** — `IaImport` : sélecteur matière (gated `matiereFixe`) + multi-fichiers + compteur de couverture (MVP) + double chemin `onSelect`/`onSave`. Commit `c85bfa5`.
+- ✅ **Task 11** — affichage par matière : `MatiereBlock` générique remplace `LectureBlock`, fiche semaine lit la table `progression` (repli `semaine.graphemes` pour le français). Commit `fdc1060`.
+- ✅ **Tasks 12+13 (fusionnées)** — suivi + bilan par matière : `toggleAcquisition`/`upsertAppreciation` reçoivent `matiere`, StudentTracking en sections par matière (état clé `${eleveId}|${matiere}`), Bilan IA par matière (RGPD `[ELEVE]` préservé), `ia-bilan`/`userBilan` neutralisés (`itemsAcquis`/`itemsNonAcquis`). Commit `36e3030`.
+- ✅ **Task 14** — Paramètres : section « 📚 Mes méthodes » (`MethodesEditor` → `IaImport` `matiereFixe` + `onSave`=`enregistrerProgressionMatiere`) ; section manuel renommée « ♻️ Tout régénérer ». Commit `3585b91`.
 
-- **Task 10** — `IaImport` : sélecteur matière + multi-fichiers + couverture (réutilise action Task 8).
-- **Task 11** — affichage progression par matière (fiche semaine + LectureBlock) → lit la table `progression`.
-- **Task 12** — suivi élève par matière (StudentTracking + toggleAcquisition avec `matiere`).
-- **Task 13** — bilan par matière (appreciations + Bilan IA, RGPD `[ELEVE]` préservé).
-- **Task 14** — Paramètres : section « Mes méthodes » (import par matière).
+## ✅ TOUTES LES 14 TÂCHES TERMINÉES
+
+Vérification finale : `npx jest` = **38/38**, `npx tsc --noEmit` propre, `npx next build` = Compiled successfully.
+
+### Revue finale — 2 bugs d'intégration corrigés (commit `0d9114d`)
+La fiche semaine lit le français depuis la table `progression`, mais deux écrivains du français écrivaient encore SEULEMENT dans `semaines.graphemes` (deux sources de vérité, conséquence de la Task 9 réduite) :
+- **`corrigerProgression`** (« Corriger la progression » Planning/Accueil) → corrige maintenant AUSSI `progression(francais)`.
+- **`updateManuel`** (« Changer de manuel ») → régénère AUSSI `progression(francais)` (le maths importé est préservé).
+- Bonus : `chargerClasseDemo` peuple `progression(francais)` + `matiere` explicite sur les acquisitions.
+Mineurs restants (non bloquants) : `couverture.ts`/`notionsManquantes` non câblé (MVP compteur retenu) — gardé comme utilitaire futur.
 
 ## Déploiement (rappel)
 - Appliquer `003_multi_methodes.sql` en prod **AVANT** de déployer le code (sinon insert `progression` plante).
