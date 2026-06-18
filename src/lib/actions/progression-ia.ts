@@ -30,6 +30,19 @@ export async function corrigerProgression(classId: string, progression: Progress
       .eq('numero', s.numero)
   }
 
+  // Garde la table `progression` (lue par la fiche semaine) en phase avec la
+  // correction : on remplace UNIQUEMENT le français (jamais le maths).
+  await supabase.from('progression').delete().eq('class_id', classId).eq('matiere', 'francais')
+  const lignesFr = progression.map(s => ({
+    class_id: classId,
+    matiere: 'francais' as const,
+    numero: s.numero,
+    items: s.items,
+    pages: s.pages || null,
+    mots_exemple: s.mots_exemple ?? null,
+  }))
+  if (lignesFr.length > 0) await supabase.from('progression').insert(lignesFr)
+
   revalidatePath('/planning')
   revalidatePath('/accueil')
 }

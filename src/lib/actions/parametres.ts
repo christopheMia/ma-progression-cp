@@ -1,6 +1,6 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
-import { genererProgression } from '@/lib/progression'
+import { genererProgression, genererProgressionFrancais } from '@/lib/progression'
 import { addWeeks, format } from 'date-fns'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -123,6 +123,16 @@ export async function updateManuel(manuelId: string, customProgression?: Progres
 
   const progression = genererProgression(manuelId, classe.rentree_date, customProgression)
   await supabase.from('semaines').insert(progression.map(s => ({ ...s, class_id: classe.id })))
+
+  // Régénère aussi la table `progression` (lue par la fiche semaine) pour le
+  // français : on remplace UNIQUEMENT le français, le maths importé est préservé.
+  await supabase.from('progression').delete().eq('class_id', classe.id).eq('matiere', 'francais')
+  const progFr = genererProgressionFrancais(manuelId, customProgression)
+  if (progFr.length > 0) {
+    await supabase.from('progression').insert(
+      progFr.map(p => ({ ...p, class_id: classe.id, matiere: 'francais' as const }))
+    )
+  }
 
   revalidatePath('/parametres')
   revalidatePath('/planning')

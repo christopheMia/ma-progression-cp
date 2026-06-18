@@ -1,6 +1,6 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
-import { genererProgression } from '@/lib/progression'
+import { genererProgression, genererProgressionFrancais } from '@/lib/progression'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import { getStatus } from '@/lib/semaines'
 import { addWeeks, startOfWeek, format } from 'date-fns'
@@ -66,8 +66,17 @@ export async function chargerClasseDemo() {
     .insert(progression.map(s => ({ ...s, class_id: classe.id })))
     .select()
 
+  // Peuple aussi la table `progression` (français) pour exercer le vrai chemin
+  // d'affichage par matière (la fiche semaine lit `progression`).
+  const progFr = genererProgressionFrancais('lecture-piano')
+  if (progFr.length > 0) {
+    await supabase.from('progression').insert(
+      progFr.map(p => ({ ...p, class_id: classe.id, matiere: 'francais' as const }))
+    )
+  }
+
   // Suivi pré-rempli pour les semaines passées et en cours
-  const acquisitions: Array<{ semaine_id: string; eleve_id: string; grapheme: string; acquis: boolean }> = []
+  const acquisitions: Array<{ semaine_id: string; eleve_id: string; matiere: string; grapheme: string; acquis: boolean }> = []
   for (const s of semaines ?? []) {
     const statut = getStatus(s)
     if (statut === 'upcoming') continue
@@ -75,7 +84,7 @@ export async function chargerClasseDemo() {
     for (const e of eleves ?? []) {
       for (const g of s.graphemes) {
         if (Math.random() < ratio) {
-          acquisitions.push({ semaine_id: s.id, eleve_id: e.id, grapheme: g, acquis: true })
+          acquisitions.push({ semaine_id: s.id, eleve_id: e.id, matiere: 'francais', grapheme: g, acquis: true })
         }
       }
     }
