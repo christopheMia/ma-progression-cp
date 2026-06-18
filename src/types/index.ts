@@ -13,6 +13,16 @@ export type Semaine = {
   note: string | null
 }
 
+export type Progression = {
+  id: string
+  class_id: string
+  matiere: string
+  numero: number
+  items: string[]
+  pages: string | null
+  mots_exemple: string[] | null
+}
+
 export type Eleve = {
   id: string
   class_id: string
@@ -24,6 +34,7 @@ export type Acquisition = {
   id: string
   semaine_id: string
   eleve_id: string
+  matiere: string
   grapheme: string
   acquis: boolean
 }
@@ -32,6 +43,7 @@ export type Appreciation = {
   id: string
   semaine_id: string
   eleve_id: string
+  matiere: string
   statut: string | null // 'acquis' | 'pas_acquis' | null
   commentaire: string | null
 }
