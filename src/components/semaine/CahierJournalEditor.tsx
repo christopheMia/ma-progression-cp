@@ -6,8 +6,11 @@ import { exporterJournalWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import GoogleDocsButton from './GoogleDocsButton'
 
-export default function CahierJournalEditor({ semaineId, numeroSemaine }: { semaineId: string; numeroSemaine: number }) {
+export default function CahierJournalEditor({ semaineId, numeroSemaine, francais = [], maths = [] }: {
+  semaineId: string; numeroSemaine: number; francais?: string[]; maths?: string[]
+}) {
   const [journal, setJournal] = useState<JourJournal[] | null>(null)
+  const [generatingJour, setGeneratingJour] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -42,6 +45,32 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
       const data = await genererOuChargerJournal(semaineId)
       setJournal(data)
     })
+  }
+
+  async function genererJournee(jourIdx: number) {
+    if (!journal) return
+    const seances = journal[jourIdx].seances
+    const creneaux = seances.filter(s => s.type === 'cours').map(s => ({ heure_debut: s.heure_debut, heure_fin: s.heure_fin, matiere: s.matiere }))
+    setGeneratingJour(jourIdx)
+    try {
+      const res = await fetch('/api/ia-journal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numeroSemaine, creneaux, francais, maths }),
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error ?? 'Erreur IA'); return }
+      const deroulements: string[] = data.deroulements ?? []
+      let k = 0
+      setJournal(prev => {
+        if (!prev) return prev
+        const next = prev.map((j, ji) => ji !== jourIdx ? j : {
+          ...j,
+          seances: j.seances.map(s => s.type === 'cours' ? { ...s, deroulement: deroulements[k++] ?? s.deroulement } : s),
+        })
+        startTransition(() => sauvegarderJournal(semaineId, next))
+        return next
+      })
+    } finally { setGeneratingJour(null) }
   }
 
   function updateDeroulement(jourIdx: number, seanceIdx: number, value: string) {
@@ -105,7 +134,13 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
 
       {journal.map((jour, ji) => (
         <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
-          <div className="bg-violet-50 px-4 py-2 font-semibold text-violet-800 capitalize">{jour.jour}</div>
+          <div className="bg-violet-50 px-4 py-2 font-semibold text-violet-800 capitalize flex justify-between items-center">
+            <span>{jour.jour}</span>
+            <button onClick={() => genererJournee(ji)} disabled={generatingJour === ji}
+              className="no-print text-xs bg-violet-600 text-white rounded-lg px-3 py-1 hover:bg-violet-700 disabled:opacity-50">
+              {generatingJour === ji ? 'Génération…' : '✨ Générer la journée'}
+            </button>
+          </div>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="bg-violet-50/50 text-violet-700">
