@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-20 bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg">
         <div className="max-w-5xl mx-auto px-6 h-14 flex justify-between items-center">
           <Link href={classe ? '/accueil' : '/setup'} className="font-semibold text-white hover:opacity-90 transition-opacity">
-            🍎 Ma Progression CP
+            📖✏️ Ma Progression CP
           </Link>
           <HeaderNav hasClass={!!classe} />
         </div>

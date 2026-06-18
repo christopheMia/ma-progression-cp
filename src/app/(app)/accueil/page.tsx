@@ -55,7 +55,7 @@ export default async function AccueilPage() {
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bonjour {prenom ? `${prenom} ` : ''}👋</h1>
             <p className="text-white/80 mt-1 capitalize">{aujourdhui}</p>
           </div>
-          <div className="hidden sm:block text-4xl select-none">📚🍎✏️</div>
+          <div className="hidden sm:block text-4xl select-none">📚✏️</div>
         </div>
       </div>
 
