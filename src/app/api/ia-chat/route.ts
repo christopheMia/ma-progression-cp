@@ -17,11 +17,11 @@ const CHAT_SCHEMA = {
         additionalProperties: false,
         properties: {
           numero: { type: 'integer' },
-          graphemes: { type: 'array', items: { type: 'string' } },
+          items: { type: 'array', items: { type: 'string' } },
           pages: { type: 'string' },
           mots_exemple: { type: 'array', items: { type: 'string' } },
         },
-        required: ['numero', 'graphemes', 'pages', 'mots_exemple'],
+        required: ['numero', 'items', 'pages', 'mots_exemple'],
       },
     },
     reponse: { type: 'string' },
