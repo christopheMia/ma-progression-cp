@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
 import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
-import { SYSTEM_IMPORT, userImport } from '@/lib/ia/prompts'
+import { systemImport, userImport } from '@/lib/ia/prompts'
 
 export const maxDuration = 60
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       max_tokens: 16000,
       // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
       // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
-      system: SYSTEM_IMPORT,
+      system: systemImport('francais'),
       output_config: {
         format: {
           type: 'json_schema',

@@ -1,11 +1,22 @@
-import { SYSTEM_IMPORT, systemChat, userImport, SYSTEM_BILAN, userBilan } from '../prompts'
+import { systemImport, systemChat, userImport, SYSTEM_BILAN, userBilan } from '../prompts'
+
+describe('systemImport par matière', () => {
+  test('français parle de sons/graphèmes', () => {
+    const s = systemImport('francais')
+    expect(s.toLowerCase()).toContain('graphème')
+  })
+  test('maths parle de notions et de répartition par semaine', () => {
+    const s = systemImport('maths')
+    expect(s.toLowerCase()).toContain('notion')
+    expect(s.toLowerCase()).toContain('semaine')
+  })
+  test('consigne d’exhaustivité présente dans les deux', () => {
+    expect(systemImport('francais').toLowerCase()).toContain('aucun')
+    expect(systemImport('maths').toLowerCase()).toContain('aucun')
+  })
+})
 
 describe('prompts', () => {
-  test('SYSTEM_IMPORT impose 1 son par graphème et le format', () => {
-    expect(SYSTEM_IMPORT).toMatch(/graphème/i)
-    expect(SYSTEM_IMPORT).toMatch(/semaine/i)
-  })
-
   test('userImport insère le texte du manuel', () => {
     const u = userImport('Semaine 1 : a — p.10')
     expect(u).toContain('Semaine 1 : a — p.10')

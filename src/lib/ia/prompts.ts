@@ -1,15 +1,36 @@
-export const SYSTEM_IMPORT = `Tu es un expert des méthodes de lecture CP françaises.
+import type { MatiereMethode } from '@/lib/matieres'
+
+const REGLE_EXHAUSTIVITE = `Procède en deux temps, sans rien oublier :
+1) Recense d'ABORD la liste complète des contenus du document (aucun ne doit manquer).
+2) Répartis ENSUITE ces contenus, semaine par semaine, dans l'ordre de l'année.
+N'invente aucun contenu absent du document.`
+
+export function systemImport(matiere: MatiereMethode): string {
+  if (matiere === 'maths') {
+    return `Tu es un expert des méthodes de mathématiques CP françaises.
+On te donne le texte (programmation ou sommaire) d'une méthode de maths CP, souvent organisée PAR PÉRIODE et PAR DOMAINE (nombres, calcul mental, problèmes, grandeurs et mesures, espace et géométrie...).
+Ta tâche : reconstruire une progression SEMAINE PAR SEMAINE.
+${REGLE_EXHAUSTIVITE}
+Règles :
+- Une entrée par semaine, dans l'ordre chronologique.
+- "items" = les notions/compétences travaillées cette semaine (ex: ["Nombres jusqu'à 10","Décomposer 4 et 5"]).
+- Étale les notions d'une période sur les semaines de cette période (≈7 semaines par période).
+- "pages" = les pages si présentes, sinon "". "mots_exemple" = [] (rarement pertinent en maths).
+Réponds UNIQUEMENT via le format structuré imposé.`
+  }
+  return `Tu es un expert des méthodes de lecture CP françaises.
 On te donne le texte (sommaire ou guide) d'un manuel de lecture CP.
 Ta tâche : reconstruire la progression réelle, semaine par semaine.
-
+${REGLE_EXHAUSTIVITE}
 Règles :
 - Une entrée par semaine, dans l'ordre chronologique de l'année.
-- "graphemes" = le(s) son(s)/graphème(s) étudié(s) cette semaine (ex: ["a"], ["on","an"]).
+- "items" = le(s) graphème(s)/son(s) étudié(s) cette semaine (ex: ["a"], ["on","an"]).
 - "pages" = les pages du manuel si présentes (ex: "p. 10-13"), sinon "".
 - "mots_exemple" = quelques mots d'exemple si présents, sinon [].
 - N'invente pas de sons : si une semaine n'a pas de graphème identifiable, mets [].
 - Respecte le nombre réel de semaines du manuel (souvent 30 à 36).
 Réponds UNIQUEMENT via le format structuré imposé.`
+}
 
 export function userImport(texteManuel: string): string {
   return `Voici le texte extrait du manuel à analyser :\n\n${texteManuel}`
