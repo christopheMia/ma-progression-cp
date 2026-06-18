@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { SYSTEM_JOURNAL, userJournal } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
+import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
 export const maxDuration = 60
 
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
     } catch {
       deroulements = []
     }
+    await enregistrerUsageIA(result.usage?.input_tokens ?? 0, result.usage?.output_tokens ?? 0)
     return NextResponse.json({ deroulements, usage: result.usage })
   } catch (err) {
     console.error('ia-journal error:', err)

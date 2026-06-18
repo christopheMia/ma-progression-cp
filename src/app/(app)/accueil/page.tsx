@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import ProgressBar from '@/components/ProgressBar'
 import ProgressionCorrector from '@/components/ProgressionCorrector'
+import BudgetIaIndicator from '@/components/BudgetIaIndicator'
 import { semaineEnCours, getStatus } from '@/lib/semaines'
 
 export default async function AccueilPage() {
@@ -141,6 +142,9 @@ export default async function AccueilPage() {
               <span className="ml-auto text-slate-300 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all">↗</span>
             </a>
           ))}
+        </div>
+        <div className="mt-5 pt-4 border-t border-violet-100">
+          <BudgetIaIndicator />
         </div>
       </section>
     </div>

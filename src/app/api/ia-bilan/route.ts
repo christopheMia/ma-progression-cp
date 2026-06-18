@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { SYSTEM_BILAN, userBilan } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
+import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
 export const maxDuration = 60
 
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
       system: SYSTEM_BILAN,
       messages: [{ role: 'user', content: userBilan({ numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut }) }],
     })
+
+    await enregistrerUsageIA(result.usage?.input_tokens ?? 0, result.usage?.output_tokens ?? 0)
 
     const block = result.content.find(b => b.type === 'text')
     const bilan = block && 'text' in block ? block.text.trim() : ''

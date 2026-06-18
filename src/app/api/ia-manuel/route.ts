@@ -4,6 +4,7 @@ import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
 import { systemImport, userImport } from '@/lib/ia/prompts'
 import { isMatiereMethode, type MatiereMethode } from '@/lib/matieres'
 import { messageErreurIA } from '@/lib/ia/erreurs'
+import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
 export const maxDuration = 60
 
@@ -58,6 +59,8 @@ export async function POST(request: Request) {
       },
       messages: [{ role: 'user', content: userImport(texte) }],
     })
+
+    await enregistrerUsageIA(message.usage?.input_tokens ?? 0, message.usage?.output_tokens ?? 0)
 
     // Récupère le bloc texte (JSON garanti par le schéma)
     const jsonBlock = message.content.find(b => b.type === 'text')

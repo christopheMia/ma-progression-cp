@@ -4,6 +4,7 @@ import { normalizeProgression } from '@/lib/ia/schema'
 import { systemChat } from '@/lib/ia/prompts'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { messageErreurIA } from '@/lib/ia/erreurs'
+import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
 export const maxDuration = 60
 
@@ -62,6 +63,8 @@ export async function POST(request: Request) {
       output_config: { format: { type: 'json_schema', schema: CHAT_SCHEMA } },
       messages: [...hist, { role: 'user', content: message }],
     })
+
+    await enregistrerUsageIA(result.usage?.input_tokens ?? 0, result.usage?.output_tokens ?? 0)
 
     const block = result.content.find(b => b.type === 'text')
     const parsed = block && 'text' in block ? JSON.parse(block.text) : { progression, reponse: '' }
