@@ -64,13 +64,19 @@ export type SeanceJournal = {
   matiere: string
   heure_debut: string
   heure_fin: string
-  objectif: string
-  activite: string
-  materiel: string
-  note: string
+  type: 'cours' | 'routine'
+  deroulement: string
 }
 
 export type JourJournal = {
   jour: 'lundi' | 'mardi' | 'mercredi' | 'jeudi' | 'vendredi'
   seances: SeanceJournal[]
+}
+
+/** Ligne de progression d'une matière pour une semaine (issue de la table progression). */
+export type ProgressionMatiere = {
+  matiere: string
+  items: string[]
+  pages: string | null
+  mots_exemple: string[] | null
 }

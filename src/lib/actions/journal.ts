@@ -14,8 +14,11 @@ export async function genererOuChargerJournal(semaineId: string) {
   if (existing) return existing.contenu as JourJournal[]
 
   const { data: edt } = await supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id)
-  const contenu = genererCahierJournal(semaine, edt ?? [])
+  const { data: progression } = await supabase
+    .from('progression').select('matiere, items, pages, mots_exemple')
+    .eq('class_id', semaine.class_id).eq('numero', semaine.numero)
 
+  const contenu = genererCahierJournal(edt ?? [], progression ?? [])
   await supabase.from('cahier_journal').insert({ semaine_id: semaineId, contenu })
   return contenu
 }

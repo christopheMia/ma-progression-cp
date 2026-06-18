@@ -44,16 +44,11 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
     })
   }
 
-  function updateSeance(jourIdx: number, seanceIdx: number, field: string, value: string) {
+  function updateDeroulement(jourIdx: number, seanceIdx: number, value: string) {
     setJournal(prev => {
       if (!prev) return prev
       const next = prev.map((j, ji) =>
-        ji !== jourIdx ? j : {
-          ...j,
-          seances: j.seances.map((s, si) =>
-            si !== seanceIdx ? s : { ...s, [field]: value }
-          )
-        }
+        ji !== jourIdx ? j : { ...j, seances: j.seances.map((s, si) => si !== seanceIdx ? s : { ...s, deroulement: value }) }
       )
       startTransition(() => sauvegarderJournal(semaineId, next))
       return next
@@ -98,7 +93,7 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
       </div>
 
       <p className="text-xs text-gray-400 -mt-3 no-print">
-        💡 Complétez chaque séance : remplissez l&apos;objectif, l&apos;activité et le matériel. Tout se sauvegarde automatiquement.
+        💡 Complète le déroulement de chaque matière. Tout se sauvegarde automatiquement.
       </p>
 
       {exported && (
@@ -111,30 +106,31 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine }: { sema
       {journal.map((jour, ji) => (
         <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
           <div className="bg-violet-50 px-4 py-2 font-semibold text-violet-800 capitalize">{jour.jour}</div>
-          <div className="divide-y">
-            {jour.seances.map((seance, si) => (
-              <div key={si} className="p-4 grid grid-cols-[auto_1fr] gap-3">
-                <div className="text-xs text-gray-400 whitespace-nowrap mt-1">
-                  {seance.heure_debut}–{seance.heure_fin}<br/>
-                  <span className="font-semibold text-gray-600">{seance.matiere}</span>
-                </div>
-                <div className="space-y-2">
-                  <input value={seance.objectif} placeholder="Objectif"
-                    title="Objectif : ce que les élèves doivent apprendre/savoir faire à la fin de la séance"
-                    onChange={e => updateSeance(ji, si, 'objectif', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none" />
-                  <input value={seance.activite} placeholder="Activité principale"
-                    title="Activité : ce que font concrètement les élèves (exercice, jeu, lecture…)"
-                    onChange={e => updateSeance(ji, si, 'activite', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none" />
-                  <input value={seance.materiel} placeholder="Matériel"
-                    title="Matériel : ce dont vous avez besoin (manuel, fiches, ardoise…)"
-                    onChange={e => updateSeance(ji, si, 'materiel', e.target.value)}
-                    className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-violet-50/50 text-violet-700">
+                <th className="border-b p-2 text-left w-24">Horaires</th>
+                <th className="border-b p-2 text-left w-40">Matière</th>
+                <th className="border-b p-2 text-left">Déroulement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jour.seances.map((s, si) => (
+                <tr key={si} className={s.type === 'routine' ? 'bg-gray-50 text-gray-500 italic' : ''}>
+                  <td className="border-b p-2 align-top whitespace-nowrap text-xs text-gray-500">{s.heure_debut}–{s.heure_fin}</td>
+                  <td className="border-b p-2 align-top font-medium text-gray-700">{s.matiere}</td>
+                  <td className="border-b p-1 align-top">
+                    {s.type === 'routine'
+                      ? <span className="text-xs">—</span>
+                      : <textarea value={s.deroulement} placeholder="(à compléter)"
+                          onChange={e => updateDeroulement(ji, si, e.target.value)}
+                          rows={Math.max(2, s.deroulement.split('\n').length)}
+                          className="w-full border rounded-lg p-2 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none resize-y" />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ))}
     </div>

@@ -52,11 +52,9 @@ export async function genererBlobWord(journal: JourJournal[], numeroSemaine: num
 
     const headerRow = new TableRow({
       children: [
-        makeCell('Horaire', true),
+        makeCell('Horaires', true),
         makeCell('Matière', true),
-        makeCell('Objectif', true),
-        makeCell('Activité', true),
-        makeCell('Matériel', true),
+        makeCell('Déroulement', true),
       ],
       tableHeader: true,
     })
@@ -67,9 +65,7 @@ export async function genererBlobWord(journal: JourJournal[], numeroSemaine: num
           children: [
             makeCell(`${seance.heure_debut}–${seance.heure_fin}`),
             makeCell(seance.matiere),
-            makeCell(seance.objectif),
-            makeCell(seance.activite),
-            makeCell(seance.materiel),
+            makeCell(seance.type === 'routine' ? '' : seance.deroulement),
           ],
         })
     )

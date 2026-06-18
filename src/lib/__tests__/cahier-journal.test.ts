@@ -1,54 +1,46 @@
-import { genererCahierJournal } from '@/lib/cahier-journal'
-import { Semaine, CreneauHoraire } from '@/types'
+import { genererCahierJournal } from '../cahier-journal'
+import type { CreneauHoraire } from '@/types'
 
-const semaine: Semaine = {
-  id: 'sem-1',
-  class_id: 'cls-1',
-  numero: 1,
-  date_debut: '2025-09-01',
-  graphemes: ['a'],
-  edm_theme: 'Moi et les autres',
-  edm_competences: 'Se repérer dans le temps scolaire',
-  manuel_pages: 'pp. 10-12',
-  mots_exemple: ['ami', 'papa'],
-  note: null,
-}
+const creneau = (over: Partial<CreneauHoraire>): CreneauHoraire => ({
+  id: 'x', class_id: 'c', jour: 'lundi', heure_debut: '08:45', heure_fin: '09:15',
+  matiere: 'Appropriation des graphèmes', ordre: 0, couleur: null, type: 'cours', ...over,
+})
 
-const emploiDuTemps: CreneauHoraire[] = [
-  { id: 'c1', class_id: 'cls-1', jour: 'lundi', heure_debut: '09:00', heure_fin: '09:45', matiere: 'Lecture', ordre: 0, couleur: null, type: 'cours' },
-  { id: 'c2', class_id: 'cls-1', jour: 'lundi', heure_debut: '10:00', heure_fin: '10:45', matiere: 'Mathématiques', ordre: 1, couleur: null, type: 'cours' },
-  { id: 'c3', class_id: 'cls-1', jour: 'mardi', heure_debut: '09:00', heure_fin: '09:45', matiere: 'Explorer le monde', ordre: 0, couleur: null, type: 'cours' },
-]
+describe('genererCahierJournal (3 colonnes)', () => {
+  const progression = [
+    { matiere: 'francais', items: ['a'], pages: 'p.10-13', mots_exemple: ['ami', 'papa'] },
+    { matiere: 'maths', items: ['Nombres jusqu’à 10'], pages: 'p.8', mots_exemple: [] },
+  ]
 
-describe('genererCahierJournal', () => {
-  it('generates one entry per day that has timetable slots', () => {
-    const result = genererCahierJournal(semaine, emploiDuTemps)
-    const jours = result.map(j => j.jour)
-    expect(jours).toContain('lundi')
-    expect(jours).toContain('mardi')
-    expect(jours).not.toContain('mercredi')
+  test('une fiche par jour, dans l’ordre', () => {
+    const edt = [creneau({ jour: 'lundi' }), creneau({ jour: 'jeudi' })]
+    const jours = genererCahierJournal(edt, progression)
+    expect(jours.map(j => j.jour)).toEqual(['lundi', 'jeudi'])
   })
 
-  it('pre-fills Lecture séance with grapheme and pages', () => {
-    const result = genererCahierJournal(semaine, emploiDuTemps)
-    const lundi = result.find(j => j.jour === 'lundi')!
-    const lecture = lundi.seances.find(s => s.matiere === 'Lecture')!
-    expect(lecture.objectif).toContain('a')
-    expect(lecture.activite).toContain('pp. 10-12')
+  test('les lignes routine ne sont pas remplissables (deroulement vide, flag routine)', () => {
+    const edt = [creneau({ matiere: 'Récréation', type: 'routine' })]
+    const s = genererCahierJournal(edt, progression)[0].seances[0]
+    expect(s.type).toBe('routine')
+    expect(s.deroulement).toBe('')
   })
 
-  it('pre-fills EDM séance with theme', () => {
-    const result = genererCahierJournal(semaine, emploiDuTemps)
-    const mardi = result.find(j => j.jour === 'mardi')!
-    const edm = mardi.seances.find(s => s.matiere === 'Explorer le monde')!
-    expect(edm.objectif).toContain('Moi et les autres')
+  test('le creneau graphemes est pre-rempli depuis la progression francais', () => {
+    const edt = [creneau({ matiere: 'Appropriation des graphèmes' })]
+    const s = genererCahierJournal(edt, progression)[0].seances[0]
+    expect(s.deroulement).toContain('a')
+    expect(s.deroulement).toContain('p.10-13')
   })
 
-  it('leaves other matières with empty strings', () => {
-    const result = genererCahierJournal(semaine, emploiDuTemps)
-    const lundi = result.find(j => j.jour === 'lundi')!
-    const maths = lundi.seances.find(s => s.matiere === 'Mathématiques')!
-    expect(maths.objectif).toBe('')
-    expect(maths.activite).toBe('')
+  test('le creneau maths est pre-rempli depuis la progression maths', () => {
+    const edt = [creneau({ matiere: 'Mathématiques', heure_debut: '10:30', heure_fin: '11:30' })]
+    const s = genererCahierJournal(edt, progression)[0].seances[0]
+    expect(s.deroulement).toContain('Nombres jusqu’à 10')
+  })
+
+  test('les autres matieres ont un deroulement vide a remplir', () => {
+    const edt = [creneau({ matiere: 'Arts visuels' })]
+    const s = genererCahierJournal(edt, progression)[0].seances[0]
+    expect(s.deroulement).toBe('')
   })
 })

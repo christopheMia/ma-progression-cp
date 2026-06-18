@@ -1,38 +1,36 @@
-import { Semaine, CreneauHoraire, JourJournal, SeanceJournal } from '@/types'
+import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '@/types'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
-function creerSeance(creneau: CreneauHoraire, semaine: Semaine): SeanceJournal {
-  const base = {
-    matiere: creneau.matiere,
-    heure_debut: creneau.heure_debut,
-    heure_fin: creneau.heure_fin,
-    materiel: '',
-    note: '',
-  }
-  if (creneau.matiere === 'Lecture') {
-    return {
-      ...base,
-      objectif: `Découvrir et lire le graphème "${semaine.graphemes.join(', ')}"`,
-      activite: `Manuel ${semaine.manuel_pages ?? ''} — mots exemples : ${(semaine.mots_exemple ?? []).join(', ')}`,
-    }
-  }
-  if (creneau.matiere === 'Explorer le monde') {
-    return {
-      ...base,
-      objectif: `${semaine.edm_theme}`,
-      activite: semaine.edm_competences,
-    }
-  }
-  return { ...base, objectif: '', activite: '' }
+/** Mappe un libellé de créneau vers la matière-méthode correspondante (ou null). */
+export function matiereMethode(matiere: string): 'francais' | 'maths' | null {
+  const m = matiere.toLowerCase()
+  if (m.includes('graphème') || m.includes('graphe')) return 'francais'
+  if (m.includes('math') || m.includes('calcul')) return 'maths'
+  return null
 }
 
-export function genererCahierJournal(semaine: Semaine, emploiDuTemps: CreneauHoraire[]): JourJournal[] {
+function deroulementInitial(creneau: CreneauHoraire, progression: ProgressionMatiere[]): string {
+  if (creneau.type === 'routine') return ''
+  const matiere = matiereMethode(creneau.matiere)
+  if (!matiere) return ''
+  const p = progression.find(x => x.matiere === matiere)
+  if (!p || p.items.length === 0) return ''
+  const items = p.items.join(', ')
+  const pages = p.pages ? ` — ${p.pages}` : ''
+  const mots = p.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
+  return `${items}${pages}${mots}`
+}
+
+export function genererCahierJournal(
+  emploiDuTemps: CreneauHoraire[],
+  progression: ProgressionMatiere[],
+): JourJournal[] {
   const parJour = new Map<string, CreneauHoraire[]>()
-  for (const creneau of emploiDuTemps) {
-    const list = parJour.get(creneau.jour) ?? []
-    list.push(creneau)
-    parJour.set(creneau.jour, list)
+  for (const c of emploiDuTemps) {
+    const list = parJour.get(c.jour) ?? []
+    list.push(c)
+    parJour.set(c.jour, list)
   }
 
   return JOURS_ORDRE
@@ -41,6 +39,12 @@ export function genererCahierJournal(semaine: Semaine, emploiDuTemps: CreneauHor
       jour,
       seances: (parJour.get(jour) ?? [])
         .sort((a, b) => a.ordre - b.ordre)
-        .map(c => creerSeance(c, semaine)),
+        .map((c): SeanceJournal => ({
+          matiere: c.matiere,
+          heure_debut: c.heure_debut,
+          heure_fin: c.heure_fin,
+          type: c.type,
+          deroulement: deroulementInitial(c, progression),
+        })),
     }))
 }
