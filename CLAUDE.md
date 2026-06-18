@@ -26,6 +26,17 @@
 - Config Google Cloud : activer Google Drive API, écran de consentement en mode Test (ajouter les emails utilisateurs comme testeurs), créer un ID client OAuth « Application Web », origines JS autorisées = https://ma-progression-cp.vercel.app + http://localhost:3000
 - Après ajout de la variable sur Vercel : redéployer pour qu'elle soit prise en compte (NEXT_PUBLIC_* inliné au build)
 
+## État actuel (session 2026-06-18) — multi-méthodes, journal, crédit IA, réparation prod
+- **Multi-méthodes (Français + Maths sans écrasement)** déployé : nouvelle table **`progression`** (`class_id, matiere, numero, items[], pages, mots_exemple`) ; colonne `matiere` sur `acquisitions`/`appreciations`. Import IA **par matière** (action `enregistrerProgressionMatiere`, non destructive entre matières), affichage/suivi/bilan **par matière**, section « 📚 Mes méthodes » dans Paramètres. Couche IA généralisée `graphemes` → **`items`**. Constante `src/lib/matieres.ts` (`francais`,`maths`). Plan/état : `docs/superpowers/ETAT-multi-methodes-execution.md`.
+  - ⚠️ **Déviation Task 9** : colonnes méthode de `semaines` (`graphemes`/`manuel_pages`/`mots_exemple`) **PAS supprimées** (encore `NOT NULL`, lues par accueil/planning/WeekCard/cahier-journal/export-word). Migration `004` non écrite. `progression` est peuplée EN PLUS ; source de vérité fiche semaine = `progression` (repli `semaine.graphemes`). `corrigerProgression` et `updateManuel` synchronisent aussi `progression(francais)`.
+- **Cahier journal 3 colonnes** (Horaires / Matière / Déroulement) généré depuis l'EDT + `progression` ; lignes routine non remplissables ; bouton **« ✨ Générer la journée »** → route `api/ia-journal` (Sonnet) amorce chaque créneau ; export Word adapté. Format `SeanceJournal{ matiere, heure_debut, heure_fin, type:'cours'|'routine', deroulement }`.
+- **Garde-fou crédit IA** : `messageErreurIA` (`src/lib/ia/erreurs.ts`) dans les 4 routes IA (détecte « credit balance too low » → 402) ; **jauge de budget estimée** sur l'accueil (`BudgetIaIndicator`, `src/lib/ia/cout.ts`, table `ia_usage`).
+- **Menu d'import simplifié** : **IA uniquement** (onglets PDF-regex + CSV supprimés ; l'IA lit déjà les PDF). Route morte `api/parse-manuel-pdf` supprimée.
+- **Thème** : fond de l'appli aligné sur le **dégradé du login** (`bg-gradient-to-br from-violet-300 via-purple-200 to-fuchsia-200`, dans `(app)/layout.tsx`). **Page login : animation CSS de bulles de peinture montantes** (keyframe `bubble-rise` + `.login-bubble` dans `globals.css`, tableau `BUBBLES` dans `(auth)/layout.tsx`, sans dépendance). *(Idée d'image de fond du login mise de côté ; le code image + un fix proxy assets seront à re-brancher si on la reprend.)*
+- **⚠️ Réparation prod (IMPORTANT)** : la base de prod avait été **réinitialisée** (toutes tables vides, `emploi_du_temps` et `cahier_journal` MANQUANTES). Recréées via MCP. Migrations appliquées en prod : `003` (multi-méthodes), `005` (EDT couleur/type), `007` (ia_usage). Ajout d'une **migration de référence idempotente `006_schema_complet_idempotent.sql`** = source de vérité du schéma + procédure de récup (l'exécuter seule sur une base vide ; NE PAS compter sur le replay 001→005). Voir mémoire `project-schema-prod-drift`.
+  - 👉 **Conséquence : la prod est VIDE → Cécile doit recréer sa classe via `/setup`.** Règle : toute évolution de schéma passe désormais par une migration versionnée.
+- Build propre ✅, **46 tests OK**. Tout poussé sur `main` et déployé via Vercel.
+
 ## État actuel (session 2026-06-14)
 - **Grosse session IA** : import IA des manuels (PDF navigateur + texte), chat de correction
   **non destructif** (Planning/Accueil), bilan IA par élève (anonymisé), prénom enseignant
@@ -49,7 +60,7 @@
 
 ## Thème VIOLET (état actuel — révisé session 2026-06-14)
 - **Accent violet** (évolution : blanc minimaliste → rose → violet, « plus doux/pro »)
-- Fond app : dégradé `from-violet-200 via-purple-100 to-violet-100` ; header **solide** (non transparent) `from-violet-600 to-purple-600`, texte blanc, `sticky`, bien séparé
+- Fond app : dégradé `from-violet-300 via-purple-200 to-fuchsia-200` (aligné sur le login depuis 2026-06-18 ; était `from-violet-200 via-purple-100 to-violet-100`) ; header **solide** (non transparent) `from-violet-600 to-purple-600`, texte blanc, `sticky`, bien séparé
 - Connexion : fond `from-violet-300 via-purple-200 to-fuchsia-200` + cercles décoratifs
 - Accent unique **violet-600** ; swap global historique des accents : `blue-*` → `indigo-*` → `rose-*` → `violet-*` dans tout `src`
 - **Illustrations** : bandeau d'accueil dégradé violet avec formes SVG + motif 📚🍎✏️ ; cercles déco sur la connexion

@@ -42,6 +42,29 @@ body {
   animation: pop-in 0.25s ease-out both;
 }
 
+/* Bulles de peinture montantes (page de connexion) */
+@keyframes bubble-rise {
+  0%   { transform: translateY(0) translateX(0) scale(0.7); opacity: 0; }
+  12%  { opacity: var(--b-op, 0.5); }
+  50%  { transform: translateY(-55vh) translateX(var(--b-drift, 12px)) scale(1); }
+  88%  { opacity: var(--b-op, 0.5); }
+  100% { transform: translateY(-112vh) translateX(0) scale(1.1); opacity: 0; }
+}
+
+.login-bubble {
+  position: absolute;
+  bottom: -10vh;
+  border-radius: 9999px;
+  pointer-events: none;
+  animation: bubble-rise var(--b-dur, 12s) ease-in infinite;
+  animation-delay: var(--b-delay, 0s);
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-bubble { display: none; }
+}
+
 /* Visible uniquement à l'impression */
 .print-only {
   display: none;
