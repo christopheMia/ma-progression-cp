@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
-import LectureBlock from '@/components/semaine/LectureBlock'
+import MatiereBlock from '@/components/semaine/MatiereBlock'
 import EdmBlock from '@/components/semaine/EdmBlock'
 import StudentTracking from '@/components/semaine/StudentTracking'
 import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
@@ -27,6 +27,14 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const { data: appreciations } = await supabase.from('appreciations')
     .select('*').eq('semaine_id', id)
 
+  const { data: progression } = await supabase
+    .from('progression')
+    .select('*')
+    .eq('class_id', semaine.class_id)
+    .eq('numero', semaine.numero)
+  const progFrancais = progression?.find(p => p.matiere === 'francais') ?? null
+  const progMaths = progression?.find(p => p.matiere === 'maths') ?? null
+
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
 
   return (
@@ -38,7 +46,20 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           <PrintButton label="🖨️ Imprimer la fiche" />
         </div>
       </div>
-      <LectureBlock semaine={semaine} />
+      <MatiereBlock
+        matiere="francais"
+        items={progFrancais?.items ?? semaine.graphemes}
+        pages={progFrancais?.pages ?? semaine.manuel_pages}
+        motsExemple={progFrancais?.mots_exemple ?? semaine.mots_exemple}
+      />
+      {progMaths && (
+        <MatiereBlock
+          matiere="maths"
+          items={progMaths.items}
+          pages={progMaths.pages}
+          motsExemple={progMaths.mots_exemple}
+        />
+      )}
       <EdmBlock semaine={semaine} />
       <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} appreciations={appreciations ?? []} />
       <CahierJournalEditor semaineId={semaine.id} numeroSemaine={semaine.numero} />
