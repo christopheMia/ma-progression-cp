@@ -7,6 +7,7 @@ import ElevesEditor from '@/components/parametres/ElevesEditor'
 import EmploiDuTempsGrille from '@/components/parametres/EmploiDuTempsGrille'
 import RentreeEditor from '@/components/parametres/RentreeEditor'
 import ManuelEditor from '@/components/parametres/ManuelEditor'
+import MethodesEditor from '@/components/parametres/MethodesEditor'
 import ResetButton from '@/components/parametres/ResetButton'
 import DemoButton from '@/components/DemoButton'
 
@@ -61,7 +62,11 @@ export default async function ParametresPage() {
         <RentreeEditor initial={classe.rentree_date} />
       </Section>
 
-      <Section titre="📖 Manuel de lecture">
+      <Section titre="📚 Mes méthodes (Français + Maths)">
+        <MethodesEditor prenom={(classe.prenom_enseignant ?? '').trim() || undefined} />
+      </Section>
+
+      <Section titre="♻️ Tout régénérer (changer de manuel)">
         <ManuelEditor currentNom={manuelNom} prenom={(classe.prenom_enseignant ?? '').trim() || undefined} />
       </Section>
 
