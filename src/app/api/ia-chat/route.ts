@@ -3,6 +3,7 @@ import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { normalizeProgression } from '@/lib/ia/schema'
 import { systemChat } from '@/lib/ia/prompts'
 import type { ProgressionSemaine } from '@/data/manuels'
+import { messageErreurIA } from '@/lib/ia/erreurs'
 
 export const maxDuration = 60
 
@@ -70,9 +71,7 @@ export async function POST(request: Request) {
     })
   } catch (err) {
     console.error('ia-chat error:', err)
-    const msg = err instanceof Error && /ANTHROPIC_API_KEY/.test(err.message)
-      ? 'Service IA non configuré (clé API manquante).'
-      : "Désolé, je n'ai pas réussi cette correction. Réessayez en reformulant."
-    return NextResponse.json({ error: msg }, { status: 500 })
+    const { message, status } = messageErreurIA(err)
+    return NextResponse.json({ error: message }, { status })
   }
 }

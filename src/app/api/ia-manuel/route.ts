@@ -3,6 +3,7 @@ import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
 import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
 import { systemImport, userImport } from '@/lib/ia/prompts'
 import { isMatiereMethode, type MatiereMethode } from '@/lib/matieres'
+import { messageErreurIA } from '@/lib/ia/erreurs'
 
 export const maxDuration = 60
 
@@ -72,9 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ progression })
   } catch (err) {
     console.error('ia-manuel error:', err)
-    const msg = err instanceof Error && /ANTHROPIC_API_KEY/.test(err.message)
-      ? 'Service IA non configuré (clé API manquante).'
-      : "Erreur lors de l'analyse par l'IA. Réessayez ou utilisez l'import CSV."
-    return NextResponse.json({ error: msg }, { status: 500 })
+    const { message, status } = messageErreurIA(err)
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { SYSTEM_BILAN, userBilan } from '@/lib/ia/prompts'
+import { messageErreurIA } from '@/lib/ia/erreurs'
 
 export const maxDuration = 60
 
@@ -29,9 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ bilan })
   } catch (err) {
     console.error('ia-bilan error:', err)
-    const msg = err instanceof Error && /ANTHROPIC_API_KEY/.test(err.message)
-      ? 'Service IA non configuré (clé API manquante).'
-      : "Erreur lors de la génération du bilan. Réessayez."
-    return NextResponse.json({ error: msg }, { status: 500 })
+    const { message, status } = messageErreurIA(err)
+    return NextResponse.json({ error: message }, { status })
   }
 }
