@@ -3,22 +3,22 @@ import type { CSSProperties } from 'react'
 // Bulles de peinture montantes (animation CSS, sans dépendance).
 // Teintes violet/fuchsia pour rester dans le thème.
 const BUBBLES: Array<{ left: string; size: number; dur: number; delay: number; color: string; op: number; drift: string }> = [
-  { left: '4%', size: 30, dur: 14, delay: 0, color: '#a78bfa', op: 0.45, drift: '18px' },
-  { left: '12%', size: 16, dur: 11, delay: 3, color: '#e879f9', op: 0.5, drift: '-14px' },
-  { left: '20%', size: 44, dur: 17, delay: 1, color: '#c084fc', op: 0.35, drift: '22px' },
-  { left: '28%', size: 12, dur: 9, delay: 5, color: '#f0abfc', op: 0.55, drift: '-10px' },
-  { left: '36%', size: 24, dur: 13, delay: 2, color: '#a78bfa', op: 0.45, drift: '16px' },
-  { left: '45%', size: 36, dur: 16, delay: 6, color: '#d8b4fe', op: 0.4, drift: '-20px' },
-  { left: '53%', size: 14, dur: 10, delay: 0.5, color: '#e879f9', op: 0.55, drift: '12px' },
-  { left: '61%', size: 28, dur: 15, delay: 4, color: '#c084fc', op: 0.45, drift: '-16px' },
-  { left: '69%', size: 18, dur: 12, delay: 7, color: '#f0abfc', op: 0.5, drift: '14px' },
-  { left: '77%', size: 40, dur: 18, delay: 1.5, color: '#a78bfa', op: 0.35, drift: '-24px' },
-  { left: '85%', size: 20, dur: 11, delay: 3.5, color: '#e879f9', op: 0.5, drift: '18px' },
-  { left: '92%', size: 32, dur: 15, delay: 6.5, color: '#d8b4fe', op: 0.4, drift: '-18px' },
-  { left: '16%', size: 22, dur: 13, delay: 8, color: '#f0abfc', op: 0.45, drift: '10px' },
-  { left: '40%', size: 16, dur: 10, delay: 9, color: '#c084fc', op: 0.5, drift: '-12px' },
-  { left: '64%', size: 26, dur: 14, delay: 10, color: '#a78bfa', op: 0.4, drift: '20px' },
-  { left: '88%', size: 14, dur: 9.5, delay: 11, color: '#e879f9', op: 0.55, drift: '-10px' },
+  { left: '4%', size: 34, dur: 7, delay: 0, color: '#a78bfa', op: 0.45, drift: '18px' },
+  { left: '12%', size: 16, dur: 5.5, delay: 2, color: '#e879f9', op: 0.5, drift: '-14px' },
+  { left: '20%', size: 80, dur: 9, delay: 1, color: '#c084fc', op: 0.32, drift: '26px' },
+  { left: '28%', size: 12, dur: 4.5, delay: 3, color: '#f0abfc', op: 0.55, drift: '-10px' },
+  { left: '36%', size: 26, dur: 6.5, delay: 1.2, color: '#a78bfa', op: 0.45, drift: '16px' },
+  { left: '45%', size: 64, dur: 8.5, delay: 3.5, color: '#d8b4fe', op: 0.35, drift: '-24px' },
+  { left: '53%', size: 14, dur: 5, delay: 0.5, color: '#e879f9', op: 0.55, drift: '12px' },
+  { left: '61%', size: 30, dur: 7, delay: 2.5, color: '#c084fc', op: 0.45, drift: '-16px' },
+  { left: '69%', size: 18, dur: 6, delay: 4, color: '#f0abfc', op: 0.5, drift: '14px' },
+  { left: '77%', size: 92, dur: 10, delay: 0.8, color: '#a78bfa', op: 0.3, drift: '-30px' },
+  { left: '85%', size: 20, dur: 5.5, delay: 2.2, color: '#e879f9', op: 0.5, drift: '18px' },
+  { left: '92%', size: 36, dur: 7.5, delay: 3.8, color: '#d8b4fe', op: 0.4, drift: '-18px' },
+  { left: '16%', size: 22, dur: 6, delay: 4.5, color: '#f0abfc', op: 0.45, drift: '10px' },
+  { left: '40%', size: 70, dur: 9, delay: 5, color: '#c084fc', op: 0.32, drift: '-26px' },
+  { left: '64%', size: 24, dur: 6.5, delay: 5.5, color: '#a78bfa', op: 0.42, drift: '20px' },
+  { left: '88%', size: 14, dur: 4.5, delay: 6, color: '#e879f9', op: 0.55, drift: '-10px' },
 ]
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
