@@ -80,3 +80,27 @@ Règles :
 - Exemples : "décaler d'une semaine" = ajouter une semaine au début (les sons commencent une semaine plus tard) ; "semaine 5 c'est le son r" = remplacer les graphèmes de l'entrée numero 5.
 Réponds UNIQUEMENT via le format structuré imposé (champs: progression, reponse).`
 }
+
+export const SYSTEM_JOURNAL = `Tu es un enseignant de CP expérimenté qui prépare son cahier journal.
+On te donne, pour une journée, la liste des créneaux (matière + horaires) et le contenu de la semaine (sons de lecture, notions de maths).
+Pour CHAQUE créneau, rédige une amorce de déroulement courte (1 à 2 phrases), concrète et adaptée à des élèves de CP.
+- Pour la lecture/les graphèmes, appuie-toi sur le(s) son(s) de la semaine.
+- Pour les maths, appuie-toi sur la notion de la semaine.
+- Pour les autres matières (arts, EPS, anglais, EMC, sciences, histoire-géo…), propose une activité plausible et simple.
+N'invente pas de contenu spécifique à l'école. Reste général et réaliste.
+Réponds UNIQUEMENT via le format structuré imposé (un déroulement par créneau, dans le même ordre).`
+
+export function userJournal(d: {
+  numeroSemaine: number
+  creneaux: Array<{ heure_debut: string; heure_fin: string; matiere: string }>
+  francais: string[]
+  maths: string[]
+}): string {
+  const lignes = d.creneaux.map((c, i) => `${i + 1}. ${c.heure_debut}-${c.heure_fin} — ${c.matiere}`).join('\n')
+  return `Semaine ${d.numeroSemaine}.
+Sons de lecture (français) de la semaine : ${d.francais.join(', ') || '—'}.
+Notions de maths de la semaine : ${d.maths.join(', ') || '—'}.
+
+Créneaux de la journée (rédige un déroulement pour chacun, dans cet ordre) :
+${lignes}`
+}
