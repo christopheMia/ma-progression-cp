@@ -24,7 +24,7 @@ function parseCsv(text: string): ProgressionSemaine[] | null {
     if (isNaN(semaine)) continue
     result.push({
       numero: semaine,
-      graphemes: cols[1]?.trim() ? cols[1].trim().split(/\s+/).filter(Boolean) : [],
+      items: cols[1]?.trim() ? cols[1].trim().split(/\s+/).filter(Boolean) : [],
       pages: cols[2]?.trim() ?? '',
       mots_exemple: cols[3]?.trim() ? cols[3].trim().split(/\s+/).filter(Boolean) : [],
     })
@@ -32,7 +32,7 @@ function parseCsv(text: string): ProgressionSemaine[] | null {
 
   result.sort((a, b) => a.numero - b.numero)
   return Array.from({ length: 36 }, (_, i) =>
-    result.find(s => s.numero === i + 1) ?? { numero: i + 1, graphemes: [], pages: '', mots_exemple: [] }
+    result.find(s => s.numero === i + 1) ?? { numero: i + 1, items: [], pages: '', mots_exemple: [] }
   )
 }
 
@@ -73,7 +73,7 @@ export default function ManualSelector({
     const reader = new FileReader()
     reader.onload = (ev) => {
       const result = parseCsv(ev.target?.result as string)
-      if (!result || result.every(s => s.graphemes.length === 0)) {
+      if (!result || result.every(s => s.items.length === 0)) {
         setError('Fichier invalide ou vide. Vérifiez le format.')
         setParsed(null)
       } else {
@@ -119,7 +119,7 @@ export default function ManualSelector({
     if (pdfRef.current) pdfRef.current.value = ''
   }
 
-  const csvFilledWeeks = parsed?.filter(s => s.graphemes.length > 0).length ?? 0
+  const csvFilledWeeks = parsed?.filter(s => s.items.length > 0).length ?? 0
 
   const hasManuels = MANUELS.length > 0
 

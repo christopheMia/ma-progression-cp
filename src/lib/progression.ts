@@ -28,7 +28,7 @@ export function genererProgression(
     return {
       numero: i + 1,
       date_debut: format(dateDebut, 'yyyy-MM-dd'),
-      graphemes: semManuel?.graphemes ?? [],
+      graphemes: semManuel?.items ?? [],
       edm_theme: semEdm.theme,
       edm_competences: semEdm.competences,
       manuel_pages: semManuel?.pages ?? null,

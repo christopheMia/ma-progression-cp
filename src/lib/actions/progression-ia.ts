@@ -22,7 +22,7 @@ export async function corrigerProgression(classId: string, progression: Progress
   for (const s of progression) {
     await supabase.from('semaines')
       .update({
-        graphemes: s.graphemes,
+        graphemes: s.items,
         manuel_pages: s.pages || null,
         mots_exemple: s.mots_exemple,
       })

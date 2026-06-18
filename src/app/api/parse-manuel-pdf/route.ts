@@ -74,7 +74,7 @@ function parseProgressionFromText(text: string): ProgressionSemaine[] {
 
   if (occurrences.length === 0) {
     return Array.from({ length: 36 }, (_, i) => ({
-      numero: i + 1, graphemes: [], pages: '', mots_exemple: [],
+      numero: i + 1, items: [], pages: '', mots_exemple: [],
     }))
   }
 
@@ -89,14 +89,14 @@ function parseProgressionFromText(text: string): ProgressionSemaine[] {
 
     byWeek.set(numero, {
       numero,
-      graphemes: detectGraphemes(section),
+      items: detectGraphemes(section),
       pages: detectPages(section),
       mots_exemple: [],
     })
   }
 
   return Array.from({ length: 36 }, (_, i) => {
-    return byWeek.get(i + 1) ?? { numero: i + 1, graphemes: [], pages: '', mots_exemple: [] }
+    return byWeek.get(i + 1) ?? { numero: i + 1, items: [], pages: '', mots_exemple: [] }
   })
 }
 
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     const textPreview = text.slice(0, 800).trim()
 
     const progression = parseProgressionFromText(text)
-    const filledWeeks = progression.filter(s => s.graphemes.length > 0).length
+    const filledWeeks = progression.filter(s => s.items.length > 0).length
 
     return NextResponse.json({ progression, filledWeeks, textPreview })
   } catch (err) {

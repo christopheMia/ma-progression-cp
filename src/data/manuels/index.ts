@@ -8,7 +8,7 @@ export const MANUELS: Manuel[] = []
 
 export type ProgressionSemaine = {
   numero: number
-  graphemes: string[]
+  items: string[]
   pages: string
   mots_exemple: string[]
 }

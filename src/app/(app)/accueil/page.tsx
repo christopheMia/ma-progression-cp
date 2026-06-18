@@ -35,7 +35,7 @@ export default async function AccueilPage() {
 
   const progressionActuelle = (semaines ?? []).map(s => ({
     numero: s.numero,
-    graphemes: s.graphemes,
+    items: s.graphemes,
     pages: s.manuel_pages ?? '',
     mots_exemple: s.mots_exemple ?? [],
   }))

@@ -118,9 +118,9 @@ export default function IaImport({
                   <tr key={i} className="border-t">
                     <td className="px-2 py-1 text-gray-500">{s.numero}</td>
                     <td className="px-2 py-1">
-                      <input value={s.graphemes.join(' ')} onChange={e => {
+                      <input value={s.items.join(' ')} onChange={e => {
                         const v = e.target.value.split(/\s+/).filter(Boolean)
-                        setProgression(p => p!.map((x, j) => j === i ? { ...x, graphemes: v } : x))
+                        setProgression(p => p!.map((x, j) => j === i ? { ...x, items: v } : x))
                       }} className="w-full bg-white text-gray-900 rounded px-1 py-0.5 border border-gray-200" />
                     </td>
                     <td className="px-2 py-1">
