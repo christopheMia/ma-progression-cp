@@ -64,6 +64,21 @@
   .brand{display:flex;align-items:center;gap:.6rem;font-family:'Fraunces';font-weight:900;
     font-size:clamp(1rem,3.5vw,1.18rem)}
   .brand .mark{font-size:1.5rem;filter:drop-shadow(0 4px 8px rgba(124,58,237,.35))}
+  /* book logo lockup */
+  .brand-logo{display:inline-flex;align-items:center;gap:.7rem}
+  .brand-logo .mk{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;flex:none;
+    background:#fff;box-shadow:var(--shadow-sm);border:1px solid #efe6fb}
+  .brand-logo .mk svg{width:31px;height:auto;filter:drop-shadow(0 3px 5px rgba(124,58,237,.22))}
+  .brand-logo .wm{display:flex;flex-direction:column;line-height:1.04;font-family:'Fraunces';
+    font-weight:900;letter-spacing:-.01em}
+  .brand-logo .wm .l1{font-size:1rem;color:var(--ink)}
+  .brand-logo .wm .l2{font-size:1rem}
+  .brand-logo.lg{display:flex}
+  .brand-logo.lg .mk{width:78px;height:78px;border-radius:20px}
+  .brand-logo.lg .mk svg{width:52px}
+  .brand-logo.lg .wm .l1,.brand-logo.lg .wm .l2{font-size:clamp(1.35rem,4.4vw,2rem)}
+  @media(max-width:420px){.brand-logo .mk{width:42px;height:42px}.brand-logo .mk svg{width:27px}
+    .brand-logo .wm .l1,.brand-logo .wm .l2{font-size:.92rem}}
   .navlinks{display:flex;gap:2rem;align-items:center;font-weight:600;font-size:.95rem;color:var(--muted)}
   .navlinks a:hover{color:var(--violet-700)}
   .nav-cta{padding:.7rem 1.2rem;white-space:nowrap}
@@ -188,10 +203,13 @@
     gap:1.4rem;align-items:stretch}
   @media(max-width:740px){.price{grid-template-columns:1fr;max-width:380px;margin-inline:auto}}
   .plan{position:relative;background:#fff;border:1.5px solid #efe6fb;border-radius:22px;padding:2.1rem 1.8rem;
-    display:flex;flex-direction:column;box-shadow:var(--shadow-sm);transition:.28s ease}
-  .plan:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
-  .plan.feature-plan{border:2px solid transparent;
-    background:linear-gradient(#fff,#fff) padding-box,var(--grad) border-box}
+    display:flex;flex-direction:column;box-shadow:var(--shadow-sm);cursor:pointer}
+  .price .plan{transition:transform .25s ease, box-shadow .25s ease, border-color .2s ease}
+  .price .plan:hover{transform:translateY(-6px) scale(1.04);box-shadow:var(--shadow);z-index:2}
+  .price .plan.selected{border-color:var(--violet-600);box-shadow:0 0 0 3px var(--ring),var(--shadow);
+    transform:translateY(-6px) scale(1.06);z-index:3}
+  .price .plan.selected .btn-ghost{background:var(--grad);color:#fff;border-color:transparent}
+  .plan.feature-plan{border-color:#ddd6fe}
   .plan .pop{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--grad);
     color:#fff;font-weight:800;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
     padding:.4rem 1rem;border-radius:999px;box-shadow:var(--shadow-sm);white-space:nowrap}
@@ -261,17 +279,38 @@
 </head>
 <body>
 
+<!-- emblème livre (défini une fois, réutilisé dans le header + le hero) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ico-book" viewBox="0 0 56 46">
+    <defs>
+      <linearGradient id="bkg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#e879f9"/>
+      </linearGradient>
+    </defs>
+    <path d="M28 10C21 5 11 5 4 8v29c7-3 17-3 24 2V10Z" fill="#fff" stroke="url(#bkg)" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M28 10c7-5 17-5 24-2v29c-7-3-17-3-24 2V10Z" fill="#fff" stroke="url(#bkg)" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M9.5 16c3.5-1 8-1 11.5 1M9.5 22c3.5-1 8-1 11.5 1M9.5 28c3-1 7-1 10 1" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M35 17c3.5-1.5 8-1.5 11.5-.5M35 23c3.5-1.5 8-1.5 11.5-.5" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <path d="M49 25.5 38 36.5l-1.3 5 5-1.3L52.7 29.2Z" fill="#fbbf24" stroke="#6d28d9" stroke-width="1.7" stroke-linejoin="round"/>
+    <path d="m45.6 28.9 3.2 3.2" stroke="#6d28d9" stroke-width="1.7" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
 <!-- animated paint bubbles -->
 <div class="bubbles" id="bubbles" aria-hidden="true"></div>
 
 <!-- NAV -->
 <nav>
   <div class="wrap">
-    <div class="brand"><span class="mark">📖✏️</span> Mon Assistant <span class="grad-text">au Fil de l'Année</span></div>
+    <a href="#" class="brand-logo" aria-label="Mon Assistant au Fil de l'Année">
+      <span class="mk"><svg viewBox="0 0 56 46"><use href="#ico-book"/></svg></span>
+      <span class="wm"><span class="l1">Mon Assistant</span><span class="l2 grad-text">au Fil de l'Année</span></span>
+    </a>
     <div class="navlinks">
       <a href="#fonctions">Fonctions</a>
       <a href="#comment">Comment ça marche</a>
       <a href="#rgpd">RGPD</a>
+      <a href="#histoire">À propos</a>
       <a href="#tarifs">Tarifs</a>
     </div>
     <a href="#tarifs" class="btn btn-primary nav-cta">Essayer gratuitement</a>
@@ -282,7 +321,11 @@
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">✨ Propulsé par l'IA</span>
+      <span class="brand-logo lg" style="margin-bottom:1.6rem">
+        <span class="mk"><svg viewBox="0 0 56 46"><use href="#ico-book"/></svg></span>
+        <span class="wm"><span class="l1">Mon Assistant</span><span class="l2 grad-text">au Fil de l'Année</span></span>
+      </span>
+      <span class="eyebrow" style="display:inline-flex">✨ Propulsé par l'IA</span>
       <h1 class="hero-title">La prépa qui connaît<br><span class="grad-text">votre manuel.</span></h1>
       <p class="hero-sub">Importez vos méthodes, une par matière. L'IA construit chaque progression sur 36 semaines — puis remplit <b>l'emploi du temps</b>, le <b>cahier journal</b> et le <b>suivi des élèves</b>. Tout seul. Au bon moment.</p>
       <div class="hero-cta">
@@ -486,10 +529,10 @@
         <ul>
           <li>Tout le plan « Classe »</li>
           <li>Générations IA <b>illimitées</b></li>
-          <li><b>Plusieurs classes</b> — remplaçants, brigades, cours doubles <span class="soon-tag">bientôt</span></li>
-          <li><b>Différenciation auto</b> : 1 séance → 3 niveaux <span class="soon-tag">bientôt</span></li>
-          <li>Suivi des <b>108 h</b> <span class="soon-tag">bientôt</span></li>
-          <li>Évaluations &amp; export <b>LSU</b> <span class="soon-tag">bientôt</span></li>
+          <li><b>Plusieurs classes</b> — remplaçants, brigades, cours doubles</li>
+          <li><b>Différenciation auto</b> : 1 séance → 3 niveaux</li>
+          <li>Suivi des <b>108 h</b></li>
+          <li>Évaluations &amp; export <b>LSU</b></li>
           <li>Accès prioritaire aux nouveautés + support prioritaire</li>
         </ul>
         <a href="#" class="btn btn-ghost">Commencer l'essai gratuit</a>
@@ -511,7 +554,7 @@
 </section>
 
 <!-- FOUNDER -->
-<section class="band">
+<section class="band" id="histoire">
   <div class="wrap">
     <div class="founder reveal">
       <img class="photo" src="christophe.jpg" alt="Christophe, fondateur de Mon Assistant au Fil de l'Année" />
@@ -628,6 +671,25 @@
       mock.style.transform=`rotate(${1.2-x*0.15}deg) translate(${x}px,${y}px)`;
     });
   }
+
+  // sélection d'une offre — feedback visuel (pas encore de paiement branché)
+  (function(){
+    const plans=document.querySelectorAll('#tarifs .plan');
+    plans.forEach(plan=>{
+      plan.addEventListener('click',(e)=>{
+        e.preventDefault();
+        plans.forEach(p=>{
+          p.classList.remove('selected');
+          const b=p.querySelector('.btn');
+          if(b&&b.dataset.label){b.textContent=b.dataset.label;}
+        });
+        plan.classList.add('selected');
+        const btn=plan.querySelector('.btn');
+        if(btn){if(!btn.dataset.label)btn.dataset.label=btn.textContent;btn.textContent='✓ Offre sélectionnée';}
+        plan.scrollIntoView({behavior:'smooth',block:'center'});
+      });
+    });
+  })();
 </script>
 </body>
 </html>
