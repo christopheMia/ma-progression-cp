@@ -23,6 +23,15 @@ export type Progression = {
   mots_exemple: string[] | null
 }
 
+export type Methode = {
+  id: string
+  class_id: string
+  matiere: string
+  manuel: string | null
+  niveau: string | null
+  suivi_actif: boolean
+}
+
 export type Eleve = {
   id: string
   class_id: string
@@ -58,6 +67,8 @@ export type CreneauHoraire = {
   ordre: number
   couleur: string | null
   type: 'cours' | 'routine'
+  methode_id: string | null
+  visible_journal: boolean
 }
 
 export type SeanceJournal = {
@@ -75,6 +86,7 @@ export type JourJournal = {
 
 /** Ligne de progression d'une matière pour une semaine (issue de la table progression). */
 export type ProgressionMatiere = {
+  methode_id: string | null
   matiere: string
   items: string[]
   pages: string | null

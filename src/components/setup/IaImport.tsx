@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
-import { MATIERES_METHODE, LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -13,12 +12,12 @@ export default function IaImport({
   onSave,
 }: {
   prenom?: string
-  matiereFixe?: MatiereMethode
+  matiereFixe?: string
   onSelect?: (id: string, progression: ProgressionSemaine[]) => void
-  onSave?: (matiere: MatiereMethode, progression: ProgressionSemaine[]) => Promise<void> | void
+  onSave?: (matiere: string, progression: ProgressionSemaine[]) => Promise<void> | void
 }) {
   const [texte, setTexte] = useState('')
-  const [matiere, setMatiere] = useState<MatiereMethode>(matiereFixe ?? 'francais')
+  const [matiere, setMatiere] = useState<string>(matiereFixe ?? '')
   const [progression, setProgression] = useState<ProgressionSemaine[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -113,13 +112,14 @@ export default function IaImport({
         <div className="space-y-3">
           {!matiereFixe && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Quelle méthode importes-tu ?</label>
-              <select value={matiere} onChange={e => setMatiere(e.target.value as MatiereMethode)} disabled={loading}
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white">
-                {MATIERES_METHODE.map(m => (
-                  <option key={m} value={m}>{LABELS_MATIERE[m]}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quelle matière importes-tu ?</label>
+              <input
+                value={matiere}
+                onChange={e => setMatiere(e.target.value)}
+                disabled={loading}
+                placeholder="Ex : Anglais, EMC, Sciences…"
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+              />
             </div>
           )}
           <p className="text-sm text-gray-600">
@@ -145,7 +145,7 @@ export default function IaImport({
       {progression && (
         <div className="space-y-4">
           <p className="text-sm text-violet-700 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
-            {progression.length} semaines · {totalNotions} {matiere === 'maths' ? 'notions' : 'sons'} répartis
+            {progression.length} semaines · {totalNotions} éléments répartis{matiere ? ` (${matiere})` : ''}
           </p>
 
           {/* Tableau éditable */}
@@ -153,7 +153,7 @@ export default function IaImport({
             <table className="w-full text-sm">
               <thead className="bg-violet-50 sticky top-0">
                 <tr className="text-left text-violet-800">
-                  <th className="px-2 py-1 w-12">Sem.</th><th className="px-2 py-1">{matiere === 'maths' ? 'Notions' : 'Sons'}</th>
+                  <th className="px-2 py-1 w-12">Sem.</th><th className="px-2 py-1">Éléments</th>
                   <th className="px-2 py-1">Pages</th><th className="px-2 py-1">Mots</th>
                 </tr>
               </thead>

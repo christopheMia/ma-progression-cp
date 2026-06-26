@@ -18,27 +18,24 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const { data: semaine } = await supabase.from('semaines').select('*').eq('id', id).single()
   if (!semaine) redirect('/planning')
 
-  const { data: eleves } = await supabase.from('eleves')
-    .select('*').eq('class_id', semaine.class_id).order('ordre')
+  const [{ data: eleves }, { data: acquisitions }, { data: appreciations }, { data: progression }, { data: methodesList }] = await Promise.all([
+    supabase.from('eleves').select('*').eq('class_id', semaine.class_id).order('ordre'),
+    supabase.from('acquisitions').select('*').eq('semaine_id', id),
+    supabase.from('appreciations').select('*').eq('semaine_id', id),
+    supabase.from('progression').select('*').eq('class_id', semaine.class_id).eq('numero', semaine.numero),
+    supabase.from('methodes').select('id, matiere, suivi_actif').eq('class_id', semaine.class_id).order('created_at'),
+  ])
 
-  const { data: acquisitions } = await supabase.from('acquisitions')
-    .select('*').eq('semaine_id', id)
-
-  const { data: appreciations } = await supabase.from('appreciations')
-    .select('*').eq('semaine_id', id)
-
-  const { data: progression } = await supabase
-    .from('progression')
-    .select('*')
-    .eq('class_id', semaine.class_id)
-    .eq('numero', semaine.numero)
-  const progFrancais = progression?.find(p => p.matiere === 'francais') ?? null
-  const progMaths = progression?.find(p => p.matiere === 'maths') ?? null
-
-  const methodes = [
-    { matiere: 'francais' as const, items: progFrancais?.items ?? semaine.graphemes },
-    ...(progMaths ? [{ matiere: 'maths' as const, items: progMaths.items }] : []),
-  ]
+  // Construit la liste des méthodes pour StudentTracking (uniquement suivi_actif)
+  const methodesPourSuivi = (methodesList ?? []).map(m => {
+    const prog = progression?.find(p => p.methode_id === m.id)
+    return {
+      methode_id: m.id,
+      matiere: m.matiere,
+      suivi_actif: m.suivi_actif as boolean,
+      items: (prog?.items as string[]) ?? (m.matiere === 'francais' ? (semaine.graphemes as string[]) : []),
+    }
+  })
 
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
 
@@ -51,23 +48,32 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           <PrintButton label="🖨️ Imprimer la fiche" />
         </div>
       </div>
-      <MatiereBlock
-        matiere="francais"
-        items={progFrancais?.items ?? semaine.graphemes}
-        pages={progFrancais?.pages ?? semaine.manuel_pages}
-        motsExemple={progFrancais?.mots_exemple ?? semaine.mots_exemple}
-      />
-      {progMaths && (
-        <MatiereBlock
-          matiere="maths"
-          items={progMaths.items}
-          pages={progMaths.pages}
-          motsExemple={progMaths.mots_exemple}
-        />
-      )}
+
+      {(methodesList ?? []).map(m => {
+        const prog = progression?.find(p => p.methode_id === m.id)
+        const items = (prog?.items as string[]) ?? (m.matiere === 'francais' ? (semaine.graphemes as string[]) : [])
+        const pages = (prog?.pages as string | null) ?? (m.matiere === 'francais' ? semaine.manuel_pages : null)
+        const motsExemple = (prog?.mots_exemple as string[] | null) ?? (m.matiere === 'francais' ? semaine.mots_exemple : null)
+        if (items.length === 0 && !prog) return null
+        return (
+          <MatiereBlock key={m.id} matiere={m.matiere} items={items} pages={pages} motsExemple={motsExemple} />
+        )
+      })}
+
       <EdmBlock semaine={semaine} />
-      <StudentTracking semaine={semaine} eleves={eleves ?? []} acquisitions={acquisitions ?? []} appreciations={appreciations ?? []} methodes={methodes} />
-      <CahierJournalEditor semaineId={semaine.id} numeroSemaine={semaine.numero} francais={progFrancais?.items ?? []} maths={progMaths?.items ?? []} />
+      <StudentTracking
+        semaine={semaine}
+        eleves={eleves ?? []}
+        acquisitions={acquisitions ?? []}
+        appreciations={appreciations ?? []}
+        methodes={methodesPourSuivi}
+      />
+      <CahierJournalEditor
+        semaineId={semaine.id}
+        numeroSemaine={semaine.numero}
+        francais={(progression?.find(p => p.matiere === 'francais')?.items as string[]) ?? []}
+        maths={(progression?.find(p => p.matiere === 'maths')?.items as string[]) ?? []}
+      />
     </div>
   )
 }

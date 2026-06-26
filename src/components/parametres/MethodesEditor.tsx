@@ -1,46 +1,177 @@
 'use client'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import IaImport from '@/components/setup/IaImport'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
-import { MATIERES_METHODE, LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
+import { createMethode, updateSuiviActif, lierCreneaux } from '@/lib/actions/methodes'
+import type { Methode } from '@/types'
 import type { ProgressionSemaine } from '@/data/manuels'
 
-export default function MethodesEditor({ prenom }: { prenom?: string }) {
-  const [ouverte, setOuverte] = useState<MatiereMethode | null>(null)
+type CreneauInfo = { id: string; matiere: string; jour: string; methode_id: string | null }
+
+export default function MethodesEditor({
+  prenom,
+  methodes,
+  creneaux,
+}: {
+  prenom?: string
+  methodes: Methode[]
+  creneaux: CreneauInfo[]
+}) {
+  const [ouverte, setOuverte] = useState<string | null>(null)
+  const [lienOuvert, setLienOuvert] = useState<string | null>(null)
+  const [nouveauNom, setNouveauNom] = useState('')
   const [message, setMessage] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
-  async function save(matiere: MatiereMethode, progression: ProgressionSemaine[]) {
+  // Sélection des créneaux (state local avant sauvegarde)
+  const [creneauxSelectionnes, setCreneauxSelectionnes] = useState<Record<string, Set<string>>>(() => {
+    const init: Record<string, Set<string>> = {}
+    for (const m of methodes) {
+      init[m.id] = new Set(creneaux.filter(c => c.methode_id === m.id).map(c => c.id))
+    }
+    return init
+  })
+
+  function getSelectionMethode(methodeId: string): Set<string> {
+    return creneauxSelectionnes[methodeId] ?? new Set(creneaux.filter(c => c.methode_id === methodeId).map(c => c.id))
+  }
+
+  function toggleCreneau(methodeId: string, creneauId: string) {
+    setCreneauxSelectionnes(prev => {
+      const current = new Set(prev[methodeId] ?? creneaux.filter(c => c.methode_id === methodeId).map(c => c.id))
+      if (current.has(creneauId)) current.delete(creneauId)
+      else current.add(creneauId)
+      return { ...prev, [methodeId]: current }
+    })
+  }
+
+  async function saveImport(methodeId: string, matiere: string, progression: ProgressionSemaine[]) {
     await enregistrerProgressionMatiere(matiere, progression)
-    setMessage(`${LABELS_MATIERE[matiere]} enregistré ✓`)
+    setMessage(`${matiere} enregistré ✓`)
     setOuverte(null)
+    router.refresh()
+  }
+
+  function saveLien(methodeId: string) {
+    startTransition(async () => {
+      await lierCreneaux(methodeId, Array.from(getSelectionMethode(methodeId)))
+      setMessage('Créneaux liés ✓')
+      setLienOuvert(null)
+      router.refresh()
+    })
+  }
+
+  function toggleSuivi(methodeId: string, current: boolean) {
+    startTransition(async () => {
+      await updateSuiviActif(methodeId, !current)
+      router.refresh()
+    })
+  }
+
+  async function ajouterMethode() {
+    const nom = nouveauNom.trim()
+    if (!nom) return
+    await createMethode(nom)
+    setNouveauNom('')
     router.refresh()
   }
 
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-500">
-        Importe ou corrige chaque méthode séparément. Réimporter une matière ne touche pas l&apos;autre, ni ton suivi des élèves.
+        Importe ou corrige chaque méthode séparément. Réimporter une matière ne touche pas les autres, ni le suivi des élèves.
       </p>
       {message && <p className="text-sm text-green-600">{message}</p>}
-      {MATIERES_METHODE.map(m => (
-        <div key={m} className="border rounded-xl p-3">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-gray-700">{LABELS_MATIERE[m]}</span>
-            <button
-              onClick={() => { setMessage(null); setOuverte(ouverte === m ? null : m) }}
-              className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50">
-              {ouverte === m ? 'Fermer' : '🤖 Importer / corriger via l’IA'}
-            </button>
-          </div>
-          {ouverte === m && (
-            <div className="mt-3">
-              <IaImport prenom={prenom} matiereFixe={m} onSave={save} />
+
+      {methodes.map(m => {
+        const selection = getSelectionMethode(m.id)
+        const creneauxLies = creneaux.filter(c => selection.has(c.id))
+        const labelMethode = m.matiere === 'francais' ? 'Français' : m.matiere === 'maths' ? 'Maths' : m.matiere.charAt(0).toUpperCase() + m.matiere.slice(1)
+
+        return (
+          <div key={m.id} className="border rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="font-semibold text-gray-700">{labelMethode}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={m.suivi_actif}
+                    onChange={() => toggleSuivi(m.id, m.suivi_actif)}
+                    className="accent-violet-600"
+                  />
+                  📊 Suivre les acquis
+                </label>
+                <button
+                  onClick={() => setLienOuvert(lienOuvert === m.id ? null : m.id)}
+                  className="text-xs border border-gray-300 text-gray-600 rounded-lg px-2 py-1 hover:bg-gray-50">
+                  {creneauxLies.length > 0 ? `🔗 ${creneauxLies.length} créneau${creneauxLies.length > 1 ? 'x' : ''}` : '🔗 Lier des créneaux'}
+                </button>
+                <button
+                  onClick={() => { setMessage(null); setOuverte(ouverte === m.id ? null : m.id) }}
+                  className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50">
+                  {ouverte === m.id ? 'Fermer' : '🤖 Importer / corriger via l’IA'}
+                </button>
+              </div>
             </div>
-          )}
+
+            {lienOuvert === m.id && (
+              <div className="border-t pt-2 space-y-2">
+                <p className="text-xs text-gray-500">Coche les créneaux de ton EDT alimentés par cette méthode :</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {creneaux.map(c => (
+                    <label key={c.id} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.has(c.id)}
+                        onChange={() => toggleCreneau(m.id, c.id)}
+                        className="accent-violet-600"
+                      />
+                      <span className="text-gray-700">{c.jour} — {c.matiere}</span>
+                    </label>
+                  ))}
+                  {creneaux.length === 0 && (
+                    <p className="text-xs text-gray-400 col-span-2">Aucun créneau dans l’emploi du temps.</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => saveLien(m.id)}
+                  disabled={isPending}
+                  className="text-sm bg-violet-600 text-white rounded-lg px-3 py-1.5 hover:bg-violet-700 disabled:opacity-50">
+                  {isPending ? 'Enregistrement…' : '✅ Enregistrer les créneaux liés'}
+                </button>
+              </div>
+            )}
+
+            {ouverte === m.id && (
+              <div className="mt-2">
+                <IaImport prenom={prenom} matiereFixe={m.matiere} onSave={(matiere, prog) => saveImport(m.id, matiere, prog)} />
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      <div className="border border-dashed border-violet-300 rounded-xl p-3 space-y-2">
+        <p className="text-sm font-medium text-gray-700">+ Ajouter une méthode</p>
+        <div className="flex gap-2">
+          <input
+            value={nouveauNom}
+            onChange={e => setNouveauNom(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && ajouterMethode()}
+            placeholder="Ex : Anglais, EMC, Sciences…"
+            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+          />
+          <button
+            onClick={ajouterMethode}
+            disabled={!nouveauNom.trim()}
+            className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50 disabled:opacity-40">
+            Ajouter
+          </button>
         </div>
-      ))}
+      </div>
     </div>
   )
 }

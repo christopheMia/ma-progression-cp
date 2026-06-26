@@ -10,6 +10,7 @@ import ManuelEditor from '@/components/parametres/ManuelEditor'
 import MethodesEditor from '@/components/parametres/MethodesEditor'
 import ResetButton from '@/components/parametres/ResetButton'
 import DemoButton from '@/components/DemoButton'
+import type { Methode } from '@/types'
 
 function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
   return (
@@ -32,6 +33,8 @@ export default async function ParametresPage() {
     .select('*').eq('class_id', classe.id).order('ordre')
   const { data: edt } = await supabase.from('emploi_du_temps')
     .select('*').eq('class_id', classe.id).order('ordre')
+  const { data: methodes } = await supabase
+    .from('methodes').select('*').eq('class_id', classe.id).order('created_at')
 
   const manuelNom = MANUELS.find(m => m.id === classe.manuel_id)?.nom
     ?? (classe.manuel_id === 'custom' ? 'Manuel importé' : classe.manuel_id)
@@ -55,6 +58,7 @@ export default async function ParametresPage() {
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
           jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
           matiere: c.matiere, couleur: c.couleur ?? null, type: (c.type ?? 'cours') as 'cours' | 'routine',
+          visible_journal: (c.visible_journal ?? true) as boolean,
         }))} />
       </Section>
 
@@ -62,8 +66,12 @@ export default async function ParametresPage() {
         <RentreeEditor initial={classe.rentree_date} />
       </Section>
 
-      <Section titre="📚 Mes méthodes (Français + Maths)">
-        <MethodesEditor prenom={(classe.prenom_enseignant ?? '').trim() || undefined} />
+      <Section titre="📚 Mes méthodes">
+        <MethodesEditor
+          prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
+          methodes={(methodes ?? []) as Methode[]}
+          creneaux={(edt ?? []).map(c => ({ id: c.id, matiere: c.matiere, jour: c.jour, methode_id: c.methode_id ?? null }))}
+        />
       </Section>
 
       <Section titre="♻️ Tout régénérer (changer de manuel)">

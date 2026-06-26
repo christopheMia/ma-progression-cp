@@ -5,13 +5,13 @@ import { upsertAppreciation } from '@/lib/actions/appreciation'
 import { exporterSuiviWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import { celebrate } from '@/lib/confetti'
-import { LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
 import { useTransition, useState, useEffect, useRef } from 'react'
 
 type ApprState = { statut: string | null; commentaire: string }
-type Methode = { matiere: MatiereMethode; items: string[] }
+type Methode = { methode_id: string; matiere: string; items: string[]; suivi_actif: boolean }
 
-const EMOJI_MATIERE: Record<MatiereMethode, string> = { francais: '📖', maths: '🔢' }
+function emojiMatiere(m: string) { return m === 'francais' ? '📖' : m === 'maths' ? '🔢' : '📋' }
+function labelMatiere(m: string) { return m === 'francais' ? 'Français' : m === 'maths' ? 'Maths' : m.charAt(0).toUpperCase() + m.slice(1) }
 
 const k = (eleveId: string, matiere: string) => `${eleveId}|${matiere}`
 
@@ -77,7 +77,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
     startTransition(() => upsertAppreciation(semaine.id, eleveId, matiere, a.statut, a.commentaire))
   }
 
-  async function generateBilan(eleve: Eleve, matiere: MatiereMethode, items: string[]) {
+  async function generateBilan(eleve: Eleve, matiere: string, items: string[]) {
     const current = getAppr(eleve.id, matiere)
     const itemsAcquis = items.filter(g => isAcquis(eleve.id, matiere, g))
     const itemsNonAcquis = items.filter(g => !isAcquis(eleve.id, matiere, g))
@@ -114,7 +114,7 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
     return statut === 'acquis' ? 'Acquis' : statut === 'pas_acquis' ? 'Pas encore' : '—'
   }
 
-  function exportWord(matiere: MatiereMethode, items: string[]) {
+  function exportWord(matiere: string, items: string[]) {
     exporterSuiviWord({
       numeroSemaine: semaine.numero,
       graphemes: items,
@@ -148,10 +148,10 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
         <strong> commentaire</strong> si besoin.
       </p>
 
-      {methodes.map(({ matiere, items }) => (
+      {methodes.filter(m => m.suivi_actif).map(({ matiere, items }) => (
         <section key={matiere} className="mb-8 last:mb-0">
           <div className="flex items-center gap-3 mb-3">
-            <h3 className="font-bold text-violet-700">{EMOJI_MATIERE[matiere]} {LABELS_MATIERE[matiere]}</h3>
+            <h3 className="font-bold text-violet-700">{emojiMatiere(matiere)} {labelMatiere(matiere)}</h3>
             <button
               onClick={() => exportWord(matiere, items)}
               className="no-print text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1 hover:bg-violet-50">
