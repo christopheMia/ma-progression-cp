@@ -2,19 +2,10 @@ import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
-/** Mappe un libellé de créneau vers la matière-méthode correspondante (ou null). */
-export function matiereMethode(matiere: string): 'francais' | 'maths' | null {
-  const m = matiere.toLowerCase()
-  if (m.includes('graphème') || m.includes('graphe')) return 'francais'
-  if (m.includes('math') || m.includes('calcul')) return 'maths'
-  return null
-}
-
 function deroulementInitial(creneau: CreneauHoraire, progression: ProgressionMatiere[]): string {
   if (creneau.type === 'routine') return ''
-  const matiere = matiereMethode(creneau.matiere)
-  if (!matiere) return ''
-  const p = progression.find(x => x.matiere === matiere)
+  if (!creneau.methode_id) return ''
+  const p = progression.find(x => x.methode_id === creneau.methode_id)
   if (!p || p.items.length === 0) return ''
   const items = p.items.join(', ')
   const pages = p.pages ? ` — ${p.pages}` : ''
@@ -28,6 +19,7 @@ export function genererCahierJournal(
 ): JourJournal[] {
   const parJour = new Map<string, CreneauHoraire[]>()
   for (const c of emploiDuTemps) {
+    if (c.visible_journal === false) continue
     const list = parJour.get(c.jour) ?? []
     list.push(c)
     parJour.set(c.jour, list)
