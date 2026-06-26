@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { TRAME_EDT_CP } from '@/data/trame-edt'
+import { ensureMethode } from '@/lib/methodes-db'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; type: 'cours' | 'routine' }
 
@@ -129,8 +130,9 @@ export async function updateManuel(manuelId: string, customProgression?: Progres
   await supabase.from('progression').delete().eq('class_id', classe.id).eq('matiere', 'francais')
   const progFr = genererProgressionFrancais(manuelId, customProgression)
   if (progFr.length > 0) {
+    const methodeId = await ensureMethode(supabase, classe.id, 'francais')
     await supabase.from('progression').insert(
-      progFr.map(p => ({ ...p, class_id: classe.id, matiere: 'francais' as const }))
+      progFr.map(p => ({ ...p, class_id: classe.id, methode_id: methodeId, matiere: 'francais' as const }))
     )
   }
 

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { isMatiereMethode } from '@/lib/matieres'
+import { ensureMethode } from '@/lib/methodes-db'
 
 /**
  * Enregistre la progression pour UNE matière, en remplaçant UNIQUEMENT
@@ -27,12 +28,15 @@ export async function enregistrerProgressionMatiere(
     .maybeSingle()
   if (!classe) throw new Error('Aucune classe')
 
+  const methodeId = await ensureMethode(supabase, classe.id, matiere)
+
   // Remplace UNIQUEMENT cette matière (jamais l'autre)
   await supabase.from('progression').delete()
     .eq('class_id', classe.id).eq('matiere', matiere)
 
   const lignes = semaines.map(s => ({
     class_id: classe.id,
+    methode_id: methodeId,
     matiere,
     numero: s.numero,
     items: s.items,

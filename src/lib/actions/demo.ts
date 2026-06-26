@@ -5,6 +5,7 @@ import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import { getStatus } from '@/lib/semaines'
 import { addWeeks, startOfWeek, format } from 'date-fns'
 import { redirect } from 'next/navigation'
+import { ensureMethode } from '@/lib/methodes-db'
 
 const PRENOMS = ['Lina', 'Tom', 'Aya', 'Noah', 'Jade', 'Sacha', 'Léa', 'Gabriel', 'Manon', 'Yanis']
 
@@ -70,8 +71,9 @@ export async function chargerClasseDemo() {
   // d'affichage par matière (la fiche semaine lit `progression`).
   const progFr = genererProgressionFrancais('lecture-piano')
   if (progFr.length > 0) {
+    const methodeId = await ensureMethode(supabase, classe.id, 'francais')
     await supabase.from('progression').insert(
-      progFr.map(p => ({ ...p, class_id: classe.id, matiere: 'francais' as const }))
+      progFr.map(p => ({ ...p, class_id: classe.id, methode_id: methodeId, matiere: 'francais' as const }))
     )
   }
 

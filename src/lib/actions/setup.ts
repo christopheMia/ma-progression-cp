@@ -5,6 +5,7 @@ import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import { redirect } from 'next/navigation'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { TRAME_EDT_CP } from '@/data/trame-edt'
+import { ensureMethode } from '@/lib/methodes-db'
 
 export async function creerClasse(formData: {
   manuelId: string
@@ -39,8 +40,9 @@ export async function creerClasse(formData: {
 
   const progFr = genererProgressionFrancais(formData.manuelId, formData.customProgression)
   if (progFr.length > 0) {
+    const methodeId = await ensureMethode(supabase, classe.id, 'francais')
     await supabase.from('progression').insert(
-      progFr.map(p => ({ ...p, class_id: classe.id, matiere: 'francais' as const }))
+      progFr.map(p => ({ ...p, class_id: classe.id, methode_id: methodeId, matiere: 'francais' as const }))
     )
   }
 
