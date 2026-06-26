@@ -47,16 +47,36 @@ Réutilise la logique de l'écran « Mes méthodes » des Paramètres :
 3. Pour **chaque méthode importée** (français, maths, ou autre) : créer la ligne `methodes` + remplir la table `progression` pour cette matière (réutilise la logique `enregistrerProgressionMatiere` / `ensureMethode`).
 4. Insérer l'emploi du temps (inchangé).
 
+## ⏸️ EN ATTENTE — chronologie à valider avec Cécile
+
+L'**ordre des étapes** de l'assistant n'est **pas figé** : Christophe va demander à Cécile
+l'enchaînement le plus naturel pour elle (ex. Emploi du temps → Méthodes → Élèves → Lier, ou autre).
+**On ne construit l'assistant qu'une fois cet ordre connu.**
+
+**Contrainte technique d'ordonnancement :** lier un créneau à une méthode exige que **l'emploi du
+temps ET les méthodes existent déjà**. Donc l'étape « lier » vient toujours **après** ces deux-là
+(ou se reporte dans Paramètres).
+
+## Exigences transverses (toutes étapes)
+
+- **Toutes les étapes sont « passables »** : on peut continuer même s'il manque des éléments
+  (pas seulement l'étape méthodes). Chaque étape qui n'est pas remplie pourra l'être plus tard
+  dans Paramètres — l'expliquer clairement à l'écran.
+- **Boutons « Retour »** sur chaque étape, pour naviguer dans les deux sens (← Précédent / Continuer →).
+- **Lier les créneaux aux méthodes pendant l'assistant** : proposé directement dans la config
+  (puisqu'on y est), avec l'option de le faire plus tard dans Paramètres si l'enseignante préfère.
+
 ## Périmètre
 
 **Dans ce design :**
 - Étape « méthodes » multi-matières + passable.
 - Découplage calendrier ↔ méthode lecture (36 semaines vides possibles).
+- Toutes les étapes passables + boutons Retour.
+- Liaison créneaux↔méthodes possible pendant l'assistant (après EDT + méthodes).
 - Cohérence du « tu » et des explications claires (déjà entamée).
 
 **Hors périmètre (plus tard) :**
-- Lier les créneaux de l'EDT aux méthodes **pendant** l'assistant (se fait déjà dans Paramètres après coup).
-- Suivi élèves opt-in pendant l'assistant (déjà dans Paramètres).
+- Suivi élèves opt-in pendant l'assistant (reste dans Paramètres).
 
 ## Risques / points d'attention
 
