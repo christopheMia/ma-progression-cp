@@ -167,3 +167,26 @@ do $$ begin
       where c.user_id = auth.uid()
     ));
 exception when duplicate_object then null; end $$;
+
+-- ── methodes (migration 008) ──────────────────────────────────────────────
+create table if not exists methodes (
+  id uuid primary key default gen_random_uuid(),
+  class_id uuid references classes on delete cascade not null,
+  matiere text not null,
+  manuel text,
+  niveau text,
+  suivi_actif boolean not null default true,
+  created_at timestamptz default now()
+);
+alter table methodes enable row level security;
+do $$ begin
+  create policy "Users manage own methodes" on methodes
+    using (class_id in (select id from classes where user_id = auth.uid()))
+    with check (class_id in (select id from classes where user_id = auth.uid()));
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table methodes add constraint methodes_class_matiere_key unique (class_id, matiere);
+exception when duplicate_object then null; end $$;
+alter table emploi_du_temps add column if not exists methode_id uuid references methodes on delete set null;
+alter table emploi_du_temps add column if not exists visible_journal boolean not null default true;
+alter table progression add column if not exists methode_id uuid references methodes on delete cascade;
