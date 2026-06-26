@@ -1,11 +1,13 @@
-import { LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
-
 const REGLE_EXHAUSTIVITE = `Procède en deux temps, sans rien oublier :
 1) Recense d'ABORD la liste complète des contenus du document (aucun ne doit manquer).
 2) Répartis ENSUITE ces contenus, semaine par semaine, dans l'ordre de l'année.
 N'invente aucun contenu absent du document.`
 
-export function systemImport(matiere: MatiereMethode): string {
+function labelMatiere(matiere: string): string {
+  return matiere === 'francais' ? 'Français' : matiere === 'maths' ? 'Maths' : matiere
+}
+
+export function systemImport(matiere: string): string {
   if (matiere === 'maths') {
     return `Tu es un expert des méthodes de mathématiques CP françaises.
 On te donne le texte (programmation ou sommaire) d'une méthode de maths CP, souvent organisée PAR PÉRIODE et PAR DOMAINE (nombres, calcul mental, problèmes, grandeurs et mesures, espace et géométrie...).
@@ -16,6 +18,18 @@ Règles :
 - "items" = les notions/compétences travaillées cette semaine (ex: ["Nombres jusqu'à 10","Décomposer 4 et 5"]).
 - Étale les notions d'une période sur les semaines de cette période (≈7 semaines par période).
 - "pages" = les pages si présentes, sinon "". "mots_exemple" = [] (rarement pertinent en maths).
+Réponds UNIQUEMENT via le format structuré imposé.`
+  }
+  if (matiere && matiere !== 'francais') {
+    return `Tu es un expert des programmations scolaires françaises pour la matière « ${matiere} ».
+On te donne le texte (programmation, sommaire ou progression) d'une méthode de ${matiere}.
+Ta tâche : reconstruire une progression SEMAINE PAR SEMAINE.
+${REGLE_EXHAUSTIVITE}
+Règles :
+- Une entrée par semaine, dans l'ordre chronologique de l'année.
+- "items" = les notions/compétences/séances travaillées cette semaine.
+- Étale les contenus d'une période sur les semaines de cette période (≈7 semaines par période).
+- "pages" = les pages si présentes, sinon "". "mots_exemple" = [] (rarement pertinent).
 Réponds UNIQUEMENT via le format structuré imposé.`
   }
   return `Tu es un expert des méthodes de lecture CP françaises.
@@ -53,7 +67,7 @@ export function userBilan(opts: {
   statut: string | null
 }): string {
   const { numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut } = opts
-  const label = LABELS_MATIERE[matiere as MatiereMethode] ?? matiere
+  const label = labelMatiere(matiere)
   const bilanGlobal = statut === 'acquis' ? 'objectifs atteints' : statut === 'pas_acquis' ? 'objectifs non encore atteints' : 'non précisé'
   return `Semaine ${numeroSemaine} — ${label}.
 Notions maîtrisées : ${itemsAcquis.length ? itemsAcquis.join(', ') : 'aucune pour l’instant'}.

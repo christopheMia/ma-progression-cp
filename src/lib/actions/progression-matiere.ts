@@ -2,7 +2,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { ProgressionSemaine } from '@/data/manuels'
-import { isMatiereMethode } from '@/lib/matieres'
 import { ensureMethode } from '@/lib/methodes-db'
 
 /**
@@ -14,7 +13,9 @@ export async function enregistrerProgressionMatiere(
   matiere: string,
   semaines: ProgressionSemaine[],
 ) {
-  if (!isMatiereMethode(matiere)) throw new Error('Matière inconnue')
+  const trimmed = matiere.trim()
+  if (!trimmed) throw new Error('Matière inconnue')
+  matiere = trimmed
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Non connecté')

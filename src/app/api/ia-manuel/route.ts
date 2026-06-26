@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
 import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
 import { systemImport, userImport } from '@/lib/ia/prompts'
-import { isMatiereMethode, type MatiereMethode } from '@/lib/matieres'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
@@ -12,14 +11,14 @@ export async function POST(request: Request) {
   try {
     const contentType = request.headers.get('content-type') ?? ''
     let texte = ''
-    let matiere: MatiereMethode = 'francais'
+    let matiere = 'francais'
 
     if (contentType.includes('multipart/form-data')) {
       const form = await request.formData()
       const file = form.get('pdf') as File | null
       const texteColle = (form.get('texte') as string | null) ?? ''
       const matiereRaw = (form.get('matiere') as string | null) ?? ''
-      if (isMatiereMethode(matiereRaw)) matiere = matiereRaw
+      if (matiereRaw.trim()) matiere = matiereRaw.trim()
       if (file) {
         if (file.size > 30 * 1024 * 1024) {
           return NextResponse.json({ error: 'Fichier trop volumineux (max 30 Mo)' }, { status: 400 })
@@ -36,7 +35,7 @@ export async function POST(request: Request) {
     } else {
       const body = await request.json()
       texte = typeof body.texte === 'string' ? body.texte : ''
-      if (typeof body.matiere === 'string' && isMatiereMethode(body.matiere)) matiere = body.matiere
+      if (typeof body.matiere === 'string' && body.matiere.trim()) matiere = body.matiere.trim()
     }
 
     texte = texte.trim()
