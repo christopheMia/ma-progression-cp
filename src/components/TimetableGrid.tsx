@@ -15,6 +15,7 @@ const MATIERES = ['Appropriation des graphèmes', 'Écriture', 'Phonologie', 'Vo
 export type Creneau = {
   jour: string; heure_debut: string; heure_fin: string
   matiere: string; couleur: string | null; type: 'cours' | 'routine'
+  visible_journal: boolean
 }
 
 /** Tranches horaires distinctes, triées par heure de début. */
@@ -46,7 +47,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
       if (matiere === '') return idx >= 0 ? prev.filter((_, i) => i !== idx) : prev
       const couleur = couleurMatiere(matiere)
       if (idx >= 0) return prev.map((c, i) => i === idx ? { ...c, matiere, couleur } : c)
-      return [...prev, { jour, heure_debut: debut, heure_fin: fin, matiere, couleur, type: 'cours' }]
+      return [...prev, { jour, heure_debut: debut, heure_fin: fin, matiere, couleur, type: 'cours', visible_journal: true }]
     })
   }
 
@@ -63,12 +64,25 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
     setCreneaux(prev => prev.filter(c => !(c.heure_debut === debut && c.heure_fin === fin)))
   }
 
+  function toggleVisible(debut: string, fin: string) {
+    setCreneaux(prev => {
+      const isVisible = prev.some(
+        c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal !== false
+      )
+      return prev.map(c =>
+        c.heure_debut === debut && c.heure_fin === fin
+          ? { ...c, visible_journal: !isVisible }
+          : c
+      )
+    })
+  }
+
   function ajouterLigne() {
     setCreneaux(prev => {
       const lastFin = prev.reduce((max, c) => (c.heure_fin > max ? c.heure_fin : max), '08:00')
       const debut = lastFin, fin = addMinutes(lastFin, 30)
       if (prev.some(c => c.heure_debut === debut && c.heure_fin === fin)) return prev
-      return [...prev, ...cols.map(jour => ({ jour, heure_debut: debut, heure_fin: fin, matiere: '', couleur: null, type: 'cours' as const }))]
+      return [...prev, ...cols.map(jour => ({ jour, heure_debut: debut, heure_fin: fin, matiere: '', couleur: null, type: 'cours' as const, visible_journal: true }))]
     })
   }
 
@@ -112,6 +126,14 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                     </div>
                     <div className="flex gap-2 mt-1">
                       <button onClick={() => toggleRoutine(debut, fin)} className="text-[10px] text-violet-500 hover:underline">{isRoutine ? '↩ cours' : 'routine'}</button>
+                      <button onClick={() => toggleVisible(debut, fin)}
+                        className={`text-[10px] hover:underline ${
+                          creneaux.some(c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal === false)
+                            ? 'text-gray-400' : 'text-violet-500'
+                        }`}>
+                        {creneaux.some(c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal === false)
+                          ? '👁️ masqué' : '👁️ visible'}
+                      </button>
                       <button onClick={() => supprimerLigne(debut, fin)} className="text-[10px] text-red-400 hover:underline">supprimer</button>
                     </div>
                   </td>

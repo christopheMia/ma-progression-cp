@@ -55,6 +55,7 @@ export default async function ParametresPage() {
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
           jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
           matiere: c.matiere, couleur: c.couleur ?? null, type: (c.type ?? 'cours') as 'cours' | 'routine',
+          visible_journal: (c.visible_journal ?? true) as boolean,
         }))} />
       </Section>
 

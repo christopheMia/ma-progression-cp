@@ -9,7 +9,7 @@ import type { ProgressionSemaine } from '@/data/manuels'
 import { TRAME_EDT_CP } from '@/data/trame-edt'
 import { ensureMethode } from '@/lib/methodes-db'
 
-type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; type: 'cours' | 'routine' }
+type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; type: 'cours' | 'routine'; visible_journal: boolean }
 
 async function getClasse() {
   const supabase = await createClient()
