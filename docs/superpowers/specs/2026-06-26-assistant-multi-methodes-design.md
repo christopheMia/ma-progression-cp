@@ -66,6 +66,14 @@ temps ET les méthodes existent déjà**. Donc l'étape « lier » vient toujour
 - **Lier les créneaux aux méthodes pendant l'assistant** : proposé directement dans la config
   (puisqu'on y est), avec l'option de le faire plus tard dans Paramètres si l'enseignante préfère.
 
+  **Message clair quand la liaison n'est pas encore possible** (il manque l'EDT ou les méthodes) :
+  ne jamais afficher un bouton inerte sans explication. Afficher un encadré du type :
+  > « Pour relier tes créneaux à une méthode, tu dois d'abord avoir rempli **ton emploi du temps**
+  > et importé **au moins une méthode**. Une fois les deux faits, tu pourras cocher quels créneaux
+  > utilisent chaque méthode — ici, ou plus tard dans **Paramètres → Mes méthodes**. »
+
+  Adapter le message selon ce qui manque (EDT seul, méthodes seules, ou les deux).
+
 ## Périmètre
 
 **Dans ce design :**
