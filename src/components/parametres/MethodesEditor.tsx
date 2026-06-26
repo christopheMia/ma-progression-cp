@@ -80,8 +80,11 @@ export default function MethodesEditor({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500">
-        Importe ou corrige chaque méthode séparément. Réimporter une matière ne touche pas les autres, ni le suivi des élèves.
+      <p className="text-sm text-gray-600 bg-violet-50 border border-violet-100 rounded-lg p-3 leading-relaxed">
+        Ici tu importes chaque méthode séparément (Français, Maths, Anglais…).
+        Pour chaque matière, tu peux <strong>cocher la case « Suivre les acquis »</strong> si
+        tu veux noter les progrès des élèves dans cette matière (cela fait apparaître les étoiles ★ dans le suivi).
+        Réimporter une matière ne touche jamais les autres.
       </p>
       {message && <p className="text-sm text-green-600">{message}</p>}
 
@@ -102,17 +105,17 @@ export default function MethodesEditor({
                     onChange={() => toggleSuivi(m.id, m.suivi_actif)}
                     className="accent-violet-600"
                   />
-                  📊 Suivre les acquis
+                  📊 Suivre les acquis des élèves <span className="text-gray-400">(affiche les étoiles ★)</span>
                 </label>
                 <button
                   onClick={() => setLienOuvert(lienOuvert === m.id ? null : m.id)}
                   className="text-xs border border-gray-300 text-gray-600 rounded-lg px-2 py-1 hover:bg-gray-50">
-                  {creneauxLies.length > 0 ? `🔗 ${creneauxLies.length} créneau${creneauxLies.length > 1 ? 'x' : ''}` : '🔗 Lier des créneaux'}
+                  {creneauxLies.length > 0 ? `🗓️ ${creneauxLies.length} créneau${creneauxLies.length > 1 ? 'x' : ''} de la semaine` : '🗓️ Choisir les créneaux de la semaine'}
                 </button>
                 <button
                   onClick={() => { setMessage(null); setOuverte(ouverte === m.id ? null : m.id) }}
                   className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50">
-                  {ouverte === m.id ? 'Fermer' : '🤖 Importer / corriger via l’IA'}
+                  {ouverte === m.id ? 'Fermer' : '🤖 Importer ou corriger la méthode'}
                 </button>
               </div>
             </div>
@@ -155,7 +158,8 @@ export default function MethodesEditor({
       })}
 
       <div className="border border-dashed border-violet-300 rounded-xl p-3 space-y-2">
-        <p className="text-sm font-medium text-gray-700">+ Ajouter une méthode</p>
+        <p className="text-sm font-medium text-gray-700">➕ Ajouter une nouvelle matière</p>
+        <p className="text-xs text-gray-400">Écris le nom d’une matière (Anglais, Sciences, EMC…) puis clique « Ajouter ».</p>
         <div className="flex gap-2">
           <input
             value={nouveauNom}

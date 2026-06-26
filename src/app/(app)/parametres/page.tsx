@@ -66,7 +66,7 @@ export default async function ParametresPage() {
         <RentreeEditor initial={classe.rentree_date} />
       </Section>
 
-      <Section titre="📚 Mes méthodes">
+      <Section titre="📚 Mes méthodes et acquis des élèves">
         <MethodesEditor
           prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
           methodes={(methodes ?? []) as Methode[]}
