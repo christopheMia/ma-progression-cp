@@ -178,6 +178,14 @@ Le lien avec le *programme* officiel = précisément le chantier LSU du §2.2.
    c. **Mise en forme EDT** (§2.3) — rapide, plaisir utilisatrice.
 9. **Séances détaillées** (fiche de prép, générée une par une) — produit d'appel de l'abonnement.
 
+## 5 bis. PETITES FINITIONS REPÉRÉES (vite faites, grosse valeur perçue)
+- **Titre d'onglet = « Create Next App »** (constaté le 2026-07-05 sur /connexion) : mettre le vrai
+  nom de l'appli + description dans les `metadata` du layout racine. 1 ligne, à glisser dans le
+  prochain lot de code (ex. avec la sécurisation des routes IA).
+- Pack essai Cécile prêt (2026-07-05) : `GUIDE-ESSAI-CECILE.pdf` (racine, NON commité — contient
+  un mot de passe), compte `essai.methodes@aufildelannee.fr`, sauvegarde in-DB `sauvegarde_20260705`,
+  lien preview débloqué (protection Vercel désactivée — à RÉACTIVER après la phase de test).
+
 ## 6. MÉTHODE DE TRAVAIL (rappels non négociables)
 - **Christophe n'est pas développeur** : expliquer sans jargon, en termes d'usage pour l'enseignante.
   Poser les questions en texte conversationnel (il n'aime pas les popups de choix).
