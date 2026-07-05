@@ -48,3 +48,6 @@ docsmethodes/
 
 # Sauvegardes de la base de prod (ne jamais commiter)
 backups/
+
+# Guide d'essai Cécile (contient un mot de passe — ne jamais commiter)
+GUIDE-ESSAI-CECILE.*

@@ -185,6 +185,18 @@ Le lien avec le *programme* officiel = précisément le chantier LSU du §2.2.
 - Pack essai Cécile prêt (2026-07-05) : `GUIDE-ESSAI-CECILE.pdf` (racine, NON commité — contient
   un mot de passe), compte `essai.methodes@aufildelannee.fr`, sauvegarde in-DB `sauvegarde_20260705`,
   lien preview débloqué (protection Vercel désactivée — à RÉACTIVER après la phase de test).
+- **MAJ 2026-07-05 (soir)** : guide **enrichi et PDF régénéré** — nouvelle section
+  « 🧩 Pour préparer la suite » qui demande à Cécile (a) l'**ordre des étapes de l'assistant**
+  `/setup` (débloque le chantier en pause §1) et (b) le **classement de ses 3 demandes**
+  (APC/108h, livret LSU, mise en forme EDT — priorise le §2). Source HTML = `GUIDE-ESSAI-CECILE.html`
+  (racine ; `GUIDE-ESSAI-CECILE.*` ajouté au `.gitignore`, jamais commité). Régénération :
+  chromium headless de ms-playwright (`chrome.exe --headless --print-to-pdf`), vérifié via pdf-parse.
+  **Reste à faire par Christophe : vérifier que le lien d'essai s'ouvre, puis envoyer le PDF à Cécile.**
+- **Question ouverte (2026-07-05 soir)** : les boutons **Gemini + NotebookLM** du panneau
+  « Mes outils » (`src/app/(app)/accueil/page.tsx`) sont toujours là ; la stratégie prévoit de les
+  remplacer par les fonctions IA internes. Décision à prendre à la reprise : les retirer simplement,
+  ou les remplacer par des raccourcis vers « Corriger la progression » / « Générer la journée ».
+  Recommandation donnée : retirer avant le test de Cécile (5 min, cohérent avec « l'IA est dedans »).
 
 ## 6. MÉTHODE DE TRAVAIL (rappels non négociables)
 - **Christophe n'est pas développeur** : expliquer sans jargon, en termes d'usage pour l'enseignante.
