@@ -157,29 +157,29 @@ export default async function AccueilPage() {
         ))}
       </div>
 
-      {/* Mes outils externes — panneau délimité */}
+      {/* Mes outils IA — tout est dans l'appli (plus de renvoi vers des outils externes) */}
       <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5">
         <div className="flex items-center gap-2 mb-4">
           <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-violet-600 text-white text-sm">🧰</span>
-          <h2 className="font-semibold text-slate-800">Mes outils</h2>
-          <span className="ml-auto text-xs text-slate-400">Ouvre dans un nouvel onglet ↗</span>
+          <h2 className="font-semibold text-slate-800">Mes outils IA</h2>
+          <span className="ml-auto text-xs text-slate-400">L&apos;IA est dans l&apos;appli</span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            { href: 'https://gemini.google.com', emoji: '✨', titre: 'Gemini', sous: 'Assistant IA de Google', grad: 'from-sky-500 to-indigo-500' },
-            { href: 'https://notebooklm.google.com', emoji: '📓', titre: 'NotebookLM', sous: 'Bloc-notes IA de Google', grad: 'from-violet-500 to-fuchsia-500' },
+            { href: courante ? `/semaine/${courante.id}` : '/planning', emoji: '📋', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
+            { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression', sous: 'L’IA lit ton manuel et construit ta progression' },
           ].map(o => (
-            <a key={o.href} href={o.href} target="_blank" rel="noopener noreferrer"
+            <Link key={o.href} href={o.href}
               className="group flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 hover:border-violet-300 hover:shadow-md transition-all">
-              <div className={`flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br ${o.grad} text-white text-xl shrink-0 shadow-sm`}>
+              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 text-xl shrink-0">
                 {o.emoji}
               </div>
               <div className="min-w-0">
                 <div className="font-semibold text-slate-900">{o.titre}</div>
-                <div className="text-sm text-slate-500 truncate">{o.sous}</div>
+                <div className="text-sm text-slate-500">{o.sous}</div>
               </div>
-              <span className="ml-auto text-slate-300 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all">↗</span>
-            </a>
+              <span className="ml-auto text-violet-400 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all">→</span>
+            </Link>
           ))}
         </div>
         <div className="mt-5 pt-4 border-t border-violet-100">
