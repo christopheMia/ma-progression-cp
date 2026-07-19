@@ -175,6 +175,65 @@ appliqués). Mais on ne touche PAS la base de prod tant que 1 et 2 ne sont pas
 faits. C'est la seule décision que je ne prends pas seul : elle engage les
 données réelles de Cécile.
 
+## 13. Modèle métier de référence (doc Christophe "Construire une année")
+
+Document fourni par Christophe (partage/ "Construire une année en tant que
+professeur des écoles.pdf") : décrit le workflow officiel d'un PE. Il valide et
+structure toute la roadmap :
+
+1. **Programme** officiel (par cycle : C1 PS-GS, C2 CP-CE2, C3 CM). Les liens
+   officiels y sont ; programmes "en cours de changement" -> confirme le besoin
+   d'un référentiel VERSIONNÉ et réimportable.
+2. **Progression** par domaine : l'ordre des apprentissages (avec ou sans méthode).
+3. **Programmation** : la progression **découpée en fonction des 5 périodes** de
+   l'année, en tenant compte du **nombre de semaines de chaque période**.
+4. **Emploi du temps** : construit selon le **volume horaire** de chaque domaine
+   (récréations 30 min/j en C2/C3 à répartir). -> alimente le **cahier journal**.
+
+Implications pour le produit :
+- Le triptyque **Programme -> Progression -> Programmation (5 périodes)** est la
+  colonne vertébrale. Le passage "36 semaines à plat" -> "5 périodes" n'est pas
+  une option, c'est le modèle métier. Il sert Cécile (import 5 docs), le LSU
+  (bilan par période) et la crédibilité.
+- À terme, l'emploi du temps devrait intégrer le **volume horaire par domaine**.
+- Modèle transposable à **tous les cycles** (PS->CM2), coche l'extension de marché.
+
+### Volume horaire officiel cycle 2 (CP-CE1-CE2) — arrêté 9/11/2015
+
+Récupéré via recherche (les pages HTML education.gouv/eduscol bloquent l'accès
+automatisé en 403 ; les PDF d'attendus, eux, se téléchargent directement).
+
+| Domaine | Par semaine | Par an |
+|---|---|---|
+| Français | 10 h | 360 h |
+| Mathématiques | 5 h | 180 h |
+| Questionner le monde (dont EMC) | ~2 h 30 | 90 h |
+| Éducation physique et sportive | 3 h | 108 h |
+| Enseignements artistiques (arts plastiques + musique) | 2 h | 72 h |
+| Langue vivante | 1 h 30 | 54 h |
+| EMC (inclus dans Questionner le monde) | ~1 h | 36 h |
+
+Total 24 h/semaine, dont ~2 h de récréation (30 min/jour) à répartir sur les
+domaines. Ces volumes serviront à générer/valider l'emploi du temps.
+
+### Domaines cycle 2 (pour étendre le référentiel au-delà de français/maths)
+
+Français, Mathématiques, Questionner le monde, EMC, EPS, Enseignements
+artistiques, Langue vivante. Chaque domaine a ses attendus de fin d'année en PDF
+sur éduscol (téléchargeables comme français/maths). Phase 1 a fait
+français + maths ; les autres s'ajoutent par le même procédé.
+
+## 14. Module APC / 108 heures (doc "les 108h")
+
+Spec fournie (partage/ "les 108h _.docx"), recoupe REPRISE §2.1. Indépendant de
+ce chantier mais à garder en vue :
+- 108h = 6h conseils d'école + 36h APC + 18h formation + 48h travail d'équipe
+  (prépa APC, équipe éducative, conseil de cycle, RDV parents...).
+- Besoin : un **récapitulatif APC** (quel élève, quelle date, quelles compétences
+  travaillées, résultat) + un **calcul des heures** par catégorie.
+- Synergie : "compétences travaillées en APC" = lien vers le référentiel officiel
+  (Phase 1) et vers le suivi élève. RGPD : prénom jamais envoyé à l'IA.
+
 ## 11. Hors périmètre (pour éviter le scope creep)
 
 - Habilitation ministérielle pour l'export LSU "officiel" réel (phase ultérieure,
