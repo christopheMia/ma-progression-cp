@@ -2,7 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-const LABEL_MATIERE: Record<string, string> = { francais: '📖 Français', maths: '🔢 Maths' }
+const LABEL_MATIERE: Record<string, string> = {
+  francais: '📖 Français',
+  maths: '🔢 Maths',
+  'questionner-le-monde': '🌍 Questionner le monde',
+  emc: '⚖️ Enseignement moral et civique',
+  eps: '🤸 Éducation physique et sportive',
+  'enseignements-artistiques': '🎨 Enseignements artistiques',
+  'langue-vivante': '🗣️ Langue vivante',
+}
 
 export default async function CompetencesPage() {
   const supabase = await createClient()
