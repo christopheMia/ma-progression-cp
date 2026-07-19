@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { TRAME_EDT_CP } from '@/data/trame-edt'
+import { genererEdtCP } from '@/lib/edt-generator'
 import { ensureMethode } from '@/lib/methodes-db'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; type: 'cours' | 'routine'; visible_journal: boolean }
@@ -74,6 +75,31 @@ export async function updateEmploiDuTemps(creneaux: Omit<Creneau, 'ordre'>[]) {
     )
   }
   revalidatePath('/parametres')
+}
+
+/**
+ * Génère l'emploi du temps depuis le volume horaire officiel CP (remplace l'EDT
+ * courant). Reste 100% modifiable ensuite. codeRenforce garantit un bloc code
+ * chaque matin.
+ */
+export async function genererEmploiDuTemps(codeRenforce = true) {
+  const { supabase, classe } = await getClasse()
+  await supabase.from('emploi_du_temps').delete().eq('class_id', classe.id)
+  const edt = genererEdtCP(codeRenforce)
+  await supabase.from('emploi_du_temps').insert(
+    edt.map(c => ({
+      class_id: classe.id,
+      jour: c.jour,
+      heure_debut: c.heure_debut,
+      heure_fin: c.heure_fin,
+      matiere: c.matiere,
+      type: c.type,
+      couleur: c.couleur,
+      ordre: c.ordre,
+    }))
+  )
+  revalidatePath('/parametres')
+  revalidatePath('/planning')
 }
 
 /** Repart de la trame CP par défaut (efface l'EDT courant). */
