@@ -1,22 +1,23 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { reinitialiserBloc } from '@/lib/actions/parametres'
 
 type Scope = 'eleves' | 'edt' | 'methodes' | 'suivi' | 'journaux'
 
 /** Petit bouton "remettre à zéro" pour un bloc des paramètres (nouvelle année),
- *  avec confirmation en deux temps pour éviter les accidents. */
+ *  avec confirmation en deux temps pour éviter les accidents.
+ *  On force un rechargement complet (location.reload) plutôt que router.refresh :
+ *  les éditeurs (élèves, grille EDT) figent leur affichage sur leur prop `initial`
+ *  via useState, donc un simple refresh serveur ne changerait rien à l'écran. */
 export default function ResetBlockButton({ scope, message }: { scope: Scope; message: string }) {
   const [confirm, setConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   function run() {
     startTransition(async () => {
       await reinitialiserBloc(scope)
       setConfirm(false)
-      router.refresh()
+      window.location.reload()
     })
   }
 
