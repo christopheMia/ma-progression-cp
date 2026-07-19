@@ -9,13 +9,17 @@ import RentreeEditor from '@/components/parametres/RentreeEditor'
 import ManuelEditor from '@/components/parametres/ManuelEditor'
 import MethodesEditor from '@/components/parametres/MethodesEditor'
 import ResetButton from '@/components/parametres/ResetButton'
+import ResetBlockButton from '@/components/parametres/ResetBlockButton'
 import DemoButton from '@/components/DemoButton'
 import type { Methode } from '@/types'
 
-function Section({ titre, children, id }: { titre: string; children: React.ReactNode; id?: string }) {
+function Section({ titre, children, id, headerRight }: { titre: string; children: React.ReactNode; id?: string; headerRight?: React.ReactNode }) {
   return (
     <section id={id} className="bg-white border rounded-2xl p-5 scroll-mt-24">
-      <h2 className="font-bold text-gray-700 mb-4">{titre}</h2>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="font-bold text-gray-700">{titre}</h2>
+        {headerRight}
+      </div>
       {children}
     </section>
   )
@@ -63,11 +67,11 @@ export default async function ParametresPage() {
         <PrenomEnseignantEditor initial={classe.prenom_enseignant ?? ''} />
       </Section>
 
-      <Section titre="👧 Mes élèves">
+      <Section titre="👧 Mes élèves" headerRight={<ResetBlockButton scope="eleves" message="Efface tous les élèves et leur suivi." />}>
         <ElevesEditor initial={(eleves ?? []).map(e => e.prenom)} />
       </Section>
 
-      <Section titre="🕐 Emploi du temps">
+      <Section titre="🕐 Emploi du temps" headerRight={<ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." />}>
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
           jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
           matiere: c.matiere, couleur: c.couleur ?? null, type: (c.type ?? 'cours') as 'cours' | 'routine',
@@ -79,7 +83,7 @@ export default async function ParametresPage() {
         <RentreeEditor initial={classe.rentree_date} />
       </Section>
 
-      <Section titre="📚 Mes méthodes et acquis des élèves">
+      <Section titre="📚 Mes méthodes et acquis des élèves" headerRight={<ResetBlockButton scope="methodes" message="Efface les méthodes importées et leur progression." />}>
         <MethodesEditor
           prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
           methodes={(methodes ?? []) as Methode[]}

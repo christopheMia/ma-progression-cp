@@ -141,6 +141,55 @@ export async function updateManuel(manuelId: string, customProgression?: Progres
 }
 
 /**
+ * Remet à zéro UN bloc de la classe (utile à chaque nouvelle année), sans tout
+ * supprimer :
+ *  - 'eleves'   : efface tous les élèves et leur suivi (acquisitions, bilans).
+ *  - 'edt'      : réinitialise l'emploi du temps à la trame CP par défaut.
+ *  - 'methodes' : efface les méthodes importées et leur progression.
+ *  - 'suivi'    : efface le suivi des élèves (étoiles + bilans), garde les élèves.
+ *  - 'journaux' : efface tous les cahiers journaux.
+ */
+export async function reinitialiserBloc(
+  scope: 'eleves' | 'edt' | 'methodes' | 'suivi' | 'journaux',
+) {
+  const { supabase, classe } = await getClasse()
+  const classId = classe.id
+
+  if (scope === 'eleves') {
+    const { data: eleves } = await supabase.from('eleves').select('id').eq('class_id', classId)
+    const ids = (eleves ?? []).map(e => e.id)
+    if (ids.length) {
+      await supabase.from('acquisitions').delete().in('eleve_id', ids)
+      await supabase.from('appreciations').delete().in('eleve_id', ids)
+      await supabase.from('eleves').delete().in('id', ids)
+    }
+  } else if (scope === 'edt') {
+    await supabase.from('emploi_du_temps').delete().eq('class_id', classId)
+    if (TRAME_EDT_CP.length) {
+      await supabase.from('emploi_du_temps').insert(TRAME_EDT_CP.map(c => ({ ...c, class_id: classId })))
+    }
+  } else if (scope === 'methodes') {
+    await supabase.from('progression').delete().eq('class_id', classId)
+    await supabase.from('methodes').delete().eq('class_id', classId)
+  } else if (scope === 'suivi' || scope === 'journaux') {
+    const { data: semaines } = await supabase.from('semaines').select('id').eq('class_id', classId)
+    const sids = (semaines ?? []).map(s => s.id)
+    if (sids.length) {
+      if (scope === 'suivi') {
+        await supabase.from('acquisitions').delete().in('semaine_id', sids)
+        await supabase.from('appreciations').delete().in('semaine_id', sids)
+      } else {
+        await supabase.from('cahier_journal').delete().in('semaine_id', sids)
+      }
+    }
+  }
+
+  revalidatePath('/parametres')
+  revalidatePath('/planning')
+  revalidatePath('/accueil')
+}
+
+/**
  * Réinitialise TOUTE la configuration : supprime la classe et toutes ses données
  * (semaines, suivi des élèves, cahiers journaux, élèves, emploi du temps),
  * puis renvoie vers l'assistant de configuration. ⚠️ Irréversible.
