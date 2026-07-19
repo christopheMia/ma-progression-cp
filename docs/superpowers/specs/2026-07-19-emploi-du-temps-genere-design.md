@@ -106,10 +106,13 @@ initiale du fond.
 - Le réalignement calendaire des 36 semaines (chantier périodes, séparé).
 - L'APC / 108 h.
 
-## Points à valider avant de coder
+## Décisions validées (Christophe, 19/07/2026)
 
-1. Cadre de journée par défaut (8h30-16h30, déjeuner 11h30-13h30) : OK pour Cécile ?
-2. Volumes : garde-t-on le nominal officiel, ou on **renforce le code/lecture** en
-   CP (pratique courante : lecture tous les matins) ?
-3. Génération = elle **remplace** l'EDT courant (avec confirmation) et reste
-   éditable : OK ?
+1. **Cadre de journée** : 8h30-16h30, déjeuner 11h30-13h30, récrés 10h00-10h15 et
+   15h00-15h15. VALIDÉ.
+2. **Volumes** : **code/lecture renforcé** en CP. On garde les volumes officiels
+   comme base mais on **garantit un bloc lecture/graphèmes/code CHAQUE matin**
+   (les 4 jours), quitte à rogner un peu sur les matières de l'après-midi. Reste
+   ajustable à la main.
+3. **Génération remplace l'EDT courant** avec confirmation (2 temps), et le
+   résultat reste 100 % éditable dans la grille. VALIDÉ.
