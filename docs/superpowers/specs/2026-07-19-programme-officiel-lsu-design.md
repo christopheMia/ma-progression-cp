@@ -146,14 +146,34 @@ Décidé par défaut (modifiable) :
 - Mapping IA = suggestion éditable, jamais imposé.
 - 4 niveaux officiels : Non atteint / Partiellement atteint / Atteint / Dépassé.
 
-À trancher avec Christophe :
-1. Point d'entrée UI : réutiliser un bouton "Mes outils IA" ou en ajouter un ?
-2. On lie d'abord les **périodes P1-P5** (utile aussi pour Cécile) avant le LSU,
-   ou on garde les 36 semaines et on mappe les périodes par-dessus ?
-3. Périmètre Phase 1 : français + maths seulement, ou aussi les autres matières
-   (EMC, Questionner le monde…) dès le départ ?
-4. Export LSU : PDF "façon LSU" (rapide) suffit pour la beta, ou viser plus tard
-   l'import dans l'outil LSU officiel de l'État (gros, phase ultérieure) ?
+Tranché par défaut le 19/07 ("fait au mieux", délégué par Christophe) :
+1. **Point d'entrée UI** : on **ajoute** un 3e accès dans "Mes outils IA"
+   ("📋 Compétences & livret"), sans sacrifier les 2 boutons existants. Fluide.
+2. **Ordre** : on livre d'abord le **référentiel officiel + affichage** (Phase 1,
+   additif, sans risque), puis le passage aux **périodes P1-P5** (fondation, sert
+   aussi Cécile), puis le mapping IA, puis le bilan/export LSU. On front-load la
+   valeur "aligné programme officiel" sans toucher tout de suite au cœur.
+3. **Périmètre Phase 1** : **français + maths** (les deux qui ont des attendus
+   officiels PDF). Autres matières après.
+4. **Export LSU** : PDF "façon LSU" pour la beta. L'import dans l'outil LSU
+   officiel de l'État = phase ultérieure (habilitation requise).
+
+## 12. Prérequis de sécurité AVANT d'implémenter (bloquant)
+
+Ce chantier ajoute des **tables** à la base. Or, règle de sécurité du projet
+(REPRISE §4 + mémoire `project_schema_prod_drift`) : **la prod a déjà été perdue
+une fois**, et il n'existe toujours **ni sauvegarde récente des données de
+Cécile, ni projet Supabase de TEST**. Cécile teste EN CE MOMENT sur la prod.
+
+Donc, avant toute migration :
+1. **Sauvegarde** des données de Cécile (`pg_dump` / export).
+2. **2e projet Supabase gratuit de TEST** pour développer les migrations sans
+   risque, puis appliquer à la prod une fois validé.
+
+Les fichiers de migration peuvent être **écrits** dès maintenant (sans être
+appliqués). Mais on ne touche PAS la base de prod tant que 1 et 2 ne sont pas
+faits. C'est la seule décision que je ne prends pas seul : elle engage les
+données réelles de Cécile.
 
 ## 11. Hors périmètre (pour éviter le scope creep)
 
