@@ -7,6 +7,7 @@ import MatiereBlock from '@/components/semaine/MatiereBlock'
 import EdmBlock from '@/components/semaine/EdmBlock'
 import StudentTracking from '@/components/semaine/StudentTracking'
 import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
+import CollapsibleSection from '@/components/semaine/CollapsibleSection'
 import PrintButton from '@/components/PrintButton'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
@@ -49,18 +50,19 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {(methodesList ?? []).map(m => {
-        const prog = progression?.find(p => p.methode_id === m.id)
-        const items = (prog?.items as string[]) ?? (m.matiere === 'francais' ? (semaine.graphemes as string[]) : [])
-        const pages = (prog?.pages as string | null) ?? (m.matiere === 'francais' ? semaine.manuel_pages : null)
-        const motsExemple = (prog?.mots_exemple as string[] | null) ?? (m.matiere === 'francais' ? semaine.mots_exemple : null)
-        if (items.length === 0 && !prog) return null
-        return (
-          <MatiereBlock key={m.id} matiere={m.matiere} items={items} pages={pages} motsExemple={motsExemple} />
-        )
-      })}
-
-      <EdmBlock semaine={semaine} />
+      <CollapsibleSection title="📚 Contenu de la semaine">
+        {(methodesList ?? []).map(m => {
+          const prog = progression?.find(p => p.methode_id === m.id)
+          const items = (prog?.items as string[]) ?? (m.matiere === 'francais' ? (semaine.graphemes as string[]) : [])
+          const pages = (prog?.pages as string | null) ?? (m.matiere === 'francais' ? semaine.manuel_pages : null)
+          const motsExemple = (prog?.mots_exemple as string[] | null) ?? (m.matiere === 'francais' ? semaine.mots_exemple : null)
+          if (items.length === 0 && !prog) return null
+          return (
+            <MatiereBlock key={m.id} matiere={m.matiere} items={items} pages={pages} motsExemple={motsExemple} />
+          )
+        })}
+        <EdmBlock semaine={semaine} />
+      </CollapsibleSection>
       <StudentTracking
         semaine={semaine}
         eleves={eleves ?? []}

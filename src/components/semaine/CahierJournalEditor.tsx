@@ -69,27 +69,32 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine, francais
       if (!res.ok) { alert(data.error ?? 'Erreur IA'); return }
       const deroulements: string[] = data.deroulements ?? []
       let k = 0
-      setJournal(prev => {
-        if (!prev) return prev
-        const next = prev.map((j, ji) => ji !== jourIdx ? j : {
-          ...j,
-          seances: j.seances.map(s => s.type === 'cours' ? { ...s, deroulement: deroulements[k++] ?? s.deroulement } : s),
-        })
-        startTransition(() => sauvegarderJournal(semaineId, next))
-        return next
+      const base = journal ?? []
+      const next = base.map((j, ji) => ji !== jourIdx ? j : {
+        ...j,
+        seances: j.seances.map(s => {
+          if (s.type !== 'cours') return s
+          const gen = deroulements[k++]
+          // On complete seulement : si la case a deja un contenu (importe de la
+          // methode ou tape a la main), on le garde ; sinon on met la proposition IA.
+          return (s.deroulement ?? '').trim() ? s : { ...s, deroulement: gen ?? s.deroulement }
+        }),
       })
+      setJournal(next)
+      // startTransition doit rester HORS de la fonction de mise a jour de setJournal
+      // (React execute cette fonction pendant le rendu, ou startTransition est interdit).
+      startTransition(() => sauvegarderJournal(semaineId, next))
     } finally { setGeneratingJour(null) }
   }
 
   function updateDeroulement(jourIdx: number, seanceIdx: number, value: string) {
-    setJournal(prev => {
-      if (!prev) return prev
-      const next = prev.map((j, ji) =>
-        ji !== jourIdx ? j : { ...j, seances: j.seances.map((s, si) => si !== seanceIdx ? s : { ...s, deroulement: value }) }
-      )
-      startTransition(() => sauvegarderJournal(semaineId, next))
-      return next
-    })
+    if (!journal) return
+    const next = journal.map((j, ji) =>
+      ji !== jourIdx ? j : { ...j, seances: j.seances.map((s, si) => si !== seanceIdx ? s : { ...s, deroulement: value }) }
+    )
+    setJournal(next)
+    // Idem : la sauvegarde (startTransition) reste hors de la fonction de mise a jour.
+    startTransition(() => sauvegarderJournal(semaineId, next))
   }
 
   if (!journal) {

@@ -25,6 +25,8 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [bilanLoading, setBilanLoading] = useState<string | null>(null)
+  // Replié par défaut : la liste élèves x matières est longue ; on la déplie au besoin.
+  const [open, setOpen] = useState(false)
   const wasPending = useRef(false)
   const blocRef = useRef<HTMLDivElement>(null)
 
@@ -131,25 +133,58 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
   return (
     <div ref={blocRef} className="bg-white border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center gap-3 mb-2">
-        <h2 className="font-bold text-gray-700">✅ Suivi des élèves</h2>
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className="flex items-center gap-2 group">
+          <h2 className="font-bold text-gray-700 group-hover:text-violet-700">✅ Suivi des élèves</h2>
+          <span className="flex items-center gap-1 text-xs font-semibold text-violet-700 bg-violet-100 rounded-full px-3 py-1">
+            <span aria-hidden>{open ? '▾' : '▸'}</span>
+            {open ? 'Replier' : 'Déplier'}
+          </span>
+        </button>
         {isPending && <span className="text-xs text-gray-400">Enregistrement...</span>}
         {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
-        <div className="no-print ml-auto flex gap-2">
-          <button
-            onClick={() => imprimerElement(blocRef.current)}
-            className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-            🖨️ Imprimer
-          </button>
-        </div>
+        {open && (
+          <div className="no-print ml-auto flex gap-2">
+            <button
+              onClick={() => imprimerElement(blocRef.current)}
+              className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+              🖨️ Imprimer
+            </button>
+          </div>
+        )}
       </div>
+      {!open && (
+        <p className="text-xs text-gray-400">Clique pour ouvrir le suivi des élèves (étoiles, bilans, commentaires).</p>
+      )}
+      {open && (
+      <>
       <p className="text-xs text-gray-400 mb-4">
         Pour chaque élève et chaque <strong>matière</strong> : cliquez l&apos;<strong>étoile</strong> de la
         notion acquise (★), donnez un <strong>bilan</strong> de la semaine, et ajoutez un
         <strong> commentaire</strong> si besoin.
       </p>
 
+      {methodes.filter(m => m.suivi_actif).length > 1 && (
+        <div className="sticky top-16 z-10 -mx-5 mb-4 px-5 py-2 flex flex-wrap items-center gap-2 bg-white/95 backdrop-blur border-b border-slate-100 no-print">
+          <span className="text-xs text-gray-400">Aller à :</span>
+          {methodes.filter(m => m.suivi_actif).map(({ matiere }) => (
+            <a key={matiere} href={`#suivi-${matiere}`}
+              className="text-xs rounded-full border border-violet-200 text-violet-700 px-3 py-1 hover:bg-violet-50 transition-colors">
+              {emojiMatiere(matiere)} {labelMatiere(matiere)}
+            </a>
+          ))}
+          <button type="button" onClick={() => setOpen(false)}
+            className="ml-auto text-xs font-semibold text-gray-500 border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-50">
+            ▴ Replier le suivi
+          </button>
+        </div>
+      )}
+
       {methodes.filter(m => m.suivi_actif).map(({ matiere, items }) => (
-        <section key={matiere} className="mb-8 last:mb-0">
+        <section key={matiere} id={`suivi-${matiere}`} className="mb-8 last:mb-0 scroll-mt-24">
           <div className="flex items-center gap-3 mb-3">
             <h3 className="font-bold text-violet-700">{emojiMatiere(matiere)} {labelMatiere(matiere)}</h3>
             <button
@@ -259,6 +294,8 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
           </div>
         </section>
       ))}
+      </>
+      )}
     </div>
   )
 }

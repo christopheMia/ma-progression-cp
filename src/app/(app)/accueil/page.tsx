@@ -14,7 +14,30 @@ export default async function AccueilPage() {
   if (!user) redirect('/connexion')
 
   const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
-  if (!classe) redirect('/setup')
+
+  // Premiere visite (aucune classe) : on invite a configurer, sans jamais bloquer.
+  // Le menu du haut (Parametres, etc.) reste accessible a tout moment.
+  if (!classe) {
+    return (
+      <div className="animate-pop-in max-w-2xl mx-auto">
+        <div className="rounded-2xl bg-white border border-slate-200 p-8 text-center shadow-sm">
+          <div className="text-4xl mb-3">📖✏️</div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Bienvenue sur Ma Progression CP 👋</h1>
+          <p className="text-slate-600 mb-6 leading-relaxed">
+            Pour commencer, configure ta classe : ta méthode de lecture, la date de rentrée, tes élèves
+            et ton emploi du temps. L&apos;IA construit ta progression de l&apos;année, tu pourras tout corriger ensuite.
+          </p>
+          <Link href="/setup"
+            className="inline-block bg-violet-600 text-white rounded-xl px-6 py-3 font-semibold hover:bg-violet-700 transition-colors">
+            ✨ Configurer ma classe
+          </Link>
+          <p className="text-sm text-slate-400 mt-4">
+            Juste pour découvrir ? Tu peux charger une classe d&apos;exemple depuis l&apos;écran de configuration.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const { data: semaines } = await supabase
     .from('semaines').select('*').eq('class_id', classe.id).order('numero')
@@ -82,24 +105,27 @@ export default async function AccueilPage() {
         </Link>
       )}
 
-      {/* Statistiques */}
+      {/* Statistiques (cartes cliquables : chacune mène à l'endroit utile) */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <Link href="/planning"
+          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
           <div className="text-3xl font-bold text-slate-900">{courante?.numero ?? 0}<span className="text-base font-normal text-slate-400">/{total}</span></div>
-          <div className="text-sm text-slate-500 mt-1 mb-3">Semaine de l&apos;année</div>
+          <div className="text-sm text-slate-500 mt-1 mb-3">Semaine de l&apos;année <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span></div>
           <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-violet-500" />
-        </div>
+        </Link>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <Link href={courante ? `/semaine/${courante.id}` : '/planning'}
+          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
           <div className="text-3xl font-bold text-slate-900">{Math.round((acquisCount / (possible || 1)) * 100)}<span className="text-base font-normal text-slate-400">%</span></div>
-          <div className="text-sm text-slate-500 mt-1 mb-3">Graphèmes acquis (classe)</div>
+          <div className="text-sm text-slate-500 mt-1 mb-3">Graphèmes acquis (classe) <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span></div>
           <ProgressBar value={acquisCount} max={possible} color="bg-emerald-500" />
-        </div>
+        </Link>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <Link href="/parametres"
+          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
           <div className="text-3xl font-bold text-slate-900">{nbEleves}</div>
-          <div className="text-sm text-slate-500 mt-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe</div>
-        </div>
+          <div className="text-sm text-slate-500 mt-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span></div>
+        </Link>
       </div>
 
       {/* Invitation : ajouter les autres matières */}
@@ -107,9 +133,9 @@ export default async function AccueilPage() {
         className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-violet-300 hover:shadow-sm transition-all">
         <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 text-xl shrink-0">➕</span>
         <div className="min-w-0">
-          <div className="font-semibold text-slate-900">Tu enseignes d&apos;autres matières ?</div>
+          <div className="font-semibold text-slate-900">Ajoute tes matières ici</div>
           <div className="text-sm text-slate-500">
-            Ajoute Maths, Anglais, Questionner le monde… pour les retrouver dans ton suivi et ton cahier journal.
+            Maths, Anglais, Questionner le monde… pour les retrouver dans ton suivi et ton cahier journal.
           </div>
         </div>
         <span className="ml-auto text-violet-600 font-medium whitespace-nowrap group-hover:translate-x-0.5 transition-transform">Ajouter mes matières →</span>

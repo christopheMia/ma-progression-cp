@@ -12,8 +12,8 @@ const LINKS = [
 
 export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
   const pathname = usePathname()
-  const visibles = hasClass ? LINKS : LINKS.filter(l => l.href === '/aide')
-
+  // Le menu complet reste toujours visible (Parametres inclus) : l'utilisateur
+  // n'est jamais bloque et peut naviguer librement, meme avant d'avoir configure.
   return (
     <nav className="flex items-center gap-1 text-sm">
       {!hasClass && (
@@ -22,7 +22,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
           Configurer ma classe
         </Link>
       )}
-      {visibles.map(l => {
+      {LINKS.map(l => {
         const active = pathname === l.href
         return (
           <Link key={l.href} href={l.href}
