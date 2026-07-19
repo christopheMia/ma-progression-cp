@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition, useEffect, useRef } from 'react'
 import { JourJournal } from '@/types'
-import { genererOuChargerJournal, sauvegarderJournal } from '@/lib/actions/journal'
+import { genererOuChargerJournal, sauvegarderJournal, regenererJournal } from '@/lib/actions/journal'
 import { exporterJournalWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import GoogleDocsButton from './GoogleDocsButton'
@@ -43,6 +43,14 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine, francais
   function generer() {
     startTransition(async () => {
       const data = await genererOuChargerJournal(semaineId)
+      setJournal(data)
+    })
+  }
+
+  function regenerer() {
+    if (!confirm('Régénérer le cahier journal à partir de ton emploi du temps et de tes méthodes ? Le contenu actuel de cette semaine sera remplacé.')) return
+    startTransition(async () => {
+      const data = await regenererJournal(semaineId)
       setJournal(data)
     })
   }
@@ -105,6 +113,13 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine, francais
           {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
         </div>
         <div className="flex gap-2 no-print">
+          <button
+            onClick={regenerer}
+            disabled={isPending}
+            title="Recrée le cahier journal à partir de ton emploi du temps et de tes méthodes (remplace le contenu de la semaine)."
+            className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-30">
+            🔄 Régénérer
+          </button>
           <button
             onClick={handleExportWord}
             disabled={!journal || exporting}

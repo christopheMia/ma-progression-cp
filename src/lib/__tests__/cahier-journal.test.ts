@@ -43,6 +43,31 @@ describe('genererCahierJournal (lien par méthode)', () => {
     expect(genererCahierJournal(edt, progression)[0].seances[0].deroulement).toBe('')
   })
 
+  test('repli : un créneau français non relié est rempli via le libellé', () => {
+    // Cas du bug remonté par Cécile : progression enregistrée mais créneaux
+    // jamais reliés manuellement à une méthode. Le journal doit se remplir.
+    const edt = [creneau({ matiere: 'Appropriation des graphèmes', methode_id: null })]
+    const s = genererCahierJournal(edt, progression)[0].seances[0]
+    expect(s.deroulement).toContain('a')
+    expect(s.deroulement).toContain('p.10-13')
+  })
+
+  test('repli : un créneau de calcul non relié est rempli via le libellé', () => {
+    const edt = [creneau({ matiere: 'Calcul mental', methode_id: null })]
+    const s = genererCahierJournal(edt, progression)[0].seances[0]
+    expect(s.deroulement).toContain('Nombres jusqu’à 10')
+  })
+
+  test('repli : une matière personnalisée non reliée est rapprochée par nom', () => {
+    const progAnglais = [
+      ...progression,
+      { methode_id: 'm-en', matiere: 'anglais', items: ['Greetings'], pages: null, mots_exemple: [] },
+    ]
+    const edt = [creneau({ matiere: 'Anglais', methode_id: null })]
+    const s = genererCahierJournal(edt, progAnglais)[0].seances[0]
+    expect(s.deroulement).toContain('Greetings')
+  })
+
   test('un créneau masqué (visible_journal=false) n’apparaît pas', () => {
     const edt = [
       creneau({ matiere: 'Lecture', methode_id: 'm-fr' }),

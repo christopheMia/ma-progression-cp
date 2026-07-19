@@ -102,6 +102,19 @@ export default async function AccueilPage() {
         </div>
       </div>
 
+      {/* Invitation : ajouter les autres matières */}
+      <Link href="/parametres#methodes"
+        className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+        <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 text-xl shrink-0">➕</span>
+        <div className="min-w-0">
+          <div className="font-semibold text-slate-900">Tu enseignes d&apos;autres matières ?</div>
+          <div className="text-sm text-slate-500">
+            Ajoute Maths, Anglais, Questionner le monde… pour les retrouver dans ton suivi et ton cahier journal.
+          </div>
+        </div>
+        <span className="ml-auto text-violet-600 font-medium whitespace-nowrap group-hover:translate-x-0.5 transition-transform">Ajouter mes matières →</span>
+      </Link>
+
       {/* Raccourcis */}
       <div className="grid gap-3 sm:grid-cols-3">
         {[

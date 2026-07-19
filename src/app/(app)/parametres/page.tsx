@@ -12,9 +12,9 @@ import ResetButton from '@/components/parametres/ResetButton'
 import DemoButton from '@/components/DemoButton'
 import type { Methode } from '@/types'
 
-function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
+function Section({ titre, children, id }: { titre: string; children: React.ReactNode; id?: string }) {
   return (
-    <section className="bg-white border rounded-2xl p-5">
+    <section id={id} className="bg-white border rounded-2xl p-5 scroll-mt-24">
       <h2 className="font-bold text-gray-700 mb-4">{titre}</h2>
       {children}
     </section>
