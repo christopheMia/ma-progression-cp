@@ -13,10 +13,12 @@ export default function MethodesEditor({
   prenom,
   methodes,
   creneaux,
+  resumes,
 }: {
   prenom?: string
   methodes: Methode[]
   creneaux: CreneauInfo[]
+  resumes?: Record<string, { semaines: number; notions: number }>
 }) {
   const [ouverte, setOuverte] = useState<string | null>(null)
   const [lienOuvert, setLienOuvert] = useState<string | null>(null)
@@ -96,7 +98,16 @@ export default function MethodesEditor({
         return (
           <div key={m.id} className="border rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="font-semibold text-gray-700">{labelMethode}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-gray-700">{labelMethode}</span>
+                {resumes?.[m.id] && resumes[m.id].semaines > 0 ? (
+                  <span className="text-xs text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5">
+                    📊 {resumes[m.id].semaines} semaine{resumes[m.id].semaines > 1 ? 's' : ''} · {resumes[m.id].notions} notion{resumes[m.id].notions > 1 ? 's' : ''}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">Pas encore importée</span>
+                )}
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none">
                   <input

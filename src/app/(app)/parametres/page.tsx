@@ -35,6 +35,19 @@ export default async function ParametresPage() {
     .select('*').eq('class_id', classe.id).order('ordre')
   const { data: methodes } = await supabase
     .from('methodes').select('*').eq('class_id', classe.id).order('created_at')
+  const { data: progression } = await supabase
+    .from('progression').select('methode_id, items').eq('class_id', classe.id)
+
+  // Recap par methode : ce que l'IA a produit a l'import (nb de semaines + nb de notions).
+  const resumes: Record<string, { semaines: number; notions: number }> = {}
+  for (const p of progression ?? []) {
+    if (!p.methode_id) continue
+    const items = (p.items as string[] | null) ?? []
+    const r = resumes[p.methode_id] ?? { semaines: 0, notions: 0 }
+    if (items.length > 0) r.semaines += 1
+    r.notions += items.length
+    resumes[p.methode_id] = r
+  }
 
   const manuelNom = MANUELS.find(m => m.id === classe.manuel_id)?.nom
     ?? (classe.manuel_id === 'custom' ? 'Manuel importé' : classe.manuel_id)
@@ -71,6 +84,7 @@ export default async function ParametresPage() {
           prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
           methodes={(methodes ?? []) as Methode[]}
           creneaux={(edt ?? []).map(c => ({ id: c.id, matiere: c.matiere, jour: c.jour, methode_id: c.methode_id ?? null }))}
+          resumes={resumes}
         />
       </Section>
 
