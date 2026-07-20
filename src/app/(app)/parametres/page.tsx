@@ -12,6 +12,7 @@ import ResetButton from '@/components/parametres/ResetButton'
 import ResetBlockButton from '@/components/parametres/ResetBlockButton'
 import ResetContenuButton from '@/components/parametres/ResetContenuButton'
 import GenererEdtButton from '@/components/parametres/GenererEdtButton'
+import ImporterEdtButton from '@/components/parametres/ImporterEdtButton'
 import RealignerSemainesButton from '@/components/parametres/RealignerSemainesButton'
 import DemoButton from '@/components/DemoButton'
 import type { Methode } from '@/types'
@@ -76,6 +77,7 @@ export default async function ParametresPage() {
 
       <Section id="edt" titre="🕐 Emploi du temps" headerRight={
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          <ImporterEdtButton />
           <GenererEdtButton />
           <ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." />
           <ResetBlockButton scope="edt-vide" label="🗑️ Vider" message="Vide complètement l'emploi du temps (aucune trame rechargée)." />

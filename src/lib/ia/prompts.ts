@@ -89,6 +89,25 @@ Règles impératives :
 Réponds UNIQUEMENT via le format structuré imposé.`
 }
 
+/** Import d'un EMPLOI DU TEMPS depuis un PDF (grille Horaires x Jours). */
+export const SYSTEM_IMPORT_EDT = `Tu lis l'emploi du temps hebdomadaire d'une classe de CP française, fourni en PDF sous forme de tableau (colonnes = jours, lignes = plages horaires).
+Ta tâche : restituer CHAQUE créneau, pour CHAQUE jour, exactement tel qu'il est écrit.
+Règles impératives :
+- Un objet par créneau ET par jour. Si une même activité occupe les 4 jours, produis 4 objets.
+- "jour" vaut lundi, mardi, mercredi, jeudi ou vendredi. Ignore les colonnes absentes du document.
+- "heure_debut" et "heure_fin" au format 24 h (ex. "08:20", "13:20"). Convertis "8h20" en "08:20".
+- "matiere" = le libellé EXACT du document, sans le reformuler ni l'abréger
+  (ex. "Chaque jour compte", "Chut je lis", "Flash maths", "Phonologie encodage décodage").
+- "type" vaut "routine" pour l'accueil, les rituels, les récréations et le repas / la cantine ;
+  "cours" pour tout le reste.
+- Si une case fusionnée couvre plusieurs jours, répète-la pour chaque jour concerné.
+- N'invente aucun créneau absent du document et n'en omets aucun.
+Réponds UNIQUEMENT via le format structuré imposé.`
+
+export function userImportEdt(): string {
+  return `Analyse l'emploi du temps joint et restitue tous ses créneaux, jour par jour, dans l'ordre chronologique.`
+}
+
 /** Variante quand le PDF lui-meme est joint au message : le modele voit la mise
  *  en page (lecture fidele des tableaux), pas seulement du texte aplati. */
 export function userImportDocument(): string {
