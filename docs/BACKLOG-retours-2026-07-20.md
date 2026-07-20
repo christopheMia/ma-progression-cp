@@ -96,14 +96,24 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
 
 ## 3. Performance
 
-- [ ] **Latence** lors de la navigation dans les menus (à profiler/optimiser).
-- [ ] **Fonction "Undo"** : retour en arrière lors de la modification de l'EDT.
+- [x] **Latence** lors de la navigation dans les menus (à profiler/optimiser).
+  → FAIT. Cause : aucune route n'avait de `loading.tsx` et les requêtes Supabase
+  partaient en série (5 à 6 par page), donc l'écran restait figé sur la page
+  précédente. Squelette de chargement sur les 6 routes, requêtes de l'accueil
+  parallélisées, comptages en `count/head` au lieu de rapatrier les lignes.
+- [x] **Fonction "Undo"** : retour en arrière lors de la modification de l'EDT.
+  → FAIT : bouton « Annuler » + Ctrl+Z, 30 niveaux. Toutes les mutations de la
+  grille passent par un point unique (`modifier`) qui empile l'état précédent.
 
 ## 4. Réinitialisation & règles de génération
 
-- [ ] **Bouton de réinitialisation "efface tout SAUF la classe"** → l'EDT doit
+- [x] **Bouton de réinitialisation "efface tout SAUF la classe"** → l'EDT doit
   devenir **vide** (différent du reset actuel qui recharge la trame). (cf. choix
   demandé plus tôt "vider complètement".)
+  → FAIT : scope `edt-vide` (bouton « 🗑️ Vider », sans rechargement de trame) et
+  action `reinitialiserContenuClasse()` (bouton « 🧽 Effacer tout sauf ma classe »),
+  qui garde le prénom, le manuel et la date de rentrée. L'ancien bouton
+  « Remettre à zéro » conserve son comportement pour ne surprendre personne.
 - [x] **Bouton "Générer l'EDT avec l'IA / quotas réglementaires"** → FAIT le 20/07
   (générateur depuis le volume horaire officiel, commit 98955c1/543923e). À
   compléter avec les contraintes ci-dessous.
@@ -133,7 +143,13 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
   `semaines.periode_numero` (périodes réelles de la classe, pas un « 7 semaines »
   forcé). L'enregistrement ne supprime que l'intervalle importé. Sélecteur de
   période dans l'import, débordement signalé au lieu d'être perdu.
-- [ ] `partage/edt.pdf` : exemple d'emploi du temps (à lire et exploiter).
+- [x] `partage/edt.pdf` : exemple d'emploi du temps (à lire et exploiter).
+  → FAIT, et il a changé la conclusion. La grille réelle de Cécile (8h20-16h30,
+  rituels de 5 min, créneaux de 20-30 min, intitulés très personnels) ne
+  ressemble pas du tout à ce que produit le générateur. La bonne réponse n'est
+  donc pas de générer mieux mais de permettre d'**importer** sa grille telle
+  quelle : route `/api/ia-edt` + bouton « 📄 Importer depuis un PDF » avec aperçu
+  avant remplacement. Vérifié en réel : 90 créneaux sur 4 jours, aucun rejet.
 
 ## Notes de priorisation
 
