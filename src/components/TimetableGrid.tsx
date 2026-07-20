@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { couleurMatiere } from '@/data/trame-edt'
 
 function addMinutes(t: string, mins: number): string {
@@ -40,6 +40,43 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   const [styleOuvert, setStyleOuvert] = useState<string | null>(null)
   const cleCase = (jour: string, debut: string, fin: string) => `${jour}|${debut}|${fin}`
 
+  // Historique pour l'annulation (Ctrl+Z). La grille est petite, on garde donc
+  // simplement des copies completes plutot que des diffs : c'est incassable et
+  // le cout memoire est negligeable. Profondeur bornee pour ne pas grossir sans fin.
+  const [historique, setHistorique] = useState<Creneau[][]>([])
+  const PROFONDEUR_MAX = 30
+
+  /**
+   * Point de passage UNIQUE de toutes les modifications de la grille : on
+   * empile l'etat precedent avant d'appliquer. Si la mise a jour ne change
+   * rien (cas rejetes, ex. collision d'horaires), on n'empile pas, sinon
+   * l'utilisateur devrait appuyer plusieurs fois sur annuler sans effet visible.
+   */
+  function modifier(maj: (prev: Creneau[]) => Creneau[]) {
+    const suivant = maj(creneaux)
+    if (suivant === creneaux) return
+    setHistorique(h => [...h, creneaux].slice(-PROFONDEUR_MAX))
+    setCreneaux(suivant)
+  }
+
+  function annuler() {
+    if (!historique.length) return
+    setCreneaux(historique[historique.length - 1])
+    setHistorique(historique.slice(0, -1))
+    setStyleOuvert(null)
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        annuler()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const joursPresents = JOURS.filter(j => creneaux.some(c => c.jour === j))
   const cols = joursPresents.length ? joursPresents : ['lundi', 'mardi', 'jeudi', 'vendredi']
   const lignes = tranches(creneaux)
@@ -49,7 +86,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   }
 
   function setMatiere(jour: string, debut: string, fin: string, matiere: string) {
-    setCreneaux(prev => {
+    modifier(prev => {
       const idx = prev.findIndex(c => c.jour === jour && c.heure_debut === debut && c.heure_fin === fin)
       if (matiere === '') return idx >= 0 ? prev.filter((_, i) => i !== idx) : prev
       const couleur = couleurMatiere(matiere)
@@ -59,26 +96,26 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   }
 
   function setCouleur(jour: string, debut: string, fin: string, field: 'couleur' | 'couleur_texte', value: string) {
-    setCreneaux(prev => prev.map(c =>
+    modifier(prev => prev.map(c =>
       c.jour === jour && c.heure_debut === debut && c.heure_fin === fin ? { ...c, [field]: value } : c))
   }
 
   function toggleStyle(jour: string, debut: string, fin: string, field: 'texte_gras' | 'texte_italique' | 'texte_souligne') {
-    setCreneaux(prev => prev.map(c =>
+    modifier(prev => prev.map(c =>
       c.jour === jour && c.heure_debut === debut && c.heure_fin === fin ? { ...c, [field]: !c[field] } : c))
   }
 
   /** Applique le fond, la couleur de texte et la mise en forme d'une case à
    *  TOUTES les cases de la même matière (gain de temps demandé par l'enseignant). */
   function appliquerMemeMatiere(src: Creneau) {
-    setCreneaux(prev => prev.map(c =>
+    modifier(prev => prev.map(c =>
       c.matiere && c.matiere === src.matiere
         ? { ...c, couleur: src.couleur, couleur_texte: src.couleur_texte, texte_gras: src.texte_gras, texte_italique: src.texte_italique, texte_souligne: src.texte_souligne }
         : c))
   }
 
   function toggleRoutine(debut: string, fin: string) {
-    setCreneaux(prev => {
+    modifier(prev => {
       const isRoutine = prev.some(c => c.heure_debut === debut && c.heure_fin === fin && c.type === 'routine')
       return prev.map(c => c.heure_debut === debut && c.heure_fin === fin
         ? { ...c, type: isRoutine ? 'cours' : 'routine', couleur: isRoutine ? couleurMatiere(c.matiere) : '#f3f4f6' }
@@ -87,11 +124,11 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   }
 
   function supprimerLigne(debut: string, fin: string) {
-    setCreneaux(prev => prev.filter(c => !(c.heure_debut === debut && c.heure_fin === fin)))
+    modifier(prev => prev.filter(c => !(c.heure_debut === debut && c.heure_fin === fin)))
   }
 
   function toggleVisible(debut: string, fin: string) {
-    setCreneaux(prev => {
+    modifier(prev => {
       const isVisible = prev.some(
         c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal !== false
       )
@@ -104,7 +141,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   }
 
   function ajouterLigne() {
-    setCreneaux(prev => {
+    modifier(prev => {
       const lastFin = prev.reduce((max, c) => (c.heure_fin > max ? c.heure_fin : max), '08:00')
       const debut = lastFin, fin = addMinutes(lastFin, 30)
       if (prev.some(c => c.heure_debut === debut && c.heure_fin === fin)) return prev
@@ -113,7 +150,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   }
 
   function setHoraire(debutOld: string, finOld: string, field: 'heure_debut' | 'heure_fin', value: string) {
-    setCreneaux(prev => {
+    modifier(prev => {
       const newDebut = field === 'heure_debut' ? value : debutOld
       const newFin = field === 'heure_fin' ? value : finOld
       // Rejette une édition qui ferait coïncider cette tranche avec une AUTRE tranche existante
@@ -129,10 +166,19 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-gray-400">
-        Clique sur une case pour changer la matière, sur le ✏️ pour la mettre en forme (couleurs, gras…).
-        Les lignes grises (accueil, récréation…) ne reçoivent pas de déroulement dans le cahier journal.
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs text-gray-400">
+          Clique sur une case pour changer la matière, sur le ✏️ pour la mettre en forme (couleurs, gras…).
+          Les lignes grises (accueil, récréation…) ne reçoivent pas de déroulement dans le cahier journal.
+        </p>
+        <button type="button" onClick={annuler} disabled={!historique.length}
+          title="Annuler la dernière modification (Ctrl+Z)"
+          className="shrink-0 flex items-center gap-1 text-xs border border-violet-300 text-violet-700 rounded-lg px-2.5 py-1 hover:bg-violet-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+          <span aria-hidden="true">↩</span>
+          Annuler
+          {historique.length > 0 && <span className="text-violet-400">({historique.length})</span>}
+        </button>
+      </div>
       <div className="overflow-x-auto">
         <table className="border-collapse text-sm w-full">
           <thead>
