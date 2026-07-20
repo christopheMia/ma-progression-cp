@@ -34,6 +34,11 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   finishLabel: string
 }) {
   const [creneaux, setCreneaux] = useState<Creneau[]>(initial)
+  // Cle de la seule case dont le menu de mise en forme est deroule (crayon).
+  // Les controles de style restent masques partout ailleurs : la grille doit
+  // rester lisible, la mise en forme est une option, pas le sujet principal.
+  const [styleOuvert, setStyleOuvert] = useState<string | null>(null)
+  const cleCase = (jour: string, debut: string, fin: string) => `${jour}|${debut}|${fin}`
 
   const joursPresents = JOURS.filter(j => creneaux.some(c => c.jour === j))
   const cols = joursPresents.length ? joursPresents : ['lundi', 'mardi', 'jeudi', 'vendredi']
@@ -125,7 +130,8 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
   return (
     <div className="space-y-4">
       <p className="text-xs text-gray-400">
-        Clique sur une case pour changer la matière. Les lignes grises (accueil, récréation…) ne reçoivent pas de déroulement dans le cahier journal.
+        Clique sur une case pour changer la matière, sur le ✏️ pour la mettre en forme (couleurs, gras…).
+        Les lignes grises (accueil, récréation…) ne reçoivent pas de déroulement dans le cahier journal.
       </p>
       <div className="overflow-x-auto">
         <table className="border-collapse text-sm w-full">
@@ -160,24 +166,42 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                   </td>
                   {cols.map(jour => {
                     const c = cellule(jour, debut, fin)
+                    const cle = cleCase(jour, debut, fin)
+                    const ouvert = styleOuvert === cle
                     return (
-                      <td key={jour} className="border border-violet-100 p-1 align-top" style={{ backgroundColor: c?.couleur ?? undefined }}>
-                        <select
-                          value={c?.matiere ?? ''}
-                          onChange={e => setMatiere(jour, debut, fin, e.target.value)}
-                          aria-label={`${LABELS[jour]} ${debut}-${fin}`}
-                          style={{
-                            color: c?.couleur_texte ?? undefined,
-                            fontWeight: c?.texte_gras ? 700 : undefined,
-                            fontStyle: c?.texte_italique ? 'italic' : undefined,
-                            textDecoration: c?.texte_souligne ? 'underline' : undefined,
-                          }}
-                          className="w-full bg-transparent text-gray-900 text-xs p-1 outline-none">
-                          <option value="">—</option>
-                          {Array.from(new Set([...MATIERES, c?.matiere].filter(Boolean) as string[])).map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                        {c && (
-                          <div className="flex items-center gap-1 mt-0.5 bg-white/80 rounded px-1 py-0.5 w-fit">
+                      <td key={jour} className="border border-violet-100 p-1 align-top group" style={{ backgroundColor: c?.couleur ?? undefined }}>
+                        <div className="flex items-center gap-0.5">
+                          <select
+                            value={c?.matiere ?? ''}
+                            onChange={e => setMatiere(jour, debut, fin, e.target.value)}
+                            aria-label={`${LABELS[jour]} ${debut}-${fin}`}
+                            style={{
+                              color: c?.couleur_texte ?? undefined,
+                              fontWeight: c?.texte_gras ? 700 : undefined,
+                              fontStyle: c?.texte_italique ? 'italic' : undefined,
+                              textDecoration: c?.texte_souligne ? 'underline' : undefined,
+                            }}
+                            className="min-w-0 flex-1 bg-transparent text-gray-900 text-xs p-1 outline-none">
+                            <option value="">—</option>
+                            {Array.from(new Set([...MATIERES, c?.matiere].filter(Boolean) as string[])).map(m => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                          {c && (
+                            <button type="button"
+                              onClick={() => setStyleOuvert(ouvert ? null : cle)}
+                              aria-expanded={ouvert}
+                              title="Mise en forme de la case"
+                              aria-label={`Mise en forme ${LABELS[jour]} ${debut}`}
+                              className={`shrink-0 rounded px-1 text-[11px] leading-none transition-opacity ${
+                                ouvert
+                                  ? 'bg-violet-200 opacity-100'
+                                  : 'opacity-40 hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-80'
+                              }`}>
+                              ✏️
+                            </button>
+                          )}
+                        </div>
+                        {c && ouvert && (
+                          <div className="flex items-center gap-1 mt-1 bg-white rounded-lg border border-violet-200 shadow-sm px-1 py-0.5 w-fit">
                             <input type="color" title="Couleur du fond" aria-label={`Couleur du fond ${LABELS[jour]} ${debut}`}
                               value={c.couleur ?? '#ffffff'} onChange={e => setCouleur(jour, debut, fin, 'couleur', e.target.value)}
                               className="w-4 h-4 p-0 border-0 bg-transparent cursor-pointer" />

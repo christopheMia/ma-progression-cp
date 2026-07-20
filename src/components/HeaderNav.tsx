@@ -3,11 +3,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LogoutButton from './LogoutButton'
 
+// Les bulles (title) expliquent chaque entree au survol : elles remplacent les
+// cartes "Parametres" et "Aide" retirees de l'accueil (retour du 20/07, elles
+// faisaient doublon avec ce menu).
 const LINKS = [
-  { href: '/accueil', label: 'Accueil' },
-  { href: '/planning', label: 'Planning' },
-  { href: '/parametres', label: 'Paramètres' },
-  { href: '/aide', label: 'Aide' },
+  { href: '/accueil', label: 'Accueil', aide: 'Ta page de démarrage : semaine en cours, raccourcis et outils IA' },
+  { href: '/planning', label: 'Planning', aide: 'Toutes les semaines de l’année, période par période' },
+  { href: '/parametres', label: 'Paramètres', aide: 'Tes élèves, ton emploi du temps, tes méthodes et la date de rentrée' },
+  { href: '/aide', label: 'Aide', aide: 'Le mode d’emploi de l’application' },
 ]
 
 export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
@@ -25,7 +28,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
       {LINKS.map(l => {
         const active = pathname === l.href
         return (
-          <Link key={l.href} href={l.href}
+          <Link key={l.href} href={l.href} title={l.aide}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
               active
                 ? 'bg-white text-violet-600 font-medium'

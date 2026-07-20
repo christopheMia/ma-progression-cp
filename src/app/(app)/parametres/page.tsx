@@ -73,7 +73,7 @@ export default async function ParametresPage() {
         <ElevesEditor initial={(eleves ?? []).map(e => e.prenom)} />
       </Section>
 
-      <Section titre="🕐 Emploi du temps" headerRight={<div className="flex items-center gap-2 flex-wrap justify-end"><GenererEdtButton /><ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." /></div>}>
+      <Section id="edt" titre="🕐 Emploi du temps" headerRight={<div className="flex items-center gap-2 flex-wrap justify-end"><GenererEdtButton /><ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." /></div>}>
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
           jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
           matiere: c.matiere, couleur: c.couleur ?? null, couleur_texte: c.couleur_texte ?? null,
@@ -87,7 +87,7 @@ export default async function ParametresPage() {
         <RentreeEditor initial={classe.rentree_date} />
       </Section>
 
-      <Section titre="📚 Mes méthodes et acquis des élèves" headerRight={<ResetBlockButton scope="methodes" message="Efface les méthodes importées et leur progression." />}>
+      <Section id="methodes" titre="📚 Mes méthodes et acquis des élèves" headerRight={<ResetBlockButton scope="methodes" message="Efface les méthodes importées et leur progression." />}>
         <MethodesEditor
           prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
           methodes={(methodes ?? []) as Methode[]}

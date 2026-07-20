@@ -6,6 +6,8 @@ import { fr } from 'date-fns/locale'
 import ProgressBar from '@/components/ProgressBar'
 import ProgressionCorrector from '@/components/ProgressionCorrector'
 import BudgetIaIndicator from '@/components/BudgetIaIndicator'
+import CahierJournalCard from '@/components/accueil/CahierJournalCard'
+import OutilsIaSection from '@/components/accueil/OutilsIaSection'
 import { semaineEnCours, getStatus } from '@/lib/semaines'
 
 export default async function AccueilPage() {
@@ -56,6 +58,18 @@ export default async function AccueilPage() {
   const acquisCount = acquis?.length ?? 0
   const aujourdhui = format(new Date(), 'EEEE d MMMM', { locale: fr })
   const prenom = (classe.prenom_enseignant ?? '').trim()
+
+  // Carte "Cahier journal en cours" : la semaine courante + les suivantes, pour
+  // pouvoir preparer a l'avance sans repasser par le planning annuel.
+  const libelle = (s: { graphemes: string[] }) =>
+    s.graphemes.length ? s.graphemes.join(', ') : 'Révisions'
+  const couranteLien = courante
+    ? { id: courante.id, numero: courante.numero, libelle: libelle(courante) }
+    : null
+  const suivantes = (semaines ?? [])
+    .filter(s => courante && s.numero > courante.numero)
+    .slice(0, 5)
+    .map(s => ({ id: s.id, numero: s.numero, libelle: libelle(s) }))
 
   const progressionActuelle = (semaines ?? []).map(s => ({
     numero: s.numero,
@@ -128,66 +142,51 @@ export default async function AccueilPage() {
         </Link>
       </div>
 
-      {/* Invitation : ajouter les autres matières */}
-      <Link href="/parametres#methodes"
-        className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-        <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 text-xl shrink-0">➕</span>
-        <div className="min-w-0">
-          <div className="font-semibold text-slate-900">Ajoute tes matières ici</div>
-          <div className="text-sm text-slate-500">
-            Maths, Anglais, Questionner le monde… pour les retrouver dans ton suivi et ton cahier journal.
-          </div>
-        </div>
-        <span className="ml-auto text-violet-600 font-medium whitespace-nowrap group-hover:translate-x-0.5 transition-transform">Ajouter mes matières →</span>
-      </Link>
+      {/* Raccourcis : toutes les cartes ont la MEME taille (grille reguliere).
+          Parametres et Aide ne sont plus ici : ils sont deja dans le menu du
+          haut, ou ils portent desormais une bulle explicative au survol. */}
+      <div className="grid gap-3 sm:grid-cols-3 [&>*]:h-full">
+        <Link href="/planning"
+          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          <div className="text-2xl">📅</div>
+          <div className="font-semibold text-slate-900 mt-1">Planning annuel</div>
+          <div className="text-sm text-slate-500">Voir les {total || 36} semaines</div>
+        </Link>
 
-      {/* Raccourcis */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { href: '/planning', emoji: '📅', titre: 'Planning annuel', sous: 'Voir les 36 semaines' },
-          { href: '/parametres', emoji: '⚙️', titre: 'Paramètres', sous: 'Élèves, emploi du temps…' },
-          { href: '/aide', emoji: '❓', titre: 'Aide', sous: "Mode d'emploi" },
-        ].map(c => (
-          <Link key={c.href} href={c.href}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-            <div className="text-2xl">{c.emoji}</div>
-            <div className="font-semibold text-slate-900 mt-1">{c.titre}</div>
-            <div className="text-sm text-slate-500">{c.sous}</div>
-          </Link>
-        ))}
+        <CahierJournalCard courante={couranteLien} suivantes={suivantes} />
+
+        <Link href="/parametres#edt"
+          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          <div className="text-2xl">🕐</div>
+          <div className="font-semibold text-slate-900 mt-1">Emploi du temps</div>
+          <div className="text-sm text-slate-500">Tes journées, créneau par créneau</div>
+        </Link>
+
+        <Link href="/parametres#methodes"
+          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          <div className="text-2xl">➕</div>
+          <div className="font-semibold text-slate-900 mt-1">Ajoute tes matières</div>
+          <div className="text-sm text-slate-500">Maths, Anglais, Questionner le monde…</div>
+        </Link>
+
+        <Link href="/setup"
+          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          <div className="text-2xl">🧭</div>
+          <div className="font-semibold text-slate-900 mt-1">Configuration initiale</div>
+          <div className="text-sm text-slate-500">Méthode, rentrée, élèves, emploi du temps</div>
+        </Link>
       </div>
 
       {/* Mes outils IA — tout est dans l'appli (plus de renvoi vers des outils externes) */}
-      <section className="rounded-2xl border border-violet-200 bg-violet-50/50 p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-violet-600 text-white text-sm">🧰</span>
-          <h2 className="font-semibold text-slate-800">Mes outils IA</h2>
-          <span className="ml-auto text-xs text-slate-400">L&apos;IA est dans l&apos;appli</span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { href: courante ? `/semaine/${courante.id}` : '/planning', emoji: '📋', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
-            { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression', sous: 'L’IA lit ton manuel et construit ta progression' },
-            { href: '/competences', emoji: '🎯', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
-            { href: '/programme', emoji: '🧩', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
-          ].map(o => (
-            <Link key={o.href} href={o.href}
-              className="group flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 hover:border-violet-300 hover:shadow-md transition-all">
-              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 text-xl shrink-0">
-                {o.emoji}
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-slate-900">{o.titre}</div>
-                <div className="text-sm text-slate-500">{o.sous}</div>
-              </div>
-              <span className="ml-auto text-violet-400 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all">→</span>
-            </Link>
-          ))}
-        </div>
-        <div className="mt-5 pt-4 border-t border-violet-100">
-          <BudgetIaIndicator />
-        </div>
-      </section>
+      <OutilsIaSection
+        outils={[
+          { href: courante ? `/semaine/${courante.id}` : '/planning', emoji: '📋', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
+          { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression', sous: 'L’IA lit ton manuel et construit ta progression' },
+          { href: '/competences', emoji: '🎯', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
+          { href: '/programme', emoji: '🧩', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
+        ]}>
+        <BudgetIaIndicator />
+      </OutilsIaSection>
     </div>
   )
 }

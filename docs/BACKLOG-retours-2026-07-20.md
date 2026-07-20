@@ -47,24 +47,33 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
 
 ## 1. UI / UX & Navigation
 
-- [ ] **Mise en forme des cases EDT trop lourde** : masquer les contrôles (couleurs,
+- [x] **Mise en forme des cases EDT trop lourde** : masquer les contrôles (couleurs,
   B/i/U) derrière un **petit crayon cliquable** à côté du nom de la matière, qui
   déroule le menu de mise en page. (Rendre discret ce qui a été ajouté le 20/07.)
-- [ ] **Accueil : cartes "Paramètres" et "Aide" inutiles** (déjà dans le header) →
+  → FAIT : `TimetableGrid.tsx`, état `styleOuvert` (une seule case ouverte à la fois).
+- [x] **Accueil : cartes "Paramètres" et "Aide" inutiles** (déjà dans le header) →
   les retirer, remplacer par une **bulle explicative au survol**.
-- [ ] **Planning de la semaine** : ajouter un **accès déroulant à l'emploi du temps**
+  → FAIT : retirées de l'accueil, `title=` explicatif sur chaque entrée de `HeaderNav.tsx`.
+- [x] **Planning de la semaine** : ajouter un **accès déroulant à l'emploi du temps**
   pour vérifier avant de générer le cahier journal.
-- [ ] **Carte "Ajoute tes matières"** : la mettre à la **même taille** que les autres
-  cartes.
-- [ ] **Carte "Mes outils IA"** : la rendre **cliquable et dépliable**.
-- [ ] **Nouvelle carte "Cahier journal en cours"** : accès rapide au cahier de la
+  → FAIT : `EdtApercu.tsx` (lecture seule) dans une `CollapsibleSection` repliée par défaut.
+- [x] **Carte "Ajoute tes matières"** : la mettre à la **même taille** que les autres
+  cartes. → FAIT : intégrée à la grille régulière `sm:grid-cols-3`.
+- [x] **Carte "Mes outils IA"** : la rendre **cliquable et dépliable**.
+  → FAIT : `OutilsIaSection.tsx`, état mémorisé en `localStorage`.
+- [x] **Nouvelle carte "Cahier journal en cours"** : accès rapide au cahier de la
   semaine actuelle (identifiée par date/numéro) ; le menu doit aussi permettre de
   consulter/gérer les cahiers des **semaines à venir**.
-- [ ] **"Mes méthodes et progression"** : au clic, arriver **directement au bon
-  endroit** de la page (ancre `#methodes`).
-- [ ] **Nouvelle carte "Emploi du temps"** sur l'accueil (accès rapide).
+  → FAIT : `CahierJournalCard.tsx`, dépliant sur les 5 semaines suivantes.
+- [x] **"Mes méthodes et progression"** : au clic, arriver **directement au bon
+  endroit** de la page (ancre `#methodes`). → FAIT : `id="methodes"` sur la Section.
+- [x] **Nouvelle carte "Emploi du temps"** sur l'accueil (accès rapide).
+  → FAIT : carte vers `/parametres#edt` (ancre `id="edt"` ajoutée).
 - [ ] **Bouton "Mon assistant"** toujours visible : ouvre le chat + l'import.
-- [ ] **Carte "Configuration initiale"** sur l'accueil (option importante).
+  (REPORTÉ au chantier « outil IA centralisé » §2 : le bouton n'a de sens qu'avec
+  le panneau assistant + import PDF derrière.)
+- [x] **Carte "Configuration initiale"** sur l'accueil (option importante).
+  → FAIT : carte vers `/setup`, désormais visible en permanence.
 
 ## 2. Fonctionnalités IA & Importation
 
