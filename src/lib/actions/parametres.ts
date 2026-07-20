@@ -8,6 +8,7 @@ import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { TRAME_EDT_CP } from '@/data/trame-edt'
 import { genererEdtCP } from '@/lib/edt-generator'
+import { datesSemainesCalendaires } from '@/lib/calendrier-semaines'
 import { ensureMethode } from '@/lib/methodes-db'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; couleur_texte: string | null; texte_gras: boolean; texte_italique: boolean; texte_souligne: boolean; type: 'cours' | 'routine'; visible_journal: boolean }
@@ -129,6 +130,36 @@ export async function updateRentreeDate(newDate: string) {
 
   revalidatePath('/parametres')
   revalidatePath('/planning')
+}
+
+/**
+ * Réaligne les semaines existantes sur le VRAI calendrier scolaire (saute les
+ * vacances), d'après les bornes de périodes. NON DESTRUCTIF : ne change que
+ * `date_debut` et `periode_numero` de chaque semaine ; le suivi des élèves et
+ * les cahiers journaux (liés par `semaine_id`) sont préservés.
+ */
+export async function realignerSemaines() {
+  const { supabase, classe } = await getClasse()
+  const { data: periodes } = await supabase
+    .from('periodes').select('numero, date_debut, date_fin').eq('class_id', classe.id)
+  const { data: semaines } = await supabase
+    .from('semaines').select('id, numero').eq('class_id', classe.id).order('numero')
+  if (!periodes?.length || !semaines?.length) return
+
+  const cal = datesSemainesCalendaires(periodes, semaines.length)
+  const parNumero = new Map(cal.map(c => [c.numero, c]))
+  for (const s of semaines) {
+    const c = parNumero.get(s.numero)
+    if (c) {
+      await supabase.from('semaines')
+        .update({ date_debut: c.date_debut, periode_numero: c.periode_numero })
+        .eq('id', s.id)
+    }
+  }
+
+  revalidatePath('/parametres')
+  revalidatePath('/planning')
+  revalidatePath('/accueil')
 }
 
 /**

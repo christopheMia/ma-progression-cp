@@ -11,6 +11,7 @@ import MethodesEditor from '@/components/parametres/MethodesEditor'
 import ResetButton from '@/components/parametres/ResetButton'
 import ResetBlockButton from '@/components/parametres/ResetBlockButton'
 import GenererEdtButton from '@/components/parametres/GenererEdtButton'
+import RealignerSemainesButton from '@/components/parametres/RealignerSemainesButton'
 import DemoButton from '@/components/DemoButton'
 import type { Methode } from '@/types'
 
@@ -82,7 +83,7 @@ export default async function ParametresPage() {
         }))} />
       </Section>
 
-      <Section titre="📅 Date de rentrée">
+      <Section titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>
         <RentreeEditor initial={classe.rentree_date} />
       </Section>
 
