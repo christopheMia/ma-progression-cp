@@ -169,6 +169,7 @@ export default async function AccueilPage() {
             { href: courante ? `/semaine/${courante.id}` : '/planning', emoji: '📋', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
             { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression', sous: 'L’IA lit ton manuel et construit ta progression' },
             { href: '/competences', emoji: '🎯', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
+            { href: '/programme', emoji: '🧩', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
           ].map(o => (
             <Link key={o.href} href={o.href}
               className="group flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4 hover:border-violet-300 hover:shadow-md transition-all">
