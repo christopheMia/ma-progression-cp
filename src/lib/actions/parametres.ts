@@ -10,7 +10,7 @@ import { TRAME_EDT_CP } from '@/data/trame-edt'
 import { genererEdtCP } from '@/lib/edt-generator'
 import { ensureMethode } from '@/lib/methodes-db'
 
-type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; type: 'cours' | 'routine'; visible_journal: boolean }
+type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; couleur_texte: string | null; texte_gras: boolean; texte_italique: boolean; texte_souligne: boolean; type: 'cours' | 'routine'; visible_journal: boolean }
 
 async function getClasse() {
   const supabase = await createClient()

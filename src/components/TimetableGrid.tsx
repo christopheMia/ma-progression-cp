@@ -14,7 +14,9 @@ const MATIERES = ['Appropriation des graphèmes', 'Écriture', 'Phonologie', 'Vo
 
 export type Creneau = {
   jour: string; heure_debut: string; heure_fin: string
-  matiere: string; couleur: string | null; type: 'cours' | 'routine'
+  matiere: string; couleur: string | null; couleur_texte: string | null
+  texte_gras: boolean; texte_italique: boolean; texte_souligne: boolean
+  type: 'cours' | 'routine'
   visible_journal: boolean
 }
 
@@ -47,8 +49,18 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
       if (matiere === '') return idx >= 0 ? prev.filter((_, i) => i !== idx) : prev
       const couleur = couleurMatiere(matiere)
       if (idx >= 0) return prev.map((c, i) => i === idx ? { ...c, matiere, couleur } : c)
-      return [...prev, { jour, heure_debut: debut, heure_fin: fin, matiere, couleur, type: 'cours', visible_journal: true }]
+      return [...prev, { jour, heure_debut: debut, heure_fin: fin, matiere, couleur, couleur_texte: null, texte_gras: false, texte_italique: false, texte_souligne: false, type: 'cours', visible_journal: true }]
     })
+  }
+
+  function setCouleur(jour: string, debut: string, fin: string, field: 'couleur' | 'couleur_texte', value: string) {
+    setCreneaux(prev => prev.map(c =>
+      c.jour === jour && c.heure_debut === debut && c.heure_fin === fin ? { ...c, [field]: value } : c))
+  }
+
+  function toggleStyle(jour: string, debut: string, fin: string, field: 'texte_gras' | 'texte_italique' | 'texte_souligne') {
+    setCreneaux(prev => prev.map(c =>
+      c.jour === jour && c.heure_debut === debut && c.heure_fin === fin ? { ...c, [field]: !c[field] } : c))
   }
 
   function toggleRoutine(debut: string, fin: string) {
@@ -82,7 +94,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
       const lastFin = prev.reduce((max, c) => (c.heure_fin > max ? c.heure_fin : max), '08:00')
       const debut = lastFin, fin = addMinutes(lastFin, 30)
       if (prev.some(c => c.heure_debut === debut && c.heure_fin === fin)) return prev
-      return [...prev, ...cols.map(jour => ({ jour, heure_debut: debut, heure_fin: fin, matiere: '', couleur: null, type: 'cours' as const, visible_journal: true }))]
+      return [...prev, ...cols.map(jour => ({ jour, heure_debut: debut, heure_fin: fin, matiere: '', couleur: null, couleur_texte: null, texte_gras: false, texte_italique: false, texte_souligne: false, type: 'cours' as const, visible_journal: true }))]
     })
   }
 
@@ -140,15 +152,37 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                   {cols.map(jour => {
                     const c = cellule(jour, debut, fin)
                     return (
-                      <td key={jour} className="border border-violet-100 p-1" style={{ backgroundColor: c?.couleur ?? undefined }}>
+                      <td key={jour} className="border border-violet-100 p-1 align-top" style={{ backgroundColor: c?.couleur ?? undefined }}>
                         <select
                           value={c?.matiere ?? ''}
                           onChange={e => setMatiere(jour, debut, fin, e.target.value)}
                           aria-label={`${LABELS[jour]} ${debut}-${fin}`}
+                          style={{
+                            color: c?.couleur_texte ?? undefined,
+                            fontWeight: c?.texte_gras ? 700 : undefined,
+                            fontStyle: c?.texte_italique ? 'italic' : undefined,
+                            textDecoration: c?.texte_souligne ? 'underline' : undefined,
+                          }}
                           className="w-full bg-transparent text-gray-900 text-xs p-1 outline-none">
                           <option value="">—</option>
                           {Array.from(new Set([...MATIERES, c?.matiere].filter(Boolean) as string[])).map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
+                        {c && (
+                          <div className="flex items-center gap-1 mt-0.5 bg-white/80 rounded px-1 py-0.5 w-fit">
+                            <input type="color" title="Couleur du fond" aria-label={`Couleur du fond ${LABELS[jour]} ${debut}`}
+                              value={c.couleur ?? '#ffffff'} onChange={e => setCouleur(jour, debut, fin, 'couleur', e.target.value)}
+                              className="w-4 h-4 p-0 border-0 bg-transparent cursor-pointer" />
+                            <input type="color" title="Couleur du texte" aria-label={`Couleur du texte ${LABELS[jour]} ${debut}`}
+                              value={c.couleur_texte ?? '#111827'} onChange={e => setCouleur(jour, debut, fin, 'couleur_texte', e.target.value)}
+                              className="w-4 h-4 p-0 border-0 bg-transparent cursor-pointer" />
+                            <button type="button" title="Gras" onClick={() => toggleStyle(jour, debut, fin, 'texte_gras')}
+                              className={`text-[11px] leading-none px-1 rounded font-bold ${c.texte_gras ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>B</button>
+                            <button type="button" title="Italique" onClick={() => toggleStyle(jour, debut, fin, 'texte_italique')}
+                              className={`text-[11px] leading-none px-1 rounded italic ${c.texte_italique ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>i</button>
+                            <button type="button" title="Souligné" onClick={() => toggleStyle(jour, debut, fin, 'texte_souligne')}
+                              className={`text-[11px] leading-none px-1 rounded underline ${c.texte_souligne ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>U</button>
+                          </div>
+                        )}
                       </td>
                     )
                   })}

@@ -80,7 +80,7 @@ export default function SetupPage() {
       )}
       {step === 4 && (
         <TimetableGrid
-          initial={TRAME_EDT_CP.map(c => ({ jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, matiere: c.matiere, couleur: c.couleur, type: c.type, visible_journal: true }))}
+          initial={TRAME_EDT_CP.map(c => ({ jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, matiere: c.matiere, couleur: c.couleur, couleur_texte: null, texte_gras: false, texte_italique: false, texte_souligne: false, type: c.type, visible_journal: true }))}
           saving={loading}
           finishLabel="🎉 Générer ma progression annuelle"
           onSave={(creneaux) => handleFinish(creneaux.map((c, i) => ({ ...c, ordre: i })))}

@@ -75,7 +75,9 @@ export default async function ParametresPage() {
       <Section titre="🕐 Emploi du temps" headerRight={<div className="flex items-center gap-2 flex-wrap justify-end"><GenererEdtButton /><ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." /></div>}>
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
           jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
-          matiere: c.matiere, couleur: c.couleur ?? null, type: (c.type ?? 'cours') as 'cours' | 'routine',
+          matiere: c.matiere, couleur: c.couleur ?? null, couleur_texte: c.couleur_texte ?? null,
+          texte_gras: c.texte_gras ?? false, texte_italique: c.texte_italique ?? false, texte_souligne: c.texte_souligne ?? false,
+          type: (c.type ?? 'cours') as 'cours' | 'routine',
           visible_journal: (c.visible_journal ?? true) as boolean,
         }))} />
       </Section>
