@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
 import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
-import { systemImport, userImport, userImportDocument } from '@/lib/ia/prompts'
+import { systemImport, systemImportPeriode, userImport, userImportDocument } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
@@ -13,6 +13,9 @@ export async function POST(request: Request) {
     const contentType = request.headers.get('content-type') ?? ''
     let texte = ''
     let matiere = 'francais'
+    // 'periode' = planning detaille d'une periode (toutes les seances par
+    // domaine) ; 'manuel' = sommaire / progression d'un manuel.
+    let mode: 'manuel' | 'periode' = 'manuel'
     // PDF joints tels quels : le modele lit alors la MISE EN PAGE (tableaux,
     // lignes, colonnes) au lieu d'un texte aplati. C'est la voie haute fidelite.
     const pdfsBase64: string[] = []
@@ -23,6 +26,7 @@ export async function POST(request: Request) {
       const texteColle = (form.get('texte') as string | null) ?? ''
       const matiereRaw = (form.get('matiere') as string | null) ?? ''
       if (matiereRaw.trim()) matiere = matiereRaw.trim()
+      if (form.get('mode') === 'periode') mode = 'periode'
 
       if (fichiers.length) {
         // Les fonctions serverless Vercel plafonnent le corps de requete a ~4,5 Mo.
@@ -44,6 +48,7 @@ export async function POST(request: Request) {
       const body = await request.json()
       texte = typeof body.texte === 'string' ? body.texte : ''
       if (typeof body.matiere === 'string' && body.matiere.trim()) matiere = body.matiere.trim()
+      if (body.mode === 'periode') mode = 'periode'
     }
 
     texte = texte.trim()
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
       max_tokens: 16000,
       // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
       // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
-      system: systemImport(matiere),
+      system: mode === 'periode' ? systemImportPeriode(matiere) : systemImport(matiere),
       output_config: {
         format: {
           type: 'json_schema',

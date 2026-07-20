@@ -56,6 +56,39 @@ recopie EXACTEMENT le contenu des cellules, sans le reformuler.
 ${texteManuel}`
 }
 
+/**
+ * Import d'un PLANNING DE PERIODE (ex : "exemple de planning p1.pdf").
+ *
+ * Different de systemImport : ces documents ne listent pas seulement des
+ * graphemes, ils detaillent TOUTES les seances de la semaine par domaine
+ * (lecture comprehension, vocabulaire, geste d'ecriture, production d'ecrits,
+ * grammaire, fluence...). Le prompt "manuel" est centre graphemes et jetait donc
+ * tout le reste. Ici on conserve l'integralite du tableau.
+ */
+export function systemImportPeriode(matiere: string): string {
+  const sujet = matiere && matiere !== 'francais' ? `« ${matiere} »` : 'français'
+  return `Tu es un expert des programmations scolaires françaises pour le CP.
+On te donne le planning d'UNE PÉRIODE (souvent 7 semaines de 4 jours) pour ${sujet},
+présenté sous forme de tableau détaillé.
+Ta tâche : restituer ce planning SEMAINE PAR SEMAINE, sans rien perdre.
+${REGLE_EXHAUSTIVITE}
+Règles impératives :
+- Une entrée par semaine du document, dans l'ordre, en repartant de 1.
+- "items" = TOUTES les séances de la semaine, une par entrée. N'en omets aucune,
+  même si elle se répète d'une semaine à l'autre.
+- Préfixe chaque séance par son domaine tel qu'il apparaît dans le document, sous
+  la forme "Domaine : contenu". Exemples : "Graphèmes : A, I", "Lecture
+  compréhension : Le loup qui...", "Geste d'écriture : a", "Vocabulaire : les
+  émotions", "Production d'écrits : la phrase", "Grammaire : la majuscule",
+  "Fluence : lecture de syllabes".
+- Recopie EXACTEMENT le libellé du document. N'invente rien, ne reformule pas,
+  ne résume pas, ne complète pas une case vide.
+- Si une case est vide dans le tableau, n'ajoute pas d'item pour ce domaine.
+- "pages" = les pages si le document en indique, sinon "".
+- "mots_exemple" = les mots d'étude si le document en donne, sinon [].
+Réponds UNIQUEMENT via le format structuré imposé.`
+}
+
 /** Variante quand le PDF lui-meme est joint au message : le modele voit la mise
  *  en page (lecture fidele des tableaux), pas seulement du texte aplati. */
 export function userImportDocument(): string {

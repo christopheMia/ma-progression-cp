@@ -25,9 +25,14 @@ export default function IaImport({
   const [chat, setChat] = useState<ChatTurn[]>([])
   const [message, setMessage] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  // Un planning de période détaille TOUTES les séances par domaine (lecture
+  // compréhension, geste d'écriture, fluence…) là où un sommaire de manuel se
+  // limite aux notions. Les deux ont besoin de consignes différentes.
+  const [mode, setMode] = useState<'manuel' | 'periode'>('manuel')
 
   async function lancerImport(form: FormData) {
     form.append('matiere', matiere)
+    form.append('mode', mode)
     setError(null); setLoading(true); setProgression(null)
     try {
       const res = await fetch('/api/ia-manuel', { method: 'POST', body: form })
@@ -136,8 +141,33 @@ export default function IaImport({
               />
             </div>
           )}
+          <fieldset disabled={loading} className="disabled:opacity-50">
+            <legend className="block text-sm font-medium text-gray-700 mb-1">Quel type de document ?</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {([
+                { valeur: 'manuel' as const, titre: 'Manuel / sommaire', sous: 'Une progression annuelle, notion par notion' },
+                { valeur: 'periode' as const, titre: 'Planning de période', sous: 'Le détail des séances, semaine par semaine' },
+              ]).map(o => (
+                <label key={o.valeur}
+                  className={`flex gap-2 items-start rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                    mode === o.valeur ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:bg-gray-50'
+                  }`}>
+                  <input type="radio" name="type-document" value={o.valeur}
+                    checked={mode === o.valeur} onChange={() => setMode(o.valeur)}
+                    className="mt-1 accent-violet-600" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-900">{o.titre}</span>
+                    <span className="block text-xs text-gray-500">{o.sous}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           <p className="text-sm text-gray-600">
-            Déposez le PDF de votre manuel <strong>ou</strong> collez son sommaire. L&apos;IA reconstruit la progression — vous pourrez tout corriger ensuite.
+            {mode === 'periode'
+              ? <>Déposez le PDF du planning de votre période. L&apos;IA reprend <strong>toutes</strong> les séances de chaque semaine (lecture compréhension, geste d&apos;écriture, fluence…) sans en perdre.</>
+              : <>Déposez le PDF de votre manuel <strong>ou</strong> collez son sommaire. L&apos;IA reconstruit la progression — vous pourrez tout corriger ensuite.</>}
           </p>
           <input type="file" accept=".pdf" multiple onChange={importPdf} disabled={loading}
             className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer disabled:opacity-50" />
