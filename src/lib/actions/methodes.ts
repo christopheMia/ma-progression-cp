@@ -55,6 +55,26 @@ export async function updateSuiviActif(methodeId: string, suivi_actif: boolean) 
 }
 
 /**
+ * Renomme le manuel d'une méthode (ex. « Taoki »), sans réimport.
+ *
+ * Les méthodes importées avant l'ajout du champ n'ont aucun nom en base : sans
+ * ce renommage, il aurait fallu tout réimporter juste pour afficher un libellé.
+ * Une chaîne vide efface le nom.
+ */
+export async function renommerMethode(methodeId: string, nom: string) {
+  const ctx = await getClasse()
+  if (!ctx) throw new Error('Non connecté')
+  const propre = nom.trim()
+  await ctx.supabase.from('methodes')
+    .update({ manuel: propre || null })
+    .eq('id', methodeId)
+    .eq('class_id', ctx.classeId) // ne renomme jamais la méthode d'une autre classe
+  revalidatePath('/parametres')
+  revalidatePath('/planning')
+  revalidatePath('/accueil')
+}
+
+/**
  * Relie les créneaux sélectionnés à une méthode et déliera les précédents.
  * creneauIds : ids des emploi_du_temps à relier à cette méthode.
  */

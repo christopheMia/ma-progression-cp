@@ -5,6 +5,7 @@ import IaImport from '@/components/setup/IaImport'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
 import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
 import { createMethode, updateSuiviActif, lierCreneaux } from '@/lib/actions/methodes'
+import NomMethodeEditor from '@/components/parametres/NomMethodeEditor'
 import type { Methode } from '@/types'
 import type { ProgressionSemaine } from '@/data/manuels'
 
@@ -115,13 +116,9 @@ export default function MethodesEditor({
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-gray-700">{labelMethode}</span>
-                {/* Nom du manuel importe : sans lui, impossible de savoir d'ou
-                    vient la progression affichee (retour du 20/07). */}
-                {m.manuel && (
-                  <span className="text-xs font-medium text-slate-700 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5">
-                    📕 {m.manuel}
-                  </span>
-                )}
+                {/* Nom du manuel importe, modifiable sur place : sans lui, on ne
+                    sait pas d'ou vient la progression affichee (retour du 20/07). */}
+                <NomMethodeEditor methodeId={m.id} nom={m.manuel} />
                 {resumes?.[m.id] && resumes[m.id].semaines > 0 ? (
                   <span className="text-xs text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5">
                     📊 {resumes[m.id].semaines} semaine{resumes[m.id].semaines > 1 ? 's' : ''} · {resumes[m.id].notions} notion{resumes[m.id].notions > 1 ? 's' : ''}

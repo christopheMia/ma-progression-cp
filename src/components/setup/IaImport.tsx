@@ -174,7 +174,7 @@ export default function IaImport({
                 onChange={e => setMatiere(e.target.value)}
                 disabled={loading}
                 placeholder="Ex : Anglais, EMC, Sciences…"
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+                className="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
               />
             </div>
           )}
@@ -211,7 +211,7 @@ export default function IaImport({
               onChange={e => setNomManuel(e.target.value)}
               disabled={loading}
               placeholder="Ex : Taoki, Pilotis, Méthode de Singapour…"
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+              className="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
             />
             <p className="text-xs text-gray-500 mt-1">
               Il s&apos;affichera partout dans l&apos;appli pour que tu saches toujours d&apos;où vient ta progression.
@@ -226,7 +226,7 @@ export default function IaImport({
                 </label>
                 <select id="choix-periode" value={periode ?? ''} disabled={loading}
                   onChange={e => setPeriode(Number(e.target.value))}
-                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white">
+                  className="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200">
                   {periodes.map(p => (
                     <option key={p.numero} value={p.numero}>
                       {p.nom} — semaines {p.premiereSemaine} à {p.premiereSemaine + p.nbSemaines - 1}
@@ -259,7 +259,7 @@ export default function IaImport({
           </p>
           <textarea value={texte} onChange={e => setTexte(e.target.value)} disabled={loading}
             placeholder="…ou collez ici le sommaire du manuel"
-            className="w-full h-28 border border-gray-200 rounded-lg p-2 text-sm text-gray-900 bg-white" />
+            className="w-full h-28 border-2 border-slate-300 rounded-lg p-3 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200" />
           <button onClick={importTexte} disabled={loading}
             className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-50">
             {loading ? 'Analyse en cours…' : '🤖 Analyser avec l’IA'}
@@ -292,18 +292,18 @@ export default function IaImport({
                       <input value={s.items.join(' ')} onChange={e => {
                         const v = e.target.value.split(/\s+/).filter(Boolean)
                         setProgression(p => p!.map((x, j) => j === i ? { ...x, items: v } : x))
-                      }} className="w-full bg-white text-gray-900 rounded px-1 py-0.5 border border-gray-200" />
+                      }} className="w-full bg-white text-gray-900 rounded px-1.5 py-1 border border-slate-300 outline-none focus:border-violet-500" />
                     </td>
                     <td className="px-2 py-1">
                       <input value={s.pages} onChange={e =>
                         setProgression(p => p!.map((x, j) => j === i ? { ...x, pages: e.target.value } : x))
-                      } className="w-full bg-white text-gray-900 rounded px-1 py-0.5 border border-gray-200" />
+                      } className="w-full bg-white text-gray-900 rounded px-1.5 py-1 border border-slate-300 outline-none focus:border-violet-500" />
                     </td>
                     <td className="px-2 py-1">
                       <input value={s.mots_exemple.join(' ')} onChange={e => {
                         const v = e.target.value.split(/\s+/).filter(Boolean)
                         setProgression(p => p!.map((x, j) => j === i ? { ...x, mots_exemple: v } : x))
-                      }} className="w-full bg-white text-gray-900 rounded px-1 py-0.5 border border-gray-200" />
+                      }} className="w-full bg-white text-gray-900 rounded px-1.5 py-1 border border-slate-300 outline-none focus:border-violet-500" />
                     </td>
                   </tr>
                 ))}
@@ -331,7 +331,7 @@ export default function IaImport({
               <input value={message} onChange={e => setMessage(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && envoyerCorrection()}
                 placeholder="Écrivez votre correction ici…"
-                className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white" />
+                className="flex-1 border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200" />
               <button onClick={envoyerCorrection} disabled={chatLoading}
                 className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-sm disabled:opacity-50">→</button>
             </div>
