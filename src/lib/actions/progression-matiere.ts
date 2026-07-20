@@ -12,6 +12,8 @@ import { ensureMethode } from '@/lib/methodes-db'
 export async function enregistrerProgressionMatiere(
   matiere: string,
   semaines: ProgressionSemaine[],
+  /** Nom du manuel importe, affiche ensuite partout dans l'appli. */
+  nomManuel?: string,
 ) {
   const trimmed = matiere.trim()
   if (!trimmed) throw new Error('Matière inconnue')
@@ -29,7 +31,7 @@ export async function enregistrerProgressionMatiere(
     .maybeSingle()
   if (!classe) throw new Error('Aucune classe')
 
-  const methodeId = await ensureMethode(supabase, classe.id, matiere)
+  const methodeId = await ensureMethode(supabase, classe.id, matiere, nomManuel)
 
   // Remplace UNIQUEMENT cette matière (jamais l'autre)
   await supabase.from('progression').delete()

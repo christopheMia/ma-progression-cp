@@ -17,7 +17,12 @@ export default function IaImport({
   onSelect?: (id: string, progression: ProgressionSemaine[]) => void
   /** `periode` n'est renseigne que pour un import "planning de periode" : il
    *  indique sur quelle periode recaler les semaines (sans toucher aux autres). */
-  onSave?: (matiere: string, progression: ProgressionSemaine[], periode?: number) => Promise<void> | void
+  onSave?: (
+    matiere: string,
+    progression: ProgressionSemaine[],
+    periode?: number,
+    nomManuel?: string,
+  ) => Promise<void> | void
 }) {
   const [texte, setTexte] = useState('')
   const [matiere, setMatiere] = useState<string>(matiereFixe ?? '')
@@ -32,6 +37,10 @@ export default function IaImport({
   // compréhension, geste d'écriture, fluence…) là où un sommaire de manuel se
   // limite aux notions. Les deux ont besoin de consignes différentes.
   const [mode, setMode] = useState<'manuel' | 'periode'>('manuel')
+  // Nom du manuel importe : sans lui, l'enseignante ne sait plus QUELLE methode
+  // elle a importee (retour du 20/07). Prerempli depuis le nom du fichier PDF,
+  // qui contient presque toujours le nom de la methode, puis modifiable.
+  const [nomManuel, setNomManuel] = useState('')
   // Periodes reelles de la classe (calees sur son calendrier), pour savoir sur
   // quelles semaines recaler un planning importe. L'IA numerote toujours 1..N.
   const [periodes, setPeriodes] = useState<PeriodeDispo[]>([])
@@ -75,6 +84,13 @@ export default function IaImport({
       const liste = Array.from(files)
       const total = liste.reduce((n, f) => n + f.size, 0)
 
+      // Prerempli le nom de la methode depuis le fichier ("taoki-p1.pdf" ->
+      // "Taoki p1"), sans jamais ecraser une saisie de l'utilisatrice.
+      if (!nomManuel.trim() && liste[0]) {
+        const brut = liste[0].name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim()
+        if (brut) setNomManuel(brut.charAt(0).toUpperCase() + brut.slice(1))
+      }
+
       // Voie HAUTE FIDÉLITÉ : on envoie les PDF tels quels, l'IA lit alors la
       // mise en page (tableaux, lignes, colonnes) et non un texte aplati.
       // Plafond ≈ limite du corps de requête serverless Vercel (~4,5 Mo).
@@ -115,7 +131,12 @@ export default function IaImport({
     if (onSave) {
       setSaving(true)
       try {
-        await onSave(matiere, progression, mode === 'periode' ? (periode ?? undefined) : undefined)
+        await onSave(
+          matiere,
+          progression,
+          mode === 'periode' ? (periode ?? undefined) : undefined,
+          nomManuel.trim() || undefined,
+        )
       } finally { setSaving(false) }
     } else if (onSelect) {
       onSelect('custom', progression)
@@ -179,6 +200,23 @@ export default function IaImport({
               ))}
             </div>
           </fieldset>
+
+          <div>
+            <label htmlFor="nom-methode" className="block text-sm font-medium text-gray-700 mb-1">
+              Nom de la méthode
+            </label>
+            <input
+              id="nom-methode"
+              value={nomManuel}
+              onChange={e => setNomManuel(e.target.value)}
+              disabled={loading}
+              placeholder="Ex : Taoki, Pilotis, Méthode de Singapour…"
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Il s&apos;affichera partout dans l&apos;appli pour que tu saches toujours d&apos;où vient ta progression.
+            </p>
+          </div>
 
           {mode === 'periode' && (
             periodes.length > 0 ? (

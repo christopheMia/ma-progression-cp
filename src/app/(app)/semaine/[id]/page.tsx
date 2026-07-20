@@ -25,7 +25,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     supabase.from('acquisitions').select('*').eq('semaine_id', id),
     supabase.from('appreciations').select('*').eq('semaine_id', id),
     supabase.from('progression').select('*').eq('class_id', semaine.class_id).eq('numero', semaine.numero),
-    supabase.from('methodes').select('id, matiere, suivi_actif').eq('class_id', semaine.class_id).order('created_at'),
+    supabase.from('methodes').select('id, matiere, suivi_actif, manuel').eq('class_id', semaine.class_id).order('created_at'),
     supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id).order('ordre'),
   ])
 
@@ -60,7 +60,8 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           const motsExemple = (prog?.mots_exemple as string[] | null) ?? (m.matiere === 'francais' ? semaine.mots_exemple : null)
           if (items.length === 0 && !prog) return null
           return (
-            <MatiereBlock key={m.id} matiere={m.matiere} items={items} pages={pages} motsExemple={motsExemple} />
+            <MatiereBlock key={m.id} matiere={m.matiere} items={items} pages={pages}
+              motsExemple={motsExemple} manuel={m.manuel as string | null} />
           )
         })}
         <EdmBlock semaine={semaine} />

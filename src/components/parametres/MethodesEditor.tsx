@@ -50,15 +50,21 @@ export default function MethodesEditor({
     })
   }
 
-  async function saveImport(methodeId: string, matiere: string, progression: ProgressionSemaine[], periode?: number) {
+  async function saveImport(
+    methodeId: string,
+    matiere: string,
+    progression: ProgressionSemaine[],
+    periode?: number,
+    nomManuel?: string,
+  ) {
     // Import d'un planning de periode : on recale sur les semaines de cette
     // periode et on ne touche pas aux autres periodes deja saisies.
     if (periode) {
       const { premiereSemaine, derniereSemaine } =
-        await enregistrerProgressionPeriode(matiere, periode, progression)
+        await enregistrerProgressionPeriode(matiere, periode, progression, nomManuel)
       setMessage(`${matiere} · période ${periode} enregistrée (semaines ${premiereSemaine} à ${derniereSemaine}) ✓`)
     } else {
-      await enregistrerProgressionMatiere(matiere, progression)
+      await enregistrerProgressionMatiere(matiere, progression, nomManuel)
       setMessage(`${matiere} enregistré ✓`)
     }
     setOuverte(null)
@@ -109,6 +115,13 @@ export default function MethodesEditor({
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-gray-700">{labelMethode}</span>
+                {/* Nom du manuel importe : sans lui, impossible de savoir d'ou
+                    vient la progression affichee (retour du 20/07). */}
+                {m.manuel && (
+                  <span className="text-xs font-medium text-slate-700 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5">
+                    📕 {m.manuel}
+                  </span>
+                )}
                 {resumes?.[m.id] && resumes[m.id].semaines > 0 ? (
                   <span className="text-xs text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5">
                     📊 {resumes[m.id].semaines} semaine{resumes[m.id].semaines > 1 ? 's' : ''} · {resumes[m.id].notions} notion{resumes[m.id].notions > 1 ? 's' : ''}
@@ -170,7 +183,8 @@ export default function MethodesEditor({
 
             {ouverte === m.id && (
               <div className="mt-2">
-                <IaImport prenom={prenom} matiereFixe={m.matiere} onSave={(matiere, prog) => saveImport(m.id, matiere, prog)} />
+                <IaImport prenom={prenom} matiereFixe={m.matiere}
+                  onSave={(matiere, prog, periode, nom) => saveImport(m.id, matiere, prog, periode, nom)} />
               </div>
             )}
           </div>

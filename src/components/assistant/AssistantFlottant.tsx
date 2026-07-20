@@ -30,12 +30,17 @@ export default function AssistantFlottant({ hasClass, prenom }: {
     return () => window.removeEventListener('keydown', onKey)
   }, [ouvert])
 
-  async function sauvegarder(matiere: string, progression: ProgressionSemaine[], periode?: number) {
+  async function sauvegarder(
+    matiere: string,
+    progression: ProgressionSemaine[],
+    periode?: number,
+    nomManuel?: string,
+  ) {
     // Import d'une periode : on ne remplace que ses semaines, les autres periodes
     // deja saisies restent intactes.
     if (periode) {
       const { premiereSemaine, derniereSemaine, debordement } =
-        await enregistrerProgressionPeriode(matiere, periode, progression)
+        await enregistrerProgressionPeriode(matiere, periode, progression, nomManuel)
       setEnregistre(
         `Période ${periode} « ${matiere} » enregistrée sur les semaines ${premiereSemaine} à ${derniereSemaine} ✅` +
         (debordement > 0
@@ -44,8 +49,9 @@ export default function AssistantFlottant({ hasClass, prenom }: {
       )
       return
     }
-    await enregistrerProgressionMatiere(matiere, progression)
-    setEnregistre(`Progression « ${matiere} » enregistrée ✅`)
+    await enregistrerProgressionMatiere(matiere, progression, nomManuel)
+    setEnregistre(
+      `Progression « ${matiere} »${nomManuel ? ` (${nomManuel})` : ''} enregistrée ✅`)
   }
 
   return (

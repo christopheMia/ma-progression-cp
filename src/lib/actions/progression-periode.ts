@@ -75,6 +75,8 @@ export async function enregistrerProgressionPeriode(
   matiere: string,
   periodeNumero: number,
   semaines: ProgressionSemaine[],
+  /** Nom du manuel importe, affiche ensuite partout dans l'appli. */
+  nomManuel?: string,
 ): Promise<{ premiereSemaine: number; derniereSemaine: number; debordement: number }> {
   const trimmed = matiere.trim()
   if (!trimmed) throw new Error('Matière inconnue')
@@ -105,7 +107,7 @@ export async function enregistrerProgressionPeriode(
   const debordement = Math.max(0, semaines.length - numerosPeriode.length)
   const derniereSemaine = premiereSemaine + Math.max(0, recalees.length - 1)
 
-  const methodeId = await ensureMethode(supabase, classeId, matiere)
+  const methodeId = await ensureMethode(supabase, classeId, matiere, nomManuel)
 
   // On n'efface QUE l'intervalle reecrit : les autres periodes sont preservees.
   const numerosEcrases = recalees.map(s => s.numero)

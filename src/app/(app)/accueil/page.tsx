@@ -43,10 +43,17 @@ export default async function AccueilPage() {
 
   // Ces deux requetes sont independantes : les enchainer doublait inutilement le
   // temps d'attente a chaque affichage de l'accueil (retour "latence" du 20/07).
-  const [{ data: semaines }, { count: nbElevesCount }] = await Promise.all([
+  const [{ data: semaines }, { count: nbElevesCount }, { data: methodes }] = await Promise.all([
     supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
     supabase.from('eleves').select('id', { count: 'exact', head: true }).eq('class_id', classe.id),
+    supabase.from('methodes').select('matiere, manuel').eq('class_id', classe.id).order('created_at'),
   ])
+
+  // Noms des manuels importes, affiches sur la carte "Mes méthodes" : sans eux
+  // l'enseignante ne sait pas d'ou vient sa progression (retour du 20/07).
+  const nomsManuels = (methodes ?? [])
+    .map(m => (m.manuel as string | null)?.trim())
+    .filter((n): n is string => !!n)
 
   // On ne veut qu'un NOMBRE : `head: true` renvoie le compte sans rapatrier les
   // lignes, alors qu'on chargeait auparavant toutes les acquisitions de l'annee.
@@ -188,7 +195,10 @@ export default async function AccueilPage() {
       <OutilsIaSection
         outils={[
           { href: courante ? `/semaine/${courante.id}` : '/planning', emoji: '📋', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
-          { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression', sous: 'L’IA lit ton manuel et construit ta progression' },
+          { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression',
+            sous: nomsManuels.length
+              ? `📕 ${nomsManuels.join(' · ')}`
+              : 'L’IA lit ton manuel et construit ta progression' },
           { href: '/competences', emoji: '🎯', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
           { href: '/programme', emoji: '🧩', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
         ]}>
