@@ -69,20 +69,30 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
   endroit** de la page (ancre `#methodes`). → FAIT : `id="methodes"` sur la Section.
 - [x] **Nouvelle carte "Emploi du temps"** sur l'accueil (accès rapide).
   → FAIT : carte vers `/parametres#edt` (ancre `id="edt"` ajoutée).
-- [ ] **Bouton "Mon assistant"** toujours visible : ouvre le chat + l'import.
-  (REPORTÉ au chantier « outil IA centralisé » §2 : le bouton n'a de sens qu'avec
-  le panneau assistant + import PDF derrière.)
+- [x] **Bouton "Mon assistant"** toujours visible : ouvre le chat + l'import.
+  → FAIT : `assistant/AssistantFlottant.tsx` monté dans le layout applicatif,
+  donc présent sur tous les écrans. Réutilise `IaImport` (import PDF/texte + chat).
 - [x] **Carte "Configuration initiale"** sur l'accueil (option importante).
   → FAIT : carte vers `/setup`, désormais visible en permanence.
 
 ## 2. Fonctionnalités IA & Importation
 
-- [ ] **L'IA ne lit pas les PDF** (seulement le texte collé dans le chat). Besoin
+- [x] **L'IA ne lit pas les PDF** (seulement le texte collé dans le chat). Besoin
   d'un **outil IA centralisé, toujours accessible**, capable d'**importer des
   plannings PDF** et de **modifier ceux en cours**.
-- [ ] **Lecture fidèle des tableaux PDF** : les programmes téléchargés sont souvent
+  → FAIT : bouton « Mon assistant » partout + import PDF + chat de correction.
+- [x] **Lecture fidèle des tableaux PDF** : les programmes téléchargés sont souvent
   des tableaux PDF ; l'outil doit les lire précisément et **copier exactement** le
   contenu. (cf. `exemple de planning p1.pdf` : tableau Semaine × Jour × séances.)
+  → FAIT. **Cause racine** : `pdf-client.ts` concaténait les fragments pdf.js avec
+  `join(' ')`, ce qui détruisait lignes et colonnes avant même l'appel au modèle.
+  Correction : les PDF (< 4 Mo) partent tels quels en bloc `document`, le modèle
+  voit la mise en page ; au-delà, repli sur une extraction qui reconstruit la
+  géométrie (séparateur « | » entre cellules).
+  **Vérifié en réel** sur `exemple de planning p1.pdf` : 7 semaines extraites en
+  4,9 s. RESTE À FAIRE : le prompt français est centré graphèmes, il ne récupère
+  donc pas encore les séances détaillées (LC, vocabulaire, geste d'écriture, PDE,
+  grammaire, fluence) présentes dans le tableau. C'est l'objet du §5 Périodes.
 
 ## 3. Performance
 
