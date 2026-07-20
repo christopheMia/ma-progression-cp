@@ -50,8 +50,13 @@ export default function AssistantFlottant({ hasClass, prenom }: {
 
   return (
     <>
+      {/* Sur iPhone, la barre du navigateur et l'indicateur d'accueil mangent le
+          bas de l'ecran : `env(safe-area-inset-bottom)` remonte le bouton
+          au-dessus de cette zone. Sans ca, il peut etre partiellement ou
+          totalement masque sur mobile. z-40 pour passer devant tout le contenu. */}
       <button type="button" onClick={() => setOuvert(true)} aria-expanded={ouvert}
-        className="fixed bottom-5 right-5 z-30 flex items-center gap-2 rounded-full bg-violet-600 text-white shadow-lg px-5 py-3 font-semibold hover:bg-violet-700 focus-visible:ring-4 focus-visible:ring-violet-300 transition-colors print:hidden">
+        style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
+        className="fixed right-4 sm:right-5 z-40 flex items-center gap-2 rounded-full bg-violet-600 text-white shadow-lg px-4 sm:px-5 py-3 font-semibold hover:bg-violet-700 focus-visible:ring-4 focus-visible:ring-violet-300 transition-colors print:hidden">
         <span aria-hidden="true" className="text-lg">🤖</span>
         Mon assistant
       </button>

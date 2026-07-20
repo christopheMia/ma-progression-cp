@@ -21,7 +21,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <HeaderNav hasClass={!!classe} />
         </div>
       </header>
-      <main className="max-w-5xl mx-auto px-6 py-8">{children}</main>
+      {/* pb-28 : reserve la place du bouton flottant "Mon assistant", sinon il
+          recouvre le dernier element de la page sur petit ecran. */}
+      <main className="max-w-5xl mx-auto px-6 pt-8 pb-28">{children}</main>
       {/* Outil IA central : accessible depuis TOUS les ecrans (retour du 20/07). */}
       <AssistantFlottant
         hasClass={!!classe}
