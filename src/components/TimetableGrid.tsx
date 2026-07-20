@@ -63,6 +63,15 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
       c.jour === jour && c.heure_debut === debut && c.heure_fin === fin ? { ...c, [field]: !c[field] } : c))
   }
 
+  /** Applique le fond, la couleur de texte et la mise en forme d'une case à
+   *  TOUTES les cases de la même matière (gain de temps demandé par l'enseignant). */
+  function appliquerMemeMatiere(src: Creneau) {
+    setCreneaux(prev => prev.map(c =>
+      c.matiere && c.matiere === src.matiere
+        ? { ...c, couleur: src.couleur, couleur_texte: src.couleur_texte, texte_gras: src.texte_gras, texte_italique: src.texte_italique, texte_souligne: src.texte_souligne }
+        : c))
+  }
+
   function toggleRoutine(debut: string, fin: string) {
     setCreneaux(prev => {
       const isRoutine = prev.some(c => c.heure_debut === debut && c.heure_fin === fin && c.type === 'routine')
@@ -181,6 +190,11 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                               className={`text-[11px] leading-none px-1 rounded italic ${c.texte_italique ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>i</button>
                             <button type="button" title="Souligné" onClick={() => toggleStyle(jour, debut, fin, 'texte_souligne')}
                               className={`text-[11px] leading-none px-1 rounded underline ${c.texte_souligne ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>U</button>
+                            {c.matiere && (
+                              <button type="button" title={`Appliquer ce style à toutes les cases « ${c.matiere} »`}
+                                onClick={() => appliquerMemeMatiere(c)}
+                                className="text-[11px] leading-none px-1 rounded text-violet-600 hover:bg-violet-100">🖌️</button>
+                            )}
                           </div>
                         )}
                       </td>
