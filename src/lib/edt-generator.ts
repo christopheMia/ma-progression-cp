@@ -159,18 +159,31 @@ export function expliquerGenerationEdt(codeRenforce = true): ExplicationEdt {
   const trouver = (prefixe: string, file: Segment[]) =>
     file.find(s => s.matiere.startsWith(prefixe))?.minutes ?? 0
 
-  const codeTotal = codeMatinQuotidien * nbJours
-  const langue = trouver('Etude de la langue', fileMatin)
+  // "Retenu" = ce qui est REELLEMENT pose dans la grille, mesure sur l'emploi du
+  // temps genere, et non le volume theorique d'avant placement. Les contraintes
+  // (plafonds journaliers, seances d'une heure) peuvent decaler quelques minutes
+  // d'une matiere a l'autre : la fenetre doit montrer le resultat, pas l'intention.
+  const grille = genererEdtCP(codeRenforce)
+  const placees = (prefixe: string) => grille
+    .filter(c => c.type !== 'routine' && c.matiere.startsWith(prefixe))
+    .reduce((n, c) => {
+      const [hd, md] = c.heure_debut.split(':').map(Number)
+      const [hf, mf] = c.heure_fin.split(':').map(Number)
+      return n + (hf * 60 + mf) - (hd * 60 + md)
+    }, 0)
+
+  const codeTotal = placees('Etude du code')
+  const langue = placees('Etude de la langue')
 
   const volumes: LigneVolume[] = [
     { matiere: 'Français : étude du code (lecture, graphèmes)', officiel: null, retenu: codeTotal },
     { matiere: 'Français : étude de la langue', officiel: null, retenu: langue },
     { matiere: 'Français (total)', officiel: VOLUME_OFFICIEL_CP.francais, retenu: codeTotal + langue },
-    { matiere: 'Mathématiques', officiel: VOLUME_OFFICIEL_CP.maths, retenu: trouver('Mathematiques', fileMatin) },
-    { matiere: 'Questionner le monde (dont EMC)', officiel: VOLUME_OFFICIEL_CP.qlm, retenu: trouver('Questionner', fileAprem) },
-    { matiere: 'Éducation physique et sportive', officiel: VOLUME_OFFICIEL_CP.eps, retenu: trouver('Education physique', fileAprem) },
-    { matiere: 'Enseignements artistiques', officiel: VOLUME_OFFICIEL_CP.arts, retenu: trouver('Enseignements artistiques', fileAprem) },
-    { matiere: 'Langue vivante (anglais)', officiel: VOLUME_OFFICIEL_CP.langueVivante, retenu: trouver('Langue vivante', fileAprem) },
+    { matiere: 'Mathématiques', officiel: VOLUME_OFFICIEL_CP.maths, retenu: placees('Mathematiques') },
+    { matiere: 'Questionner le monde (dont EMC)', officiel: VOLUME_OFFICIEL_CP.qlm, retenu: placees('Questionner') },
+    { matiere: 'Éducation physique et sportive', officiel: VOLUME_OFFICIEL_CP.eps, retenu: placees('Education physique') },
+    { matiere: 'Enseignements artistiques', officiel: VOLUME_OFFICIEL_CP.arts, retenu: placees('Enseignements artistiques') },
+    { matiere: 'Langue vivante (anglais)', officiel: VOLUME_OFFICIEL_CP.langueVivante, retenu: placees('Langue vivante') },
   ]
 
   const plage = (p: { debut: number; fin: number }) => `${hhmm(p.debut)} - ${hhmm(p.fin)}`
@@ -197,74 +210,14 @@ export function expliquerGenerationEdt(codeRenforce = true): ExplicationEdt {
         ? `Code renforcé CP : un bloc d'étude du code est garanti CHAQUE matin (${formatDuree(codeMatinQuotidien)}), en tout début de matinée.`
         : 'Code renforcé désactivé : le français n\'est pas scindé en code / étude de la langue.',
       'Priorité au matin pour les apprentissages fondamentaux : code, puis mathématiques, puis étude de la langue.',
-      `EPS, arts et histoire : jamais plus de ${formatDuree(MINUTES_MAX_JOUR_SEANCE_COURTE)} sur une même journée, pour que ces matières reviennent souvent plutôt qu'en un seul gros bloc.`,
-      `Matières générales (français, mathématiques, questionner le monde, langue vivante) : jamais plus de ${formatDuree(MINUTES_MAX_JOUR_GENERAL)} sur une même journée.`,
-      'Si une contrainte empêche de remplir un créneau, il reste vide et modifiable plutôt que d\'enfreindre la règle.',
+      `Une séance occupe un créneau entier (${formatDuree(CADRE.plages[0].fin - CADRE.plages[0].debut)}) : jamais de morceaux de 15 ou 30 minutes, chaque séance dépasse l'heure pleine.`,
+      'Une matière n\'apparaît au plus qu\'une fois par jour : jamais 2 h de la même matière le même jour, et les matières reviennent souvent dans la semaine plutôt qu\'en un seul gros bloc.',
+      'Le nombre de séances de chaque matière est proportionnel à son volume officiel. Le découpage en séances entières décale légèrement certains volumes : le tableau ci-dessus montre le résultat réel.',
       "L'après-midi reçoit le reste : questionner le monde, EPS, arts, langue vivante.",
       'Tous les matins de la semaine sont remplis avant les après-midi, pour qu\'une matière du matin ne déborde pas trop tôt.',
       'Le résultat est 100 % modifiable ensuite : horaires, matières, couleurs.',
     ],
   }
-}
-
-// ── Contraintes de repartition (regles validees avec Christophe le 20/07) ────
-//
-// Une matiere ne doit pas s'empiler sur une meme journee : mieux vaut 1 h d'EPS
-// quatre fois dans la semaine que 2 h le mardi et rien ailleurs. Les matieres a
-// seance courte (EPS, arts, histoire) sont plafonnees plus bas que les matieres
-// generales, conformement a la pratique en CP.
-
-/** Plafond quotidien des matieres a seance courte (EPS, arts, histoire). */
-export const MINUTES_MAX_JOUR_SEANCE_COURTE = 60
-/** Plafond quotidien des matieres generales (francais, maths, QLM, langue vivante). */
-export const MINUTES_MAX_JOUR_GENERAL = 120
-
-/** Plafond quotidien applicable a une matiere donnee, en minutes. */
-export function plafondJournalier(matiere: string): number {
-  return /physique|sportive|artistique|histoire/i.test(matiere)
-    ? MINUTES_MAX_JOUR_SEANCE_COURTE
-    : MINUTES_MAX_JOUR_GENERAL
-}
-
-/**
- * Remplit une plage [debut, fin] en tirant des minutes dans la file (mutee),
- * SANS depasser le plafond quotidien de chaque matiere.
- *
- * `placeCeJour` cumule ce qui a deja ete pose dans la journee (matins ET
- * apres-midi confondus, plus le bloc code fixe), donc la contrainte vaut pour la
- * journee entiere et pas seulement pour la demi-journee courante.
- *
- * Si plus aucune matiere ne peut etre posee sans violer une contrainte, on
- * s'arrete et on laisse un blanc : une case vide et editable vaut mieux qu'un
- * emploi du temps qui enfreint la regle demandee.
- */
-function remplirPlage(
-  debut: number,
-  fin: number,
-  file: Segment[],
-  placeCeJour: Map<string, number> = new Map(),
-): { debut: number; fin: number; matiere: string }[] {
-  const out: { debut: number; fin: number; matiere: string }[] = []
-  let curseur = debut
-
-  while (curseur < fin) {
-    // Premiere matiere de la file qui a encore du volume ET de la marge aujourd'hui.
-    const idx = file.findIndex(s =>
-      s.minutes > 0 && (placeCeJour.get(s.matiere) ?? 0) < plafondJournalier(s.matiere))
-    if (idx === -1) break
-
-    const seg = file[idx]
-    const marge = plafondJournalier(seg.matiere) - (placeCeJour.get(seg.matiere) ?? 0)
-    const prise = Math.min(fin - curseur, seg.minutes, marge)
-    if (prise <= 0) break
-
-    out.push({ debut: curseur, fin: curseur + prise, matiere: seg.matiere })
-    curseur += prise
-    seg.minutes -= prise
-    placeCeJour.set(seg.matiere, (placeCeJour.get(seg.matiere) ?? 0) + prise)
-    if (seg.minutes <= 0) file.splice(idx, 1)
-  }
-  return out
 }
 
 function creneau(jour: string, debut: number, fin: number, matiere: string,
@@ -282,81 +235,188 @@ function creneau(jour: string, debut: number, fin: number, matiere: string,
 
 type Bloc = { debut: number; fin: number; matiere: string; type: 'cours' | 'routine' }
 
+/** Nom de la matiere du bloc code garanti chaque matin. */
+const MATIERE_CODE = 'Etude du code (lecture, graphemes)'
+
+/**
+ * Repartit un nombre entier de SEANCES par matiere, au prorata du volume, par la
+ * methode des plus forts restes, sans qu'une matiere depasse `maxParMatiere`
+ * (= une seance par jour au maximum).
+ */
+export function repartirSeances(
+  demandes: { matiere: string; minutes: number }[],
+  nbSeances: number,
+  maxParMatiere: number,
+): { matiere: string; seances: number }[] {
+  const total = demandes.reduce((n, d) => n + d.minutes, 0)
+  if (!demandes.length || total <= 0 || nbSeances <= 0) return []
+
+  const exact = demandes.map(d => ({
+    matiere: d.matiere,
+    ideal: (d.minutes / total) * nbSeances,
+  }))
+  const alloc = exact.map(e => ({
+    matiere: e.matiere,
+    seances: Math.min(maxParMatiere, Math.floor(e.ideal)),
+    reste: e.ideal - Math.floor(e.ideal),
+  }))
+
+  // Distribution des seances restantes aux plus forts restes, en respectant le
+  // plafond d'une seance par jour.
+  let restantes = nbSeances - alloc.reduce((n, a) => n + a.seances, 0)
+  const parReste = [...alloc].sort((a, b) => b.reste - a.reste)
+  let progresse = true
+  while (restantes > 0 && progresse) {
+    progresse = false
+    for (const a of parReste) {
+      if (restantes <= 0) break
+      if (a.seances >= maxParMatiere) continue
+      a.seances++
+      restantes--
+      progresse = true
+    }
+  }
+
+  return alloc.map(a => ({ matiere: a.matiere, seances: a.seances }))
+}
+
 /**
  * Genere l'emploi du temps CP complet (une ligne par jour x creneau), pret a
- * inserer dans `emploi_du_temps`. codeRenforce=true garantit un bloc code chaque
- * matin (defaut valide avec Christophe).
+ * inserer dans `emploi_du_temps`.
  *
- * Placement en DEUX passes pour respecter la priorite matin : on remplit d'abord
- * TOUS les matins de la semaine (bloc code garanti + maths + langue), puis TOUS
- * les apres-midis (reste de la langue debordante + QLM, EPS, arts, LV). Sinon
- * une matiere du matin (maths) fuirait dans l'apres-midi d'un jour avant d'avoir
- * rempli les matins des jours suivants.
+ * Principe : UNE PLAGE = UNE SEANCE = UNE SEULE MATIERE.
+ * Les plages du cadre durent 1 h 15, donc chaque seance depasse l'heure pleine
+ * (demande du 20/07 : "il faut au moins des heures completes"). On ne decoupe
+ * plus une plage en morceaux de 15 ou 30 minutes, ce qui produisait des emplois
+ * du temps hachés et illisibles.
+ *
+ * Contraintes respectees par construction :
+ *  - une matiere n'apparait au plus qu'UNE fois par jour (donc jamais 2 h de la
+ *    meme matiere le meme jour, pour aucune matiere),
+ *  - le bloc code est garanti en tout debut de chaque matinee,
+ *  - le nombre de seances de chaque matiere est proportionnel a son volume
+ *    horaire officiel (methode des plus forts restes),
+ *  - priorite au matin pour les maths et l'etude de la langue.
  */
 export function genererEdtCP(codeRenforce = true): CreneauTrame[] {
-  const { codeMatinQuotidien, fileMatin, fileAprem } = repartirVolumes(codeRenforce)
-  const plageA = CADRE.plages[0] // 1er creneau du matin (bloc code)
+  const { fileMatin, fileAprem } = repartirVolumes(codeRenforce)
   const plagesMatin = CADRE.plages.filter(x => x.periode === 'matin')
   const plagesAprem = CADRE.plages.filter(x => x.periode === 'aprem')
+  const nbJours = JOURS_EDT.length
 
-  const matinParJour: Record<string, Bloc[]> = {}
-  const apremParJour: Record<string, Bloc[]> = {}
-  // Cumul par journee, partage entre la passe matin et la passe apres-midi :
-  // le plafond quotidien vaut pour la journee entiere.
-  const placeParJour: Record<string, Map<string, number>> =
-    Object.fromEntries(JOURS_EDT.map(j => [j, new Map<string, number>()]))
+  // Le 1er creneau du matin est reserve au bloc code garanti.
+  const plagesMatinLibres = codeRenforce ? plagesMatin.slice(1) : plagesMatin
+  const nbSeancesLibres = (plagesMatinLibres.length + plagesAprem.length) * nbJours
 
-  // ── Passe 1 : tous les matins ──────────────────────────────────────────────
-  for (const jour of JOURS_EDT) {
-    const blocs: Bloc[] = []
-    const place = placeParJour[jour]
-    for (const p of plagesMatin) {
-      if (codeRenforce && p.debut === plageA.debut) {
-        const finCode = Math.min(p.fin, p.debut + codeMatinQuotidien)
-        const matiereCode = 'Etude du code (lecture, graphemes)'
-        blocs.push({ debut: p.debut, fin: finCode, matiere: matiereCode, type: 'cours' })
-        // Le bloc code fixe compte dans le quota du jour.
-        place.set(matiereCode, (place.get(matiereCode) ?? 0) + (finCode - p.debut))
-        if (finCode < p.fin) {
-          for (const s of remplirPlage(finCode, p.fin, fileMatin, place))
-            blocs.push({ ...s, type: 'cours' })
-        }
-      } else {
-        for (const s of remplirPlage(p.debut, p.fin, fileMatin, place))
-          blocs.push({ ...s, type: 'cours' })
-      }
+  const demandes = [...fileMatin, ...fileAprem].filter(s => s.minutes > 0)
+  const allocation = repartirSeances(demandes, nbSeancesLibres, nbJours)
+
+  // Reste a placer, par matiere.
+  const restant = new Map<string, number>()
+  for (const a of allocation) if (a.seances > 0) restant.set(a.matiere, a.seances)
+  const prefereMatin = new Set(fileMatin.map(s => s.matiere))
+
+  /**
+   * Choisit la matiere a poser sur une seance donnee : jamais deux fois la meme
+   * matiere dans la journee, priorite a celle qui a le plus de seances restantes
+   * (pour etaler le volume sur toute la semaine), et priorite matin/apres-midi
+   * quand c'est possible.
+   */
+  function choisir(
+    dejaParJour: Record<string, Set<string>>,
+    jour: string,
+    joursRestants: string[],
+    matin: boolean,
+  ): string | null {
+    const candidats = [...restant.entries()]
+      .filter(([m, n]) => n > 0 && !dejaParJour[jour].has(m))
+    if (!candidats.length) return null
+
+    // URGENCE : une matiere ne pouvant plus aller que sur peu de jours doit
+    // passer avant une matiere encore placable partout. Sans ce critere, les
+    // matieres d'apres-midi monopolisaient les creneaux et il restait une seance
+    // de maths sans jour disponible (elle etait alors perdue).
+    const urgence = ([m, n]: [string, number]) => {
+      const possibles = joursRestants.filter(j => !dejaParJour[j].has(m)).length
+      return n / Math.max(1, possibles)
     }
-    matinParJour[jour] = blocs
+    // La preference matin / apres-midi devient un simple departage, plus un
+    // filtre : elle ne doit jamais faire perdre une seance.
+    const bonMoment = ([m]: [string, number]) => (prefereMatin.has(m) === matin ? 1 : 0)
+
+    candidats.sort((a, b) =>
+      urgence(b) - urgence(a) ||
+      bonMoment(b) - bonMoment(a) ||
+      b[1] - a[1] ||
+      a[0].localeCompare(b[0]))
+    return candidats[0][0]
   }
 
-  // Ce qui reste dans fileMatin (langue debordante) part en tete des apres-midi.
-  const fileApremComplete = fileMatin.filter(s => s.minutes > 0).concat(fileAprem)
-
-  // ── Passe 2 : tous les apres-midi ──────────────────────────────────────────
-  for (const jour of JOURS_EDT) {
-    const blocs: Bloc[] = []
-    const place = placeParJour[jour]
-    for (const p of plagesAprem) {
-      for (const s of remplirPlage(p.debut, p.fin, fileApremComplete, place))
-        blocs.push({ ...s, type: 'cours' })
-    }
-    apremParJour[jour] = blocs
+  function poser(matiere: string) {
+    const n = restant.get(matiere) ?? 0
+    if (n <= 1) restant.delete(matiere)
+    else restant.set(matiere, n - 1)
   }
 
-  // ── Assemblage chronologique par jour + numerotation ordre ─────────────────
+  // ── Affectation en DEUX passes ──────────────────────────────────────────────
+  // Jour par jour, on bloquait : quand les matieres d'apres-midi etaient epuisees
+  // pour la journee, un creneau restait vide alors qu'il restait des maths a
+  // placer. On affecte donc d'abord TOUS les matins de la semaine, puis TOUS les
+  // apres-midi avec la connaissance complete de ce qui reste.
+  const dejaAujourdhui: Record<string, Set<string>> =
+    Object.fromEntries(JOURS_EDT.map(j => [j, new Set<string>()]))
+  const matinAffecte: Record<string, string[]> = Object.fromEntries(JOURS_EDT.map(j => [j, []]))
+  const apremAffecte: Record<string, string[]> = Object.fromEntries(JOURS_EDT.map(j => [j, []]))
+
+  if (codeRenforce) for (const jour of JOURS_EDT) dejaAujourdhui[jour].add(MATIERE_CODE)
+
+  JOURS_EDT.forEach((jour, idxJour) => {
+    const joursRestants = JOURS_EDT.slice(idxJour)
+    for (let i = 0; i < plagesMatinLibres.length; i++) {
+      const m = choisir(dejaAujourdhui, jour, joursRestants, true)
+      if (!m) continue
+      matinAffecte[jour].push(m)
+      dejaAujourdhui[jour].add(m)
+      poser(m)
+    }
+  })
+  JOURS_EDT.forEach((jour, idxJour) => {
+    const joursRestants = JOURS_EDT.slice(idxJour)
+    for (let i = 0; i < plagesAprem.length; i++) {
+      const m = choisir(dejaAujourdhui, jour, joursRestants, false)
+      if (!m) continue
+      apremAffecte[jour].push(m)
+      dejaAujourdhui[jour].add(m)
+      poser(m)
+    }
+  })
+
   const out: CreneauTrame[] = []
   let ordre = 0
   const push = (jour: string, b: Bloc) =>
     out.push(creneau(jour, b.debut, b.fin, b.matiere, b.type, ordre++))
 
-  // L'ordre de push n'importe pas : on trie par (jour, heure) juste apres.
   for (const jour of JOURS_EDT) {
     push(jour, { ...CADRE.rituelMatin, matiere: 'Rituels du jour (accueil, appel, date)', type: 'routine' })
-    for (const b of matinParJour[jour]) push(jour, b)
+
+    if (codeRenforce) {
+      const p = plagesMatin[0]
+      push(jour, { debut: p.debut, fin: p.fin, matiere: MATIERE_CODE, type: 'cours' })
+    }
+    matinAffecte[jour].forEach((m, i) => {
+      const p = plagesMatinLibres[i]
+      push(jour, { debut: p.debut, fin: p.fin, matiere: m, type: 'cours' })
+    })
+
     push(jour, { ...CADRE.recreMatin, matiere: 'Recreation', type: 'routine' })
     push(jour, { ...CADRE.dejeuner, matiere: 'Pause dejeuner / cantine', type: 'routine' })
     push(jour, { ...CADRE.tempsCalme, matiere: 'Temps calme (lecture)', type: 'cours' })
-    for (const b of apremParJour[jour]) push(jour, b)
+
+    apremAffecte[jour].forEach((m, i) => {
+      const p = plagesAprem[i]
+      push(jour, { debut: p.debut, fin: p.fin, matiere: m, type: 'cours' })
+    })
+
     push(jour, { ...CADRE.recreAprem, matiere: 'Recreation', type: 'routine' })
   }
 

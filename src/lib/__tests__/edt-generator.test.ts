@@ -54,10 +54,25 @@ describe('genererEdtCP', () => {
     }
   })
 
-  test('priorite matin : maths est place le matin', () => {
+  // Depuis le passage a "une seance = un creneau entier", maths et etude de la
+  // langue totalisent 6 seances pour seulement 4 creneaux libres le matin : une
+  // seance de maths tombe donc forcement l'apres-midi. La garantie reelle n'est
+  // pas "maths toujours le matin" mais "le matin est reserve aux fondamentaux".
+  test('priorite matin : les creneaux libres du matin vont aux fondamentaux', () => {
+    const matinLibre = edt.filter(c =>
+      c.type === 'cours' &&
+      toMin(c.heure_debut) < 12 * 60 &&
+      !c.matiere.startsWith('Etude du code'))
+    expect(matinLibre.length).toBeGreaterThan(0)
+    expect(matinLibre.every(c =>
+      c.matiere === 'Mathematiques' || c.matiere.startsWith('Etude de la langue'))).toBe(true)
+  })
+
+  test('la majorite des seances de maths reste le matin', () => {
     const maths = edt.filter(c => c.matiere === 'Mathematiques')
     expect(maths.length).toBeGreaterThan(0)
-    expect(maths.every(c => toMin(c.heure_debut) < 12 * 60)).toBe(true)
+    const leMatin = maths.filter(c => toMin(c.heure_debut) < 12 * 60).length
+    expect(leMatin * 2).toBeGreaterThanOrEqual(maths.length)
   })
 
   test('le volume de cours effectif est proche de 20h (1200 min)', () => {
