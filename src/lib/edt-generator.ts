@@ -197,6 +197,9 @@ export function expliquerGenerationEdt(codeRenforce = true): ExplicationEdt {
         ? `Code renforcé CP : un bloc d'étude du code est garanti CHAQUE matin (${formatDuree(codeMatinQuotidien)}), en tout début de matinée.`
         : 'Code renforcé désactivé : le français n\'est pas scindé en code / étude de la langue.',
       'Priorité au matin pour les apprentissages fondamentaux : code, puis mathématiques, puis étude de la langue.',
+      `EPS, arts et histoire : jamais plus de ${formatDuree(MINUTES_MAX_JOUR_SEANCE_COURTE)} sur une même journée, pour que ces matières reviennent souvent plutôt qu'en un seul gros bloc.`,
+      `Matières générales (français, mathématiques, questionner le monde, langue vivante) : jamais plus de ${formatDuree(MINUTES_MAX_JOUR_GENERAL)} sur une même journée.`,
+      'Si une contrainte empêche de remplir un créneau, il reste vide et modifiable plutôt que d\'enfreindre la règle.',
       "L'après-midi reçoit le reste : questionner le monde, EPS, arts, langue vivante.",
       'Tous les matins de la semaine sont remplis avant les après-midi, pour qu\'une matière du matin ne déborde pas trop tôt.',
       'Le résultat est 100 % modifiable ensuite : horaires, matières, couleurs.',
@@ -204,25 +207,63 @@ export function expliquerGenerationEdt(codeRenforce = true): ExplicationEdt {
   }
 }
 
-/** Remplit une plage [debut, fin] en tirant des minutes dans la file (mutee). */
+// ── Contraintes de repartition (regles validees avec Christophe le 20/07) ────
+//
+// Une matiere ne doit pas s'empiler sur une meme journee : mieux vaut 1 h d'EPS
+// quatre fois dans la semaine que 2 h le mardi et rien ailleurs. Les matieres a
+// seance courte (EPS, arts, histoire) sont plafonnees plus bas que les matieres
+// generales, conformement a la pratique en CP.
+
+/** Plafond quotidien des matieres a seance courte (EPS, arts, histoire). */
+export const MINUTES_MAX_JOUR_SEANCE_COURTE = 60
+/** Plafond quotidien des matieres generales (francais, maths, QLM, langue vivante). */
+export const MINUTES_MAX_JOUR_GENERAL = 120
+
+/** Plafond quotidien applicable a une matiere donnee, en minutes. */
+export function plafondJournalier(matiere: string): number {
+  return /physique|sportive|artistique|histoire/i.test(matiere)
+    ? MINUTES_MAX_JOUR_SEANCE_COURTE
+    : MINUTES_MAX_JOUR_GENERAL
+}
+
+/**
+ * Remplit une plage [debut, fin] en tirant des minutes dans la file (mutee),
+ * SANS depasser le plafond quotidien de chaque matiere.
+ *
+ * `placeCeJour` cumule ce qui a deja ete pose dans la journee (matins ET
+ * apres-midi confondus, plus le bloc code fixe), donc la contrainte vaut pour la
+ * journee entiere et pas seulement pour la demi-journee courante.
+ *
+ * Si plus aucune matiere ne peut etre posee sans violer une contrainte, on
+ * s'arrete et on laisse un blanc : une case vide et editable vaut mieux qu'un
+ * emploi du temps qui enfreint la regle demandee.
+ */
 function remplirPlage(
   debut: number,
   fin: number,
   file: Segment[],
+  placeCeJour: Map<string, number> = new Map(),
 ): { debut: number; fin: number; matiere: string }[] {
   const out: { debut: number; fin: number; matiere: string }[] = []
   let curseur = debut
-  while (curseur < fin && file.length > 0) {
-    const seg = file[0]
-    if (seg.minutes <= 0) { file.shift(); continue }
-    const dispo = fin - curseur
-    const prise = Math.min(dispo, seg.minutes)
+
+  while (curseur < fin) {
+    // Premiere matiere de la file qui a encore du volume ET de la marge aujourd'hui.
+    const idx = file.findIndex(s =>
+      s.minutes > 0 && (placeCeJour.get(s.matiere) ?? 0) < plafondJournalier(s.matiere))
+    if (idx === -1) break
+
+    const seg = file[idx]
+    const marge = plafondJournalier(seg.matiere) - (placeCeJour.get(seg.matiere) ?? 0)
+    const prise = Math.min(fin - curseur, seg.minutes, marge)
+    if (prise <= 0) break
+
     out.push({ debut: curseur, fin: curseur + prise, matiere: seg.matiere })
     curseur += prise
     seg.minutes -= prise
-    if (seg.minutes <= 0) file.shift()
+    placeCeJour.set(seg.matiere, (placeCeJour.get(seg.matiere) ?? 0) + prise)
+    if (seg.minutes <= 0) file.splice(idx, 1)
   }
-  // Si la file est vide mais qu'il reste du temps, on laisse un blanc editable.
   return out
 }
 
@@ -260,20 +301,28 @@ export function genererEdtCP(codeRenforce = true): CreneauTrame[] {
 
   const matinParJour: Record<string, Bloc[]> = {}
   const apremParJour: Record<string, Bloc[]> = {}
+  // Cumul par journee, partage entre la passe matin et la passe apres-midi :
+  // le plafond quotidien vaut pour la journee entiere.
+  const placeParJour: Record<string, Map<string, number>> =
+    Object.fromEntries(JOURS_EDT.map(j => [j, new Map<string, number>()]))
 
   // ── Passe 1 : tous les matins ──────────────────────────────────────────────
   for (const jour of JOURS_EDT) {
     const blocs: Bloc[] = []
+    const place = placeParJour[jour]
     for (const p of plagesMatin) {
       if (codeRenforce && p.debut === plageA.debut) {
         const finCode = Math.min(p.fin, p.debut + codeMatinQuotidien)
-        blocs.push({ debut: p.debut, fin: finCode, matiere: 'Etude du code (lecture, graphemes)', type: 'cours' })
+        const matiereCode = 'Etude du code (lecture, graphemes)'
+        blocs.push({ debut: p.debut, fin: finCode, matiere: matiereCode, type: 'cours' })
+        // Le bloc code fixe compte dans le quota du jour.
+        place.set(matiereCode, (place.get(matiereCode) ?? 0) + (finCode - p.debut))
         if (finCode < p.fin) {
-          for (const s of remplirPlage(finCode, p.fin, fileMatin))
+          for (const s of remplirPlage(finCode, p.fin, fileMatin, place))
             blocs.push({ ...s, type: 'cours' })
         }
       } else {
-        for (const s of remplirPlage(p.debut, p.fin, fileMatin))
+        for (const s of remplirPlage(p.debut, p.fin, fileMatin, place))
           blocs.push({ ...s, type: 'cours' })
       }
     }
@@ -286,8 +335,9 @@ export function genererEdtCP(codeRenforce = true): CreneauTrame[] {
   // ── Passe 2 : tous les apres-midi ──────────────────────────────────────────
   for (const jour of JOURS_EDT) {
     const blocs: Bloc[] = []
+    const place = placeParJour[jour]
     for (const p of plagesAprem) {
-      for (const s of remplirPlage(p.debut, p.fin, fileApremComplete))
+      for (const s of remplirPlage(p.debut, p.fin, fileApremComplete, place))
         blocs.push({ ...s, type: 'cours' })
     }
     apremParJour[jour] = blocs
