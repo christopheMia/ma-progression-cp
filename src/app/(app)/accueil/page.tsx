@@ -41,21 +41,28 @@ export default async function AccueilPage() {
     )
   }
 
-  const { data: semaines } = await supabase
-    .from('semaines').select('*').eq('class_id', classe.id).order('numero')
-  const { data: eleves } = await supabase.from('eleves').select('id').eq('class_id', classe.id)
+  // Ces deux requetes sont independantes : les enchainer doublait inutilement le
+  // temps d'attente a chaque affichage de l'accueil (retour "latence" du 20/07).
+  const [{ data: semaines }, { count: nbElevesCount }] = await Promise.all([
+    supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
+    supabase.from('eleves').select('id', { count: 'exact', head: true }).eq('class_id', classe.id),
+  ])
 
+  // On ne veut qu'un NOMBRE : `head: true` renvoie le compte sans rapatrier les
+  // lignes, alors qu'on chargeait auparavant toutes les acquisitions de l'annee.
   const semaineIds = (semaines ?? []).map(s => s.id)
-  const { data: acquis } = semaineIds.length
-    ? await supabase.from('acquisitions').select('id').eq('acquis', true).in('semaine_id', semaineIds)
-    : { data: [] }
+  const { count: acquisBrut } = semaineIds.length
+    ? await supabase.from('acquisitions')
+        .select('id', { count: 'exact', head: true })
+        .eq('acquis', true).in('semaine_id', semaineIds)
+    : { count: 0 }
 
   const total = semaines?.length ?? 0
-  const nbEleves = eleves?.length ?? 0
+  const nbEleves = nbElevesCount ?? 0
   const courante = semaineEnCours(semaines ?? [])
   const totalGraphemes = (semaines ?? []).reduce((n, s) => n + s.graphemes.length, 0)
   const possible = totalGraphemes * nbEleves
-  const acquisCount = acquis?.length ?? 0
+  const acquisCount = acquisBrut ?? 0
   const aujourdhui = format(new Date(), 'EEEE d MMMM', { locale: fr })
   const prenom = (classe.prenom_enseignant ?? '').trim()
 
