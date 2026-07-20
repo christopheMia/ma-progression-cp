@@ -52,9 +52,23 @@ export default function IaImport({
     if (!files || files.length === 0) return
     setError(null); setLoading(true); setProgression(null)
     try {
-      // Extraction du texte DANS le navigateur → on n'envoie que le texte (léger).
+      const liste = Array.from(files)
+      const total = liste.reduce((n, f) => n + f.size, 0)
+
+      // Voie HAUTE FIDÉLITÉ : on envoie les PDF tels quels, l'IA lit alors la
+      // mise en page (tableaux, lignes, colonnes) et non un texte aplati.
+      // Plafond ≈ limite du corps de requête serverless Vercel (~4,5 Mo).
+      if (total <= 4 * 1024 * 1024) {
+        const form = new FormData()
+        for (const file of liste) form.append('pdf', file)
+        await lancerImport(form)
+        return
+      }
+
+      // Repli pour les gros PDF : extraction du texte DANS le navigateur, en
+      // conservant la structure des tableaux (colonnes séparées par « | »).
       const textes: string[] = []
-      for (const file of Array.from(files)) {
+      for (const file of liste) {
         textes.push(await extractPdfText(file))
       }
       const combine = textes.join('\n\n--- fichier suivant ---\n\n')
@@ -129,6 +143,7 @@ export default function IaImport({
             className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer disabled:opacity-50" />
           <p className="text-xs text-gray-500">
             Tu peux déposer plusieurs PDF (ex : les pages de programmation). Inutile d&apos;envoyer le manuel entier.
+            L&apos;IA lit maintenant les <strong>tableaux</strong> en respectant les lignes et les colonnes.
           </p>
           <textarea value={texte} onChange={e => setTexte(e.target.value)} disabled={loading}
             placeholder="…ou collez ici le sommaire du manuel"

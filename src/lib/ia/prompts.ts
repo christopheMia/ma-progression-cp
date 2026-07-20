@@ -47,7 +47,23 @@ Réponds UNIQUEMENT via le format structuré imposé.`
 }
 
 export function userImport(texteManuel: string): string {
-  return `Voici le texte extrait du manuel à analyser :\n\n${texteManuel}`
+  return `Voici le texte extrait du manuel à analyser.
+Il provient d'un PDF : les colonnes d'un tableau sont séparées par « | » et chaque
+ligne du tableau est sur sa propre ligne. Respecte scrupuleusement cette structure
+(une colonne = un jour ou un domaine, une ligne = une semaine ou une séance) et
+recopie EXACTEMENT le contenu des cellules, sans le reformuler.
+
+${texteManuel}`
+}
+
+/** Variante quand le PDF lui-meme est joint au message : le modele voit la mise
+ *  en page (lecture fidele des tableaux), pas seulement du texte aplati. */
+export function userImportDocument(): string {
+  return `Analyse le ou les PDF joints.
+Ce sont des programmations scolaires, souvent présentées sous forme de TABLEAUX
+(par exemple Semaine × Jour × séances). Lis les tableaux cellule par cellule, en
+respectant les lignes et les colonnes, et recopie EXACTEMENT le contenu, sans le
+reformuler ni le résumer. N'invente aucune notion absente du document.`
 }
 
 /** Bilan d'un élève. On ne transmet JAMAIS son prénom : l'IA écrit "[ELEVE]",
