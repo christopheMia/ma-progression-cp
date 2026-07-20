@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
+import { getPeriodesDisponibles, type PeriodeDispo } from '@/lib/actions/progression-periode'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -14,7 +15,9 @@ export default function IaImport({
   prenom?: string
   matiereFixe?: string
   onSelect?: (id: string, progression: ProgressionSemaine[]) => void
-  onSave?: (matiere: string, progression: ProgressionSemaine[]) => Promise<void> | void
+  /** `periode` n'est renseigne que pour un import "planning de periode" : il
+   *  indique sur quelle periode recaler les semaines (sans toucher aux autres). */
+  onSave?: (matiere: string, progression: ProgressionSemaine[], periode?: number) => Promise<void> | void
 }) {
   const [texte, setTexte] = useState('')
   const [matiere, setMatiere] = useState<string>(matiereFixe ?? '')
@@ -29,6 +32,18 @@ export default function IaImport({
   // compréhension, geste d'écriture, fluence…) là où un sommaire de manuel se
   // limite aux notions. Les deux ont besoin de consignes différentes.
   const [mode, setMode] = useState<'manuel' | 'periode'>('manuel')
+  // Periodes reelles de la classe (calees sur son calendrier), pour savoir sur
+  // quelles semaines recaler un planning importe. L'IA numerote toujours 1..N.
+  const [periodes, setPeriodes] = useState<PeriodeDispo[]>([])
+  const [periode, setPeriode] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (mode !== 'periode' || periodes.length) return
+    getPeriodesDisponibles().then(liste => {
+      setPeriodes(liste)
+      setPeriode(p => p ?? liste[0]?.numero ?? null)
+    }).catch(() => setPeriodes([]))
+  }, [mode, periodes.length])
 
   async function lancerImport(form: FormData) {
     form.append('matiere', matiere)
@@ -99,8 +114,9 @@ export default function IaImport({
     if (!progression) return
     if (onSave) {
       setSaving(true)
-      try { await onSave(matiere, progression) }
-      finally { setSaving(false) }
+      try {
+        await onSave(matiere, progression, mode === 'periode' ? (periode ?? undefined) : undefined)
+      } finally { setSaving(false) }
     } else if (onSelect) {
       onSelect('custom', progression)
     }
@@ -163,6 +179,34 @@ export default function IaImport({
               ))}
             </div>
           </fieldset>
+
+          {mode === 'periode' && (
+            periodes.length > 0 ? (
+              <div>
+                <label htmlFor="choix-periode" className="block text-sm font-medium text-gray-700 mb-1">
+                  Quelle période importes-tu ?
+                </label>
+                <select id="choix-periode" value={periode ?? ''} disabled={loading}
+                  onChange={e => setPeriode(Number(e.target.value))}
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white">
+                  {periodes.map(p => (
+                    <option key={p.numero} value={p.numero}>
+                      {p.nom} — semaines {p.premiereSemaine} à {p.premiereSemaine + p.nbSemaines - 1}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Le planning sera calé sur ces semaines. Les autres périodes ne sont pas touchées.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Tes semaines ne sont pas encore rattachées aux périodes. Utilise
+                « Caler sur le calendrier » dans les paramètres, sinon l&apos;import repartira
+                de la semaine 1.
+              </p>
+            )
+          )}
 
           <p className="text-sm text-gray-600">
             {mode === 'periode'

@@ -3,6 +3,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import IaImport from '@/components/setup/IaImport'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
+import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
 import { createMethode, updateSuiviActif, lierCreneaux } from '@/lib/actions/methodes'
 import type { Methode } from '@/types'
 import type { ProgressionSemaine } from '@/data/manuels'
@@ -49,9 +50,17 @@ export default function MethodesEditor({
     })
   }
 
-  async function saveImport(methodeId: string, matiere: string, progression: ProgressionSemaine[]) {
-    await enregistrerProgressionMatiere(matiere, progression)
-    setMessage(`${matiere} enregistré ✓`)
+  async function saveImport(methodeId: string, matiere: string, progression: ProgressionSemaine[], periode?: number) {
+    // Import d'un planning de periode : on recale sur les semaines de cette
+    // periode et on ne touche pas aux autres periodes deja saisies.
+    if (periode) {
+      const { premiereSemaine, derniereSemaine } =
+        await enregistrerProgressionPeriode(matiere, periode, progression)
+      setMessage(`${matiere} · période ${periode} enregistrée (semaines ${premiereSemaine} à ${derniereSemaine}) ✓`)
+    } else {
+      await enregistrerProgressionMatiere(matiere, progression)
+      setMessage(`${matiere} enregistré ✓`)
+    }
     setOuverte(null)
     router.refresh()
   }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import IaImport from '@/components/setup/IaImport'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
+import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
 import type { ProgressionSemaine } from '@/data/manuels'
 
 /**
@@ -29,7 +30,20 @@ export default function AssistantFlottant({ hasClass, prenom }: {
     return () => window.removeEventListener('keydown', onKey)
   }, [ouvert])
 
-  async function sauvegarder(matiere: string, progression: ProgressionSemaine[]) {
+  async function sauvegarder(matiere: string, progression: ProgressionSemaine[], periode?: number) {
+    // Import d'une periode : on ne remplace que ses semaines, les autres periodes
+    // deja saisies restent intactes.
+    if (periode) {
+      const { premiereSemaine, derniereSemaine, debordement } =
+        await enregistrerProgressionPeriode(matiere, periode, progression)
+      setEnregistre(
+        `Période ${periode} « ${matiere} » enregistrée sur les semaines ${premiereSemaine} à ${derniereSemaine} ✅` +
+        (debordement > 0
+          ? ` (${debordement} semaine${debordement > 1 ? 's' : ''} de plus que la période, placée${debordement > 1 ? 's' : ''} juste après)`
+          : '')
+      )
+      return
+    }
     await enregistrerProgressionMatiere(matiere, progression)
     setEnregistre(`Progression « ${matiere} » enregistrée ✅`)
   }
