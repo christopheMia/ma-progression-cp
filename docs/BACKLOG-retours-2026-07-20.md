@@ -114,10 +114,15 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
 
 ## 5. Périodes (docs d'exemple fournis)
 
-- [ ] Exploiter `exemple de planning p1.pdf` : structure réelle d'une **Période 1**
+- [x] Exploiter `exemple de planning p1.pdf` : structure réelle d'une **Période 1**
   en 7 semaines × 4 jours, avec séances (LC, graphèmes, vocabulaire, geste
   d'écriture, PDE, grammaire, fluence…). Modèle pour l'import « 1 doc par période »
   et la génération de progression par période.
+  → FAIT : mode d'import « planning de période » (`systemImportPeriode`), choix du
+  type de document dans l'import. **Vérifié en réel** : 7 semaines et 93 séances
+  extraites (contre 17 graphèmes avec l'ancien prompt), en 19,1 s.
+  RESTE : le décalage de numérotation pour P2 à P5 (aujourd'hui les semaines
+  repartent de 1 à chaque import, `normalizeProgression` renumérote).
 - [ ] `partage/edt.pdf` : exemple d'emploi du temps (à lire et exploiter).
 
 ## Notes de priorisation
