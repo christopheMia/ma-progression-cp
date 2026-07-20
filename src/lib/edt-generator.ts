@@ -116,6 +116,94 @@ export function repartirVolumes(codeRenforce: boolean): {
   return { budgetCours, facteur, codeMatinQuotidien, fileMatin, fileAprem }
 }
 
+/** Formate une duree en minutes : 90 -> "1 h 30", 60 -> "1 h", 45 -> "45 min". */
+export function formatDuree(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h === 0) return `${m} min`
+  if (m === 0) return `${h} h`
+  return `${h} h ${String(m).padStart(2, '0')}`
+}
+
+export type LigneVolume = {
+  matiere: string
+  /** Volume officiel hebdomadaire (arrete du 9/11/2015), en minutes. */
+  officiel: number | null
+  /** Volume reellement place dans la grille, en minutes. */
+  retenu: number
+}
+
+export type ExplicationEdt = {
+  jours: string[]
+  journee: { debut: string; fin: string }
+  budgetCours: number
+  /** Facteur d'echelle applique aux volumes officiels (recres + rituels deduits). */
+  facteur: number
+  volumes: LigneVolume[]
+  cadre: { libelle: string; horaire: string }[]
+  regles: string[]
+}
+
+/**
+ * Decrit EXACTEMENT ce que le generateur prend en compte, en relisant les memes
+ * calculs que `genererEdtCP`. Sert la fenetre d'explication affichee avant la
+ * generation : l'enseignante doit pouvoir verifier les regles AVANT de remplacer
+ * son emploi du temps. Les chiffres sont derives du code, jamais reecrits a la
+ * main, donc l'explication ne peut pas diverger du comportement reel.
+ */
+export function expliquerGenerationEdt(codeRenforce = true): ExplicationEdt {
+  const { budgetCours, facteur, codeMatinQuotidien, fileMatin, fileAprem } =
+    repartirVolumes(codeRenforce)
+  const nbJours = JOURS_EDT.length
+
+  const trouver = (prefixe: string, file: Segment[]) =>
+    file.find(s => s.matiere.startsWith(prefixe))?.minutes ?? 0
+
+  const codeTotal = codeMatinQuotidien * nbJours
+  const langue = trouver('Etude de la langue', fileMatin)
+
+  const volumes: LigneVolume[] = [
+    { matiere: 'Français : étude du code (lecture, graphèmes)', officiel: null, retenu: codeTotal },
+    { matiere: 'Français : étude de la langue', officiel: null, retenu: langue },
+    { matiere: 'Français (total)', officiel: VOLUME_OFFICIEL_CP.francais, retenu: codeTotal + langue },
+    { matiere: 'Mathématiques', officiel: VOLUME_OFFICIEL_CP.maths, retenu: trouver('Mathematiques', fileMatin) },
+    { matiere: 'Questionner le monde (dont EMC)', officiel: VOLUME_OFFICIEL_CP.qlm, retenu: trouver('Questionner', fileAprem) },
+    { matiere: 'Éducation physique et sportive', officiel: VOLUME_OFFICIEL_CP.eps, retenu: trouver('Education physique', fileAprem) },
+    { matiere: 'Enseignements artistiques', officiel: VOLUME_OFFICIEL_CP.arts, retenu: trouver('Enseignements artistiques', fileAprem) },
+    { matiere: 'Langue vivante (anglais)', officiel: VOLUME_OFFICIEL_CP.langueVivante, retenu: trouver('Langue vivante', fileAprem) },
+  ]
+
+  const plage = (p: { debut: number; fin: number }) => `${hhmm(p.debut)} - ${hhmm(p.fin)}`
+
+  return {
+    jours: [...JOURS_EDT],
+    journee: { debut: hhmm(CADRE.rituelMatin.debut), fin: hhmm(CADRE.plages[CADRE.plages.length - 1].fin) },
+    budgetCours,
+    facteur,
+    volumes,
+    cadre: [
+      { libelle: 'Rituels du jour (accueil, appel, date)', horaire: plage(CADRE.rituelMatin) },
+      { libelle: 'Récréation du matin', horaire: plage(CADRE.recreMatin) },
+      { libelle: 'Pause déjeuner / cantine', horaire: plage(CADRE.dejeuner) },
+      { libelle: 'Temps calme (lecture, retour de cantine)', horaire: plage(CADRE.tempsCalme) },
+      { libelle: "Récréation de l'après-midi", horaire: plage(CADRE.recreAprem) },
+    ],
+    regles: [
+      `Semaine de ${nbJours} jours : ${JOURS_EDT.join(', ')}.`,
+      'Point de départ : le volume horaire officiel du cycle 2 (arrêté du 9 novembre 2015).',
+      `Les récréations et les rituels sont déduits équitablement : chaque matière est mise à l'échelle par le même facteur (${Math.round(facteur * 100)} %), personne n'est sacrifié.`,
+      'Les durées sont arrondies au quart d\'heure pour rester posables dans une vraie journée.',
+      codeRenforce
+        ? `Code renforcé CP : un bloc d'étude du code est garanti CHAQUE matin (${formatDuree(codeMatinQuotidien)}), en tout début de matinée.`
+        : 'Code renforcé désactivé : le français n\'est pas scindé en code / étude de la langue.',
+      'Priorité au matin pour les apprentissages fondamentaux : code, puis mathématiques, puis étude de la langue.',
+      "L'après-midi reçoit le reste : questionner le monde, EPS, arts, langue vivante.",
+      'Tous les matins de la semaine sont remplis avant les après-midi, pour qu\'une matière du matin ne déborde pas trop tôt.',
+      'Le résultat est 100 % modifiable ensuite : horaires, matières, couleurs.',
+    ],
+  }
+}
+
 /** Remplit une plage [debut, fin] en tirant des minutes dans la file (mutee). */
 function remplirPlage(
   debut: number,
