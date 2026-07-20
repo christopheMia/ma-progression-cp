@@ -121,8 +121,11 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
   → FAIT : mode d'import « planning de période » (`systemImportPeriode`), choix du
   type de document dans l'import. **Vérifié en réel** : 7 semaines et 93 séances
   extraites (contre 17 graphèmes avec l'ancien prompt), en 19,1 s.
-  RESTE : le décalage de numérotation pour P2 à P5 (aujourd'hui les semaines
-  repartent de 1 à chaque import, `normalizeProgression` renumérote).
+- [x] **Décalage par période** (P2 à P5 ne doivent pas écraser P1).
+  → FAIT : `src/lib/actions/progression-periode.ts`. Les bornes viennent de
+  `semaines.periode_numero` (périodes réelles de la classe, pas un « 7 semaines »
+  forcé). L'enregistrement ne supprime que l'intervalle importé. Sélecteur de
+  période dans l'import, débordement signalé au lieu d'être perdu.
 - [ ] `partage/edt.pdf` : exemple d'emploi du temps (à lire et exploiter).
 
 ## Notes de priorisation
