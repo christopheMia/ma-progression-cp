@@ -10,6 +10,7 @@ import ManuelEditor from '@/components/parametres/ManuelEditor'
 import MethodesEditor from '@/components/parametres/MethodesEditor'
 import ResetButton from '@/components/parametres/ResetButton'
 import ResetBlockButton from '@/components/parametres/ResetBlockButton'
+import ResetContenuButton from '@/components/parametres/ResetContenuButton'
 import GenererEdtButton from '@/components/parametres/GenererEdtButton'
 import RealignerSemainesButton from '@/components/parametres/RealignerSemainesButton'
 import DemoButton from '@/components/DemoButton'
@@ -73,7 +74,13 @@ export default async function ParametresPage() {
         <ElevesEditor initial={(eleves ?? []).map(e => e.prenom)} />
       </Section>
 
-      <Section id="edt" titre="🕐 Emploi du temps" headerRight={<div className="flex items-center gap-2 flex-wrap justify-end"><GenererEdtButton /><ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." /></div>}>
+      <Section id="edt" titre="🕐 Emploi du temps" headerRight={
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <GenererEdtButton />
+          <ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." />
+          <ResetBlockButton scope="edt-vide" label="🗑️ Vider" message="Vide complètement l'emploi du temps (aucune trame rechargée)." />
+        </div>
+      }>
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({
           jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin,
           matiere: c.matiere, couleur: c.couleur ?? null, couleur_texte: c.couleur_texte ?? null,
@@ -108,9 +115,21 @@ export default async function ParametresPage() {
         <DemoButton confirmer />
       </section>
 
-      <section className="bg-white border-2 border-red-200 rounded-2xl p-5">
-        <h2 className="font-bold text-red-700 mb-4">🗑️ Repartir de zéro</h2>
-        <ResetButton />
+      <section className="bg-white border-2 border-red-200 rounded-2xl p-5 space-y-5">
+        <div>
+          <h2 className="font-bold text-red-700 mb-1">🧽 Nouvelle année, même classe</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            Vide tout le contenu et garde ta classe telle quelle. L&apos;emploi du temps repart vide.
+          </p>
+          <ResetContenuButton />
+        </div>
+        <div className="border-t border-red-100 pt-5">
+          <h2 className="font-bold text-red-700 mb-1">🗑️ Repartir de zéro</h2>
+          <p className="text-sm text-gray-500 mb-3">
+            Supprime aussi la classe et relance la configuration complète.
+          </p>
+          <ResetButton />
+        </div>
       </section>
     </div>
   )

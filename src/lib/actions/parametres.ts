@@ -202,12 +202,13 @@ export async function updateManuel(manuelId: string, customProgression?: Progres
  * supprimer :
  *  - 'eleves'   : efface tous les élèves et leur suivi (acquisitions, bilans).
  *  - 'edt'      : réinitialise l'emploi du temps à la trame CP par défaut.
+ *  - 'edt-vide' : VIDE complètement l'emploi du temps (aucune trame rechargée).
  *  - 'methodes' : efface les méthodes importées et leur progression.
  *  - 'suivi'    : efface le suivi des élèves (étoiles + bilans), garde les élèves.
  *  - 'journaux' : efface tous les cahiers journaux.
  */
 export async function reinitialiserBloc(
-  scope: 'eleves' | 'edt' | 'methodes' | 'suivi' | 'journaux',
+  scope: 'eleves' | 'edt' | 'edt-vide' | 'methodes' | 'suivi' | 'journaux',
 ) {
   const { supabase, classe } = await getClasse()
   const classId = classe.id
@@ -225,6 +226,10 @@ export async function reinitialiserBloc(
     if (TRAME_EDT_CP.length) {
       await supabase.from('emploi_du_temps').insert(TRAME_EDT_CP.map(c => ({ ...c, class_id: classId })))
     }
+  } else if (scope === 'edt-vide') {
+    // Volontairement AUCUNE reinsertion : l'enseignante veut parfois repartir
+    // d'une grille reellement vide, pas de la trame par defaut.
+    await supabase.from('emploi_du_temps').delete().eq('class_id', classId)
   } else if (scope === 'methodes') {
     await supabase.from('progression').delete().eq('class_id', classId)
     await supabase.from('methodes').delete().eq('class_id', classId)
@@ -240,6 +245,38 @@ export async function reinitialiserBloc(
       }
     }
   }
+
+  revalidatePath('/parametres')
+  revalidatePath('/planning')
+  revalidatePath('/accueil')
+}
+
+/**
+ * Efface TOUT le contenu de la classe mais CONSERVE la classe elle-même
+ * (son nom, le prénom de l'enseignante, le manuel, la date de rentrée).
+ *
+ * Différence avec `reinitialiserConfiguration`, qui supprime la classe et
+ * renvoie vers l'assistant : ici l'enseignante reste connectée à sa classe et
+ * repart d'une page blanche pour une nouvelle année. L'emploi du temps est
+ * VIDE (et non rechargé depuis la trame), conformément à la demande du 20/07.
+ */
+export async function reinitialiserContenuClasse() {
+  const { supabase, classe } = await getClasse()
+  const classId = classe.id
+
+  const { data: semaines } = await supabase.from('semaines').select('id').eq('class_id', classId)
+  const sids = (semaines ?? []).map(s => s.id)
+  if (sids.length) {
+    await supabase.from('acquisitions').delete().in('semaine_id', sids)
+    await supabase.from('appreciations').delete().in('semaine_id', sids)
+    await supabase.from('cahier_journal').delete().in('semaine_id', sids)
+    await supabase.from('semaines').delete().in('id', sids)
+  }
+  await supabase.from('progression').delete().eq('class_id', classId)
+  await supabase.from('methodes').delete().eq('class_id', classId)
+  await supabase.from('eleves').delete().eq('class_id', classId)
+  // Emploi du temps vide, pas de trame rechargee.
+  await supabase.from('emploi_du_temps').delete().eq('class_id', classId)
 
   revalidatePath('/parametres')
   revalidatePath('/planning')
