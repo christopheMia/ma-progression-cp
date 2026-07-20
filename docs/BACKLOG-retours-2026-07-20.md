@@ -107,10 +107,17 @@ saisie des notes/niveaux par élève et période, export PDF au format officiel 
 - [x] **Bouton "Générer l'EDT avec l'IA / quotas réglementaires"** → FAIT le 20/07
   (générateur depuis le volume horaire officiel, commit 98955c1/543923e). À
   compléter avec les contraintes ci-dessous.
-- [ ] **Contraintes de l'EDT généré** (à ajouter au générateur) :
+- [x] **Contraintes de l'EDT généré** (à ajouter au générateur) :
   - EPS, Histoire, Arts plastiques : **pas 2 h de la même matière le même jour**.
   - Matières générales : **pas plus de 2 h de la même matière le même jour**.
   - Objectif : **répartir les matières au mieux** sur la semaine.
+  → FAIT : plafonds journaliers dans `edt-generator.ts` (1 h pour EPS/arts/histoire,
+  2 h pour les matières générales), cumul partagé matin + après-midi, bloc code
+  inclus. Créneau laissé vide plutôt que d'enfreindre la règle. 7 tests.
+  Résultat : EPS sur 3 jours (30 + 60 + 60) au lieu d'un bloc, aucun trou.
+  NOTE : la répartition respecte les plafonds mais reste inégale (lundi 2 h
+  d'étude de la langue, mardi 30 min). Un vrai équilibrage (minimiser l'écart
+  entre jours) serait un raffinement possible.
 
 ## 5. Périodes (docs d'exemple fournis)
 
