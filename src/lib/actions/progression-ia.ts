@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { ProgressionSemaine } from '@/data/manuels'
+import { ensureMethode } from '@/lib/methodes-db'
 
 /**
  * Met à jour la progression d'une classe SANS rien détruire :
@@ -33,8 +34,10 @@ export async function corrigerProgression(classId: string, progression: Progress
   // Garde la table `progression` (lue par la fiche semaine) en phase avec la
   // correction : on remplace UNIQUEMENT le français (jamais le maths).
   await supabase.from('progression').delete().eq('class_id', classId).eq('matiere', 'francais')
+  const methodeId = await ensureMethode(supabase, classId, 'francais')
   const lignesFr = progression.map(s => ({
     class_id: classId,
+    methode_id: methodeId,
     matiere: 'francais' as const,
     numero: s.numero,
     items: s.items,

@@ -22,7 +22,13 @@ export default function SetupPage() {
   const [data, setData] = useState<Partial<WizardData>>({})
   const [loading, setLoading] = useState(false)
 
-  const stepTitles = ['Manuel de lecture', 'Date de rentrée', 'Mes élèves', 'Emploi du temps']
+  const stepTitles = ['Ta méthode de lecture', 'Date de la rentrée', 'Tes élèves', 'Ton emploi du temps']
+  const stepHelp = [
+    'Dépose le PDF de ton manuel de lecture (ou colle son sommaire) : l’IA construit ta progression de l’année, tu pourras tout corriger ensuite.',
+    'Choisis le jour de la rentrée : l’appli place automatiquement les 36 semaines de l’année.',
+    'Ajoute les prénoms de tes élèves. Tu peux aussi le faire plus tard, dans Paramètres.',
+    'Indique tes horaires de la semaine : ils servent à pré-remplir ton cahier journal jour par jour.',
+  ]
 
   async function handleFinish(emploiDuTemps: WizardData['emploiDuTemps']) {
     setLoading(true)
@@ -47,7 +53,7 @@ export default function SetupPage() {
           ))}
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-sm text-gray-500">Étape {step}/4 — {stepTitles[step - 1]}</p>
+          <p className="text-sm text-gray-500">Étape {step}/4 — <strong className="text-violet-700">{stepTitles[step - 1]}</strong></p>
           {step > 1 && !loading && (
             <button onClick={() => setStep(s => s - 1)}
               className="text-sm text-violet-600 hover:underline">
@@ -55,6 +61,9 @@ export default function SetupPage() {
             </button>
           )}
         </div>
+        <p className="text-sm text-gray-600 bg-violet-50 border border-violet-100 rounded-lg p-3 mt-3 leading-relaxed">
+          {stepHelp[step - 1]}
+        </p>
       </div>
 
       {step === 1 && (
@@ -71,7 +80,7 @@ export default function SetupPage() {
       )}
       {step === 4 && (
         <TimetableGrid
-          initial={TRAME_EDT_CP.map(c => ({ jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, matiere: c.matiere, couleur: c.couleur, type: c.type }))}
+          initial={TRAME_EDT_CP.map(c => ({ jour: c.jour, heure_debut: c.heure_debut, heure_fin: c.heure_fin, matiere: c.matiere, couleur: c.couleur, couleur_texte: null, texte_gras: false, texte_italique: false, texte_souligne: false, type: c.type, visible_journal: true }))}
           saving={loading}
           finishLabel="🎉 Générer ma progression annuelle"
           onSave={(creneaux) => handleFinish(creneaux.map((c, i) => ({ ...c, ordre: i })))}

@@ -140,3 +140,17 @@ PLUTÔT qu'une réécriture big-bang (piège classique : on perd le code qui mar
 1. Trancher l'architecture (§6) : refactor incrémental vs réécriture.
 2. Découper le programme en sous-projets (vagues) → brainstormer le 1er en spec dédiée.
 3. (Avant code) sauvegarde Cécile + env. de test (cf. `project_schema_prod_drift`).
+
+---
+
+## 8. 🆕 Mise à jour 2026-06-26 — veille croisée (Gemini + recherche indépendante)
+
+> Détail + preuves : `docs/ETUDE-CONCURRENTIELLE-CROISEE-2026-06-26.md`. Ci-dessous = les **deltas** à retenir.
+
+- **Teetsh a évolué** : plus de 59/89 €/an figés → désormais **palier GRATUIT + crédits IA** (25/mois gratuit, 200/mois en Intégral), **4,92 € / 7,42 €/mois**, **LSU dans toutes les formules**. ⇒ La douve « nous on a l'IA » **se referme**.
+- **Nouveau concurrent IA direct (Gemini l'a raté) : `Fiche Séquence`** — génère progressions/séquences/cahier journal/bilans, **PS→CM2**, RGPD France, **6 €/mois ou 59 €/an**. **MAIS** il génère depuis les **programmes officiels**, **pas depuis le manuel** de l'enseignant ⇒ **notre wedge (« l'IA lit TON manuel ») reste unique**. **À surveiller.**
+- **Recadrer le message** : ne plus vendre « on a de l'IA » (faux différenciateur en 2026) mais « **l'IA qui connaît TA méthode et TON année** ».
+- **Angle RESSOURCES** (tendance forte) : le marché passe d'« outils vides » à « **outils + contenus prêts** » (bibliothèques Teetsh/Edumoov ; places de marché **Eduki** 1,6 M profs, **Génération 5**). ⇒ Notre **« partage de progressions vérifiées »** (bloc A, ligne « banque de séances ») devient un **axe différenciant**, pas un gadget.
+- **Prix** : nos 4 €/7 € (~48 €/an) sont **pile dans le marché**. Penser un **hameçon gratuit** crédible (comme Teetsh/Fiche Séquence/PrimSchool).
+- **LSU/ONDE** : confirmé comme **phase ultérieure** (IA d'abord, LSU ensuite), avec 2 prérequis : **import ONDE** (n° INE) + **suivi par compétences officielles** (Non atteint/Atteint/Dépassé).
+- **⚠️ Manque connu — alignement Bulletin Officiel.** On est aligné au B.O. **indirectement**, via le manuel de l'enseignant (qui, lui, suit le programme). On n'a **PAS** : base officielle des compétences du Socle (identifiants), intégration/MAJ auto des **programmes 2025** (révisés au cycle 2 = CP-CE1-CE2 — à vérifier précisément), ni lien séance↔compétence officielle. Dans le code, « compétences » = texte libre ; la seule progression écrite (`EDM_PROGRESSION_CP`, CP) est maison, pas le texte officiel. Concurrents (Teetsh/Edumoov/Prepli) et le rival IA « Fiche Séquence » affichent « programmes officiels intégrés ». **Non bloquant court terme** (notre approche « via le manuel » est défendable, voire un atout), **mais = même chantier que le LSU** (compétences officielles) → à séquencer en **phase ultérieure**. *(Noté 2026-06-26, à reparler.)*

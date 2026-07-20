@@ -1,11 +1,13 @@
-import { LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
-
 const REGLE_EXHAUSTIVITE = `Procède en deux temps, sans rien oublier :
 1) Recense d'ABORD la liste complète des contenus du document (aucun ne doit manquer).
 2) Répartis ENSUITE ces contenus, semaine par semaine, dans l'ordre de l'année.
 N'invente aucun contenu absent du document.`
 
-export function systemImport(matiere: MatiereMethode): string {
+function labelMatiere(matiere: string): string {
+  return matiere === 'francais' ? 'Français' : matiere === 'maths' ? 'Maths' : matiere
+}
+
+export function systemImport(matiere: string): string {
   if (matiere === 'maths') {
     return `Tu es un expert des méthodes de mathématiques CP françaises.
 On te donne le texte (programmation ou sommaire) d'une méthode de maths CP, souvent organisée PAR PÉRIODE et PAR DOMAINE (nombres, calcul mental, problèmes, grandeurs et mesures, espace et géométrie...).
@@ -16,6 +18,18 @@ Règles :
 - "items" = les notions/compétences travaillées cette semaine (ex: ["Nombres jusqu'à 10","Décomposer 4 et 5"]).
 - Étale les notions d'une période sur les semaines de cette période (≈7 semaines par période).
 - "pages" = les pages si présentes, sinon "". "mots_exemple" = [] (rarement pertinent en maths).
+Réponds UNIQUEMENT via le format structuré imposé.`
+  }
+  if (matiere && matiere !== 'francais') {
+    return `Tu es un expert des programmations scolaires françaises pour la matière « ${matiere} ».
+On te donne le texte (programmation, sommaire ou progression) d'une méthode de ${matiere}.
+Ta tâche : reconstruire une progression SEMAINE PAR SEMAINE.
+${REGLE_EXHAUSTIVITE}
+Règles :
+- Une entrée par semaine, dans l'ordre chronologique de l'année.
+- "items" = les notions/compétences/séances travaillées cette semaine.
+- Étale les contenus d'une période sur les semaines de cette période (≈7 semaines par période).
+- "pages" = les pages si présentes, sinon "". "mots_exemple" = [] (rarement pertinent).
 Réponds UNIQUEMENT via le format structuré imposé.`
   }
   return `Tu es un expert des méthodes de lecture CP françaises.
@@ -33,7 +47,75 @@ Réponds UNIQUEMENT via le format structuré imposé.`
 }
 
 export function userImport(texteManuel: string): string {
-  return `Voici le texte extrait du manuel à analyser :\n\n${texteManuel}`
+  return `Voici le texte extrait du manuel à analyser.
+Il provient d'un PDF : les colonnes d'un tableau sont séparées par « | » et chaque
+ligne du tableau est sur sa propre ligne. Respecte scrupuleusement cette structure
+(une colonne = un jour ou un domaine, une ligne = une semaine ou une séance) et
+recopie EXACTEMENT le contenu des cellules, sans le reformuler.
+
+${texteManuel}`
+}
+
+/**
+ * Import d'un PLANNING DE PERIODE (ex : "exemple de planning p1.pdf").
+ *
+ * Different de systemImport : ces documents ne listent pas seulement des
+ * graphemes, ils detaillent TOUTES les seances de la semaine par domaine
+ * (lecture comprehension, vocabulaire, geste d'ecriture, production d'ecrits,
+ * grammaire, fluence...). Le prompt "manuel" est centre graphemes et jetait donc
+ * tout le reste. Ici on conserve l'integralite du tableau.
+ */
+export function systemImportPeriode(matiere: string): string {
+  const sujet = matiere && matiere !== 'francais' ? `« ${matiere} »` : 'français'
+  return `Tu es un expert des programmations scolaires françaises pour le CP.
+On te donne le planning d'UNE PÉRIODE (souvent 7 semaines de 4 jours) pour ${sujet},
+présenté sous forme de tableau détaillé.
+Ta tâche : restituer ce planning SEMAINE PAR SEMAINE, sans rien perdre.
+${REGLE_EXHAUSTIVITE}
+Règles impératives :
+- Une entrée par semaine du document, dans l'ordre, en repartant de 1.
+- "items" = TOUTES les séances de la semaine, une par entrée. N'en omets aucune,
+  même si elle se répète d'une semaine à l'autre.
+- Préfixe chaque séance par son domaine tel qu'il apparaît dans le document, sous
+  la forme "Domaine : contenu". Exemples : "Graphèmes : A, I", "Lecture
+  compréhension : Le loup qui...", "Geste d'écriture : a", "Vocabulaire : les
+  émotions", "Production d'écrits : la phrase", "Grammaire : la majuscule",
+  "Fluence : lecture de syllabes".
+- Recopie EXACTEMENT le libellé du document. N'invente rien, ne reformule pas,
+  ne résume pas, ne complète pas une case vide.
+- Si une case est vide dans le tableau, n'ajoute pas d'item pour ce domaine.
+- "pages" = les pages si le document en indique, sinon "".
+- "mots_exemple" = les mots d'étude si le document en donne, sinon [].
+Réponds UNIQUEMENT via le format structuré imposé.`
+}
+
+/** Import d'un EMPLOI DU TEMPS depuis un PDF (grille Horaires x Jours). */
+export const SYSTEM_IMPORT_EDT = `Tu lis l'emploi du temps hebdomadaire d'une classe de CP française, fourni en PDF sous forme de tableau (colonnes = jours, lignes = plages horaires).
+Ta tâche : restituer CHAQUE créneau, pour CHAQUE jour, exactement tel qu'il est écrit.
+Règles impératives :
+- Un objet par créneau ET par jour. Si une même activité occupe les 4 jours, produis 4 objets.
+- "jour" vaut lundi, mardi, mercredi, jeudi ou vendredi. Ignore les colonnes absentes du document.
+- "heure_debut" et "heure_fin" au format 24 h (ex. "08:20", "13:20"). Convertis "8h20" en "08:20".
+- "matiere" = le libellé EXACT du document, sans le reformuler ni l'abréger
+  (ex. "Chaque jour compte", "Chut je lis", "Flash maths", "Phonologie encodage décodage").
+- "type" vaut "routine" pour l'accueil, les rituels, les récréations et le repas / la cantine ;
+  "cours" pour tout le reste.
+- Si une case fusionnée couvre plusieurs jours, répète-la pour chaque jour concerné.
+- N'invente aucun créneau absent du document et n'en omets aucun.
+Réponds UNIQUEMENT via le format structuré imposé.`
+
+export function userImportEdt(): string {
+  return `Analyse l'emploi du temps joint et restitue tous ses créneaux, jour par jour, dans l'ordre chronologique.`
+}
+
+/** Variante quand le PDF lui-meme est joint au message : le modele voit la mise
+ *  en page (lecture fidele des tableaux), pas seulement du texte aplati. */
+export function userImportDocument(): string {
+  return `Analyse le ou les PDF joints.
+Ce sont des programmations scolaires, souvent présentées sous forme de TABLEAUX
+(par exemple Semaine × Jour × séances). Lis les tableaux cellule par cellule, en
+respectant les lignes et les colonnes, et recopie EXACTEMENT le contenu, sans le
+reformuler ni le résumer. N'invente aucune notion absente du document.`
 }
 
 /** Bilan d'un élève. On ne transmet JAMAIS son prénom : l'IA écrit "[ELEVE]",
@@ -53,7 +135,7 @@ export function userBilan(opts: {
   statut: string | null
 }): string {
   const { numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut } = opts
-  const label = LABELS_MATIERE[matiere as MatiereMethode] ?? matiere
+  const label = labelMatiere(matiere)
   const bilanGlobal = statut === 'acquis' ? 'objectifs atteints' : statut === 'pas_acquis' ? 'objectifs non encore atteints' : 'non précisé'
   return `Semaine ${numeroSemaine} — ${label}.
 Notions maîtrisées : ${itemsAcquis.length ? itemsAcquis.join(', ') : 'aucune pour l’instant'}.

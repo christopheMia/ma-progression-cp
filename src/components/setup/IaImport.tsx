@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
-import { MATIERES_METHODE, LABELS_MATIERE, type MatiereMethode } from '@/lib/matieres'
+import { getPeriodesDisponibles, type PeriodeDispo } from '@/lib/actions/progression-periode'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -13,12 +13,14 @@ export default function IaImport({
   onSave,
 }: {
   prenom?: string
-  matiereFixe?: MatiereMethode
+  matiereFixe?: string
   onSelect?: (id: string, progression: ProgressionSemaine[]) => void
-  onSave?: (matiere: MatiereMethode, progression: ProgressionSemaine[]) => Promise<void> | void
+  /** `periode` n'est renseigne que pour un import "planning de periode" : il
+   *  indique sur quelle periode recaler les semaines (sans toucher aux autres). */
+  onSave?: (matiere: string, progression: ProgressionSemaine[], periode?: number) => Promise<void> | void
 }) {
   const [texte, setTexte] = useState('')
-  const [matiere, setMatiere] = useState<MatiereMethode>(matiereFixe ?? 'francais')
+  const [matiere, setMatiere] = useState<string>(matiereFixe ?? '')
   const [progression, setProgression] = useState<ProgressionSemaine[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -26,9 +28,26 @@ export default function IaImport({
   const [chat, setChat] = useState<ChatTurn[]>([])
   const [message, setMessage] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  // Un planning de période détaille TOUTES les séances par domaine (lecture
+  // compréhension, geste d'écriture, fluence…) là où un sommaire de manuel se
+  // limite aux notions. Les deux ont besoin de consignes différentes.
+  const [mode, setMode] = useState<'manuel' | 'periode'>('manuel')
+  // Periodes reelles de la classe (calees sur son calendrier), pour savoir sur
+  // quelles semaines recaler un planning importe. L'IA numerote toujours 1..N.
+  const [periodes, setPeriodes] = useState<PeriodeDispo[]>([])
+  const [periode, setPeriode] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (mode !== 'periode' || periodes.length) return
+    getPeriodesDisponibles().then(liste => {
+      setPeriodes(liste)
+      setPeriode(p => p ?? liste[0]?.numero ?? null)
+    }).catch(() => setPeriodes([]))
+  }, [mode, periodes.length])
 
   async function lancerImport(form: FormData) {
     form.append('matiere', matiere)
+    form.append('mode', mode)
     setError(null); setLoading(true); setProgression(null)
     try {
       const res = await fetch('/api/ia-manuel', { method: 'POST', body: form })
@@ -53,9 +72,23 @@ export default function IaImport({
     if (!files || files.length === 0) return
     setError(null); setLoading(true); setProgression(null)
     try {
-      // Extraction du texte DANS le navigateur → on n'envoie que le texte (léger).
+      const liste = Array.from(files)
+      const total = liste.reduce((n, f) => n + f.size, 0)
+
+      // Voie HAUTE FIDÉLITÉ : on envoie les PDF tels quels, l'IA lit alors la
+      // mise en page (tableaux, lignes, colonnes) et non un texte aplati.
+      // Plafond ≈ limite du corps de requête serverless Vercel (~4,5 Mo).
+      if (total <= 4 * 1024 * 1024) {
+        const form = new FormData()
+        for (const file of liste) form.append('pdf', file)
+        await lancerImport(form)
+        return
+      }
+
+      // Repli pour les gros PDF : extraction du texte DANS le navigateur, en
+      // conservant la structure des tableaux (colonnes séparées par « | »).
       const textes: string[] = []
-      for (const file of Array.from(files)) {
+      for (const file of liste) {
         textes.push(await extractPdfText(file))
       }
       const combine = textes.join('\n\n--- fichier suivant ---\n\n')
@@ -81,8 +114,9 @@ export default function IaImport({
     if (!progression) return
     if (onSave) {
       setSaving(true)
-      try { await onSave(matiere, progression) }
-      finally { setSaving(false) }
+      try {
+        await onSave(matiere, progression, mode === 'periode' ? (periode ?? undefined) : undefined)
+      } finally { setSaving(false) }
     } else if (onSelect) {
       onSelect('custom', progression)
     }
@@ -113,22 +147,77 @@ export default function IaImport({
         <div className="space-y-3">
           {!matiereFixe && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Quelle méthode importes-tu ?</label>
-              <select value={matiere} onChange={e => setMatiere(e.target.value as MatiereMethode)} disabled={loading}
-                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white">
-                {MATIERES_METHODE.map(m => (
-                  <option key={m} value={m}>{LABELS_MATIERE[m]}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quelle matière importes-tu ?</label>
+              <input
+                value={matiere}
+                onChange={e => setMatiere(e.target.value)}
+                disabled={loading}
+                placeholder="Ex : Anglais, EMC, Sciences…"
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+              />
             </div>
           )}
+          <fieldset disabled={loading} className="disabled:opacity-50">
+            <legend className="block text-sm font-medium text-gray-700 mb-1">Quel type de document ?</legend>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {([
+                { valeur: 'manuel' as const, titre: 'Manuel / sommaire', sous: 'Une progression annuelle, notion par notion' },
+                { valeur: 'periode' as const, titre: 'Planning de période', sous: 'Le détail des séances, semaine par semaine' },
+              ]).map(o => (
+                <label key={o.valeur}
+                  className={`flex gap-2 items-start rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                    mode === o.valeur ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:bg-gray-50'
+                  }`}>
+                  <input type="radio" name="type-document" value={o.valeur}
+                    checked={mode === o.valeur} onChange={() => setMode(o.valeur)}
+                    className="mt-1 accent-violet-600" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-900">{o.titre}</span>
+                    <span className="block text-xs text-gray-500">{o.sous}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {mode === 'periode' && (
+            periodes.length > 0 ? (
+              <div>
+                <label htmlFor="choix-periode" className="block text-sm font-medium text-gray-700 mb-1">
+                  Quelle période importes-tu ?
+                </label>
+                <select id="choix-periode" value={periode ?? ''} disabled={loading}
+                  onChange={e => setPeriode(Number(e.target.value))}
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white">
+                  {periodes.map(p => (
+                    <option key={p.numero} value={p.numero}>
+                      {p.nom} — semaines {p.premiereSemaine} à {p.premiereSemaine + p.nbSemaines - 1}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Le planning sera calé sur ces semaines. Les autres périodes ne sont pas touchées.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Tes semaines ne sont pas encore rattachées aux périodes. Utilise
+                « Caler sur le calendrier » dans les paramètres, sinon l&apos;import repartira
+                de la semaine 1.
+              </p>
+            )
+          )}
+
           <p className="text-sm text-gray-600">
-            Déposez le PDF de votre manuel <strong>ou</strong> collez son sommaire. L&apos;IA reconstruit la progression — vous pourrez tout corriger ensuite.
+            {mode === 'periode'
+              ? <>Déposez le PDF du planning de votre période. L&apos;IA reprend <strong>toutes</strong> les séances de chaque semaine (lecture compréhension, geste d&apos;écriture, fluence…) sans en perdre.</>
+              : <>Déposez le PDF de votre manuel <strong>ou</strong> collez son sommaire. L&apos;IA reconstruit la progression — vous pourrez tout corriger ensuite.</>}
           </p>
           <input type="file" accept=".pdf" multiple onChange={importPdf} disabled={loading}
             className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer disabled:opacity-50" />
           <p className="text-xs text-gray-500">
             Tu peux déposer plusieurs PDF (ex : les pages de programmation). Inutile d&apos;envoyer le manuel entier.
+            L&apos;IA lit maintenant les <strong>tableaux</strong> en respectant les lignes et les colonnes.
           </p>
           <textarea value={texte} onChange={e => setTexte(e.target.value)} disabled={loading}
             placeholder="…ou collez ici le sommaire du manuel"
@@ -145,7 +234,7 @@ export default function IaImport({
       {progression && (
         <div className="space-y-4">
           <p className="text-sm text-violet-700 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
-            {progression.length} semaines · {totalNotions} {matiere === 'maths' ? 'notions' : 'sons'} répartis
+            {progression.length} semaines · {totalNotions} éléments répartis{matiere ? ` (${matiere})` : ''}
           </p>
 
           {/* Tableau éditable */}
@@ -153,7 +242,7 @@ export default function IaImport({
             <table className="w-full text-sm">
               <thead className="bg-violet-50 sticky top-0">
                 <tr className="text-left text-violet-800">
-                  <th className="px-2 py-1 w-12">Sem.</th><th className="px-2 py-1">{matiere === 'maths' ? 'Notions' : 'Sons'}</th>
+                  <th className="px-2 py-1 w-12">Sem.</th><th className="px-2 py-1">Éléments</th>
                   <th className="px-2 py-1">Pages</th><th className="px-2 py-1">Mots</th>
                 </tr>
               </thead>

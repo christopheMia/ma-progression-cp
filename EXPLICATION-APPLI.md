@@ -45,8 +45,8 @@ L'utilisatrice principale s'appelle **Cécile**. L'appli la tutoie et l'appelle 
 |---|---|
 | `classes` | Une classe par enseignant (nom, date de rentrée, `prenom_enseignant`) |
 | `eleves` | Les élèves de la classe |
-| `semaines` | Les semaines de l'année (1→36), avec date de début recalculée depuis la rentrée |
-| `progression` | **Source de vérité multi-méthodes** : `class_id, matiere, numero, items[], pages, mots_exemple` — une ligne par semaine **et par matière** |
+| `semaines` | Les semaines de l'année (1→36), avec date de début recalculée depuis la rentrée. ⚠️ Contient encore des colonnes legacy `graphemes`, `manuel_pages`, `mots_exemple` (NOT NULL, migration de suppression non écrite) — lues par WeekCard/Accueil/Planning/Cahier journal/Export Word comme **repli** si `progression` est vide. |
+| `progression` | **Source de vérité multi-méthodes** : `class_id, matiere, numero, items[], pages, mots_exemple` — une ligne par semaine **et par matière**. `corrigerProgression` et `updateManuel` synchronisent aussi les colonnes legacy de `semaines`. |
 | `acquisitions` | Ce que chaque élève a acquis (par semaine, par item, par `matiere`) → étoiles |
 | `appreciations` | Bilan + commentaire par élève / semaine / matière |
 | `emploi_du_temps` | Les créneaux horaires (matière, jour, heure début/fin, couleur, type) |
@@ -224,6 +224,7 @@ Les écritures en base passent par des **Server Actions** Next.js (`'use server'
 - **`rechargerEmploiDuTempsType()`** : réinitialise l'EDT sur la trame CP par défaut.
 - **`updateRentreeDate(newDate)`** : change la date de rentrée et **recalcule la date de chaque semaine** sans supprimer les semaines (préserve suivi + journaux).
 - **`updateManuel(manuelId, customProgression?)`** : ⚠️ **DESTRUCTIF** — supprime acquisitions + cahiers journaux + semaines, puis régénère toute la progression annuelle (ne remplace que le français dans `progression`, préserve le maths importé).
+- **Section « 📚 Mes méthodes »** : composant `MethodesEditor` affiché dans Paramètres — affiche un bouton « 🤖 Importer / corriger via l'IA » par matière (`MATIERES_METHODE = ['francais','maths']`). Appelle `enregistrerProgressionMatiere` (voir §7.4) : **non destructif entre matières**, préserve suivi élèves/journaux/dates.
 - **`reinitialiserConfiguration()`** : ⚠️ **IRRÉVERSIBLE** — supprime la classe et TOUTES ses données, puis redirige vers `/setup`.
 
 ### 7.3 Suivi des élèves — `semaine.ts` & `appreciation.ts`
@@ -259,7 +260,8 @@ Les écritures en base passent par des **Server Actions** Next.js (`'use server'
 - **`ProgressionCorrector`** : chat « 🤖 Corriger la progression » (Planning + Accueil), non destructif.
 - **`IaImport`** (dans `ManualSelector`) : import IA d'un manuel (tableau éditable + boîte de dialogue).
 - **`CahierJournalEditor`** : édition du journal + bouton « ✨ Générer la journée », export Word/PDF, `GoogleDocsButton` (OAuth Drive).
-- **`WeekCard`**, **`ProgressBar`**, **`BudgetIaIndicator`**, **`HeaderNav`** (menu adaptatif selon `hasClass`), **`DemoButton`**, **`ResetButton`**, **`LogoutButton`**, **`PrintButton`**, **`EmploiDuTempsEditor`**, **`RentreeEditor`**, **`PrenomEnseignantEditor`**.
+- **`MethodesEditor`** : section « 📚 Mes méthodes » dans Paramètres — import/correction IA par matière, non destructif.
+- **`WeekCard`**, **`ProgressBar`**, **`BudgetIaIndicator`**, **`HeaderNav`** (menu adaptatif selon `hasClass`), **`DemoButton`**, **`ResetButton`**, **`LogoutButton`**, **`PrintButton`**, **`EmploiDuTempsGrille`**, **`RentreeEditor`**, **`PrenomEnseignantEditor`**.
 
 ---
 
@@ -270,4 +272,3 @@ Les écritures en base passent par des **Server Actions** Next.js (`'use server'
 - **Limite Vercel ~4,5 Mo** de corps de requête → PDF extrait dans le navigateur.
 - **Clé `ANTHROPIC_API_KEY`** : secrète, à définir en local (`.env.local`) ET sur Vercel, puis redéployer.
 - **Toute évolution de schéma** passe par une migration versionnée Supabase (la migration `006_schema_complet_idempotent.sql` est la source de vérité du schéma).
-```

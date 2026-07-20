@@ -15,8 +15,7 @@ export default function StudentListEditor({ onSelect }: { onSelect: (eleves: str
 
   return (
     <div className="space-y-4">
-      <p className="text-gray-600">Entrez les prénoms de vos élèves.</p>
-      <p className="text-xs text-gray-400">Un prénom à la fois : tapez puis appuyez sur Entrée (ou « Ajouter »).</p>
+      <p className="text-gray-600">Tape le prénom d’un élève, puis appuie sur Entrée (ou « Ajouter »). Un prénom à la fois.</p>
       <div className="flex gap-2">
         <input value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && ajouterEleve()}
@@ -48,7 +47,7 @@ export default function StudentListEditor({ onSelect }: { onSelect: (eleves: str
         </button>
       )}
       <p className="text-xs text-gray-400 text-center">
-        Pas encore la liste ? Commencez sans, vous les ajouterez dans <strong>Paramètres → Élèves</strong> (le suivi est conservé).
+        Pas encore la liste ? Commence sans, tu les ajouteras dans <strong>Paramètres → Élèves</strong> (le suivi est conservé).
       </p>
     </div>
   )
