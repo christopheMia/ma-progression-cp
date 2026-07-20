@@ -1,11 +1,49 @@
-# Backlog retours utilisateurs (20/07/2026)
+# Reprise & backlog Ma Progression CP (20/07/2026)
 
-Source : `partage/probleme a régler.docx` (Christophe). Consigne : « structure au
-mieux pour avancer, je ne serai pas là pour essayer mais il faut avancer au
-maximum ». Docs d'exemple ajoutés pour les périodes : `partage/exemple de planning
-p1.pdf`, `partage/edt.pdf`.
+Document de REPRISE : état du projet + liste des choses à faire (problèmes à régler
++ exemples à prendre en compte). Point d'entrée unique pour continuer.
+
+Source des retours : `partage/probleme a régler.docx` (Christophe). Consigne :
+« structure au mieux pour avancer, je ne serai pas là pour essayer mais il faut
+avancer au maximum ». Docs d'exemple ajoutés pour les périodes : `partage/exemple
+de planning p1.pdf` (Période 1 = 7 semaines × 4 jours, séances détaillées),
+`partage/edt.pdf`.
 
 Statut : [ ] à faire · [~] en cours · [x] fait.
+
+## 0. État du projet au 20/07 (fait & déployé)
+
+Branche `feat/methodes-par-matiere`. Preview la plus récente :
+`https://ma-progression-5hod6gbbk-christophemias-projects.vercel.app`.
+
+Déjà livré et déployé :
+- Générateur d'EDT depuis le **volume horaire officiel** CP (`src/lib/edt-generator.ts`).
+- **Couleurs** (fond + texte) + **gras/italique/souligné** par case de l'EDT, +
+  bouton 🖌️ pour propager un style à toute une matière (`TimetableGrid.tsx`).
+- Fix des boutons « remettre à zéro » ; **périodes P1-P5** (migration 010) + bouton
+  « caler sur le calendrier » (`src/lib/calendrier-semaines.ts`).
+- **Programme officiel détaillé** : français 49 + maths 24 compétences en base
+  (référentiel `competences_officielles`), page `/competences`. Sources :
+  `docs/references/attendus-cp-francais-detaille.txt`, `...-maths-detaille.txt`.
+- Écran **« Programme couvert »** `/programme` : mapping IA notion↔compétence par
+  période (`src/lib/actions/mapping.ts`) + édition manuelle + trous du programme.
+- Barème LSU `src/lib/lsu-bareme.ts` (note d'éval → niveau).
+
+Migrations prod appliquées : 010 (periodes), 011 (couleur_texte), 012 (mise en
+forme), 013 (notion_competence).
+
+Specs (dans `docs/superpowers/specs/`) :
+- `2026-07-19-programme-officiel-lsu-design.md`
+- `2026-07-19-emploi-du-temps-genere-design.md`
+- `2026-07-20-mapping-notion-competence-design.md`
+- `2026-07-20-livret-lsu-design.md` (Phase 3, **option B validée** : saisir la note
+  d'éval → conversion barème → coche le niveau → modifiable).
+
+Chantier EN COURS = **livret LSU (Phase 3)** : reste table `bilan_lsu`, écran de
+saisie des notes/niveaux par élève et période, export PDF au format officiel (cf.
+`partage/exemple lsu.pdf`), récupération des commentaires du suivi
+(`appreciations.commentaire`). Barème (règle Christophe) : diviser l'échelle par 3
+(sans « dépassé ») ou par 4 (avec), « dépassé » possible seulement si 100 %.
 
 ## 1. UI / UX & Navigation
 
