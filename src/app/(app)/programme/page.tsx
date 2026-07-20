@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import ProposerRattachementsButton from '@/components/programme/ProposerRattachementsButton'
+import NotionLigne, { type CompChoix } from '@/components/programme/NotionLigne'
 
 const MATIERES: { code: string; label: string }[] = [
   { code: 'francais', label: 'le français' },
@@ -28,7 +29,12 @@ export default async function ProgrammePage() {
     .select('id, matiere, domaine, libelle').eq('niveau', 'CP').in('matiere', codes)
 
   const periodeParSemaine = new Map((sems ?? []).map(s => [s.numero, s.periode_numero as number | null]))
-  const compById = new Map((comps ?? []).map(c => [c.id as string, { domaine: c.domaine as string, libelle: c.libelle as string }]))
+  const compsParMatiere = new Map<string, CompChoix[]>()
+  for (const c of comps ?? []) {
+    const arr = compsParMatiere.get(c.matiere as string) ?? []
+    arr.push({ id: c.id as string, domaine: c.domaine as string, libelle: c.libelle as string })
+    compsParMatiere.set(c.matiere as string, arr)
+  }
   const nbCompParMatiere = new Map<string, number>()
   for (const c of comps ?? []) nbCompParMatiere.set(c.matiere as string, (nbCompParMatiere.get(c.matiere as string) ?? 0) + 1)
   const lienParNotion = new Map<string, string>() // matiere|semaine|notion -> competence_id
@@ -84,21 +90,10 @@ export default async function ProgrammePage() {
               <div key={String(per)}>
                 <h3 className="font-semibold text-violet-700 text-sm mb-1">{per ? `Période ${per}` : 'Hors période'}</h3>
                 <ul className="space-y-1">
-                  {ls.map((l, i) => {
-                    const comp = l.competenceId ? compById.get(l.competenceId) : undefined
-                    return (
-                      <li key={i} className="text-sm flex flex-wrap items-baseline gap-x-2">
-                        <span className="text-gray-800">{l.notion}</span>
-                        {comp ? (
-                          <span className="text-xs text-violet-700 bg-violet-50 border border-violet-100 rounded px-1.5 py-0.5">
-                            {comp.domaine} : {comp.libelle}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-amber-600">à rattacher</span>
-                        )}
-                      </li>
-                    )
-                  })}
+                  {ls.map((l, i) => (
+                    <NotionLigne key={i} matiere={code} semaine={l.semaine} notion={l.notion}
+                      competenceId={l.competenceId} competences={compsParMatiere.get(code) ?? []} />
+                  ))}
                 </ul>
               </div>
             ))}
