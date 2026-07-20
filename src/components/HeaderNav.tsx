@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import LogoutButton from './LogoutButton'
 
 // Les bulles (title) expliquent chaque entree au survol : elles remplacent les
@@ -15,30 +16,87 @@ const LINKS = [
 
 export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
   const pathname = usePathname()
-  // Le menu complet reste toujours visible (Parametres inclus) : l'utilisateur
-  // n'est jamais bloque et peut naviguer librement, meme avant d'avoir configure.
+  // Sur telephone, les 4 entrees + la deconnexion ne tiennent pas sur la largeur
+  // de l'ecran : certaines devenaient inatteignables (signale le 20/07). On
+  // bascule donc sur un menu deroulant sous le seuil `sm`.
+  const [ouvert, setOuvert] = useState(false)
+
+  // Toute navigation referme le menu, sinon il reste ouvert par-dessus la page
+  // qu'on vient d'ouvrir.
+  useEffect(() => { setOuvert(false) }, [pathname])
+
+  useEffect(() => {
+    if (!ouvert) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOuvert(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [ouvert])
+
+  const classeLien = (actif: boolean) =>
+    `px-3 py-1.5 rounded-lg transition-colors ${
+      actif ? 'bg-white text-violet-600 font-medium' : 'text-white/85 hover:bg-white/15 hover:text-white'
+    }`
+
   return (
-    <nav className="flex items-center gap-1 text-sm">
-      {!hasClass && (
-        <Link href="/setup"
-          className="px-3 py-1.5 rounded-lg font-semibold text-violet-600 bg-white hover:bg-white/90 transition-colors">
-          Configurer ma classe
-        </Link>
-      )}
-      {LINKS.map(l => {
-        const active = pathname === l.href
-        return (
-          <Link key={l.href} href={l.href} title={l.aide}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              active
-                ? 'bg-white text-violet-600 font-medium'
-                : 'text-white/85 hover:bg-white/15 hover:text-white'
-            }`}>
+    <>
+      {/* ── Ecran large : tout est visible ─────────────────────────────────── */}
+      <nav className="hidden sm:flex items-center gap-1 text-sm">
+        {!hasClass && (
+          <Link href="/setup"
+            className="px-3 py-1.5 rounded-lg font-semibold text-violet-600 bg-white hover:bg-white/90 transition-colors">
+            Configurer ma classe
+          </Link>
+        )}
+        {LINKS.map(l => (
+          <Link key={l.href} href={l.href} title={l.aide} className={classeLien(pathname === l.href)}>
             {l.label}
           </Link>
-        )
-      })}
-      <LogoutButton />
-    </nav>
+        ))}
+        <LogoutButton />
+      </nav>
+
+      {/* ── Mobile : bouton menu + panneau deroulant ───────────────────────── */}
+      <div className="sm:hidden">
+        <button type="button" onClick={() => setOuvert(o => !o)}
+          aria-expanded={ouvert} aria-controls="menu-mobile" aria-label="Menu"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white hover:bg-white/15 transition-colors">
+          <span aria-hidden="true" className="text-lg leading-none">{ouvert ? '✕' : '☰'}</span>
+          <span className="text-sm">Menu</span>
+        </button>
+
+        {ouvert && (
+          <>
+            {/* Voile : un clic n'importe ou referme le menu. */}
+            <button type="button" aria-hidden="true" tabIndex={-1} onClick={() => setOuvert(false)}
+              className="fixed inset-0 top-14 z-30 bg-slate-900/20" />
+
+            <nav id="menu-mobile"
+              className="absolute right-2 top-full mt-1 z-40 w-60 rounded-xl bg-white shadow-xl border border-slate-200 p-2 flex flex-col gap-0.5 text-sm">
+              {!hasClass && (
+                <Link href="/setup"
+                  className="rounded-lg px-3 py-2 font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
+                  Configurer ma classe
+                </Link>
+              )}
+              {LINKS.map(l => {
+                const actif = pathname === l.href
+                return (
+                  <Link key={l.href} href={l.href}
+                    className={`rounded-lg px-3 py-2 transition-colors ${
+                      actif ? 'bg-violet-100 text-violet-800 font-semibold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}>
+                    <span className="block">{l.label}</span>
+                    <span className="block text-xs text-slate-500">{l.aide}</span>
+                  </Link>
+                )
+              })}
+              <div className="border-t border-slate-100 mt-1 pt-1 text-slate-700 [&_button]:w-full [&_button]:text-left [&_button]:ml-0 [&_button]:text-slate-700 [&_button]:hover:bg-slate-100">
+                <LogoutButton />
+              </div>
+            </nav>
+          </>
+        )}
+      </div>
+    </>
   )
 }
