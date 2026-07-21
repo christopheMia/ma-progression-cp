@@ -21,7 +21,7 @@ export async function corrigerProgression(classId: string, progression: Progress
   if (!classe) throw new Error('Classe introuvable')
 
   for (const s of progression) {
-    await supabase.from('semaines')
+    const { error } = await supabase.from('semaines')
       .update({
         graphemes: s.items,
         manuel_pages: s.pages || null,
@@ -29,12 +29,20 @@ export async function corrigerProgression(classId: string, progression: Progress
       })
       .eq('class_id', classId)
       .eq('numero', s.numero)
+    if (error) throw new Error(`Semaine ${s.numero} : ${error.message}`)
   }
 
   // Garde la table `progression` (lue par la fiche semaine) en phase avec la
   // correction : on remplace UNIQUEMENT le français (jamais le maths).
-  await supabase.from('progression').delete().eq('class_id', classId).eq('matiere', 'francais')
+  //
+  // ORDRE IMPORTANT : la méthode est créée AVANT l'effacement. L'inverse a
+  // détruit la progression en production le 20/07 : `ensureMethode` a échoué
+  // après le delete, laissant `progression` et `methodes` vides toutes les deux
+  // alors que l'utilisateur croyait son import réussi.
   const methodeId = await ensureMethode(supabase, classId, 'francais')
+  const { error: erreurEffacement } = await supabase
+    .from('progression').delete().eq('class_id', classId).eq('matiere', 'francais')
+  if (erreurEffacement) throw new Error(erreurEffacement.message)
   const lignesFr = progression.map(s => ({
     class_id: classId,
     methode_id: methodeId,
@@ -44,7 +52,12 @@ export async function corrigerProgression(classId: string, progression: Progress
     pages: s.pages || null,
     mots_exemple: s.mots_exemple ?? null,
   }))
-  if (lignesFr.length > 0) await supabase.from('progression').insert(lignesFr)
+  // L'erreur était ici IGNOREE : un échec d'insertion ne remontait pas, et
+  // l'utilisateur voyait « import réussi » avec une table vide derrière.
+  if (lignesFr.length > 0) {
+    const { error } = await supabase.from('progression').insert(lignesFr)
+    if (error) throw new Error(error.message)
+  }
 
   revalidatePath('/planning')
   revalidatePath('/accueil')
