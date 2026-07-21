@@ -7,6 +7,64 @@ import {
   type PeriodeProgrammation,
 } from '@/lib/repartition-periode'
 
+/** Semaines de la classe rattachees a une periode, lues en base. */
+async function semainesParPeriode(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classeId: string,
+): Promise<Map<number, number[]>> {
+  const { data, error } = await supabase
+    .from('semaines').select('numero, periode_numero')
+    .eq('class_id', classeId)
+    .not('periode_numero', 'is', null)
+  if (error) throw new Error(error.message)
+
+  const parPeriode = new Map<number, number[]>()
+  for (const s of data ?? []) {
+    const p = s.periode_numero as number
+    parPeriode.set(p, [...(parPeriode.get(p) ?? []), s.numero as number])
+  }
+  if (!parPeriode.size) {
+    throw new Error(
+      'Tes semaines ne sont pas encore rattachées aux périodes. '
+      + 'Utilise « Caler sur le calendrier » dans les paramètres, puis relance l\'import.'
+    )
+  }
+  return parPeriode
+}
+
+/** Classe courante de l'utilisateur connecte. */
+async function classeCourante(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Non connecté')
+  const { data: classe } = await supabase
+    .from('classes').select('id')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1).maybeSingle()
+  if (!classe) throw new Error('Aucune classe')
+  return classe
+}
+
+/**
+ * Repartit SANS RIEN ECRIRE, pour que l'enseignante voie le resultat semaine
+ * par semaine et puisse le corriger avant d'enregistrer. La repartition a
+ * besoin des vraies semaines de la classe, donc elle ne peut pas se faire
+ * cote navigateur.
+ */
+export async function previsualiserProgrammation(periodes: PeriodeProgrammation[]) {
+  const supabase = await createClient()
+  const classe = await classeCourante(supabase)
+  const parPeriode = await semainesParPeriode(supabase, classe.id)
+
+  const { semaines, periodesIgnorees } = repartirProgrammation(periodes, parPeriode)
+  return {
+    semaines: semaines
+      .filter(s => s.items.length > 0)
+      .map(s => ({ numero: s.numero, items: s.items, pages: '', mots_exemple: [] })),
+    periodesIgnorees,
+  }
+}
+
 /**
  * Enregistre une PROGRAMMATION ANNUELLE PAR PERIODE en la repartissant sur les
  * vraies semaines de la classe.

@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
 import { getPeriodesDisponibles, type PeriodeDispo } from '@/lib/actions/progression-periode'
+import { previsualiserProgrammation } from '@/lib/actions/progression-programmation'
+import type { PeriodeProgrammation } from '@/lib/repartition-periode'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -36,7 +38,7 @@ export default function IaImport({
   // Un planning de période détaille TOUTES les séances par domaine (lecture
   // compréhension, geste d'écriture, fluence…) là où un sommaire de manuel se
   // limite aux notions. Les deux ont besoin de consignes différentes.
-  const [mode, setMode] = useState<'manuel' | 'periode'>('manuel')
+  const [mode, setMode] = useState<'manuel' | 'periode' | 'programmation'>('manuel')
   // Nom du manuel importe : sans lui, l'enseignante ne sait plus QUELLE methode
   // elle a importee (retour du 20/07). Prerempli depuis le nom du fichier PDF,
   // qui contient presque toujours le nom de la methode, puis modifiable.
@@ -61,8 +63,26 @@ export default function IaImport({
     try {
       const res = await fetch('/api/ia-manuel', { method: 'POST', body: form })
       const raw = await res.text()
-      let data: { progression?: ProgressionSemaine[]; error?: string } | null = null
+      let data: {
+        progression?: ProgressionSemaine[]
+        periodes?: PeriodeProgrammation[]
+        error?: string
+      } | null = null
       try { data = JSON.parse(raw) } catch { data = null }
+
+      // Une programmation annuelle arrive par periode : c'est le serveur qui
+      // l'etale ensuite sur les vraies semaines de la classe, avant l'apercu.
+      if (res.ok && data?.periodes) {
+        const { semaines, periodesIgnorees } = await previsualiserProgrammation(data.periodes)
+        setProgression(semaines)
+        const oubli = periodesIgnorees.length
+          ? ` Attention : la période ${periodesIgnorees.join(', ')} n'a pas de semaine calée, son contenu n'a pas été placé.`
+          : ''
+        setChat([{ role: 'assistant', content:
+          `J'ai lu ta programmation annuelle et je l'ai répartie sur ${semaines.length} semaines.${oubli} Dis-moi si quelque chose ne va pas 😊` }])
+        return
+      }
+
       if (!res.ok || !data || !data.progression) {
         setError(`Erreur ${res.status} : ${data?.error ?? (raw.slice(0, 150) || 'réponse vide')}`)
       } else {
@@ -184,6 +204,7 @@ export default function IaImport({
               {([
                 { valeur: 'manuel' as const, titre: 'Manuel / sommaire', sous: 'Une progression annuelle, notion par notion' },
                 { valeur: 'periode' as const, titre: 'Planning de période', sous: 'Le détail des séances, semaine par semaine' },
+                { valeur: 'programmation' as const, titre: 'Programmation annuelle', sous: 'Un tableau par période et par domaine, sans semaines' },
               ]).map(o => (
                 <label key={o.valeur}
                   className={`flex gap-2 items-start rounded-lg border p-2.5 cursor-pointer transition-colors ${
