@@ -186,3 +186,33 @@ Notions de maths de la semaine : ${d.maths.join(', ') || '—'}.
 Créneaux de la journée (rédige un déroulement pour chacun, dans cet ordre) :
 ${lignes}`
 }
+
+/**
+ * Import d'une PROGRAMMATION ANNUELLE PAR PERIODE (tableau periode x domaine).
+ *
+ * A distinguer de `systemImportPeriode`, qui lit le planning detaille d'UNE
+ * periode semaine par semaine. Ici le document couvre l'annee entiere et ne
+ * parle pas de semaines : c'est le format des programmations d'editeur, par
+ * exemple "Maths en CP" chez Acces Editions.
+ */
+export function systemImportProgrammation(matiere: string): string {
+  const sujet = matiere && matiere !== 'francais' ? `« ${matiere} »` : 'français'
+  return `Tu es un expert des programmations scolaires françaises pour le CP.
+On te donne la PROGRAMMATION ANNUELLE de ${sujet} : un tableau dont les colonnes
+sont les 5 périodes de l'année et les lignes les domaines d'apprentissage
+(par exemple : nombres entiers, les quatre opérations, calcul mental, grandeurs
+et mesures, espace et géométrie).
+${REGLE_EXHAUSTIVITE}
+Règles impératives :
+- Une entrée par PÉRIODE présente dans le document, numérotée de 1 à 5.
+- Ce document ne parle PAS de semaines. N'invente aucun numéro de semaine et
+  n'essaie pas de répartir toi-même : donne le contenu période par période.
+- Pour chaque période, une entrée par domaine ayant au moins un apprentissage.
+- "nom" = l'intitulé du domaine tel qu'il apparaît dans le document
+  (« Nombres entiers », « Calcul mental », « Espace et géométrie »…).
+- "items" = chaque apprentissage listé dans cette case, un par entrée.
+  Recopie EXACTEMENT le libellé. Ne reformule pas, ne résume pas, ne fusionne
+  pas deux puces en une.
+- Si une case du tableau est vide, n'ajoute pas de domaine pour cette période.
+Réponds UNIQUEMENT via le format structuré imposé.`
+}
