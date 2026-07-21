@@ -1,4 +1,4 @@
-import { genererEdtCP, repartirVolumes, JOURS_EDT } from '../edt-generator'
+import { genererEdtCP, budgetHebdomadaire, JOURS_EDT } from '../edt-generator'
 
 const toMin = (h: string) => {
   const [a, b] = h.split(':').map(Number)
@@ -29,11 +29,15 @@ describe('genererEdtCP', () => {
     }
   })
 
-  test('le temps calme lecture est place a 13h30-13h45 (retour cantine)', () => {
+  // Le "temps calme lecture" de 13h30 a ete supprime lors de la refonte du
+  // 21/07 : il consommait 1 h par semaine hors quota, ce qui empechait
+  // d'atteindre les volumes reglementaires. L'apres-midi reprend directement
+  // a 13h30 sur une vraie seance.
+  test('l\'apres-midi reprend a 13h30 sur du temps d\'enseignement', () => {
     for (const jour of JOURS_EDT) {
-      const tc = edt.find(c => c.jour === jour && c.matiere.includes('Temps calme'))
-      expect(tc?.heure_debut).toBe('13:30')
-      expect(tc?.heure_fin).toBe('13:45')
+      const reprise = edt.find(c => c.jour === jour && c.heure_debut === '13:30')
+      expect(reprise).toBeTruthy()
+      expect(reprise!.type).toBe('cours')
     }
   })
 
@@ -58,36 +62,23 @@ describe('genererEdtCP', () => {
   // langue totalisent 6 seances pour seulement 4 creneaux libres le matin : une
   // seance de maths tombe donc forcement l'apres-midi. La garantie reelle n'est
   // pas "maths toujours le matin" mais "le matin est reserve aux fondamentaux".
-  test('priorite matin : les creneaux libres du matin vont aux fondamentaux', () => {
-    const matinLibre = edt.filter(c =>
-      c.type === 'cours' &&
-      toMin(c.heure_debut) < 12 * 60 &&
-      !c.matiere.startsWith('Etude du code'))
-    expect(matinLibre.length).toBeGreaterThan(0)
-    expect(matinLibre.every(c =>
-      c.matiere === 'Mathematiques' || c.matiere.startsWith('Etude de la langue'))).toBe(true)
-  })
+  // Depuis la refonte du 21/07 (respect des quotas reglementaires), le matin
+  // n'est plus reserve aux fondamentaux : chaque creneau sert la matiere a qui
+  // il reste le plus d'heures. Seul le bloc code reste garanti le matin, ce qui
+  // est deja verifie plus haut. Les quotas eux-memes sont couverts par
+  // edt-contraintes.test.ts.
 
-  test('la majorite des seances de maths reste le matin', () => {
-    const maths = edt.filter(c => c.matiere === 'Mathematiques')
-    expect(maths.length).toBeGreaterThan(0)
-    const leMatin = maths.filter(c => toMin(c.heure_debut) < 12 * 60).length
-    expect(leMatin * 2).toBeGreaterThanOrEqual(maths.length)
-  })
-
-  test('le volume de cours effectif est proche de 20h (1200 min)', () => {
+  test('le volume de cours effectif atteint le budget de 22 h', () => {
     const minutesCours = edt
       .filter(c => c.type === 'cours')
       .reduce((s, c) => s + (toMin(c.heure_fin) - toMin(c.heure_debut)), 0)
-    // 20h de cours + 1h de temps calme lecture (15 min x 4) = 1260 min
-    expect(minutesCours).toBeGreaterThanOrEqual(1200)
-    expect(minutesCours).toBeLessThanOrEqual(1320)
+    expect(minutesCours).toBe(budgetHebdomadaire())
+    expect(minutesCours).toBe(22 * 60)
   })
 
-  test('repartirVolumes applique un facteur d\'echelle equitable < 1', () => {
-    const { facteur, budgetCours } = repartirVolumes(true)
-    expect(budgetCours).toBe(1200)
-    expect(facteur).toBeGreaterThan(0.8)
-    expect(facteur).toBeLessThan(0.85)
+  test('les recreations et la pause meridienne restent hors du temps de cours', () => {
+    const routines = edt.filter(c => c.type === 'routine').map(c => c.matiere)
+    expect(routines).toContain('Recreation')
+    expect(routines).toContain('Pause dejeuner / cantine')
   })
 })

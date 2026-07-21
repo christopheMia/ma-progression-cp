@@ -40,7 +40,8 @@ describe('expliquerGenerationEdt', () => {
   // Le coeur : la fenetre d'explication ne doit JAMAIS annoncer autre chose que
   // ce que le generateur place reellement dans la grille.
   test.each([
-    ['Français : étude du code (lecture, graphèmes)', 'Etude du code'],
+    ['Français : rituels quotidiens', 'Rituels'],
+    ['Français : étude du code', 'Etude du code'],
     ['Français : étude de la langue', 'Etude de la langue'],
     ['Mathématiques', 'Mathematiques'],
     ['Questionner le monde (dont EMC)', 'Questionner le monde'],
@@ -53,10 +54,11 @@ describe('expliquerGenerationEdt', () => {
     expect(annonce!.retenu).toBe(minutesPlacees(prefixe))
   })
 
-  test('le total francais annonce est la somme code + langue', () => {
+  test('le total francais annonce est la somme rituels + code + langue', () => {
+    const rituels = info.volumes.find(v => v.matiere.includes('rituels'))!.retenu
     const code = info.volumes.find(v => v.matiere.includes('étude du code'))!.retenu
     const langue = info.volumes.find(v => v.matiere.includes('étude de la langue'))!.retenu
     const total = info.volumes.find(v => v.matiere === 'Français (total)')!.retenu
-    expect(total).toBe(code + langue)
+    expect(total).toBe(rituels + code + langue)
   })
 })
