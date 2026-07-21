@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { couleurMatiere } from '@/data/trame-edt'
+import { couleurMatiere, couleurAffichee, COULEURS_FAMILLE } from '@/data/trame-edt'
+import { construireGrille, creneauxDeLaLigne, type LigneGrille } from '@/lib/edt-grille'
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number)
@@ -20,12 +21,9 @@ export type Creneau = {
   visible_journal: boolean
 }
 
-/** Tranches horaires distinctes, triées par heure de début. */
-function tranches(creneaux: Creneau[]): Array<{ debut: string; fin: string }> {
-  const seen = new Map<string, { debut: string; fin: string }>()
-  for (const c of creneaux) seen.set(`${c.heure_debut}-${c.heure_fin}`, { debut: c.heure_debut, fin: c.heure_fin })
-  return [...seen.values()].sort((a, b) => a.debut.localeCompare(b.debut))
-}
+/** Identité d'un créneau : il n'a pas d'id, la clé (jour, horaires) suffit. */
+const idc = (c: CreneauMin) => `${c.jour}|${c.heure_debut}|${c.heure_fin}`
+type CreneauMin = { jour: string; heure_debut: string; heure_fin: string }
 
 export default function TimetableGrid({ initial, onSave, saving, finishLabel }: {
   initial: Creneau[]
@@ -79,7 +77,9 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
 
   const joursPresents = JOURS.filter(j => creneaux.some(c => c.jour === j))
   const cols = joursPresents.length ? joursPresents : ['lundi', 'mardi', 'jeudi', 'vendredi']
-  const lignes = tranches(creneaux)
+  // Lignes = intervalles entre frontières horaires, et chaque séance rendue une
+  // seule fois via `rowSpan`. Voir `src/lib/edt-grille.ts` pour le pourquoi.
+  const { lignes, cases } = construireGrille(creneaux, cols)
 
   function cellule(jour: string, debut: string, fin: string) {
     return creneaux.find(c => c.jour === jour && c.heure_debut === debut && c.heure_fin === fin)
@@ -114,29 +114,42 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
         : c))
   }
 
-  function toggleRoutine(debut: string, fin: string) {
+  // Les actions ci-dessous portent sur une LIGNE de la grille. Une ligne étant
+  // désormais un intervalle entre deux frontières horaires, elle concerne tous
+  // les créneaux qui la chevauchent. Pour les lignes uniformes (récréation,
+  // cantine, accueil : mêmes horaires sur les quatre jours), c'est exactement
+  // l'ancien comportement.
+  function toggleRoutine(ligne: LigneGrille) {
     modifier(prev => {
-      const isRoutine = prev.some(c => c.heure_debut === debut && c.heure_fin === fin && c.type === 'routine')
-      return prev.map(c => c.heure_debut === debut && c.heure_fin === fin
-        ? { ...c, type: isRoutine ? 'cours' : 'routine', couleur: isRoutine ? couleurMatiere(c.matiere) : '#f3f4f6' }
+      const concernes = creneauxDeLaLigne(prev, ligne)
+      if (!concernes.length) return prev
+      const isRoutine = concernes.some(c => c.type === 'routine')
+      const cibles = new Set(concernes.map(idc))
+      return prev.map(c => cibles.has(idc(c))
+        ? {
+            ...c,
+            type: isRoutine ? 'cours' as const : 'routine' as const,
+            couleur: isRoutine ? couleurMatiere(c.matiere) : COULEURS_FAMILLE.routine,
+          }
         : c)
     })
   }
 
-  function supprimerLigne(debut: string, fin: string) {
-    modifier(prev => prev.filter(c => !(c.heure_debut === debut && c.heure_fin === fin)))
+  function supprimerLigne(ligne: LigneGrille) {
+    modifier(prev => {
+      const cibles = new Set(creneauxDeLaLigne(prev, ligne).map(idc))
+      if (!cibles.size) return prev
+      return prev.filter(c => !cibles.has(idc(c)))
+    })
   }
 
-  function toggleVisible(debut: string, fin: string) {
+  function toggleVisible(ligne: LigneGrille) {
     modifier(prev => {
-      const isVisible = prev.some(
-        c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal !== false
-      )
-      return prev.map(c =>
-        c.heure_debut === debut && c.heure_fin === fin
-          ? { ...c, visible_journal: !isVisible }
-          : c
-      )
+      const concernes = creneauxDeLaLigne(prev, ligne)
+      if (!concernes.length) return prev
+      const isVisible = concernes.some(c => c.visible_journal !== false)
+      const cibles = new Set(concernes.map(idc))
+      return prev.map(c => cibles.has(idc(c)) ? { ...c, visible_journal: !isVisible } : c)
     })
   }
 
@@ -149,18 +162,26 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
     })
   }
 
-  function setHoraire(debutOld: string, finOld: string, field: 'heure_debut' | 'heure_fin', value: string) {
+  /**
+   * Horaires d'UNE séance. Ils s'éditaient auparavant par ligne, ce qui
+   * supposait qu'une ligne corresponde à une seule séance sur tous les jours.
+   * Ce n'est plus vrai depuis la fusion des cellules : chaque séance porte
+   * désormais ses propres horaires, ce qui est aussi le vrai modèle de données.
+   *
+   * Deux garde-fous, impossibles à exprimer dans l'ancien modèle : un intervalle
+   * doit rester non vide, et une séance ne peut pas en chevaucher une autre le
+   * même jour.
+   */
+  function setHoraireSeance(src: Creneau, field: 'heure_debut' | 'heure_fin', value: string) {
     modifier(prev => {
-      const newDebut = field === 'heure_debut' ? value : debutOld
-      const newFin = field === 'heure_fin' ? value : finOld
-      // Rejette une édition qui ferait coïncider cette tranche avec une AUTRE tranche existante
-      // (sinon deux jeux de créneaux partagent la même clé horaire → corruption silencieuse).
+      const nDebut = field === 'heure_debut' ? value : src.heure_debut
+      const nFin = field === 'heure_fin' ? value : src.heure_fin
+      if (!value || nDebut >= nFin) return prev
       const collision = prev.some(c =>
-        !(c.heure_debut === debutOld && c.heure_fin === finOld) &&
-        c.heure_debut === newDebut && c.heure_fin === newFin)
+        c.jour === src.jour && idc(c) !== idc(src) &&
+        c.heure_debut < nFin && c.heure_fin > nDebut)
       if (collision) return prev
-      return prev.map(c =>
-        c.heure_debut === debutOld && c.heure_fin === finOld ? { ...c, [field]: value } : c)
+      return prev.map(c => idc(c) === idc(src) ? { ...c, [field]: value } : c)
     })
   }
 
@@ -188,39 +209,47 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
             </tr>
           </thead>
           <tbody>
-            {lignes.map(({ debut, fin }) => {
-              const isRoutine = creneaux.some(c => c.heure_debut === debut && c.heure_fin === fin && c.type === 'routine')
+            {lignes.map((ligne, iLigne) => {
+              const { debut, fin } = ligne
+              const surLigne = creneauxDeLaLigne(creneaux, ligne)
+              const isRoutine = surLigne.some(c => c.type === 'routine')
+              const isMasque = surLigne.some(c => c.visible_journal === false)
               return (
                 <tr key={`${debut}-${fin}`}>
                   <td className="border border-violet-100 bg-violet-50 p-1 whitespace-nowrap text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <input type="time" value={debut} onChange={e => setHoraire(debut, fin, 'heure_debut', e.target.value)} className="w-20 border rounded p-0.5 text-gray-900 bg-white" />
-                      <input type="time" value={fin} onChange={e => setHoraire(debut, fin, 'heure_fin', e.target.value)} className="w-20 border rounded p-0.5 text-gray-900 bg-white" />
-                    </div>
+                    <div className="font-medium text-gray-700 tabular-nums">{debut}</div>
+                    <div className="tabular-nums">{fin}</div>
                     <div className="flex gap-2 mt-1">
-                      <button onClick={() => toggleRoutine(debut, fin)} className="text-[10px] text-violet-500 hover:underline">{isRoutine ? '↩ cours' : 'routine'}</button>
-                      <button onClick={() => toggleVisible(debut, fin)}
-                        className={`text-[10px] hover:underline ${
-                          creneaux.some(c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal === false)
-                            ? 'text-gray-400' : 'text-violet-500'
-                        }`}>
-                        {creneaux.some(c => c.heure_debut === debut && c.heure_fin === fin && c.visible_journal === false)
-                          ? '👁️ masqué' : '👁️ visible'}
+                      <button onClick={() => toggleRoutine(ligne)} className="text-[10px] text-violet-500 hover:underline">{isRoutine ? '↩ cours' : 'routine'}</button>
+                      <button onClick={() => toggleVisible(ligne)}
+                        className={`text-[10px] hover:underline ${isMasque ? 'text-gray-400' : 'text-violet-500'}`}>
+                        {isMasque ? '👁️ masqué' : '👁️ visible'}
                       </button>
-                      <button onClick={() => supprimerLigne(debut, fin)} className="text-[10px] text-red-400 hover:underline">supprimer</button>
+                      <button onClick={() => supprimerLigne(ligne)} className="text-[10px] text-red-400 hover:underline">supprimer</button>
                     </div>
                   </td>
-                  {cols.map(jour => {
-                    const c = cellule(jour, debut, fin)
-                    const cle = cleCase(jour, debut, fin)
+                  {cols.map((jour, iJour) => {
+                    const etatCase = cases[iLigne][iJour]
+                    // Case occupée par une séance commencée plus haut : c'est son
+                    // rowSpan qui la remplit, il ne faut émettre aucun <td>.
+                    if (etatCase.etat === 'couverte') return null
+
+                    const c = etatCase.etat === 'seance' ? etatCase.creneau : undefined
+                    const span = etatCase.etat === 'seance' ? etatCase.span : 1
+                    // Les actions portent sur les horaires PROPRES de la séance,
+                    // qui ne sont plus ceux de la ligne dès qu'elle en couvre plusieurs.
+                    const cDebut = c?.heure_debut ?? debut
+                    const cFin = c?.heure_fin ?? fin
+                    const cle = cleCase(jour, cDebut, cFin)
                     const ouvert = styleOuvert === cle
                     return (
-                      <td key={jour} className="border border-violet-100 p-1 align-top group" style={{ backgroundColor: c?.couleur ?? undefined }}>
+                      <td key={jour} rowSpan={span > 1 ? span : undefined}
+                        className="border border-violet-100 p-1 align-top group" style={{ backgroundColor: (c ? couleurAffichee(c) : null) ?? undefined }}>
                         <div className="flex items-center gap-0.5">
                           <select
                             value={c?.matiere ?? ''}
-                            onChange={e => setMatiere(jour, debut, fin, e.target.value)}
-                            aria-label={`${LABELS[jour]} ${debut}-${fin}`}
+                            onChange={e => setMatiere(jour, cDebut, cFin, e.target.value)}
+                            aria-label={`${LABELS[jour]} ${cDebut}-${cFin}`}
                             style={{
                               color: c?.couleur_texte ?? undefined,
                               fontWeight: c?.texte_gras ? 700 : undefined,
@@ -236,7 +265,7 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                               onClick={() => setStyleOuvert(ouvert ? null : cle)}
                               aria-expanded={ouvert}
                               title="Mise en forme de la case"
-                              aria-label={`Mise en forme ${LABELS[jour]} ${debut}`}
+                              aria-label={`Mise en forme ${LABELS[jour]} ${cDebut}`}
                               className={`shrink-0 rounded px-1 text-[11px] leading-none transition-opacity ${
                                 ouvert
                                   ? 'bg-violet-200 opacity-100'
@@ -247,24 +276,36 @@ export default function TimetableGrid({ initial, onSave, saving, finishLabel }: 
                           )}
                         </div>
                         {c && ouvert && (
-                          <div className="flex items-center gap-1 mt-1 bg-white rounded-lg border border-violet-200 shadow-sm px-1 py-0.5 w-fit">
-                            <input type="color" title="Couleur du fond" aria-label={`Couleur du fond ${LABELS[jour]} ${debut}`}
-                              value={c.couleur ?? '#ffffff'} onChange={e => setCouleur(jour, debut, fin, 'couleur', e.target.value)}
+                          <div className="mt-1 bg-white rounded-lg border border-violet-200 shadow-sm px-1 py-0.5 w-fit space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <input type="time" value={c.heure_debut}
+                                title="Début de la séance" aria-label={`Début ${LABELS[jour]} ${cDebut}`}
+                                onChange={e => setHoraireSeance(c, 'heure_debut', e.target.value)}
+                                className="w-[4.5rem] border rounded p-0.5 text-[11px] text-gray-900 bg-white" />
+                              <input type="time" value={c.heure_fin}
+                                title="Fin de la séance" aria-label={`Fin ${LABELS[jour]} ${cDebut}`}
+                                onChange={e => setHoraireSeance(c, 'heure_fin', e.target.value)}
+                                className="w-[4.5rem] border rounded p-0.5 text-[11px] text-gray-900 bg-white" />
+                            </div>
+                            <div className="flex items-center gap-1">
+                            <input type="color" title="Couleur du fond" aria-label={`Couleur du fond ${LABELS[jour]} ${cDebut}`}
+                              value={couleurAffichee(c) ?? '#ffffff'} onChange={e => setCouleur(jour, cDebut, cFin, 'couleur', e.target.value)}
                               className="w-4 h-4 p-0 border-0 bg-transparent cursor-pointer" />
-                            <input type="color" title="Couleur du texte" aria-label={`Couleur du texte ${LABELS[jour]} ${debut}`}
-                              value={c.couleur_texte ?? '#111827'} onChange={e => setCouleur(jour, debut, fin, 'couleur_texte', e.target.value)}
+                            <input type="color" title="Couleur du texte" aria-label={`Couleur du texte ${LABELS[jour]} ${cDebut}`}
+                              value={c.couleur_texte ?? '#111827'} onChange={e => setCouleur(jour, cDebut, cFin, 'couleur_texte', e.target.value)}
                               className="w-4 h-4 p-0 border-0 bg-transparent cursor-pointer" />
-                            <button type="button" title="Gras" onClick={() => toggleStyle(jour, debut, fin, 'texte_gras')}
+                            <button type="button" title="Gras" onClick={() => toggleStyle(jour, cDebut, cFin, 'texte_gras')}
                               className={`text-[11px] leading-none px-1 rounded font-bold ${c.texte_gras ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>B</button>
-                            <button type="button" title="Italique" onClick={() => toggleStyle(jour, debut, fin, 'texte_italique')}
+                            <button type="button" title="Italique" onClick={() => toggleStyle(jour, cDebut, cFin, 'texte_italique')}
                               className={`text-[11px] leading-none px-1 rounded italic ${c.texte_italique ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>i</button>
-                            <button type="button" title="Souligné" onClick={() => toggleStyle(jour, debut, fin, 'texte_souligne')}
+                            <button type="button" title="Souligné" onClick={() => toggleStyle(jour, cDebut, cFin, 'texte_souligne')}
                               className={`text-[11px] leading-none px-1 rounded underline ${c.texte_souligne ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>U</button>
                             {c.matiere && (
                               <button type="button" title={`Appliquer ce style à toutes les cases « ${c.matiere} »`}
                                 onClick={() => appliquerMemeMatiere(c)}
                                 className="text-[11px] leading-none px-1 rounded text-violet-600 hover:bg-violet-100">🖌️</button>
                             )}
+                            </div>
                           </div>
                         )}
                       </td>

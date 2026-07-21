@@ -1,16 +1,84 @@
 // src/data/trame-edt.ts
 
-/** Code couleur par défaut d'une matière (repère visuel pour l'enseignant). */
+/**
+ * Couleurs par FAMILLE de matière, pas par libellé.
+ *
+ * « Geste d'écriture », « Vocabulaire » et « Lecture compréhension » sont tous
+ * du français, donc tous bleus : l'enseignante repère la structure de sa
+ * journée d'un coup d'oeil, quel que soit l'intitulé venu de son manuel.
+ *
+ * Ce ne sont que des valeurs par DEFAUT : la couleur choisie à la main est
+ * stockée sur le créneau et l'emporte toujours (voir `couleurAffichee`).
+ */
+export const COULEURS_FAMILLE = {
+  francais: '#dbeafe',      // bleu
+  maths: '#fbcfe8',         // rose
+  qlm: '#d5f0dc',           // vert
+  eps: '#fdf0a4',           // jaune
+  arts: '#e4dcfb',          // violet
+  langueVivante: '#fee0c4', // orange
+  emc: '#cfeef0',           // sarcelle
+  routine: '#f1eff5',       // gris
+} as const
+
+/** Enlève les accents : les libellés générés n'en ont pas, ceux des PDF si. */
+function sansAccents(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
+/**
+ * Règles ordonnées : la première qui matche gagne. L'ordre compte, les cas
+ * ambigus sont placés avant leur famille générique.
+ *  - « histoire des arts » avant « histoire » (arts, pas questionner le monde)
+ *  - « langue vivante » avant le français (« étude de la langue » reste français)
+ *  - « enseignements artistiques » ne doit pas être capté par « moral et civique »
+ */
+const REGLES: Array<[RegExp, string]> = [
+  // Routines et temps non disciplinaires.
+  [/recre|accueil|cantine|dejeuner|repas|rangement|cartable|bilan de la journee|\bapc\b|temps calme/, COULEURS_FAMILLE.routine],
+
+  // Cas ambigus, avant les familles génériques.
+  [/histoire des arts/, COULEURS_FAMILLE.arts],
+  [/langue vivante|anglais/, COULEURS_FAMILLE.langueVivante],
+
+  // « artistiques » ne contient pas la sous-chaîne « arts », d'où les deux formes.
+  [/arts|artistique|musique|chant|chorale/, COULEURS_FAMILLE.arts],
+  [/\beps\b|education physique|sportive|motricite|natation|piscine/, COULEURS_FAMILLE.eps],
+  [/\bemc\b|moral et civique|conseil d.eleves|debat philo/, COULEURS_FAMILLE.emc],
+  [/questionner le monde|histoire|geographie|science|technologie|le vivant|la matiere|espace|le temps/, COULEURS_FAMILLE.qlm],
+  [/math|calcul|probleme|numeration|geometrie|grandeur|mesure|chaque jour compte/, COULEURS_FAMILLE.maths],
+
+  // Français en dernier : c'est la famille la plus large.
+  // `lc` et `pde` sont les abréviations employées dans le planning du manuel
+  // (« LC : La petite poule… », « PDE : Voyelles, de Rimbaud »).
+  [/francais|graphem|graphe|ecriture|phono|vocabulaire|lecture|comprehension|production d.ecrit|langage oral|grammaire|orthographe|conjugaison|dictee|fluence|poesie|encodage|decodage|etude de la langue|chut je lis|rituel|\blc\b|\bpde\b/, COULEURS_FAMILLE.francais],
+]
+
+/**
+ * Couleur par défaut d'une matière, d'après sa famille.
+ * Renvoie `null` si aucune famille ne correspond : la cellule reste neutre
+ * plutôt que de recevoir une couleur arbitraire et trompeuse.
+ */
 export function couleurMatiere(matiere: string): string | null {
-  const m = matiere.toLowerCase()
-  if (m.includes('graphème') || m.includes('graphe') || m.includes('écriture') ||
-      m.includes('ecriture') || m.includes('phono') || m.includes('vocabulaire') ||
-      m.includes('lecture-écriture') || m.includes('lecture-ecriture')) return '#dbeafe' // bleu
-  if (m.includes('math') || m.includes('calcul')) return '#fbcfe8' // rose
-  if (m.includes('arts')) return '#ddd6fe' // violet
-  if (m.includes('anglais')) return '#fed7aa' // orange
-  if (m.includes('eps')) return '#fef08a' // jaune
-  return null // EMC, Histoire géographie, Sciences, Lecture compréhension… : pas de teinte définie
+  const m = sansAccents(matiere)
+  for (const [regle, couleur] of REGLES) if (regle.test(m)) return couleur
+  return null
+}
+
+/**
+ * Couleur réellement affichée pour un créneau.
+ *
+ * La couleur enregistrée l'emporte toujours : elle vient d'un choix explicite
+ * de l'enseignante et ne doit jamais être écrasée. La palette ne sert que de
+ * repli pour les créneaux qui n'en ont aucune, ce qui fait bénéficier les
+ * emplois du temps déjà en base des familles ajoutées depuis, sans migration.
+ */
+export function couleurAffichee(
+  creneau: { matiere: string; couleur?: string | null; type?: 'cours' | 'routine' },
+): string | null {
+  if (creneau.couleur) return creneau.couleur
+  if (creneau.type === 'routine') return COULEURS_FAMILLE.routine
+  return couleurMatiere(creneau.matiere)
 }
 
 type LigneTrame =

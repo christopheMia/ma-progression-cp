@@ -1,4 +1,4 @@
-import { TRAME_EDT_CP, couleurMatiere } from '../trame-edt'
+import { TRAME_EDT_CP, couleurMatiere, COULEURS_FAMILLE } from '../trame-edt'
 
 describe('TRAME_EDT_CP', () => {
   test('contient des créneaux pour les 4 jours (pas de mercredi)', () => {
@@ -15,10 +15,14 @@ describe('TRAME_EDT_CP', () => {
     expect(accueil?.type).toBe('routine')
   })
 
-  test('couleurMatiere range les maths en rose et l\'EPS en jaune', () => {
-    expect(couleurMatiere('Mathématiques')).toBe('#fbcfe8')
-    expect(couleurMatiere('EPS')).toBe('#fef08a')
-    expect(couleurMatiere('Histoire géographie')).toBeNull()
+  test('couleurMatiere range chaque matière dans sa famille', () => {
+    expect(couleurMatiere('Mathématiques')).toBe(COULEURS_FAMILLE.maths)
+    expect(couleurMatiere('EPS')).toBe(COULEURS_FAMILLE.eps)
+    // Auparavant sans couleur : l'histoire-géo, les sciences et l'EMC
+    // s'affichaient en blanc. Elles ont maintenant leur famille.
+    expect(couleurMatiere('Histoire géographie')).toBe(COULEURS_FAMILLE.qlm)
+    expect(couleurMatiere('Sciences et technologie')).toBe(COULEURS_FAMILLE.qlm)
+    expect(couleurMatiere('EMC')).toBe(COULEURS_FAMILLE.emc)
   })
 
   test('le créneau Mathématiques 10h30-11h30 existe pour lundi', () => {

@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react'
 import { updateEmploiDuTemps } from '@/lib/actions/parametres'
 import type { CreneauImporte } from '@/lib/ia/schema-edt'
+import EdtGrilleLecture from '@/components/EdtGrilleLecture'
 
 /**
  * "Importer mon emploi du temps depuis un PDF".
@@ -77,21 +78,11 @@ export default function ImporterEdtButton() {
             <strong>{creneaux.length} créneaux</strong> lus sur {jours.length} jour{jours.length > 1 ? 's' : ''} ({jours.join(', ')}).
             Vérifie avant de remplacer ta grille actuelle.
           </p>
-          <div className="max-h-48 overflow-y-auto rounded-lg bg-white border border-slate-200">
-            <table className="w-full">
-              <tbody>
-                {creneaux.slice(0, 40).map((c, i) => (
-                  <tr key={i} className="border-b border-slate-100 last:border-0">
-                    <td className="px-2 py-1 text-slate-500 whitespace-nowrap">{c.jour}</td>
-                    <td className="px-2 py-1 text-slate-500 whitespace-nowrap">{c.heure_debut}-{c.heure_fin}</td>
-                    <td className="px-2 py-1 text-slate-900">{c.matiere}</td>
-                    <td className="px-2 py-1 text-slate-400">{c.type === 'routine' ? 'routine' : ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* La grille, pas une liste : sur l'EDT de Cécile la liste faisait
+              90 lignes à faire défiler pour vérifier une seule lecture. */}
+          <div className="rounded-lg bg-white border border-slate-200 p-1">
+            <EdtGrilleLecture creneaux={creneaux} />
           </div>
-          {creneaux.length > 40 && <p className="text-slate-500">…et {creneaux.length - 40} autres.</p>}
           <div className="flex items-center gap-2">
             <button type="button" onClick={valider} disabled={isPending}
               className="bg-violet-600 text-white rounded-lg px-2.5 py-1 disabled:opacity-50">
