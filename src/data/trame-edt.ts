@@ -21,6 +21,8 @@ export const COULEURS_FAMILLE = {
   routine: '#f1eff5',       // gris
 } as const
 
+export type Famille = keyof typeof COULEURS_FAMILLE
+
 /** Enlève les accents : les libellés générés n'en ont pas, ceux des PDF si. */
 function sansAccents(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -33,26 +35,40 @@ function sansAccents(s: string): string {
  *  - « langue vivante » avant le français (« étude de la langue » reste français)
  *  - « enseignements artistiques » ne doit pas être capté par « moral et civique »
  */
-const REGLES: Array<[RegExp, string]> = [
+const REGLES: Array<[RegExp, Famille]> = [
   // Routines et temps non disciplinaires.
-  [/recre|accueil|cantine|dejeuner|repas|rangement|cartable|bilan de la journee|\bapc\b|temps calme/, COULEURS_FAMILLE.routine],
+  [/recre|accueil|cantine|dejeuner|repas|rangement|cartable|bilan de la journee|\bapc\b|temps calme/, 'routine'],
 
   // Cas ambigus, avant les familles génériques.
-  [/histoire des arts/, COULEURS_FAMILLE.arts],
-  [/langue vivante|anglais/, COULEURS_FAMILLE.langueVivante],
+  [/histoire des arts/, 'arts'],
+  [/langue vivante|anglais/, 'langueVivante'],
 
   // « artistiques » ne contient pas la sous-chaîne « arts », d'où les deux formes.
-  [/arts|artistique|musique|chant|chorale/, COULEURS_FAMILLE.arts],
-  [/\beps\b|education physique|sportive|motricite|natation|piscine/, COULEURS_FAMILLE.eps],
-  [/\bemc\b|moral et civique|conseil d.eleves|debat philo/, COULEURS_FAMILLE.emc],
-  [/questionner le monde|histoire|geographie|science|technologie|le vivant|la matiere|espace|le temps/, COULEURS_FAMILLE.qlm],
-  [/math|calcul|probleme|numeration|geometrie|grandeur|mesure|chaque jour compte/, COULEURS_FAMILLE.maths],
+  [/arts|artistique|musique|chant|chorale/, 'arts'],
+  [/\beps\b|education physique|sportive|motricite|natation|piscine/, 'eps'],
+  [/\bemc\b|moral et civique|conseil d.eleves|debat philo/, 'emc'],
+  [/questionner le monde|histoire|geographie|science|technologie|le vivant|la matiere|espace|le temps/, 'qlm'],
+  [/math|calcul|probleme|numeration|geometrie|grandeur|mesure|chaque jour compte/, 'maths'],
 
   // Français en dernier : c'est la famille la plus large.
   // `lc` et `pde` sont les abréviations employées dans le planning du manuel
   // (« LC : La petite poule… », « PDE : Voyelles, de Rimbaud »).
-  [/francais|graphem|graphe|ecriture|phono|vocabulaire|lecture|comprehension|production d.ecrit|langage oral|grammaire|orthographe|conjugaison|dictee|fluence|poesie|encodage|decodage|etude de la langue|chut je lis|rituel|\blc\b|\bpde\b/, COULEURS_FAMILLE.francais],
+  [/francais|graphem|graphe|ecriture|phono|vocabulaire|lecture|comprehension|production d.ecrit|langage oral|grammaire|orthographe|conjugaison|dictee|fluence|poesie|encodage|decodage|etude de la langue|chut je lis|rituel|\blc\b|\bpde\b/, 'francais'],
 ]
+
+/**
+ * Famille d'une matière, d'après son libellé. `null` si aucune ne correspond.
+ *
+ * Sert à deux choses : choisir la couleur, et relier un créneau d'emploi du
+ * temps à la progression de sa matière (la table `progression` parle de
+ * « francais » et « maths », l'emploi du temps de « Étude de la langue » ou de
+ * « Calcul mental »).
+ */
+export function familleMatiere(matiere: string): Famille | null {
+  const m = sansAccents(matiere)
+  for (const [regle, famille] of REGLES) if (regle.test(m)) return famille
+  return null
+}
 
 /**
  * Couleur par défaut d'une matière, d'après sa famille.
@@ -60,9 +76,8 @@ const REGLES: Array<[RegExp, string]> = [
  * plutôt que de recevoir une couleur arbitraire et trompeuse.
  */
 export function couleurMatiere(matiere: string): string | null {
-  const m = sansAccents(matiere)
-  for (const [regle, couleur] of REGLES) if (regle.test(m)) return couleur
-  return null
+  const f = familleMatiere(matiere)
+  return f ? COULEURS_FAMILLE[f] : null
 }
 
 /**
