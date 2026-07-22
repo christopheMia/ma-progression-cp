@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono } from "next/font/google";
+import { Lexend, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Nunito partout : arrondie, chaleureuse, tres lisible (adaptee au CP).
-const nunito = Nunito({
-  variable: "--font-nunito",
+// Lexend : police concue pour faciliter la lecture (adaptee au CP).
+const lexend = Lexend({
+  variable: "--font-lexend",
   subsets: ["latin"],
 });
 
@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${lexend.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
