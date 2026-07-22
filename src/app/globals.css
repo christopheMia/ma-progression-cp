@@ -8,7 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-lexend);
+  --font-sans: var(--font-quicksand);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,8 +22,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Nunito partout (titres compris, ils heritent de cette regle), Arial en repli. */
+  /* Texte courant en Quicksand (var(--font-sans)), Arial en repli. */
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Titres en Playfair Display (serif chic, facon "Chloe"), pour un contraste
+   elegant avec le texte arrondi. Le texte courant, lui, reste en Quicksand. */
+h1, h2, h3, h4 {
+  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
 /* Animations */

@@ -1,10 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Lexend, Geist_Mono } from "next/font/google";
+import { Quicksand, Playfair_Display, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Lexend : police concue pour faciliter la lecture (adaptee au CP).
-const lexend = Lexend({
-  variable: "--font-lexend",
+// Texte courant : Quicksand (geometrique arrondi, doux et lisible).
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
+  subsets: ["latin"],
+});
+
+// Titres : Playfair Display (serif chic a fort contraste, facon "Chloe").
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
@@ -39,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${lexend.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${quicksand.variable} ${playfair.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
