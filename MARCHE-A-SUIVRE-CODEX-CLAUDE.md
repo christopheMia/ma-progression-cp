@@ -178,13 +178,15 @@ navigateur pour la voir). Caractéristiques à respecter :
      (`.eq('numero', semaine.numero)`, sans filtre de matière). Français par semaine,
      maths étalés sur les semaines de leur période à l'import (`repartirProgrammation`),
      donc tout est stocké par semaine et le journal se remplit.
-   - **Partie "période complète" : RESTE à faire** = une vue montrant, pour une période
-     entière, tout ce qui s'y travaille toutes matières confondues (aujourd'hui
-     l'affichage est semaine par semaine).
-   - **Décision en attente de Christophe (gate le code)** : maths stockés A) étalés sur
-     les semaines (actuel) ou B) gardés au niveau période (bloc où l'on pioche). Il
-     penche A (« période = compétences réparties sur les semaines »). Ne pas coder la
-     vue période avant sa réponse.
+   - **Partie "période complète" : FAITE ET DÉPLOYÉE (option A, lecture)**. Page
+     `/periodes` (`src/app/(app)/periodes/page.tsx`) + fonction pure `agregerParPeriode`
+     (`src/lib/vue-periode.ts`, 5 tests). Pour chaque période, toutes matières ensemble
+     (période d'abord), sans doublon. Lien "📅 Vue par période" dans l'en-tête du
+     planning. Maths confirmés en **A** par Christophe (étalés sur les semaines).
+   - **RESTE possible (option B, si demandé)** : rendre la vue période **éditable**
+     directement (cliquer une notion et la changer). Subtilité à cadrer : une période =
+     assemblage de semaines, donc il faut décider sur quelle semaine l'édition s'écrit.
+     Christophe a dit "on commence par A", B reporté.
 3. **Plusieurs méthodes dès le setup** : aujourd'hui seul le français au setup, le reste
    s'ajoute dans Paramètres. Permettre de tout mettre dès la config.
 4. **Nettoyage** : `remplirEnveloppes` (remplir l'EDT avec les items du manuel) est
@@ -224,6 +226,11 @@ Idées / options mises de côté (à ne pas oublier) :
 
 Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
 
+- **2026-07-22 — Claude Code — vue "période complète" (A) déployée** : page `/periodes`
+  + `src/lib/vue-periode.ts` (`agregerParPeriode`, 5 tests) + lien dans l'en-tête du
+  planning. Lecture seule (option A choisie par Christophe). Poussé sur `main`. Option B
+  (édition directe dans la vue période) reportée. C'est le pendant "période d'abord" de
+  `/programme`. Le cumul du cahier journal était déjà en place (voir plus bas).
 - **2026-07-22 — Claude Code — migrations 014 + 015 APPLIQUÉES en prod** (projet
   `odwgkakeepcqbgpsfugl`, via le connecteur Supabase de Claude, feu vert de Christophe).
   Vérifié : fonction `remplacer_progression` créée, colonne `classes.zone_scolaire`
