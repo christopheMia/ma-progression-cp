@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import AnnualGrid from '@/components/planning/AnnualGrid'
 import PrintButton from '@/components/PrintButton'
 import ProgressBar from '@/components/ProgressBar'
@@ -54,6 +55,10 @@ export default async function PlanningPage() {
           <p className="text-slate-500 text-sm">📖 {manuelNom} · {total} semaines</p>
         </div>
         <div className="flex gap-2 items-center">
+          <Link href="/periodes"
+            className="text-sm border border-violet-300 text-violet-700 rounded-lg px-2.5 py-1 hover:bg-violet-50">
+            📅 Vue par période
+          </Link>
           <ProgressionCorrector classId={classe.id} progression={progressionActuelle} prenom={prenom || undefined} />
           <PrintButton label="🖨️ Imprimer le planning" />
         </div>
