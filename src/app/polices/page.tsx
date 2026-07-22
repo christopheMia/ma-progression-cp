@@ -1,4 +1,4 @@
-import { Nunito, Lexend, Poppins, Fredoka, Quicksand } from 'next/font/google'
+import { Nunito, Lexend, Poppins, Fredoka, Quicksand, Playfair_Display, Bodoni_Moda } from 'next/font/google'
 
 // Page de comparaison des typographies. Toutes les polices candidates sont
 // chargees et affichees cote a cote sur le MEME contenu d'exemple, pour choisir
@@ -10,6 +10,9 @@ const lexend = Lexend({ subsets: ['latin'] })
 const poppins = Poppins({ subsets: ['latin'], weight: ['400', '600', '700'] })
 const fredoka = Fredoka({ subsets: ['latin'] })
 const quicksand = Quicksand({ subsets: ['latin'] })
+// Serifs chic a fort contraste, facon "Chloe" de Canva (elegantes pour les titres).
+const playfair = Playfair_Display({ subsets: ['latin'] })
+const bodoni = Bodoni_Moda({ subsets: ['latin'] })
 
 const POLICES = [
   { n: 1, nom: 'Nunito', style: nunito.style, desc: 'Arrondie, chaleureuse, le classique des applis scolaires.' },
@@ -17,6 +20,8 @@ const POLICES = [
   { n: 3, nom: 'Poppins', style: poppins.style, desc: 'Géométrique, moderne, avec du caractère.' },
   { n: 4, nom: 'Fredoka', style: fredoka.style, desc: 'Ronde et douce, esprit très enfantin / CP.' },
   { n: 5, nom: 'Quicksand', style: quicksand.style, desc: 'Géométrique arrondie, légère et élégante.' },
+  { n: 6, nom: 'Playfair Display', style: playfair.style, desc: 'Façon « Chloé » : serif chic à fort contraste. Idéale en TITRE (peu lisible en petit).' },
+  { n: 7, nom: 'Bodoni Moda', style: bodoni.style, desc: 'Façon « Chloé » : serif mode très contrasté. Idéale en TITRE (peu lisible en petit).' },
 ]
 
 export default function PolicesPage() {
