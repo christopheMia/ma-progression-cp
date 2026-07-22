@@ -8,7 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,9 +22,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Utilise vraiment Geist (chargee dans layout.tsx via next/font) au lieu de
-     retomber sur Arial : Arial ecrasait Geist et donnait un rendu tres banal. */
+  /* Texte courant en Nunito (var(--font-sans)), Arial en repli. */
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Titres en Poppins, pour donner du caractere sans nuire a la lisibilite du
+   texte courant qui reste en Nunito. */
+h1, h2, h3, h4 {
+  font-family: var(--font-poppins), var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 /* Animations */
