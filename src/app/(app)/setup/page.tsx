@@ -9,10 +9,12 @@ import { genererEdtCP } from '@/lib/edt-generator'
 import DemoButton from '@/components/DemoButton'
 import { creerClasse } from '@/lib/actions/setup'
 import type { ProgressionSemaine } from '@/data/manuels'
+import type { ZoneScolaire } from '@/lib/calendrier-officiel'
 
 type WizardData = {
   manuelId: string
   rentreeDate: string
+  zoneScolaire: ZoneScolaire
   eleves: string[]
   emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur?: string | null; type?: 'cours' | 'routine' }>
   customProgression?: ProgressionSemaine[]
@@ -50,7 +52,7 @@ export default function SetupPage() {
   const stepTitles = ['Ta méthode de lecture', 'Date de la rentrée', 'Tes élèves', 'Ton emploi du temps']
   const stepHelp = [
     'Dépose le PDF de ton manuel de lecture (ou colle son sommaire) : l’IA construit ta progression de l’année, tu pourras tout corriger ensuite.',
-    'Choisis le jour de la rentrée : l’appli place automatiquement les 36 semaines de l’année.',
+    'Choisis le jour de la rentrée et ta zone : l’appli place les 36 semaines en sautant les vacances.',
     'Ajoute les prénoms de tes élèves. Tu peux aussi le faire plus tard, dans Paramètres.',
     'Indique tes horaires de la semaine : ils servent à pré-remplir ton cahier journal jour par jour.',
   ]
@@ -100,8 +102,10 @@ export default function SetupPage() {
           }} />
       )}
       {step === 2 && (
-        <RentreeDatePicker initial={data.rentreeDate}
-          onSelect={rentreeDate => { setData(d => ({ ...d, rentreeDate })); setStep(3) }} />
+        <RentreeDatePicker initial={data.rentreeDate} initialZone={data.zoneScolaire ?? 'A'}
+          onSelect={(rentreeDate, zoneScolaire) => {
+            setData(d => ({ ...d, rentreeDate, zoneScolaire })); setStep(3)
+          }} />
       )}
       {step === 3 && (
         <StudentListEditor initial={data.eleves}

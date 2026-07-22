@@ -5,6 +5,7 @@ import { extractPdfText } from '@/lib/ia/pdf-client'
 import { getPeriodesDisponibles, type PeriodeDispo } from '@/lib/actions/progression-periode'
 import { previsualiserProgrammation } from '@/lib/actions/progression-programmation'
 import type { PeriodeProgrammation } from '@/lib/repartition-periode'
+import type { TypeDocumentImport } from '@/lib/ia/schema-import-auto'
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
@@ -35,10 +36,9 @@ export default function IaImport({
   const [chat, setChat] = useState<ChatTurn[]>([])
   const [message, setMessage] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
-  // Un planning de période détaille TOUTES les séances par domaine (lecture
-  // compréhension, geste d'écriture, fluence…) là où un sommaire de manuel se
-  // limite aux notions. Les deux ont besoin de consignes différentes.
-  const [mode, setMode] = useState<'manuel' | 'periode' | 'programmation'>('manuel')
+  // L'enseignante ne choisit plus le format avant l'import : l'IA reconnait le
+  // document et le composant n'affiche ensuite que l'option utile.
+  const [typeDocument, setTypeDocument] = useState<TypeDocumentImport | null>(null)
   // Nom du manuel importe : sans lui, l'enseignante ne sait plus QUELLE methode
   // elle a importee (retour du 20/07). Prerempli depuis le nom du fichier PDF,
   // qui contient presque toujours le nom de la methode, puis modifiable.
@@ -49,30 +49,31 @@ export default function IaImport({
   const [periode, setPeriode] = useState<number | null>(null)
 
   useEffect(() => {
-    if (mode !== 'periode' || periodes.length) return
+    if (typeDocument !== 'periode' || !onSave || periodes.length) return
     getPeriodesDisponibles().then(liste => {
       setPeriodes(liste)
       setPeriode(p => p ?? liste[0]?.numero ?? null)
     }).catch(() => setPeriodes([]))
-  }, [mode, periodes.length])
+  }, [typeDocument, onSave, periodes.length])
 
   async function lancerImport(form: FormData) {
     form.append('matiere', matiere)
-    form.append('mode', mode)
-    setError(null); setLoading(true); setProgression(null)
+    setError(null); setLoading(true); setProgression(null); setTypeDocument(null)
     try {
       const res = await fetch('/api/ia-manuel', { method: 'POST', body: form })
       const raw = await res.text()
       let data: {
         progression?: ProgressionSemaine[]
         periodes?: PeriodeProgrammation[]
+        type_document?: TypeDocumentImport
         error?: string
       } | null = null
       try { data = JSON.parse(raw) } catch { data = null }
 
       // Une programmation annuelle arrive par periode : c'est le serveur qui
       // l'etale ensuite sur les vraies semaines de la classe, avant l'apercu.
-      if (res.ok && data?.periodes) {
+      if (res.ok && data?.type_document === 'programmation' && data.periodes) {
+        setTypeDocument('programmation')
         const { semaines, periodesIgnorees } = await previsualiserProgrammation(data.periodes)
         setProgression(semaines)
         const oubli = periodesIgnorees.length
@@ -83,9 +84,10 @@ export default function IaImport({
         return
       }
 
-      if (!res.ok || !data || !data.progression) {
+      if (!res.ok || !data || !data.progression || !data.type_document) {
         setError(`Erreur ${res.status} : ${data?.error ?? (raw.slice(0, 150) || 'réponse vide')}`)
       } else {
+        setTypeDocument(data.type_document)
         setProgression(data.progression)
         setChat([{ role: 'assistant', content: prenom
           ? `Bonjour ${prenom} ! J'ai préparé ta progression : ${data.progression.length} semaines. Dis-moi si quelque chose ne va pas 😊`
@@ -154,7 +156,7 @@ export default function IaImport({
         await onSave(
           matiere,
           progression,
-          mode === 'periode' ? (periode ?? undefined) : undefined,
+          typeDocument === 'periode' ? (periode ?? undefined) : undefined,
           nomManuel.trim() || undefined,
         )
       } finally { setSaving(false) }
@@ -181,6 +183,12 @@ export default function IaImport({
   }
 
   const totalNotions = progression?.reduce((n, s) => n + s.items.length, 0) ?? 0
+  const labelTypeDocument: Record<TypeDocumentImport, string> = {
+    manuel: 'manuel ou sommaire',
+    periode: 'planning de période',
+    programmation: 'programmation annuelle',
+  }
+  const periodeRequise = Boolean(onSave && typeDocument === 'periode' && !periode)
 
   return (
     <div className="space-y-4">
@@ -198,30 +206,6 @@ export default function IaImport({
               />
             </div>
           )}
-          <fieldset disabled={loading} className="disabled:opacity-50">
-            <legend className="block text-sm font-medium text-gray-700 mb-1">Quel type de document ?</legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {([
-                { valeur: 'manuel' as const, titre: 'Manuel / sommaire', sous: 'Une progression annuelle, notion par notion' },
-                { valeur: 'periode' as const, titre: 'Planning de période', sous: 'Le détail des séances, semaine par semaine' },
-                { valeur: 'programmation' as const, titre: 'Programmation annuelle', sous: 'Un tableau par période et par domaine, sans semaines' },
-              ]).map(o => (
-                <label key={o.valeur}
-                  className={`flex gap-2 items-start rounded-lg border p-2.5 cursor-pointer transition-colors ${
-                    mode === o.valeur ? 'border-violet-400 bg-violet-50' : 'border-gray-200 hover:bg-gray-50'
-                  }`}>
-                  <input type="radio" name="type-document" value={o.valeur}
-                    checked={mode === o.valeur} onChange={() => setMode(o.valeur)}
-                    className="mt-1 accent-violet-600" />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-gray-900">{o.titre}</span>
-                    <span className="block text-xs text-gray-500">{o.sous}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
           <div>
             <label htmlFor="nom-methode" className="block text-sm font-medium text-gray-700 mb-1">
               Nom de la méthode
@@ -239,38 +223,9 @@ export default function IaImport({
             </p>
           </div>
 
-          {mode === 'periode' && (
-            periodes.length > 0 ? (
-              <div>
-                <label htmlFor="choix-periode" className="block text-sm font-medium text-gray-700 mb-1">
-                  Quelle période importes-tu ?
-                </label>
-                <select id="choix-periode" value={periode ?? ''} disabled={loading}
-                  onChange={e => setPeriode(Number(e.target.value))}
-                  className="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200">
-                  {periodes.map(p => (
-                    <option key={p.numero} value={p.numero}>
-                      {p.nom} — semaines {p.premiereSemaine} à {p.premiereSemaine + p.nbSemaines - 1}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Le planning sera calé sur ces semaines. Les autres périodes ne sont pas touchées.
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Tes semaines ne sont pas encore rattachées aux périodes. Utilise
-                « Caler sur le calendrier » dans les paramètres, sinon l&apos;import repartira
-                de la semaine 1.
-              </p>
-            )
-          )}
-
           <p className="text-sm text-gray-600">
-            {mode === 'periode'
-              ? <>Déposez le PDF du planning de votre période. L&apos;IA reprend <strong>toutes</strong> les séances de chaque semaine (lecture compréhension, geste d&apos;écriture, fluence…) sans en perdre.</>
-              : <>Déposez le PDF de votre manuel <strong>ou</strong> collez son sommaire. L&apos;IA reconstruit la progression — vous pourrez tout corriger ensuite.</>}
+            Dépose ton manuel, son sommaire, un planning de période ou une programmation annuelle.
+            L&apos;IA reconnaît le document et prépare automatiquement la bonne progression.
           </p>
           <input type="file" accept=".pdf" multiple onChange={importPdf} disabled={loading}
             className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer disabled:opacity-50" />
@@ -279,7 +234,7 @@ export default function IaImport({
             L&apos;IA lit maintenant les <strong>tableaux</strong> en respectant les lignes et les colonnes.
           </p>
           <textarea value={texte} onChange={e => setTexte(e.target.value)} disabled={loading}
-            placeholder="…ou collez ici le sommaire du manuel"
+            placeholder="…ou colle ici le texte du document"
             className="w-full h-28 border-2 border-slate-300 rounded-lg p-3 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200" />
           <button onClick={importTexte} disabled={loading}
             className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-50">
@@ -295,6 +250,39 @@ export default function IaImport({
           <p className="text-sm text-violet-700 bg-violet-50 border border-violet-200 rounded-lg px-3 py-2">
             {progression.length} semaines · {totalNotions} éléments répartis{matiere ? ` (${matiere})` : ''}
           </p>
+
+          {typeDocument && (
+            <p className="text-sm text-slate-700">
+              Document reconnu : <strong>{labelTypeDocument[typeDocument]}</strong>
+            </p>
+          )}
+
+          {typeDocument === 'periode' && onSave && (
+            periodes.length > 0 ? (
+              <div>
+                <label htmlFor="choix-periode" className="block text-sm font-medium text-gray-700 mb-1">
+                  Sur quelle période veux-tu placer ce planning ?
+                </label>
+                <select id="choix-periode" value={periode ?? ''} disabled={saving}
+                  onChange={e => setPeriode(Number(e.target.value))}
+                  className="w-full border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200">
+                  {periodes.map(p => (
+                    <option key={p.numero} value={p.numero}>
+                      {p.nom}, semaines {p.premiereSemaine} à {p.premiereSemaine + p.nbSemaines - 1}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Les autres périodes ne seront pas modifiées.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Ce planning ne peut pas encore être enregistré : tes semaines ne sont rattachées à aucune période.
+                Utilise « Caler sur le calendrier » dans les paramètres, puis relance l&apos;import.
+              </p>
+            )
+          )}
 
           {/* Tableau éditable */}
           <div className="max-h-72 overflow-y-auto border rounded-xl">
@@ -358,7 +346,7 @@ export default function IaImport({
             </div>
           </div>
 
-          <button onClick={valider} disabled={saving}
+          <button onClick={valider} disabled={saving || periodeRequise}
             className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-50">
             {saving ? 'Enregistrement…' : onSave ? '✅ Enregistrer cette méthode' : '✅ Utiliser cette progression'}
           </button>

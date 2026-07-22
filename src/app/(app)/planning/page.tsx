@@ -15,9 +15,13 @@ export default async function PlanningPage() {
   const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
   if (!classe) redirect('/setup')
 
-  const { data: semaines } = await supabase
-    .from('semaines').select('*').eq('class_id', classe.id).order('numero')
-  const { data: eleves } = await supabase.from('eleves').select('id').eq('class_id', classe.id)
+  const [{ data: semaines }, { data: eleves }, { data: periodes }] = await Promise.all([
+    supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
+    supabase.from('eleves').select('id').eq('class_id', classe.id),
+    supabase.from('periodes')
+      .select('numero, nom, date_debut, date_fin, ordre')
+      .eq('class_id', classe.id).order('ordre'),
+  ])
 
   const semaineIds = (semaines ?? []).map(s => s.id)
   const { data: acquis } = semaineIds.length
@@ -67,6 +71,7 @@ export default async function PlanningPage() {
 
       <AnnualGrid
         semaines={semaines ?? []}
+        periodes={periodes ?? []}
         acquisParSemaine={acquisParSemaine}
         elevesCount={eleves?.length ?? 0}
       />

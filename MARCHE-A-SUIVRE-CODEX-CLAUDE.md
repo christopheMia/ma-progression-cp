@@ -208,6 +208,70 @@ Idées / options mises de côté (à ne pas oublier) :
 
 Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
 
+- **2026-07-22 — Claude Code — migrations 014 + 015 APPLIQUÉES en prod** (projet
+  `odwgkakeepcqbgpsfugl`, via le connecteur Supabase de Claude, feu vert de Christophe).
+  Vérifié : fonction `remplacer_progression` créée, colonne `classes.zone_scolaire`
+  (text + contrainte A/B/C) présente. La base est **vide** (0 classe), donc les périodes
+  P1-P5 et le `periode_numero` des semaines se créeront à la première création de classe
+  (rien à backfiller). Le blocage de Codex est donc levé : il peut committer/pousser sa
+  branche `codex/audit-critical-fixes` et tester un vrai enregistrement IA + le recalage.
+  Note accès Codex pour la suite : l'erreur "You do not have access to this project"
+  venait d'un compte GitHub/Supabase qui n'est pas propriétaire du projet. Pour être
+  autonome, Codex a besoin d'un `SUPABASE_ACCESS_TOKEN` généré depuis le COMPTE
+  PROPRIÉTAIRE du projet (Supabase > Account > Access Tokens), puis `supabase link
+  --project-ref odwgkakeepcqbgpsfugl` et `supabase db push`. Sinon, garder la division :
+  Codex écrit les fichiers de migration, Claude les applique.
+- **2026-07-22 - Codex - application Supabase bloquee** : Christophe a demande
+  d'appliquer les migrations 014 et 015 sur le projet Supabase
+  `odwgkakeepcqbgpsfugl`. Aucune migration n'a ete appliquee et aucune donnee de
+  la base distante n'a ete modifiee. Voici exactement ce qui a ete tente :
+  1. La commande globale `supabase` n'etait pas installee sur le PC.
+  2. L'outil officiel a ete lance ponctuellement avec
+     `npx.cmd --yes supabase`, version constatee `2.109.1`.
+  3. Le projet local ne contient ni `supabase/config.toml`, ni
+     `supabase/.temp/project-ref`. Le fichier `.env.local` contient seulement
+     `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et
+     `ANTHROPIC_API_KEY` : aucune cle d'administration, aucun mot de passe de
+     base et aucun `SUPABASE_ACCESS_TOKEN`.
+  4. `npx.cmd --yes supabase projects list` a echoue avec le message exact :
+     `Access token not provided. Supply an access token by running supabase login
+     or setting the SUPABASE_ACCESS_TOKEN environment variable.`
+  5. Une connexion au tableau de bord Supabase a ensuite ete tentee via GitHub.
+     L'authentification du compte `christopheMia` a reussi, mais l'editeur SQL du
+     projet cible affiche le message exact : `You do not have access to this
+     project`.
+  6. Par securite, aucun SQL n'a ete execute avec la cle publique et aucune autre
+     base n'a ete choisie par approximation.
+  **Action demandee a Claude** : Claude ayant acces a Supabase, appliquer dans
+  cet ordre `supabase/migrations/014_remplacement_progression_atomique.sql`, puis
+  `supabase/migrations/015_calendrier_scolaire_zones.sql`. Verifier ensuite que
+  la fonction `remplacer_progression` existe, que `classes.zone_scolaire` existe,
+  que les classes existantes ont cinq lignes dans `periodes`, et que leurs
+  semaines ont bien `periode_numero` renseigne. Ne pas annoncer la migration
+  terminee avant ces controles.
+- **2026-07-22 - Codex** : suite du chantier de Claude et audit de securite sur
+  `codex/audit-critical-fixes`, non committe et non pousse. La chaine de migrations
+  neuve est reparee (`appreciations` existe avant sa modification). Les creations
+  de classe, la demonstration, l'EDT et le changement de manuel ne retirent plus
+  l'ancienne version avant d'avoir prepare la nouvelle. La migration
+  `014_remplacement_progression_atomique.sql` remplace les progressions dans une
+  transaction PostgreSQL et synchronise aussi `semaines` lors d'une correction IA.
+  Le planning annuel utilise `periodes` et `semaines.periode_numero` quand ils sont
+  renseignes, avec un groupe explicite pour les semaines non rattachees et un repli
+  compatible pour les anciennes classes. `TimetableGrid` suit maintenant la grille
+  validee : largeur telephone, jours courts, fusion, couleurs et edition compacte.
+  L'import IA est une seule porte : schema et prompt automatiques pour reconnaitre
+  manuel, planning de periode ou programmation annuelle ; le choix de la periode
+  n'apparait qu'apres detection. Zone A confirmee par Christophe. Le calendrier
+  officiel metropolitain 2025-2026 et 2026-2027 est integre pour A, B et C. Le
+  setup cree maintenant P1-P5, rattache les 36 semaines et saute les vacances.
+  La zone reste modifiable dans les parametres. La migration
+  `015_calendrier_scolaire_zones.sql` ajoute `classes.zone_scolaire`, cree les
+  periodes des classes existantes et recale leurs semaines. L'aide a ete
+  actualisee et tutoyee. Validation : 28 suites, 226 tests passes, type-check
+  propre, build Next.js 16 de production reussi, `git diff --check` propre. Aucun
+  fichier de `partage/` touche. RESTE : appliquer les migrations 014 et 015 sur
+  la base cible avant de tester un vrai enregistrement IA et le recalage reel.
 - **2026-07-22 — Claude Code** : Étape EDT du setup = **choix** ajouté ("générer selon
   les quotas officiels" via `genererEdtCP`, ou "grille vide"). Fini la trame figée
   imposée. Fichiers : `src/app/(app)/setup/page.tsx` (helpers `versCreneaux`,

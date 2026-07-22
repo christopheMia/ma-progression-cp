@@ -33,6 +33,14 @@ const lignesDuCorps = (): HTMLTableRowElement[] =>
   Array.from(document.querySelectorAll('tbody tr'))
 
 describe('TimetableGrid : rendu de la grille fusionnée', () => {
+  test('la grille editable tient dans la largeur comme la grille de lecture', () => {
+    const { container } = poser(CAS_11H)
+    const table = container.querySelector('table')
+    expect(table?.className).toContain('table-fixed')
+    expect(table?.parentElement?.className).not.toContain('overflow-x-auto')
+    expect(screen.getByText('Lun')).toBeTruthy()
+  })
+
   test('la séance longue est rendue une seule fois, sur toute sa hauteur', () => {
     poser(CAS_11H)
     // Une seule cellule "Calcul mental" pour le lundi, avec rowSpan=3.

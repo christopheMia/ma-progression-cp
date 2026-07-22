@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
-import { PROGRESSION_JSON_SCHEMA, normalizeProgression } from '@/lib/ia/schema'
-import { systemImport, systemImportPeriode, systemImportProgrammation, userImport, userImportDocument } from '@/lib/ia/prompts'
-import { PROGRAMMATION_JSON_SCHEMA, normalizeProgrammation } from '@/lib/ia/schema-programmation'
+import { normalizeProgression } from '@/lib/ia/schema'
+import { systemImportAutomatique, userImport, userImportDocument } from '@/lib/ia/prompts'
+import { normalizeProgrammation } from '@/lib/ia/schema-programmation'
+import { AUTO_IMPORT_JSON_SCHEMA, typeDocumentImport } from '@/lib/ia/schema-import-auto'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
@@ -14,9 +15,6 @@ export async function POST(request: Request) {
     const contentType = request.headers.get('content-type') ?? ''
     let texte = ''
     let matiere = 'francais'
-    // 'periode' = planning detaille d'une periode (toutes les seances par
-    // domaine) ; 'manuel' = sommaire / progression d'un manuel.
-    let mode: 'manuel' | 'periode' | 'programmation' = 'manuel'
     // PDF joints tels quels : le modele lit alors la MISE EN PAGE (tableaux,
     // lignes, colonnes) au lieu d'un texte aplati. C'est la voie haute fidelite.
     const pdfsBase64: string[] = []
@@ -27,8 +25,6 @@ export async function POST(request: Request) {
       const texteColle = (form.get('texte') as string | null) ?? ''
       const matiereRaw = (form.get('matiere') as string | null) ?? ''
       if (matiereRaw.trim()) matiere = matiereRaw.trim()
-      if (form.get('mode') === 'periode') mode = 'periode'
-      if (form.get('mode') === 'programmation') mode = 'programmation'
 
       if (fichiers.length) {
         // Les fonctions serverless Vercel plafonnent le corps de requete a ~4,5 Mo.
@@ -50,8 +46,6 @@ export async function POST(request: Request) {
       const body = await request.json()
       texte = typeof body.texte === 'string' ? body.texte : ''
       if (typeof body.matiere === 'string' && body.matiere.trim()) matiere = body.matiere.trim()
-      if (body.mode === 'periode') mode = 'periode'
-      if (body.mode === 'programmation') mode = 'programmation'
     }
 
     texte = texte.trim()
@@ -75,15 +69,11 @@ export async function POST(request: Request) {
       max_tokens: 16000,
       // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
       // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
-      system: mode === 'programmation'
-        ? systemImportProgrammation(matiere)
-        : mode === 'periode' ? systemImportPeriode(matiere) : systemImport(matiere),
+      system: systemImportAutomatique(matiere),
       output_config: {
         format: {
           type: 'json_schema',
-          // Une programmation annuelle est structuree par periode et par
-          // domaine, pas par semaine : ce n'est pas le meme schema.
-          schema: mode === 'programmation' ? PROGRAMMATION_JSON_SCHEMA : PROGRESSION_JSON_SCHEMA,
+          schema: AUTO_IMPORT_JSON_SCHEMA,
         },
       },
       messages: [{ role: 'user', content: contenuUtilisateur }],
@@ -95,7 +85,12 @@ export async function POST(request: Request) {
     const jsonBlock = message.content.find(b => b.type === 'text')
     const parsed = jsonBlock && 'text' in jsonBlock ? JSON.parse(jsonBlock.text) : { semaines: [] }
 
-    if (mode === 'programmation') {
+    const typeDocument = typeDocumentImport(parsed.type_document)
+    if (!typeDocument) {
+      return NextResponse.json({ error: "L'IA n'a pas reconnu le type de document." }, { status: 422 })
+    }
+
+    if (typeDocument === 'programmation') {
       const periodes = normalizeProgrammation(parsed)
       if (periodes.length === 0) {
         return NextResponse.json(
@@ -103,7 +98,7 @@ export async function POST(request: Request) {
           { status: 422 }
         )
       }
-      return NextResponse.json({ periodes })
+      return NextResponse.json({ type_document: typeDocument, periodes })
     }
 
     const progression = normalizeProgression(parsed.semaines ?? [])
@@ -114,7 +109,7 @@ export async function POST(request: Request) {
         { status: 422 }
       )
     }
-    return NextResponse.json({ progression })
+    return NextResponse.json({ type_document: typeDocument, progression })
   } catch (err) {
     console.error('ia-manuel error:', err)
     const { message, status } = messageErreurIA(err)

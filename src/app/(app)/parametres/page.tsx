@@ -93,7 +93,8 @@ export default async function ParametresPage() {
       </Section>
 
       <Section titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>
-        <RentreeEditor initial={classe.rentree_date} />
+        <RentreeEditor initial={classe.rentree_date}
+          initialZone={(classe.zone_scolaire === 'B' || classe.zone_scolaire === 'C') ? classe.zone_scolaire : 'A'} />
       </Section>
 
       <Section id="methodes" titre="📚 Mes méthodes et acquis des élèves" headerRight={<ResetBlockButton scope="methodes" message="Efface les méthodes importées et leur progression." />}>

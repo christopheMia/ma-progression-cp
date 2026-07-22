@@ -11,6 +11,7 @@ function addMinutes(t: string, mins: number): string {
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 const LABELS: Record<string, string> = { lundi: 'Lundi', mardi: 'Mardi', mercredi: 'Mercredi', jeudi: 'Jeudi', vendredi: 'Vendredi' }
+const LABELS_COURTS: Record<string, string> = { lundi: 'Lun', mardi: 'Mar', mercredi: 'Mer', jeudi: 'Jeu', vendredi: 'Ven' }
 const MATIERES = ['Appropriation des graphèmes', 'Écriture', 'Phonologie', 'Vocabulaire', 'Lecture-écriture', 'Lecture compréhension', "Production d'écrits", 'Chut je lis', 'Calcul mental', 'Mathématiques', 'Histoire géographie', 'Sciences et technologie', 'Arts visuels', 'EPS', 'Anglais', 'EMC']
 
 export type Creneau = {
@@ -212,12 +213,21 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
           {historique.length > 0 && <span className="text-violet-400">({historique.length})</span>}
         </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-sm w-full">
+      <div className="rounded-xl border border-violet-100 bg-white p-1.5 sm:p-3">
+        <table className="w-full table-fixed border-collapse text-[0.62rem] sm:text-xs">
+          <colgroup>
+            <col className="w-[3.1rem] sm:w-[4.6rem]" />
+            {cols.map(j => <col key={j} />)}
+          </colgroup>
           <thead>
             <tr>
-              <th className="border border-violet-100 bg-violet-100 p-2 text-gray-700">Horaires</th>
-              {cols.map(j => <th key={j} className="border border-violet-100 bg-violet-100 p-2 text-gray-700">{LABELS[j]}</th>)}
+              <th className="border border-violet-100 bg-violet-100 p-1 text-center font-semibold text-violet-900">h</th>
+              {cols.map(j => (
+                <th key={j} className="border border-violet-100 bg-violet-100 p-1 text-center font-semibold text-violet-900 sm:p-2">
+                  <span className="hidden sm:inline">{LABELS[j]}</span>
+                  <span className="sm:hidden">{LABELS_COURTS[j]}</span>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -228,17 +238,26 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
               const isMasque = surLigne.some(c => c.visible_journal === false)
               return (
                 <tr key={`${debut}-${fin}`}>
-                  <td className="border border-violet-100 bg-violet-50 p-1 whitespace-nowrap text-xs text-gray-500">
-                    <div className="font-medium text-gray-700 tabular-nums">{debut}</div>
-                    <div className="tabular-nums">{fin}</div>
-                    <div className="flex gap-2 mt-1">
-                      <button onClick={() => toggleRoutine(ligne)} className="text-[10px] text-violet-500 hover:underline">{isRoutine ? '↩ cours' : 'routine'}</button>
-                      <button onClick={() => toggleVisible(ligne)}
-                        className={`text-[10px] hover:underline ${isMasque ? 'text-gray-400' : 'text-violet-500'}`}>
-                        {isMasque ? '👁️ masqué' : '👁️ visible'}
-                      </button>
-                      <button onClick={() => supprimerLigne(ligne)} className="text-[10px] text-red-400 hover:underline">supprimer</button>
-                    </div>
+                  <td className="relative border border-violet-100 bg-violet-50/70 p-1 text-center text-[0.56rem] text-slate-500 sm:text-[0.68rem]">
+                    <div className="font-medium tabular-nums text-slate-700">{debut}</div>
+                    <div className="tabular-nums text-slate-400">{fin}</div>
+                    <details className="group/options no-print relative mt-0.5">
+                      <summary className="mx-auto flex h-5 w-5 cursor-pointer list-none items-center justify-center rounded text-violet-500 hover:bg-violet-100 focus-visible:outline-2 focus-visible:outline-violet-500"
+                        aria-label={`Options de la tranche ${debut} à ${fin}`} title="Options de la tranche">
+                        <span aria-hidden="true">•••</span>
+                      </summary>
+                      <div className="absolute left-0 top-full z-30 mt-1 w-36 rounded-lg border border-violet-200 bg-white p-1.5 text-left shadow-lg">
+                        <button type="button" onClick={() => toggleRoutine(ligne)} className="block w-full rounded px-2 py-1 text-left text-[0.68rem] text-violet-700 hover:bg-violet-50">
+                          {isRoutine ? 'Remettre en cours' : 'Marquer comme routine'}
+                        </button>
+                        <button type="button" onClick={() => toggleVisible(ligne)} className="block w-full rounded px-2 py-1 text-left text-[0.68rem] text-violet-700 hover:bg-violet-50">
+                          {isMasque ? 'Afficher dans le journal' : 'Masquer dans le journal'}
+                        </button>
+                        <button type="button" onClick={() => supprimerLigne(ligne)} className="block w-full rounded px-2 py-1 text-left text-[0.68rem] text-red-600 hover:bg-red-50">
+                          Supprimer la tranche
+                        </button>
+                      </div>
+                    </details>
                   </td>
                   {cols.map((jour, iJour) => {
                     const etatCase = cases[iLigne][iJour]
@@ -256,20 +275,30 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                     const ouvert = styleOuvert === cle
                     return (
                       <td key={jour} rowSpan={span > 1 ? span : undefined}
-                        className="border border-violet-100 p-1 align-top group" style={{ backgroundColor: (c ? couleurAffichee(c) : null) ?? undefined }}>
-                        <div className="flex items-center gap-0.5">
-                          <select
-                            value={c?.matiere ?? ''}
-                            onChange={e => setMatiere(jour, cDebut, cFin, e.target.value)}
-                            aria-label={`${LABELS[jour]} ${cDebut}-${cFin}`}
+                        className="group relative border border-violet-100 p-1 align-middle break-words hyphens-auto sm:p-1.5"
+                        style={{ backgroundColor: (c ? couleurAffichee(c) : null) ?? undefined }}>
+                        <div className="relative min-h-8 pr-4 sm:min-h-9 sm:pr-5">
+                          <span className={`pointer-events-none block leading-tight ${c ? 'text-slate-900' : 'text-center text-violet-400'}`}
                             style={{
                               color: c?.couleur_texte ?? undefined,
                               fontWeight: c?.texte_gras ? 700 : undefined,
                               fontStyle: c?.texte_italique ? 'italic' : undefined,
                               textDecoration: c?.texte_souligne ? 'underline' : undefined,
-                            }}
-                            className="min-w-0 flex-1 bg-transparent text-gray-900 text-xs p-1 outline-none">
-                            <option value="">—</option>
+                            }}>
+                            {c?.matiere || '+'}
+                          </span>
+                          {c && span > 1 && (
+                            <span className="pointer-events-none mt-0.5 block text-[0.52rem] leading-tight text-slate-600/70 sm:text-[0.62rem]">
+                              {cDebut} - {cFin}
+                            </span>
+                          )}
+                          <select
+                            value={c?.matiere ?? ''}
+                            onChange={e => setMatiere(jour, cDebut, cFin, e.target.value)}
+                            aria-label={`${LABELS[jour]} ${cDebut}-${cFin}`}
+                            title="Changer la matière"
+                            className="absolute inset-y-0 left-0 z-10 w-[calc(100%-1rem)] cursor-pointer opacity-0 focus-visible:opacity-100 focus-visible:bg-white focus-visible:text-[0.65rem] sm:w-[calc(100%-1.25rem)]">
+                            <option value="">Case vide</option>
                             {Array.from(new Set([...MATIERES, c?.matiere].filter(Boolean) as string[])).map(m => <option key={m} value={m}>{m}</option>)}
                           </select>
                           {c && (
@@ -278,7 +307,7 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                               aria-expanded={ouvert}
                               title="Mise en forme de la case"
                               aria-label={`Mise en forme ${LABELS[jour]} ${cDebut}`}
-                              className={`shrink-0 rounded px-1 text-[11px] leading-none transition-opacity ${
+                              className={`absolute right-0 top-0 z-20 rounded p-0.5 text-[10px] leading-none transition-opacity focus-visible:outline-2 focus-visible:outline-violet-600 ${
                                 ouvert
                                   ? 'bg-violet-200 opacity-100'
                                   : 'opacity-40 hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-80'
@@ -288,7 +317,7 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                           )}
                         </div>
                         {c && ouvert && (
-                          <div className="mt-1 bg-white rounded-lg border border-violet-200 shadow-sm px-1 py-0.5 w-fit space-y-0.5">
+                          <div className="absolute right-1 top-full z-40 mt-1 w-44 space-y-1 rounded-lg border border-violet-200 bg-white p-2 shadow-lg">
                             <div className="flex items-center gap-1">
                               <input type="time" value={c.heure_debut}
                                 title="Début de la séance" aria-label={`Début ${LABELS[jour]} ${cDebut}`}
@@ -329,7 +358,10 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
           </tbody>
         </table>
       </div>
-      <button onClick={ajouterLigne} className="text-sm text-violet-600 hover:underline">+ Ajouter une tranche horaire</button>
+      <button type="button" onClick={ajouterLigne}
+        className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-violet-600">
+        + Ajouter une tranche horaire
+      </button>
 
       <button onClick={() => onSave(creneaux)} disabled={saving}
         className="w-full bg-green-600 text-white rounded-xl p-4 font-semibold hover:bg-green-700 disabled:opacity-50">

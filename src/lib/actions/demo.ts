@@ -1,11 +1,12 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { genererProgression, genererProgressionFrancais } from '@/lib/progression'
-import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
+import { supprimerClassesParIds } from '@/lib/reset-classe'
 import { getStatus } from '@/lib/semaines'
-import { addWeeks, startOfWeek, format } from 'date-fns'
 import { redirect } from 'next/navigation'
 import { ensureMethode } from '@/lib/methodes-db'
+import { periodesOfficielles } from '@/lib/calendrier-officiel'
+import { datesSemainesCalendaires } from '@/lib/calendrier-semaines'
 
 const PRENOMS = ['Lina', 'Tom', 'Aya', 'Noah', 'Jade', 'Sacha', 'Léa', 'Gabriel', 'Manon', 'Yanis']
 
@@ -45,53 +46,92 @@ export async function chargerClasseDemo() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Non connecté')
 
-  await supprimerClassesUtilisateur(supabase, user.id)
+  // Comme pour le setup, la classe actuelle reste intacte tant que la classe
+  // de demonstration n'est pas completement construite.
+  const { data: anciennesClasses, error: anciennesError } = await supabase
+    .from('classes').select('id').eq('user_id', user.id)
+  if (anciennesError) throw new Error(`Lecture de la configuration actuelle impossible : ${anciennesError.message}`)
+  const anciensIds = (anciennesClasses ?? []).map(c => c.id)
 
-  // Rentrée placée ~11 semaines avant aujourd'hui : l'année est « en cours »
-  const rentree = format(addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), -11), 'yyyy-MM-dd')
+  const maintenant = new Date()
+  const anneeRentree = maintenant.getMonth() >= 7
+    ? maintenant.getFullYear()
+    : maintenant.getFullYear() - 1
+  const rentree = `${anneeRentree}-09-01`
+  const periodes = periodesOfficielles(rentree, 'A')
+  if (periodes.length !== 5) throw new Error('Calendrier de démonstration indisponible pour cette année.')
 
-  const { data: classe } = await supabase.from('classes')
-    .insert({ user_id: user.id, manuel_id: 'lecture-piano', rentree_date: rentree })
+  const { data: classe, error: classeError } = await supabase.from('classes')
+    .insert({ user_id: user.id, manuel_id: 'lecture-piano', rentree_date: rentree, zone_scolaire: 'A' })
     .select().single()
-  if (!classe) throw new Error('Erreur création classe démo')
+  if (classeError || !classe) throw new Error(`Erreur création classe démo : ${classeError?.message ?? 'réponse vide'}`)
 
-  const { data: eleves } = await supabase.from('eleves')
-    .insert(PRENOMS.map((prenom, i) => ({ class_id: classe.id, prenom, ordre: i })))
-    .select()
+  try {
+    const { error: periodesError } = await supabase.from('periodes')
+      .insert(periodes.map(p => ({ ...p, class_id: classe.id })))
+    if (periodesError) throw new Error(`Création des périodes de démonstration impossible : ${periodesError.message}`)
 
-  await supabase.from('emploi_du_temps')
-    .insert(EDT.map((c, i) => ({ ...c, class_id: classe.id, ordre: i })))
+    const { data: eleves, error: elevesError } = await supabase.from('eleves')
+      .insert(PRENOMS.map((prenom, i) => ({ class_id: classe.id, prenom, ordre: i })))
+      .select()
+    if (elevesError || !eleves) {
+      throw new Error(`Création des élèves de démonstration impossible : ${elevesError?.message ?? 'réponse vide'}`)
+    }
 
-  const progression = genererProgression('lecture-piano', rentree)
-  const { data: semaines } = await supabase.from('semaines')
-    .insert(progression.map(s => ({ ...s, class_id: classe.id })))
-    .select()
+    const { error: edtError } = await supabase.from('emploi_du_temps')
+      .insert(EDT.map((c, i) => ({ ...c, class_id: classe.id, ordre: i })))
+    if (edtError) throw new Error(`Création de l'emploi du temps de démonstration impossible : ${edtError.message}`)
 
-  // Peuple aussi la table `progression` (français) pour exercer le vrai chemin
-  // d'affichage par matière (la fiche semaine lit `progression`).
-  const progFr = genererProgressionFrancais('lecture-piano')
-  if (progFr.length > 0) {
-    const methodeId = await ensureMethode(supabase, classe.id, 'francais')
-    await supabase.from('progression').insert(
-      progFr.map(p => ({ ...p, class_id: classe.id, methode_id: methodeId, matiere: 'francais' as const }))
-    )
-  }
+    const progression = genererProgression('lecture-piano', rentree)
+    const calendrier = datesSemainesCalendaires(periodes, progression.length)
+    const parNumero = new Map(calendrier.map(s => [s.numero, s]))
+    const { data: semaines, error: semainesError } = await supabase.from('semaines')
+      .insert(progression.map(s => ({
+        ...s,
+        class_id: classe.id,
+        date_debut: parNumero.get(s.numero)?.date_debut ?? s.date_debut,
+        periode_numero: parNumero.get(s.numero)?.periode_numero ?? null,
+      })))
+      .select()
+    if (semainesError || !semaines) {
+      throw new Error(`Création des semaines de démonstration impossible : ${semainesError?.message ?? 'réponse vide'}`)
+    }
 
-  // Suivi pré-rempli pour les semaines passées et en cours
-  const acquisitions: Array<{ semaine_id: string; eleve_id: string; matiere: string; grapheme: string; acquis: boolean }> = []
-  for (const s of semaines ?? []) {
-    const statut = getStatus(s)
-    if (statut === 'upcoming') continue
-    const ratio = statut === 'current' ? 0.5 : 0.85
-    for (const e of eleves ?? []) {
-      for (const g of s.graphemes) {
-        if (Math.random() < ratio) {
-          acquisitions.push({ semaine_id: s.id, eleve_id: e.id, matiere: 'francais', grapheme: g, acquis: true })
+    // Peuple aussi la table `progression` (français) pour exercer le vrai chemin
+    // d'affichage par matière (la fiche semaine lit `progression`).
+    const progFr = genererProgressionFrancais('lecture-piano')
+    if (progFr.length > 0) {
+      const methodeId = await ensureMethode(supabase, classe.id, 'francais')
+      const { error } = await supabase.from('progression').insert(
+        progFr.map(p => ({ ...p, class_id: classe.id, methode_id: methodeId, matiere: 'francais' as const }))
+      )
+      if (error) throw new Error(`Création de la progression de démonstration impossible : ${error.message}`)
+    }
+
+    // Suivi pré-rempli pour les semaines passées et en cours
+    const acquisitions: Array<{ semaine_id: string; eleve_id: string; matiere: string; grapheme: string; acquis: boolean }> = []
+    for (const s of semaines) {
+      const statut = getStatus(s)
+      if (statut === 'upcoming') continue
+      const ratio = statut === 'current' ? 0.5 : 0.85
+      for (const e of eleves) {
+        for (const g of s.graphemes) {
+          if (Math.random() < ratio) {
+            acquisitions.push({ semaine_id: s.id, eleve_id: e.id, matiere: 'francais', grapheme: g, acquis: true })
+          }
         }
       }
     }
+    if (acquisitions.length) {
+      const { error } = await supabase.from('acquisitions').insert(acquisitions)
+      if (error) throw new Error(`Création du suivi de démonstration impossible : ${error.message}`)
+    }
+  } catch (error) {
+    await supprimerClassesParIds(supabase, [classe.id])
+    throw error
   }
-  if (acquisitions.length) await supabase.from('acquisitions').insert(acquisitions)
+
+  await supprimerClassesParIds(supabase, anciensIds)
 
   redirect('/accueil')
 }

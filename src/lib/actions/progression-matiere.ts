@@ -33,23 +33,21 @@ export async function enregistrerProgressionMatiere(
 
   const methodeId = await ensureMethode(supabase, classe.id, matiere, nomManuel)
 
-  // Remplace UNIQUEMENT cette matière (jamais l'autre)
-  await supabase.from('progression').delete()
-    .eq('class_id', classe.id).eq('matiere', matiere)
-
   const lignes = semaines.map(s => ({
-    class_id: classe.id,
-    methode_id: methodeId,
-    matiere,
     numero: s.numero,
     items: s.items,
-    pages: s.pages || null,
-    mots_exemple: s.mots_exemple ?? null,
+    pages: s.pages || '',
+    mots_exemple: s.mots_exemple ?? [],
   }))
-  if (lignes.length > 0) {
-    const { error } = await supabase.from('progression').insert(lignes)
-    if (error) throw new Error(error.message)
-  }
+  const { error } = await supabase.rpc('remplacer_progression', {
+    p_class_id: classe.id,
+    p_methode_id: methodeId,
+    p_matiere: matiere,
+    p_numeros: null,
+    p_lignes: lignes,
+    p_sync_semaines: false,
+  })
+  if (error) throw new Error(error.message)
 
   revalidatePath('/planning')
   revalidatePath('/accueil')

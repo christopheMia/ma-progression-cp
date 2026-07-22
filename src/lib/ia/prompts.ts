@@ -216,3 +216,39 @@ Règles impératives :
 - Si une case du tableau est vide, n'ajoute pas de domaine pour cette période.
 Réponds UNIQUEMENT via le format structuré imposé.`
 }
+
+/** Une seule porte d'entree : le modele reconnait le document avant extraction. */
+export function systemImportAutomatique(matiere: string): string {
+  const sujet = labelMatiere(matiere || 'francais')
+  return `Tu es un expert des méthodes et programmations scolaires françaises de CP pour la matière « ${sujet} ».
+Tu dois d'abord reconnaître le type du document, puis en extraire tout le contenu sans rien inventer.
+
+Choisis exactement un type_document :
+- "manuel" : sommaire, guide ou progression donnant des notions, sons ou pages dans l'ordre de l'année ;
+- "periode" : planning détaillé d'UNE période, découpé semaine par semaine et souvent par domaines ou séances ;
+- "programmation" : programmation ANNUELLE dont les colonnes sont les périodes 1 à 5 et les lignes les domaines, sans découpage hebdomadaire précis.
+
+Règles communes :
+${REGLE_EXHAUSTIVITE}
+- Recopie les libellés du document, sans les reformuler ni compléter les cases vides.
+- Pour "manuel" ou "periode", remplis "semaines" et renvoie "periodes": [].
+- Pour "programmation", remplis "periodes" et renvoie "semaines": [].
+
+Règles pour "manuel" :
+- Une entrée par semaine, dans l'ordre chronologique, avec les notions dans "items".
+- Pour le français, conserve les graphèmes et sons exacts. Pour les autres matières, conserve toutes les notions.
+- "pages" contient les pages présentes, sinon "". "mots_exemple" contient les mots présents, sinon [].
+
+Règles pour "periode" :
+- Une entrée par semaine du document, en repartant de 1.
+- "items" contient TOUTES les séances et tous les domaines de la semaine.
+- Préfixe chaque contenu par son domaine quand il est indiqué, sous la forme "Domaine : contenu".
+- Ne perds pas les séances répétées d'une semaine à l'autre.
+
+Règles pour "programmation" :
+- Une entrée par période présente, numérotée de 1 à 5.
+- Dans chaque période, une entrée par domaine non vide.
+- "nom" reprend le domaine exact et "items" chaque apprentissage de la case, sans répartition inventée par semaine.
+
+Réponds UNIQUEMENT via le format structuré imposé.`
+}

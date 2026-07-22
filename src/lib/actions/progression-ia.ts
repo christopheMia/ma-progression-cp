@@ -20,44 +20,24 @@ export async function corrigerProgression(classId: string, progression: Progress
     .from('classes').select('id').eq('id', classId).eq('user_id', user.id).maybeSingle()
   if (!classe) throw new Error('Classe introuvable')
 
-  for (const s of progression) {
-    const { error } = await supabase.from('semaines')
-      .update({
-        graphemes: s.items,
-        manuel_pages: s.pages || null,
-        mots_exemple: s.mots_exemple,
-      })
-      .eq('class_id', classId)
-      .eq('numero', s.numero)
-    if (error) throw new Error(`Semaine ${s.numero} : ${error.message}`)
-  }
-
-  // Garde la table `progression` (lue par la fiche semaine) en phase avec la
-  // correction : on remplace UNIQUEMENT le français (jamais le maths).
-  //
-  // ORDRE IMPORTANT : la méthode est créée AVANT l'effacement. L'inverse a
-  // détruit la progression en production le 20/07 : `ensureMethode` a échoué
-  // après le delete, laissant `progression` et `methodes` vides toutes les deux
-  // alors que l'utilisateur croyait son import réussi.
+  // La table `progression` et les colonnes historiques de `semaines` sont mises
+  // a jour dans la meme transaction PostgreSQL. Une erreur annule tout.
   const methodeId = await ensureMethode(supabase, classId, 'francais')
-  const { error: erreurEffacement } = await supabase
-    .from('progression').delete().eq('class_id', classId).eq('matiere', 'francais')
-  if (erreurEffacement) throw new Error(erreurEffacement.message)
   const lignesFr = progression.map(s => ({
-    class_id: classId,
-    methode_id: methodeId,
-    matiere: 'francais' as const,
     numero: s.numero,
     items: s.items,
-    pages: s.pages || null,
-    mots_exemple: s.mots_exemple ?? null,
+    pages: s.pages || '',
+    mots_exemple: s.mots_exemple ?? [],
   }))
-  // L'erreur était ici IGNOREE : un échec d'insertion ne remontait pas, et
-  // l'utilisateur voyait « import réussi » avec une table vide derrière.
-  if (lignesFr.length > 0) {
-    const { error } = await supabase.from('progression').insert(lignesFr)
-    if (error) throw new Error(error.message)
-  }
+  const { error } = await supabase.rpc('remplacer_progression', {
+    p_class_id: classId,
+    p_methode_id: methodeId,
+    p_matiere: 'francais',
+    p_numeros: null,
+    p_lignes: lignesFr,
+    p_sync_semaines: true,
+  })
+  if (error) throw new Error(error.message)
 
   revalidatePath('/planning')
   revalidatePath('/accueil')

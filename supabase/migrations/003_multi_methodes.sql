@@ -1,5 +1,27 @@
 -- supabase/migrations/003_multi_methodes.sql
 
+-- La table appreciations avait ete creee manuellement en production avant
+-- cette migration, mais elle manquait dans 001_schema.sql. Sans ce filet de
+-- securite, un `supabase db reset` s'arrete plus bas avant d'atteindre la
+-- migration 006 qui reconstruit le schema complet.
+create table if not exists appreciations (
+  id uuid primary key default gen_random_uuid(),
+  semaine_id uuid references semaines on delete cascade not null,
+  eleve_id uuid references eleves on delete cascade not null,
+  statut text,
+  commentaire text,
+  updated_at timestamptz default now(),
+  unique(semaine_id, eleve_id)
+);
+alter table appreciations enable row level security;
+do $$ begin
+  create policy "Users manage own appreciations" on appreciations
+    using (semaine_id in (
+      select s.id from semaines s join classes c on c.id = s.class_id
+      where c.user_id = auth.uid()
+    ));
+exception when duplicate_object then null; end $$;
+
 -- 1) Nouvelle table progression : contenu d'une methode par matiere x semaine
 create table progression (
   id uuid primary key default gen_random_uuid(),

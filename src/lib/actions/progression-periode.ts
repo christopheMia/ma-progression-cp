@@ -109,24 +109,24 @@ export async function enregistrerProgressionPeriode(
 
   const methodeId = await ensureMethode(supabase, classeId, matiere, nomManuel)
 
-  // On n'efface QUE l'intervalle reecrit : les autres periodes sont preservees.
+  // On remplace uniquement l'intervalle reecrit dans une transaction : les
+  // autres periodes sont preservees et un echec restaure l'ancien contenu.
   const numerosEcrases = recalees.map(s => s.numero)
-  await supabase.from('progression').delete()
-    .eq('class_id', classeId).eq('matiere', matiere).in('numero', numerosEcrases)
-
   const lignes = recalees.map(s => ({
-    class_id: classeId,
-    methode_id: methodeId,
-    matiere,
     numero: s.numero,
     items: s.items,
-    pages: s.pages || null,
-    mots_exemple: s.mots_exemple ?? null,
+    pages: s.pages || '',
+    mots_exemple: s.mots_exemple ?? [],
   }))
-  if (lignes.length > 0) {
-    const { error } = await supabase.from('progression').insert(lignes)
-    if (error) throw new Error(error.message)
-  }
+  const { error } = await supabase.rpc('remplacer_progression', {
+    p_class_id: classeId,
+    p_methode_id: methodeId,
+    p_matiere: matiere,
+    p_numeros: numerosEcrases,
+    p_lignes: lignes,
+    p_sync_semaines: false,
+  })
+  if (error) throw new Error(error.message)
 
   revalidatePath('/planning')
   revalidatePath('/accueil')

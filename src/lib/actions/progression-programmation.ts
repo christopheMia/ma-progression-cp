@@ -120,27 +120,25 @@ export async function enregistrerProgrammationAnnuelle(
     throw new Error('Aucun apprentissage n\'a pu être placé : le document semble vide.')
   }
 
-  // La methode AVANT l'effacement : si sa creation echoue, on ne veut pas avoir
-  // deja detruit la progression existante (incident du 20/07).
   const methodeId = await ensureMethode(supabase, classe.id, matiere, nomManuel)
-
-  const { error: erreurEffacement } = await supabase.from('progression').delete()
-    .eq('class_id', classe.id).eq('matiere', matiere)
-  if (erreurEffacement) throw new Error(erreurEffacement.message)
 
   const lignes = reparties
     .filter(s => s.items.length > 0)
     .map(s => ({
-      class_id: classe.id,
-      methode_id: methodeId,
-      matiere,
       numero: s.numero,
       items: s.items,
-      pages: null,
-      mots_exemple: null,
+      pages: '',
+      mots_exemple: [],
     }))
 
-  const { error } = await supabase.from('progression').insert(lignes)
+  const { error } = await supabase.rpc('remplacer_progression', {
+    p_class_id: classe.id,
+    p_methode_id: methodeId,
+    p_matiere: matiere,
+    p_numeros: null,
+    p_lignes: lignes,
+    p_sync_semaines: false,
+  })
   if (error) throw new Error(error.message)
 
   revalidatePath('/planning')

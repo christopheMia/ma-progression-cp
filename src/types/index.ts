@@ -11,6 +11,8 @@ export type Semaine = {
   manuel_pages: string | null
   mots_exemple: string[] | null
   note: string | null
+  /** Periode scolaire reelle P1-P5. Null pour les anciennes classes non calees. */
+  periode_numero?: number | null
 }
 
 export type Progression = {
