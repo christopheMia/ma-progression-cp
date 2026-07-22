@@ -22,14 +22,8 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  /* Texte courant en Nunito (var(--font-sans)), Arial en repli. */
+  /* Nunito partout (titres compris, ils heritent de cette regle), Arial en repli. */
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-}
-
-/* Titres en Poppins, pour donner du caractere sans nuire a la lisibilite du
-   texte courant qui reste en Nunito. */
-h1, h2, h3, h4 {
-  font-family: var(--font-poppins), var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 /* Animations */

@@ -1,19 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Nunito, Geist_Mono } from "next/font/google";
+import { Nunito, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Texte courant : Nunito (arrondie, chaleureuse, tres lisible).
+// Nunito partout : arrondie, chaleureuse, tres lisible (adaptee au CP).
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
-});
-
-// Titres : Poppins (geometrique, avec du caractere). Poppins n'est pas une
-// police variable, on charge donc les graisses utilisees.
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -47,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${nunito.variable} ${poppins.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
