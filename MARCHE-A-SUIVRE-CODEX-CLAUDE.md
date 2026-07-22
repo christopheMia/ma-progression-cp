@@ -155,25 +155,31 @@ navigateur pour la voir). Caractéristiques à respecter :
 
 ## 8. État courant / chantiers ouverts (au 2026-07-22)
 
-- **FAIT (2026-07-22)** : bug de navigation du setup corrigé. Revenir en arrière puis
-  en avant ne perd plus les données (méthode, date, 24 élèves, EDT). Chaque étape
-  ré-affiche ce qui a été saisi (`initial` propagé depuis le wizard + `onChange` sur
-  `TimetableGrid` pour garder un brouillon). Type-check propre.
-- **À FAIRE** : étape EDT = proposer un **choix** en haut : "grille vide" ou "générer
-  selon les quotas officiels" (blocs larges au bon volume horaire CP). L'EDT reste dans
-  les grandes lignes. Quotas à baser sur `partage/les 108h _.docx` + textes officiels
-  cycle 2, ajustables ensuite par Christophe.
-- **À FAIRE** : simplifier l'import (`IaImport.tsx`) en **une seule porte** ("dépose
-  ton document, l'IA s'adapte"), retirer le choix "Manuel / Période / Programmation"
-  (les 3 radios qui embrouillent) et NE PAS ajouter de bouton "pas de méthode" (la
-  saisie manuelle est le défaut). L'IA détecte seule semaines vs périodes.
-- **À FAIRE** : aligner le visuel de la grille d'édition (`TimetableGrid`) sur le design
-  validé (`edt-rowspan-demo.html` / `EdtGrilleLecture`).
-- **À FAIRE (plus tard)** : brancher `remplirEnveloppes` dans la génération, permettre
-  plusieurs méthodes dès le setup (aujourd'hui seul le français au setup, le reste dans
-  Paramètres), progression maths stockée PAR PÉRIODE à côté du français PAR SEMAINE, et
-  **cumul** des progressions de toutes les matières pour composer périodes complètes et
-  cahiers journaux.
+**FAIT et EN LIGNE sur `main` (déployé)** :
+- Bug de navigation du setup corrigé (données conservées entre allers-retours).
+- Étape EDT = **choix** "grille vide" / "générer selon les quotas officiels"
+  (`genererEdtCP`, arrêté 9/11/2015). Plus de trame figée imposée.
+- Import IA à **une seule porte** (`IaImport.tsx` + `schema-import-auto.ts`) : l'IA
+  reconnaît seule manuel / planning de période / programmation annuelle ; le choix de
+  la période n'apparaît qu'après détection. Fini les 3 radios.
+- Grille d'édition (`TimetableGrid`) au **design validé** : fusion, couleurs par
+  famille, largeur téléphone, jours courts.
+- Calendrier officiel + zones A/B/C, périodes P1-P5, semaines calées (vacances
+  sautées). Migrations **014 et 015 appliquées en prod et vérifiées**.
+
+**RESTE À FAIRE** :
+1. **Test réel (Christophe)** : recréer une classe, importer français (Petites Poules)
+   + maths (Maths en CP par période), vérifier le calage des périodes et la détection
+   auto de l'import de bout en bout.
+2. **Le CUMUL (gros morceau, cœur du modèle, pas commencé)** : assembler les
+   progressions de TOUTES les matières pour composer les **périodes complètes** et le
+   **cahier journal** (pour chaque créneau EDT du jour, l'item de la progression de
+   cette matière). Voir section 4, règle 3.
+3. **Plusieurs méthodes dès le setup** : aujourd'hui seul le français au setup, le reste
+   s'ajoute dans Paramètres. Permettre de tout mettre dès la config.
+4. **Nettoyage** : `remplirEnveloppes` (remplir l'EDT avec les items du manuel) est
+   **obsolète** depuis la décision "EDT = grandes lignes, détail dans le cahier
+   journal". À retirer proprement plutôt qu'à brancher.
 
 ## 9. Où trouver quoi (index)
 
