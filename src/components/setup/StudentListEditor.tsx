@@ -2,9 +2,11 @@
 import { useState } from 'react'
 import { decouperPrenoms } from '@/lib/prenoms'
 
-export default function StudentListEditor({ onSelect }: { onSelect: (eleves: string[]) => void }) {
+export default function StudentListEditor({ onSelect, initial }: { onSelect: (eleves: string[]) => void; initial?: string[] }) {
   const [input, setInput] = useState('')
-  const [eleves, setEleves] = useState<string[]>([])
+  // Les prenoms deja saisis sont re-affiches si l'enseignante revient en arriere,
+  // pour ne pas la forcer a tout recoller.
+  const [eleves, setEleves] = useState<string[]>(initial ?? [])
 
   /**
    * Ajoute un OU PLUSIEURS prénoms d'un coup. On découpe sur les retours à la

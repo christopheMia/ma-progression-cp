@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { couleurMatiere, couleurAffichee, COULEURS_FAMILLE } from '@/data/trame-edt'
 import { construireGrille, creneauxDeLaLigne, type LigneGrille } from '@/lib/edt-grille'
 
@@ -25,13 +25,25 @@ export type Creneau = {
 const idc = (c: CreneauMin) => `${c.jour}|${c.heure_debut}|${c.heure_fin}`
 type CreneauMin = { jour: string; heure_debut: string; heure_fin: string }
 
-export default function TimetableGrid({ initial, onSave, saving, finishLabel }: {
+export default function TimetableGrid({ initial, onSave, onChange, saving, finishLabel }: {
   initial: Creneau[]
   onSave: (creneaux: Creneau[]) => void
+  /** Notifie le parent a chaque edition, pour qu'il garde un brouillon de l'EDT
+   *  meme si l'enseignante quitte l'etape puis y revient. */
+  onChange?: (creneaux: Creneau[]) => void
   saving: boolean
   finishLabel: string
 }) {
   const [creneaux, setCreneaux] = useState<Creneau[]>(initial)
+
+  // Remonte le brouillon au parent des qu'il change (hors premier rendu, pour
+  // ne pas re-notifier la valeur initiale telle quelle).
+  const premierRendu = useRef(true)
+  useEffect(() => {
+    if (premierRendu.current) { premierRendu.current = false; return }
+    onChange?.(creneaux)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creneaux])
   // Cle de la seule case dont le menu de mise en forme est deroule (crayon).
   // Les controles de style restent masques partout ailleurs : la grille doit
   // rester lisible, la mise en forme est une option, pas le sujet principal.

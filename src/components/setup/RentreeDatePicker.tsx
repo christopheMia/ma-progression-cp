@@ -1,8 +1,10 @@
 'use client'
 import { useState } from 'react'
 
-export default function RentreeDatePicker({ onSelect }: { onSelect: (date: string) => void }) {
-  const [date, setDate] = useState('2025-09-02')
+export default function RentreeDatePicker({ onSelect, initial }: { onSelect: (date: string) => void; initial?: string }) {
+  // On repart de la date deja saisie si l'enseignante revient en arriere,
+  // sinon d'une rentree par defaut.
+  const [date, setDate] = useState(initial || '2025-09-02')
   return (
     <div className="space-y-4">
       <p className="text-gray-600">Quel est le jour de ta rentrée ?</p>

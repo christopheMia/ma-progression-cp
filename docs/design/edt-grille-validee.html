@@ -1,0 +1,467 @@
+<title>Grille EDT : fusion, couleurs, tenue sur téléphone</title>
+<style>
+  :root {
+    --violet: #6d28d9;
+    --violet-fort: #4c1d95;
+    --violet-clair: #ede9fe;
+    --bord: #e4e0ec;
+    --bord-fort: #cfc7de;
+    --fond: #fbfafd;
+    --surface: #ffffff;
+    --encre: #221d2b;
+    --encre-douce: #6b6480;
+    --alerte: #b91c1c;
+    --alerte-fond: #fdf1f1;
+    --alerte-trait: #f0c9c9;
+    --ok: #15803d;
+    --ok-fond: #f0f8f2;
+
+    --m-fr: #dbeafe;      --m-fr-t: #1e3a8a;
+    --m-maths: #fbcfe8;   --m-maths-t: #831843;
+    --m-qlm: #d5f0dc;     --m-qlm-t: #14532d;
+    --m-eps: #fdf0a4;     --m-eps-t: #713f12;
+    --m-arts: #e4dcfb;    --m-arts-t: #4c1d95;
+    --m-lv: #fee0c4;      --m-lv-t: #7c2d12;
+    --m-emc: #cfeef0;     --m-emc-t: #155e63;
+    --m-rout: #f1eff5;    --m-rout-t: #6b6480;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --violet: #c4b5fd; --violet-fort: #ddd6fe; --violet-clair: #2a2438;
+      --bord: #362f45; --bord-fort: #4a4160; --fond: #16131d; --surface: #1e1a28;
+      --encre: #ece9f2; --encre-douce: #a29bb5;
+      --alerte: #fca5a5; --alerte-fond: #2c1d1f; --alerte-trait: #5c3538;
+      --ok: #86efac; --ok-fond: #1a2a20;
+      --m-fr: #1e3a5f;    --m-fr-t: #dbeafe;
+      --m-maths: #5c2244; --m-maths-t: #fbcfe8;
+      --m-qlm: #1c4032;   --m-qlm-t: #d5f0dc;
+      --m-eps: #4a4218;   --m-eps-t: #fdf0a4;
+      --m-arts: #362a5c;  --m-arts-t: #e4dcfb;
+      --m-lv: #55361a;    --m-lv-t: #fee0c4;
+      --m-emc: #16414a;   --m-emc-t: #cfeef0;
+      --m-rout: #272232;  --m-rout-t: #a29bb5;
+    }
+  }
+  :root[data-theme="dark"] {
+    --violet: #c4b5fd; --violet-fort: #ddd6fe; --violet-clair: #2a2438;
+    --bord: #362f45; --bord-fort: #4a4160; --fond: #16131d; --surface: #1e1a28;
+    --encre: #ece9f2; --encre-douce: #a29bb5;
+    --alerte: #fca5a5; --alerte-fond: #2c1d1f; --alerte-trait: #5c3538;
+    --ok: #86efac; --ok-fond: #1a2a20;
+    --m-fr: #1e3a5f;    --m-fr-t: #dbeafe;
+    --m-maths: #5c2244; --m-maths-t: #fbcfe8;
+    --m-qlm: #1c4032;   --m-qlm-t: #d5f0dc;
+    --m-eps: #4a4218;   --m-eps-t: #fdf0a4;
+    --m-arts: #362a5c;  --m-arts-t: #e4dcfb;
+    --m-lv: #55361a;    --m-lv-t: #fee0c4;
+    --m-emc: #16414a;   --m-emc-t: #cfeef0;
+    --m-rout: #272232;  --m-rout-t: #a29bb5;
+  }
+  :root[data-theme="light"] {
+    --violet: #6d28d9; --violet-fort: #4c1d95; --violet-clair: #ede9fe;
+    --bord: #e4e0ec; --bord-fort: #cfc7de; --fond: #fbfafd; --surface: #ffffff;
+    --encre: #221d2b; --encre-douce: #6b6480;
+    --alerte: #b91c1c; --alerte-fond: #fdf1f1; --alerte-trait: #f0c9c9;
+    --ok: #15803d; --ok-fond: #f0f8f2;
+    --m-fr: #dbeafe;    --m-fr-t: #1e3a8a;
+    --m-maths: #fbcfe8; --m-maths-t: #831843;
+    --m-qlm: #d5f0dc;   --m-qlm-t: #14532d;
+    --m-eps: #fdf0a4;   --m-eps-t: #713f12;
+    --m-arts: #e4dcfb;  --m-arts-t: #4c1d95;
+    --m-lv: #fee0c4;    --m-lv-t: #7c2d12;
+    --m-emc: #cfeef0;   --m-emc-t: #155e63;
+    --m-rout: #f1eff5;  --m-rout-t: #6b6480;
+  }
+
+  body {
+    margin: 0; background: var(--fond); color: var(--encre);
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    line-height: 1.6; font-size: 16px;
+  }
+  .page { max-width: 64rem; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+  @media (min-width: 40rem) { .page { padding: 3rem 1.5rem 5rem; } }
+
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--violet); font-weight: 600; margin: 0 0 .5rem;
+  }
+  h1 {
+    font-size: clamp(1.5rem, 5vw, 2.2rem); line-height: 1.2; margin: 0 0 .75rem;
+    color: var(--violet-fort); text-wrap: balance; font-weight: 650;
+  }
+  .chapo { max-width: 44rem; color: var(--encre-douce); margin: 0 0 2rem; font-size: 1rem; }
+
+  section { margin-bottom: 3.5rem; }
+  h2 {
+    font-size: 1.1rem; margin: 0 0 .35rem; font-weight: 650;
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  }
+  .num {
+    font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--violet);
+    border: 1px solid var(--bord-fort); border-radius: 999px;
+    width: 1.5rem; height: 1.5rem; display: inline-flex;
+    align-items: center; justify-content: center; flex: none; font-weight: 700;
+  }
+  .verdict {
+    font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 700;
+    padding: .15rem .5rem; border-radius: 999px; white-space: nowrap;
+  }
+  .verdict.ko { color: var(--alerte); background: var(--alerte-fond); border: 1px solid var(--alerte-trait); }
+  .verdict.ok { color: var(--ok); background: var(--ok-fond); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); }
+  .sous { color: var(--encre-douce); font-size: .9rem; margin: 0 0 1rem; max-width: 44rem; }
+
+  .duo { display: grid; gap: 1.75rem; }
+  @media (min-width: 58rem) { .duo { grid-template-columns: 1fr 1fr; gap: 1.5rem; } }
+
+  .cadre {
+    background: var(--surface); border: 1px solid var(--bord);
+    border-radius: .7rem; padding: .6rem;
+  }
+  @media (min-width: 40rem) { .cadre { padding: 1rem; } }
+
+  /* Grille : tient dans la largeur, jamais de defilement horizontal. */
+  table.edt { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  table.edt th, table.edt td {
+    border: 1px solid var(--bord); padding: .25rem .2rem;
+    text-align: left; vertical-align: middle;
+    font-size: .62rem; line-height: 1.25;
+    overflow-wrap: anywhere; hyphens: auto;
+  }
+  @media (min-width: 40rem) {
+    table.edt th, table.edt td { font-size: .74rem; padding: .4rem .45rem; }
+  }
+  table.edt thead th {
+    background: var(--violet-clair); color: var(--violet-fort);
+    font-weight: 600; text-align: center;
+  }
+  table.edt col.c-h { width: 3.1rem; }
+  @media (min-width: 40rem) { table.edt col.c-h { width: 4.6rem; } }
+  th.heure {
+    background: color-mix(in srgb, var(--violet-clair) 40%, var(--surface));
+    color: var(--encre-douce); font-weight: 500;
+    font-variant-numeric: tabular-nums; text-align: center;
+    font-size: .55rem; letter-spacing: -.01em;
+  }
+  @media (min-width: 40rem) { th.heure { font-size: .68rem; } }
+  th.heure i { font-style: normal; display: block; }
+  th.heure i + i { color: color-mix(in srgb, var(--encre-douce) 60%, transparent); }
+  @media (min-width: 40rem) { th.heure i { display: inline; } th.heure i + i::before { content: " - "; } }
+
+  .jlong { display: none; }
+  @media (min-width: 34rem) { .jlong { display: inline; } .jcourt { display: none; } }
+
+  td.fr    { background: var(--m-fr);    color: var(--m-fr-t); }
+  td.maths { background: var(--m-maths); color: var(--m-maths-t); }
+  td.qlm   { background: var(--m-qlm);   color: var(--m-qlm-t); }
+  td.eps   { background: var(--m-eps);   color: var(--m-eps-t); }
+  td.arts  { background: var(--m-arts);  color: var(--m-arts-t); }
+  td.lv    { background: var(--m-lv);    color: var(--m-lv-t); }
+  td.emc   { background: var(--m-emc);   color: var(--m-emc-t); }
+  td.rout  { background: var(--m-rout);  color: var(--m-rout-t); font-style: italic; }
+  td.fusion { font-weight: 650; }
+  td.fusion small { display: block; font-weight: 400; opacity: .7; font-size: .85em; }
+
+  td.fantome {
+    background: repeating-linear-gradient(45deg, transparent 0 5px,
+      color-mix(in srgb, var(--alerte) 16%, transparent) 5px 6px);
+  }
+  td.fantome::after {
+    content: "?"; color: var(--alerte); font-weight: 700;
+    display: block; text-align: center; opacity: .5;
+  }
+
+  .palette { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); margin-top: 1rem; }
+  .fam { border: 1px solid var(--bord); border-radius: .45rem; padding: .5rem .65rem; }
+  .fam b { display: block; font-size: .82rem; font-weight: 650; margin-bottom: .1rem; }
+  .fam span { font-size: .7rem; color: var(--encre-douce); line-height: 1.45; display: block; }
+  .fam.f-fr b { color: var(--m-fr-t); } .fam.f-fr { background: color-mix(in srgb, var(--m-fr) 45%, var(--surface)); }
+  .fam.f-maths b { color: var(--m-maths-t); } .fam.f-maths { background: color-mix(in srgb, var(--m-maths) 45%, var(--surface)); }
+  .fam.f-qlm b { color: var(--m-qlm-t); } .fam.f-qlm { background: color-mix(in srgb, var(--m-qlm) 45%, var(--surface)); }
+  .fam.f-eps b { color: var(--m-eps-t); } .fam.f-eps { background: color-mix(in srgb, var(--m-eps) 45%, var(--surface)); }
+  .fam.f-arts b { color: var(--m-arts-t); } .fam.f-arts { background: color-mix(in srgb, var(--m-arts) 45%, var(--surface)); }
+  .fam.f-lv b { color: var(--m-lv-t); } .fam.f-lv { background: color-mix(in srgb, var(--m-lv) 45%, var(--surface)); }
+  .fam.f-emc b { color: var(--m-emc-t); } .fam.f-emc { background: color-mix(in srgb, var(--m-emc) 45%, var(--surface)); }
+  .fam.f-rout b { color: var(--m-rout-t); } .fam.f-rout { background: color-mix(in srgb, var(--m-rout) 60%, var(--surface)); }
+
+  table.plat { border-collapse: collapse; width: 100%; font-size: .68rem; }
+  table.plat td { padding: .25rem .4rem; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--bord) 45%, transparent); }
+  table.plat td:first-child, table.plat td:nth-child(2) { color: var(--encre-douce); white-space: nowrap; }
+  .boite-plate { max-height: 13rem; overflow-y: auto; border: 1px solid var(--bord); border-radius: .45rem; background: var(--surface); }
+
+  .bilan { border: 1px solid var(--bord); border-radius: .7rem; background: var(--surface); padding: 1.25rem; }
+  @media (min-width: 40rem) { .bilan { padding: 1.75rem; } }
+  .chiffres { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); margin: 0 0 1.25rem; }
+  .chiffre b {
+    display: block; font-size: 1.5rem; font-variant-numeric: tabular-nums;
+    color: var(--violet-fort); line-height: 1.2; font-weight: 650;
+  }
+  .chiffre span { font-size: .7rem; color: var(--encre-douce); letter-spacing: .07em; text-transform: uppercase; }
+  .bilan p, .sect-p { margin: 0 0 .75rem; font-size: .94rem; }
+  .bilan p:last-child { margin-bottom: 0; }
+  code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .87em;
+    background: var(--violet-clair); color: var(--violet-fort);
+    padding: .1rem .35rem; border-radius: .25rem; overflow-wrap: anywhere;
+  }
+  .note { font-size: .82rem; color: var(--encre-douce); margin-top: 2.5rem; }
+</style>
+
+<div class="page">
+  <p class="eyebrow">Ma Progression CP · grille emploi du temps</p>
+  <h1>Fusionner, colorer, tenir sur un téléphone</h1>
+  <p class="chapo">
+    Trois corrections sur la même grille, avec les données réelles de l'emploi du
+    temps de Cécile. Cette page tient en entier dans la largeur de l'écran :
+    aucun tableau ne défile latéralement, même sur téléphone.
+  </p>
+
+  <section>
+    <h2><i class="num">1</i> Les cases vides ne sont pas des trous</h2>
+    <p class="sous">
+      Le calcul mental du lundi va de 11:00 à 11:30. Comme les autres jours
+      découpent cette demi-heure plus finement, il n'apparaît que dans une ligne
+      sur quatre, et les trois autres semblent vides.
+    </p>
+    <div class="duo">
+      <div>
+        <h2 style="font-size:.95rem"><span class="verdict ko">Aujourd'hui · 8 lignes</span></h2>
+        <div class="cadre">
+          <table class="edt">
+            <colgroup><col class="c-h"><col><col><col><col></colgroup>
+            <thead><tr>
+              <th class="heure">h</th>
+              <th><span class="jlong">Lundi</span><span class="jcourt">Lun</span></th>
+              <th><span class="jlong">Mardi</span><span class="jcourt">Mar</span></th>
+              <th><span class="jlong">Jeudi</span><span class="jcourt">Jeu</span></th>
+              <th><span class="jlong">Vendredi</span><span class="jcourt">Ven</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><th class="heure"><i>10:15</i><i>10:25</i></th>
+                <td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td></tr>
+              <tr><th class="heure"><i>10:25</i><i>10:30</i></th>
+                <td class="maths">Chaque jour compte</td><td class="maths">Chaque jour compte</td>
+                <td class="maths">Chaque jour compte</td><td class="maths">Chaque jour compte</td></tr>
+              <tr><th class="heure"><i>10:30</i><i>11:00</i></th>
+                <td class="maths">Maths</td><td class="maths">Maths</td><td class="maths">Maths</td><td class="maths">Maths</td></tr>
+              <tr><th class="heure"><i>11:00</i><i>11:30</i></th>
+                <td class="maths">Calcul mental</td>
+                <td class="fantome"></td><td class="fantome"></td><td class="fantome"></td></tr>
+              <tr><th class="heure"><i>11:00</i><i>11:10</i></th>
+                <td class="fantome"></td>
+                <td class="maths">Calcul mental</td><td class="maths">Problème</td><td class="maths">Problème</td></tr>
+              <tr><th class="heure"><i>11:10</i><i>11:20</i></th>
+                <td class="fantome"></td><td class="arts">Musique</td>
+                <td class="fantome"></td><td class="maths">Calcul mental</td></tr>
+              <tr><th class="heure"><i>11:10</i><i>11:30</i></th>
+                <td class="fantome"></td><td class="fantome"></td>
+                <td class="maths">Calcul mental</td><td class="fantome"></td></tr>
+              <tr><th class="heure"><i>11:20</i><i>11:30</i></th>
+                <td class="fantome"></td><td class="rout">Rangement</td>
+                <td class="fantome"></td><td class="rout">Rangement</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h2 style="font-size:.95rem"><span class="verdict ok">Avec fusion · 6 lignes</span></h2>
+        <div class="cadre">
+          <table class="edt">
+            <colgroup><col class="c-h"><col><col><col><col></colgroup>
+            <thead><tr>
+              <th class="heure">h</th>
+              <th><span class="jlong">Lundi</span><span class="jcourt">Lun</span></th>
+              <th><span class="jlong">Mardi</span><span class="jcourt">Mar</span></th>
+              <th><span class="jlong">Jeudi</span><span class="jcourt">Jeu</span></th>
+              <th><span class="jlong">Vendredi</span><span class="jcourt">Ven</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><th class="heure"><i>10:15</i><i>10:25</i></th>
+                <td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td></tr>
+              <tr><th class="heure"><i>10:25</i><i>10:30</i></th>
+                <td class="maths">Chaque jour compte</td><td class="maths">Chaque jour compte</td>
+                <td class="maths">Chaque jour compte</td><td class="maths">Chaque jour compte</td></tr>
+              <tr><th class="heure"><i>10:30</i><i>11:00</i></th>
+                <td class="maths">Maths</td><td class="maths">Maths</td><td class="maths">Maths</td><td class="maths">Maths</td></tr>
+              <tr><th class="heure"><i>11:00</i><i>11:10</i></th>
+                <td class="maths fusion" rowspan="3">Calcul mental<small>11:00 - 11:30</small></td>
+                <td class="maths">Calcul mental</td><td class="maths">Problème</td><td class="maths">Problème</td></tr>
+              <tr><th class="heure"><i>11:10</i><i>11:20</i></th>
+                <td class="arts">Musique</td>
+                <td class="maths fusion" rowspan="2">Calcul mental<small>11:10 - 11:30</small></td>
+                <td class="maths">Calcul mental</td></tr>
+              <tr><th class="heure"><i>11:20</i><i>11:30</i></th>
+                <td class="rout">Rangement</td><td class="rout">Rangement</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><i class="num">2</i> Une couleur par matière générale</h2>
+    <p class="sous">
+      La couleur suit la <strong>famille</strong>, pas le libellé. « Geste d'écriture »,
+      « Vocabulaire » et « Lecture compréhension » sont tous du français, donc tous bleus.
+      L'après-midi complet ci-dessous fait apparaître les sept familles, et l'EPS du
+      lundi et du jeudi montre une deuxième fusion, sur deux créneaux consécutifs.
+    </p>
+    <div class="cadre">
+      <table class="edt">
+        <colgroup><col class="c-h"><col><col><col><col></colgroup>
+        <thead><tr>
+          <th class="heure">h</th>
+          <th><span class="jlong">Lundi</span><span class="jcourt">Lun</span></th>
+          <th><span class="jlong">Mardi</span><span class="jcourt">Mar</span></th>
+          <th><span class="jlong">Jeudi</span><span class="jcourt">Jeu</span></th>
+          <th><span class="jlong">Vendredi</span><span class="jcourt">Ven</span></th>
+        </tr></thead>
+        <tbody>
+          <tr><th class="heure"><i>13:30</i><i>13:45</i></th>
+            <td class="fr">Chut je lis</td><td class="fr">Chut je lis</td>
+            <td class="fr">Chut je lis</td><td class="fr">Chut je lis</td></tr>
+          <tr><th class="heure"><i>13:45</i><i>14:15</i></th>
+            <td class="fr">Lecture compréhension</td><td class="fr">Production d'écrits</td>
+            <td class="fr">Lecture compréhension</td><td class="fr">Production d'écrits</td></tr>
+          <tr><th class="heure"><i>14:15</i><i>14:45</i></th>
+            <td class="qlm">Histoire géographie</td><td class="arts">Arts visuels</td>
+            <td class="qlm">Sciences et technologie</td><td class="lv">Anglais</td></tr>
+          <tr><th class="heure"><i>14:45</i><i>15:00</i></th>
+            <td class="fr">Écriture</td><td class="fr">Vocabulaire</td>
+            <td class="fr">Écriture</td><td class="fr">Vocabulaire</td></tr>
+          <tr><th class="heure"><i>15:00</i><i>15:15</i></th>
+            <td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td></tr>
+          <tr><th class="heure"><i>15:15</i><i>15:45</i></th>
+            <td class="eps fusion" rowspan="2">EPS<small>15:15 - 16:15</small></td>
+            <td class="lv">Anglais</td>
+            <td class="eps fusion" rowspan="2">EPS<small>15:15 - 16:15</small></td>
+            <td class="arts">Arts visuels</td></tr>
+          <tr><th class="heure"><i>15:45</i><i>16:15</i></th>
+            <td class="emc">EMC</td><td class="emc">EMC</td></tr>
+          <tr><th class="heure"><i>16:15</i><i>16:30</i></th>
+            <td class="rout">Bilan, cartable</td><td class="rout">Bilan, cartable</td>
+            <td class="rout">Bilan, cartable</td><td class="rout">Bilan, cartable</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="palette">
+      <div class="fam f-fr"><b>Français</b><span>lecture, écriture, phonologie, graphèmes, vocabulaire, grammaire, compréhension, production d'écrits, fluence, langage oral, poésie</span></div>
+      <div class="fam f-maths"><b>Mathématiques</b><span>calcul mental, problèmes, numération, géométrie, grandeurs et mesures</span></div>
+      <div class="fam f-qlm"><b>Questionner le monde</b><span>histoire, géographie, sciences, technologie, le vivant, la matière, l'espace, le temps</span></div>
+      <div class="fam f-eps"><b>EPS</b><span>éducation physique et sportive, motricité, natation</span></div>
+      <div class="fam f-arts"><b>Arts</b><span>arts plastiques, arts visuels, musique, chant, histoire des arts</span></div>
+      <div class="fam f-lv"><b>Langue vivante</b><span>anglais</span></div>
+      <div class="fam f-emc"><b>EMC</b><span>enseignement moral et civique, débat, conseil d'élèves</span></div>
+      <div class="fam f-rout"><b>Routines</b><span>accueil, récréation, cantine, rituels, rangement, bilan, cartable</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><i class="num">3</i> L'aperçu après import d'un PDF</h2>
+    <p class="sous">
+      Aujourd'hui l'import n'affiche pas une grille du tout, mais une liste à plat :
+      une ligne par créneau, sans quadrillage ni couleur. Sur l'emploi du temps de
+      Cécile cela fait 90 lignes à faire défiler pour vérifier une lecture.
+      Il doit afficher la même grille que ci-dessus.
+    </p>
+    <div class="duo">
+      <div>
+        <h2 style="font-size:.95rem"><span class="verdict ko">Aujourd'hui · 90 lignes à plat</span></h2>
+        <div class="boite-plate">
+          <table class="plat">
+            <tbody>
+              <tr><td>lundi</td><td>08:20-08:30</td><td>Accueil dans la cour</td></tr>
+              <tr><td>lundi</td><td>08:30-08:35</td><td>Rituel date</td></tr>
+              <tr><td>lundi</td><td>08:35-08:40</td><td>Rituel vocabulaire</td></tr>
+              <tr><td>lundi</td><td>08:40-09:10</td><td>Phonologie encodage décodage</td></tr>
+              <tr><td>lundi</td><td>09:10-09:40</td><td>Ateliers de français</td></tr>
+              <tr><td>lundi</td><td>09:40-10:00</td><td>Étude de la langue</td></tr>
+              <tr><td>lundi</td><td>10:15-10:25</td><td>Récréation</td></tr>
+              <tr><td>lundi</td><td>10:25-10:30</td><td>Chaque jour compte</td></tr>
+              <tr><td>lundi</td><td>10:30-11:00</td><td>Mathématiques</td></tr>
+              <tr><td>lundi</td><td>11:00-11:30</td><td>Calcul mental</td></tr>
+              <tr><td>mardi</td><td>08:20-08:30</td><td>Accueil dans la cour</td></tr>
+              <tr><td>mardi</td><td>08:30-08:35</td><td>Rituel date</td></tr>
+              <tr><td>mardi</td><td>08:35-08:40</td><td>Rituel vocabulaire</td></tr>
+              <tr><td>mardi</td><td>08:40-09:10</td><td>Phonologie encodage décodage</td></tr>
+              <tr><td>mardi</td><td>09:10-09:40</td><td>Ateliers de français</td></tr>
+              <tr><td>mardi</td><td>09:40-10:00</td><td>Étude de la langue</td></tr>
+              <tr><td>mardi</td><td>10:15-10:25</td><td>Récréation</td></tr>
+              <tr><td>mardi</td><td>10:25-10:30</td><td>Chaque jour compte</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h2 style="font-size:.95rem"><span class="verdict ok">Attendu · la grille, en couleur</span></h2>
+        <div class="cadre">
+          <table class="edt">
+            <colgroup><col class="c-h"><col><col><col><col></colgroup>
+            <thead><tr>
+              <th class="heure">h</th>
+              <th><span class="jlong">Lundi</span><span class="jcourt">Lun</span></th>
+              <th><span class="jlong">Mardi</span><span class="jcourt">Mar</span></th>
+              <th><span class="jlong">Jeudi</span><span class="jcourt">Jeu</span></th>
+              <th><span class="jlong">Vendredi</span><span class="jcourt">Ven</span></th>
+            </tr></thead>
+            <tbody>
+              <tr><th class="heure"><i>08:20</i><i>08:30</i></th>
+                <td class="rout">Accueil</td><td class="rout">Accueil</td>
+                <td class="rout">Accueil</td><td class="rout">Accueil</td></tr>
+              <tr><th class="heure"><i>08:30</i><i>08:35</i></th>
+                <td class="fr">Rituel date</td><td class="fr">Rituel date</td>
+                <td class="fr">Rituel date</td><td class="fr">Rituel date</td></tr>
+              <tr><th class="heure"><i>08:35</i><i>08:40</i></th>
+                <td class="fr">Rituel vocabulaire</td><td class="fr">Rituel vocabulaire</td>
+                <td class="fr">Rituel vocabulaire</td><td class="fr">Rituel vocabulaire</td></tr>
+              <tr><th class="heure"><i>08:40</i><i>09:10</i></th>
+                <td class="fr">Phonologie encodage décodage</td><td class="fr">Phonologie encodage décodage</td>
+                <td class="fr">Phonologie encodage décodage</td><td class="fr">Phonologie encodage décodage</td></tr>
+              <tr><th class="heure"><i>09:10</i><i>09:40</i></th>
+                <td class="fr">Ateliers de français</td><td class="fr">Ateliers de français</td>
+                <td class="fr">Ateliers de français</td><td class="fr">Ateliers de français</td></tr>
+              <tr><th class="heure"><i>09:40</i><i>10:00</i></th>
+                <td class="fr">Étude de la langue</td><td class="fr">Étude de la langue</td>
+                <td class="fr">Étude de la langue</td><td class="fr">Étude de la langue</td></tr>
+              <tr><th class="heure"><i>10:15</i><i>10:25</i></th>
+                <td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td><td class="rout">Récré</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bilan">
+    <h2>Ce que ça change</h2>
+    <div class="chiffres">
+      <div class="chiffre"><b>8 → 6</b><span>lignes affichées</span></div>
+      <div class="chiffre"><b>16 → 0</b><span>fausses cases vides</span></div>
+      <div class="chiffre"><b>8</b><span>familles de couleurs</span></div>
+      <div class="chiffre"><b>0</b><span>défilement horizontal</span></div>
+    </div>
+    <p>
+      Aucune donnée ne change en base : mêmes créneaux, mêmes horaires, mêmes
+      libellés. Les lignes sont calculées à partir des frontières horaires au lieu
+      des couples <code>début-fin</code> distincts, et chaque séance reçoit un
+      <code>rowSpan</code> égal au nombre d'intervalles qu'elle couvre.
+    </p>
+    <p>
+      Pour tenir sur un téléphone sans barre de défilement, la grille passe en
+      <code>table-layout: fixed</code> : la colonne des horaires est étroite, les
+      heures s'empilent l'une sous l'autre, les quatre jours se partagent le reste
+      à parts égales et les libellés reviennent à la ligne. Au-delà de 34 rem de
+      large, les noms de jours reprennent leur forme complète.
+    </p>
+    <p>
+      Reste à trancher : les horaires se modifient aujourd'hui dans la colonne de
+      gauche, ligne par ligne. Une ligne ne correspondant plus à une séance unique,
+      il faudra les éditer sur la séance elle-même.
+    </p>
+  </div>
+
+  <p class="note">
+    Maquette statique, aucune interaction branchée. Données extraites de
+    <em>edt.pdf</em> et de la trame par défaut de l'application.
+  </p>
+</div>
