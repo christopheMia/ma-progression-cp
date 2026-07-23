@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
+import { ArrowRight } from 'lucide-react'
 import { rentreeOfficielleParDefaut, type ZoneScolaire } from '@/lib/calendrier-officiel'
+import Bouton from '@/components/ui/Bouton'
 
 export default function RentreeDatePicker({
   onSelect,
@@ -35,10 +37,10 @@ export default function RentreeDatePicker({
           Elle sert uniquement à placer les vacances et les périodes P1 à P5.
         </p>
       </div>
-      <button onClick={() => onSelect(date, zone)}
-        className="w-full bg-violet-700 text-white rounded-xl p-4 font-semibold hover:bg-violet-800">
-        Continuer →
-      </button>
+      <Bouton type="button" variant="principal" size="lg" iconRight={ArrowRight}
+        className="w-full" onClick={() => onSelect(date, zone)}>
+        Continuer
+      </Bouton>
     </div>
   )
 }

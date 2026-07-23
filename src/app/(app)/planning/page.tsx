@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { BookOpen, CalendarDays } from 'lucide-react'
 import AnnualGrid from '@/components/planning/AnnualGrid'
 import PrintButton from '@/components/PrintButton'
 import ProgressBar from '@/components/ProgressBar'
 import ProgressionCorrector from '@/components/ProgressionCorrector'
+import Bouton from '@/components/ui/Bouton'
 import { MANUELS } from '@/data/manuels'
 import { semaineEnCours } from '@/lib/semaines'
 
@@ -52,15 +53,15 @@ export default async function PlanningPage() {
       <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">Planning annuel</h1>
-          <p className="text-slate-500 text-sm">📖 {manuelNom} · {total} semaines</p>
+          <p className="text-slate-500 text-sm flex items-center gap-1.5"><BookOpen size={15} className="text-slate-400" aria-hidden="true" /> {manuelNom} · {total} semaines</p>
         </div>
         <div className="flex gap-2 items-center">
-          <Link href="/periodes"
-            className="text-sm border border-violet-300 text-violet-700 rounded-lg px-2.5 py-1 hover:bg-violet-50">
-            📅 Vue par période
-          </Link>
+          <Bouton variant="contour" size="sm" href="/periodes">
+            <CalendarDays size={16} className="relative" aria-hidden="true" />
+            Vue par période
+          </Bouton>
           <ProgressionCorrector classId={classe.id} progression={progressionActuelle} prenom={prenom || undefined} />
-          <PrintButton label="🖨️ Imprimer le planning" />
+          <PrintButton label="Imprimer le planning" />
         </div>
       </div>
 

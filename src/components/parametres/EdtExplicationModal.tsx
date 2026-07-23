@@ -1,6 +1,8 @@
 'use client'
 import { useEffect } from 'react'
+import { Sparkles, AlertTriangle } from 'lucide-react'
 import { expliquerGenerationEdt, formatDuree } from '@/lib/edt-generator'
+import Bouton from '@/components/ui/Bouton'
 
 /**
  * Fenetre d'explication affichee AVANT de generer l'emploi du temps.
@@ -34,7 +36,7 @@ export default function EdtExplicationModal({ onConfirm, onCancel, isPending }: 
       <div role="dialog" aria-modal="true" aria-labelledby="titre-explication-edt"
         className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
         <header className="sticky top-0 bg-violet-600 text-white px-5 py-3 flex items-center gap-2">
-          <span aria-hidden="true">✨</span>
+          <Sparkles size={18} aria-hidden="true" />
           <h2 id="titre-explication-edt" className="font-semibold">
             Comment ton emploi du temps va être construit
           </h2>
@@ -101,21 +103,20 @@ export default function EdtExplicationModal({ onConfirm, onCancel, isPending }: 
             </ul>
           </section>
 
-          <p className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-amber-900">
-            ⚠️ La génération <strong>remplace</strong> ton emploi du temps actuel. Tu pourras
-            ensuite tout modifier à la main.
+          <p className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-amber-900 flex items-start gap-2">
+            <AlertTriangle size={18} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <span>La génération <strong>remplace</strong> ton emploi du temps actuel. Tu pourras
+              ensuite tout modifier à la main.</span>
           </p>
         </div>
 
         <footer className="sticky bottom-0 bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2">
-          <button type="button" onClick={onCancel} disabled={isPending}
-            className="rounded-lg border border-slate-300 text-slate-600 px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50">
+          <Bouton type="button" variant="neutre" size="sm" onClick={onCancel} disabled={isPending}>
             Annuler
-          </button>
-          <button type="button" onClick={onConfirm} disabled={isPending}
-            className="rounded-lg bg-violet-600 text-white px-4 py-1.5 font-semibold hover:bg-violet-700 disabled:opacity-50">
+          </Bouton>
+          <Bouton type="button" variant="secondaire" size="sm" onClick={onConfirm} loading={isPending}>
             {isPending ? 'Génération…' : 'J’ai compris, générer'}
-          </button>
+          </Bouton>
         </footer>
       </div>
     </div>

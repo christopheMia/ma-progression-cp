@@ -5,7 +5,8 @@ import IaImport from '@/components/setup/IaImport'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
 import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
 import type { ProgressionSemaine } from '@/data/manuels'
-import { Sparkles, X } from 'lucide-react'
+import { Sparkles, X, Check } from 'lucide-react'
+import Bouton from '@/components/ui/Bouton'
 
 /**
  * "Mon assistant" : bouton TOUJOURS visible (monte dans le layout applicatif),
@@ -43,7 +44,7 @@ export default function AssistantFlottant({ hasClass, prenom }: {
       const { premiereSemaine, derniereSemaine, debordement } =
         await enregistrerProgressionPeriode(matiere, periode, progression, nomManuel)
       setEnregistre(
-        `Période ${periode} « ${matiere} » enregistrée sur les semaines ${premiereSemaine} à ${derniereSemaine} ✅` +
+        `Période ${periode} « ${matiere} » enregistrée sur les semaines ${premiereSemaine} à ${derniereSemaine}` +
         (debordement > 0
           ? ` (${debordement} semaine${debordement > 1 ? 's' : ''} de plus que la période, placée${debordement > 1 ? 's' : ''} juste après)`
           : '')
@@ -52,7 +53,7 @@ export default function AssistantFlottant({ hasClass, prenom }: {
     }
     await enregistrerProgressionMatiere(matiere, progression, nomManuel)
     setEnregistre(
-      `Progression « ${matiere} »${nomManuel ? ` (${nomManuel})` : ''} enregistrée ✅`)
+      `Progression « ${matiere} »${nomManuel ? ` (${nomManuel})` : ''} enregistrée`)
   }
 
   return (
@@ -61,12 +62,12 @@ export default function AssistantFlottant({ hasClass, prenom }: {
           bas de l'ecran : `env(safe-area-inset-bottom)` remonte le bouton
           au-dessus de cette zone. Sans ca, il peut etre partiellement ou
           totalement masque sur mobile. z-40 pour passer devant tout le contenu. */}
-      <button type="button" onClick={() => setOuvert(true)} aria-expanded={ouvert}
+      <Bouton type="button" variant="principal" size="lg" icon={Sparkles}
+        onClick={() => setOuvert(true)} aria-expanded={ouvert}
         style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
-        className="fixed right-4 sm:right-5 z-40 flex items-center gap-2 rounded-full bg-violet-600 text-white shadow-lg px-4 sm:px-5 py-3 font-semibold hover:bg-violet-700 focus-visible:ring-4 focus-visible:ring-violet-300 transition-colors print:hidden">
-        <Sparkles aria-hidden="true" className="w-5 h-5" />
+        className="fixed right-4 sm:right-5 z-40 shadow-lg print:hidden">
         Mon assistant
-      </button>
+      </Bouton>
 
       {ouvert && (
         <div className="fixed inset-0 z-40 flex justify-end print:hidden">
@@ -96,8 +97,9 @@ export default function AssistantFlottant({ hasClass, prenom }: {
                     peux lui demander des corrections en langage naturel.
                   </p>
                   {enregistre && (
-                    <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-3">
-                      {enregistre}
+                    <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-3 flex items-start gap-1.5">
+                      <Check size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
+                      <span>{enregistre}</span>
                     </p>
                   )}
                   <IaImport prenom={prenom} onSave={sauvegarder} />

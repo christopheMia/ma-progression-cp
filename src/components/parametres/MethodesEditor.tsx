@@ -1,7 +1,9 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { Bot, CalendarDays, Plus, Save } from 'lucide-react'
 import IaImport from '@/components/setup/IaImport'
+import Bouton from '@/components/ui/Bouton'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
 import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
 import { createMethode, updateSuiviActif, lierCreneaux } from '@/lib/actions/methodes'
@@ -137,16 +139,16 @@ export default function MethodesEditor({
                   />
                   📊 Suivre les acquis des élèves <span className="text-gray-400">(affiche les étoiles ★)</span>
                 </label>
-                <button
+                <Bouton type="button" variant="neutre" size="sm" icon={CalendarDays}
                   onClick={() => setLienOuvert(lienOuvert === m.id ? null : m.id)}
-                  className="text-xs border border-gray-300 text-gray-600 rounded-lg px-2 py-1 hover:bg-gray-50">
-                  {creneauxLies.length > 0 ? `🗓️ ${creneauxLies.length} créneau${creneauxLies.length > 1 ? 'x' : ''} de la semaine` : '🗓️ Choisir les créneaux de la semaine'}
-                </button>
-                <button
+                  className="text-xs">
+                  {creneauxLies.length > 0 ? `${creneauxLies.length} créneau${creneauxLies.length > 1 ? 'x' : ''} de la semaine` : 'Choisir les créneaux de la semaine'}
+                </Bouton>
+                <Bouton type="button" variant="contour" size="sm" icon={Bot}
                   onClick={() => { setMessage(null); setOuverte(ouverte === m.id ? null : m.id) }}
-                  className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50">
-                  {ouverte === m.id ? 'Fermer' : '🤖 Importer ou corriger la méthode'}
-                </button>
+                  className="text-sm">
+                  {ouverte === m.id ? 'Fermer' : 'Importer ou corriger la méthode'}
+                </Bouton>
               </div>
             </div>
 
@@ -169,12 +171,11 @@ export default function MethodesEditor({
                     <p className="text-xs text-gray-400 col-span-2">Aucun créneau dans l’emploi du temps.</p>
                   )}
                 </div>
-                <button
+                <Bouton type="button" variant="secondaire" size="sm" icon={Save}
                   onClick={() => saveLien(m.id)}
-                  disabled={isPending}
-                  className="text-sm bg-violet-600 text-white rounded-lg px-3 py-1.5 hover:bg-violet-700 disabled:opacity-50">
-                  {isPending ? 'Enregistrement…' : '✅ Enregistrer les créneaux liés'}
-                </button>
+                  loading={isPending}>
+                  Enregistrer les créneaux liés
+                </Bouton>
               </div>
             )}
 
@@ -199,12 +200,12 @@ export default function MethodesEditor({
             placeholder="Ex : Anglais, EMC, Sciences…"
             className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
           />
-          <button
+          <Bouton type="button" variant="contour" size="sm" icon={Plus}
             onClick={ajouterMethode}
             disabled={!nouveauNom.trim()}
-            className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50 disabled:opacity-40">
+            className="text-sm">
             Ajouter
-          </button>
+          </Bouton>
         </div>
       </div>
     </div>

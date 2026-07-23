@@ -80,7 +80,7 @@ export default async function ParametresPage() {
           <ImporterEdtButton />
           <GenererEdtButton />
           <ResetBlockButton scope="edt" message="Réinitialise l'emploi du temps (trame par défaut)." />
-          <ResetBlockButton scope="edt-vide" label="🗑️ Vider" message="Vide complètement l'emploi du temps (aucune trame rechargée)." />
+          <ResetBlockButton scope="edt-vide" label="Vider" message="Vide complètement l'emploi du temps (aucune trame rechargée)." />
         </div>
       }>
         <EmploiDuTempsGrille initial={(edt ?? []).map(c => ({

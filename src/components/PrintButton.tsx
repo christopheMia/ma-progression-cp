@@ -1,12 +1,12 @@
 'use client'
+import { Printer } from 'lucide-react'
 import { imprimerPage } from '@/lib/print'
+import Bouton from '@/components/ui/Bouton'
 
-export default function PrintButton({ label = '🖨️ Imprimer' }: { label?: string }) {
+export default function PrintButton({ label = 'Imprimer' }: { label?: string }) {
   return (
-    <button
-      onClick={imprimerPage}
-      className="no-print text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
+    <Bouton variant="neutre" size="sm" icon={Printer} onClick={imprimerPage} className="no-print">
       {label}
-    </button>
+    </Bouton>
   )
 }

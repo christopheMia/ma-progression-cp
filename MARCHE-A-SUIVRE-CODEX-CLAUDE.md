@@ -226,6 +226,82 @@ Idées / options mises de côté (à ne pas oublier) :
 
 Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
 
+- **2026-07-23 - Codex - reprise apres la coupure de Claude, boutons unifies
+  termines et publication demandee**. Les modifications non journalisees de
+  Claude ont ete retrouvees et conservees. La liste "RESTE A MIGRER" de l'entree
+  suivante est maintenant remplacee par ce bilan :
+  1. Les actions du setup, des editeurs Eleves/Manuel/Methodes, de l'import IA,
+     du cahier journal, du suivi des eleves et de la grille EDT utilisent
+     maintenant `src/components/ui/Bouton.tsx`.
+  2. Les controles structurels restent volontairement des boutons HTML compacts :
+     ouverture/fermeture, suppression d'une pastille eleve, choix des cartes de
+     base EDT, etoiles et statuts du suivi, outils internes de mise en forme EDT.
+     Ils ne doivent pas prendre l'apparence d'un bouton d'action principal.
+  3. `Bouton` utilise maintenant `type="button"` par defaut pour eviter une
+     soumission accidentelle dans un formulaire, signale l'etat de chargement
+     avec `aria-busy` et masque le reflet anime hors de ses bords.
+  4. Les emojis ont ete retires des nouveaux libelles de boutons et remplaces par
+     des icones Lucide quand elles apportent une information utile.
+  5. La page temporaire `/demo-boutons` est conservee, non liee dans la navigation,
+     jusqu'a la validation visuelle finale de Christophe. Elle pourra ensuite etre
+     supprimee.
+  6. Controle visuel effectue sur `/connexion` en ordinateur et en mobile 390 px :
+     aucun debordement horizontal, aucune erreur navigateur. Validation technique :
+     29 suites, 231 tests passes, type-check propre, build Next.js 16 de production
+     reussi, `git diff --check` propre. Le premier build isole avait seulement
+     echoue faute d'acces reseau aux Google Fonts, puis a reussi avec cet acces.
+  7. `partage/` est reste local et n'a pas ete ajoute a Git. La branche
+     `feat/accueil-icones-lucide` part exactement de `main`. Publication demandee
+     par Christophe : commit de cette branche, integration dans `main`, puis push
+     de `main` pour declencher Vercel.
+- **2026-07-23 - Claude Code - système de boutons unifié (`<Bouton>`) + effets de
+  survol** (branche `feat/accueil-icones-lucide`, PAS poussée, en cours). Christophe
+  veut une interface pro et design, cohérente partout.
+  1. **Cartes de l'accueil** : effet de survol valide = surelevation (effet A) + barre
+     d'accent violette qui glisse en haut (effet B). Factorise dans la classe CSS
+     `.carte-i` (globals.css, via `::before`, avec garde `prefers-reduced-motion`).
+     Applique a toutes les cartes de l'accueil (page.tsx + OutilsIaSection +
+     CahierJournalCard).
+  2. **Composant `<Bouton>` unique** : `src/components/ui/Bouton.tsx`. UNE source de
+     verite pour forme/etats/mouvement. Variantes : `principal` (degrade violet + reflet
+     qui balaie, 1/ecran), `secondaire` (violet plein), `contour` (violet outline),
+     `neutre` (gris outline), `fantome` (texte), `danger` (rouge). Tailles sm/md/lg.
+     Etats loading (spinner Loader2) + disabled + focus-visible ring a11y. Passer `href`
+     rend un `<Link>` Next. IMPORTANT frontiere serveur/client : depuis un composant
+     SERVEUR (ex accueil), NE PAS passer `icon={Icone}` (fonction non serialisable),
+     passer l'icone en `children` a la place. En composant client, `icon=` marche.
+  3. **Header** : emojis `☰`/`✕` du menu mobile -> icones lucide `Menu`/`X`, focus rings
+     ajoutes, CTA aligne. LogoutButton : icone `LogOut` + spinner.
+  4. **Boutons migres vers `<Bouton>` (FAIT)** : accueil "Configurer", ResetButton,
+     GenererEdtButton, RealignerSemainesButton, ResetBlockButton, ResetContenuButton,
+     ProposerRattachementsButton, PrintButton, GoogleDocsButton, ImporterEdtButton
+     (le label d'upload reste un `<label>`). Emojis retires des labels PrintButton /
+     ResetBlockButton chez les appelants (parametres/periodes/planning/semaine).
+  Vérifs : `tsc` propre, `npm run build` OK a chaque vague.
+  **RESTE A MIGRER (boutons d'action seulement, PAS les controles structurels comme les
+  cases d'EDT, en-tetes depliables, bouton assistant flottant)** : setup/page.tsx, les
+  editeurs de parametres (ElevesEditor, ManuelEditor, MethodesEditor, NomMethodeEditor,
+  PrenomEnseignantEditor, RentreeEditor), semaine (CahierJournalEditor, StudentTracking),
+  ProgressionCorrector, setup/* (IaImport, ManualSelector, RentreeDatePicker,
+  StudentListEditor), EdtExplicationModal, BudgetIaIndicator, planning/page.tsx, les pages
+  auth (connexion/inscription). Page de DEMO `src/app/(app)/demo-boutons/page.tsx` A
+  SUPPRIMER une fois le style definitivement valide. Rien encore commite/pousse.
+- **2026-07-23 - Claude Code - page d'accueil : emojis remplacés par des icônes
+  lucide-react** (branche `feat/accueil-icones-lucide`, PAS encore poussée, en attente
+  du feu vert de Christophe). Christophe veut une interface pro et design : plus aucun
+  emoji sur l'accueil. Convertis dans `src/app/(app)/accueil/page.tsx`,
+  `src/components/accueil/OutilsIaSection.tsx` et `.../CahierJournalCard.tsx` :
+  📖✏️/📚✏️ → `BookOpenText`+`Pencil`, 👋 → `Hand`, ✨ → `Sparkles`, 🌍 → `Globe`,
+  📅 → `CalendarDays`, 🕐 → `Clock`, ➕ → `Plus`, 🧭 → `Compass`, 🧰 → `Wrench`,
+  📔 → `NotebookPen`, 📋 → `ClipboardList`, 📚 → `BookOpen`, 🎯 → `Target`,
+  🧩 → `Puzzle` ; les flèches `→` et triangles `▴▾` passent en `ArrowRight` /
+  `ChevronUp`-`ChevronDown`. Détail technique : `OutilsIaSection` est un composant
+  CLIENT, la page un composant SERVEUR ; on ne peut pas passer un composant React en
+  prop à travers la frontière, donc la prop `emoji: string` est devenue `icon:
+  keyof ICONES` (un NOM d'icone serialisable) resolu via une petite table `ICONES`
+  dans le composant client. Vérifs : `tsc --noEmit` propre, `npm run build` (Next.js 16)
+  réussi, 0 emoji restant sur l'accueil. RESTE : feu vert de Christophe pour commit +
+  push, et éventuellement étendre la même conversion aux autres pages si elles en ont.
 - **2026-07-22 — Claude Code — vue "période complète" (A) déployée** : page `/periodes`
   + `src/lib/vue-periode.ts` (`agregerParPeriode`, 5 tests) + lien dans l'en-tête du
   planning. Lecture seule (option A choisie par Christophe). Poussé sur `main`. Option B

@@ -1,6 +1,8 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { Eraser } from 'lucide-react'
 import { reinitialiserContenuClasse } from '@/lib/actions/parametres'
+import Bouton from '@/components/ui/Bouton'
 
 /**
  * "Repartir d'une annee vierge" : efface tout le contenu (eleves, semaines,
@@ -25,10 +27,10 @@ export default function ResetContenuButton() {
 
   if (!confirm) {
     return (
-      <button type="button" onClick={() => setConfirm(true)}
-        className="text-sm border border-red-300 text-red-700 rounded-lg px-3 py-1.5 hover:bg-red-50">
-        🧽 Effacer tout sauf ma classe
-      </button>
+      <Bouton type="button" variant="contour" size="sm" icon={Eraser} onClick={() => setConfirm(true)}
+        className="text-red-700 border-red-300 hover:bg-red-50 hover:border-red-400 focus-visible:ring-red-300/60">
+        Effacer tout sauf ma classe
+      </Bouton>
     )
   }
 
@@ -40,14 +42,12 @@ export default function ResetContenuButton() {
         ton prénom, ton manuel et ta date de rentrée restent en place.
       </p>
       <div className="flex items-center gap-2">
-        <button type="button" onClick={run} disabled={isPending}
-          className="bg-red-600 text-white rounded-lg px-3 py-1.5 text-sm disabled:opacity-50">
+        <Bouton type="button" variant="danger" size="sm" onClick={run} loading={isPending}>
           {isPending ? 'Effacement…' : 'Oui, effacer le contenu'}
-        </button>
-        <button type="button" onClick={() => setConfirm(false)} disabled={isPending}
-          className="border border-gray-300 text-gray-600 rounded-lg px-3 py-1.5 text-sm hover:bg-gray-50">
+        </Bouton>
+        <Bouton type="button" variant="fantome" size="sm" onClick={() => setConfirm(false)} disabled={isPending}>
           Annuler
-        </button>
+        </Bouton>
       </div>
     </div>
   )

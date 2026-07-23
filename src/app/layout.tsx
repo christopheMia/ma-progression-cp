@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Quicksand, Playfair_Display, Geist_Mono } from "next/font/google";
+import { Quicksand, Playfair_Display, Geist_Mono, Dancing_Script } from "next/font/google";
 import "./globals.css";
 
 // Texte courant : Quicksand (geometrique arrondi, doux et lisible).
@@ -12,6 +12,14 @@ const quicksand = Quicksand({
 const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
+});
+
+// Logo / nom de l'appli : Dancing Script (calligraphie elegante et lisible).
+// Utilisee uniquement pour le wordmark "Ma Progression CP", via .font-logo.
+const dancingScript = Dancing_Script({
+  variable: "--font-logo",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 const geistMono = Geist_Mono({
@@ -45,7 +53,7 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${quicksand.variable} ${playfair.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${quicksand.variable} ${playfair.variable} ${dancingScript.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

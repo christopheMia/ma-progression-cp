@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
+import { ArrowRight, RefreshCw } from 'lucide-react'
 import IaImport from './IaImport'
+import Bouton from '@/components/ui/Bouton'
 import type { ProgressionSemaine } from '@/data/manuels'
 
 export default function ManualSelector({
@@ -31,14 +33,14 @@ export default function ManualSelector({
           <p className="text-sm text-gray-600 mt-1">Tu peux continuer, ou réimporter une autre méthode.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <button onClick={() => onSelect(initial.manuelId, initial.progression)}
-            className="flex-1 bg-violet-700 text-white rounded-xl p-4 font-semibold hover:bg-violet-800">
-            Continuer →
-          </button>
-          <button onClick={() => setReimport(true)}
-            className="flex-1 border-2 border-violet-300 text-violet-700 rounded-xl p-4 font-semibold hover:bg-violet-50">
+          <Bouton type="button" variant="principal" size="lg" iconRight={ArrowRight}
+            className="flex-1" onClick={() => onSelect(initial.manuelId, initial.progression)}>
+            Continuer
+          </Bouton>
+          <Bouton type="button" variant="contour" size="lg" icon={RefreshCw}
+            className="flex-1" onClick={() => setReimport(true)}>
             Réimporter une méthode
-          </button>
+          </Bouton>
         </div>
       </div>
     )

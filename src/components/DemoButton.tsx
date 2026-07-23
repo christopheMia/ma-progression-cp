@@ -1,6 +1,8 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { GraduationCap, X } from 'lucide-react'
 import { chargerClasseDemo } from '@/lib/actions/demo'
+import Bouton from '@/components/ui/Bouton'
 
 export default function DemoButton({ confirmer = false }: { confirmer?: boolean }) {
   const [isPending, startTransition] = useTransition()
@@ -14,10 +16,10 @@ export default function DemoButton({ confirmer = false }: { confirmer?: boolean 
 
   if (confirmer && !armed) {
     return (
-      <button onClick={() => setArmed(true)}
-        className="text-sm border border-violet-300 text-violet-700 rounded-lg px-4 py-2 hover:bg-violet-50">
-        🎓 Charger une classe de démonstration
-      </button>
+      <Bouton type="button" variant="contour" size="sm" icon={GraduationCap}
+        onClick={() => setArmed(true)}>
+        Charger une classe de démonstration
+      </Bouton>
     )
   }
 
@@ -28,23 +30,23 @@ export default function DemoButton({ confirmer = false }: { confirmer?: boolean 
           ⚠️ Cela <strong>remplace votre configuration actuelle</strong> par une classe de démonstration.
         </div>
         <div className="flex gap-2">
-          <button onClick={lancer} disabled={isPending}
-            className="bg-violet-600 text-white rounded-lg px-4 py-2 font-semibold hover:bg-violet-700 disabled:opacity-50">
-            {isPending ? 'Chargement…' : 'Oui, charger la démo'}
-          </button>
-          <button onClick={() => setArmed(false)} disabled={isPending}
-            className="border border-gray-300 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50">
+          <Bouton type="button" variant="danger" icon={GraduationCap} loading={isPending}
+            onClick={lancer}>
+            Oui, charger la démo
+          </Bouton>
+          <Bouton type="button" variant="neutre" icon={X} disabled={isPending}
+            onClick={() => setArmed(false)}>
             Annuler
-          </button>
+          </Bouton>
         </div>
       </div>
     )
   }
 
   return (
-    <button onClick={lancer} disabled={isPending}
-      className="text-sm border border-violet-300 text-violet-700 rounded-lg px-4 py-2 hover:bg-violet-50 disabled:opacity-50">
-      {isPending ? 'Chargement…' : '🎓 Charger une classe de démonstration'}
-    </button>
+    <Bouton type="button" variant="contour" size="sm" icon={GraduationCap}
+      loading={isPending} onClick={lancer}>
+      Charger une classe de démonstration
+    </Bouton>
   )
 }

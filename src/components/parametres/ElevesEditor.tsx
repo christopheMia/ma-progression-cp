@@ -1,7 +1,9 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { Save, UserPlus } from 'lucide-react'
 import { updateEleves } from '@/lib/actions/parametres'
 import { decouperPrenoms } from '@/lib/prenoms'
+import Bouton from '@/components/ui/Bouton'
 
 export default function ElevesEditor({ initial }: { initial: string[] }) {
   const [eleves, setEleves] = useState<string[]>(initial)
@@ -50,10 +52,9 @@ export default function ElevesEditor({ initial }: { initial: string[] }) {
           onPaste={onPaste}
           placeholder="Un prénom, ou toute la liste collée"
           className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-violet-500 outline-none text-gray-900 bg-white" />
-        <button onClick={() => ajouter(input)}
-          className="bg-violet-600 text-white rounded-xl px-4 font-semibold hover:bg-violet-700">
+        <Bouton type="button" size="lg" icon={UserPlus} onClick={() => ajouter(input)}>
           Ajouter
-        </button>
+        </Bouton>
       </div>
       <p className="text-xs text-gray-400">Astuce : colle toute ta liste d’un coup, un prénom par ligne.</p>
       <div className="flex flex-wrap gap-2">
@@ -67,10 +68,10 @@ export default function ElevesEditor({ initial }: { initial: string[] }) {
         {eleves.length === 0 && <span className="text-sm text-gray-400">Aucun élève.</span>}
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={enregistrer} disabled={isPending}
-          className="bg-violet-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-violet-800 disabled:opacity-50">
-          {isPending ? 'Enregistrement...' : 'Enregistrer les élèves'}
-        </button>
+        <Bouton type="button" variant="principal" icon={Save} loading={isPending}
+          onClick={enregistrer}>
+          Enregistrer les élèves
+        </Bouton>
         {saved && !isPending && <span className="text-sm text-green-600">✓ Enregistré</span>}
       </div>
       <p className="text-xs text-gray-400">

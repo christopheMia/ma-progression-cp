@@ -1,6 +1,8 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { Sparkles } from 'lucide-react'
 import { proposerRattachements } from '@/lib/actions/mapping'
+import Bouton from '@/components/ui/Bouton'
 
 /** Lance le rattachement IA des notions d'une matière aux compétences officielles. */
 export default function ProposerRattachementsButton({ matiere, label }: { matiere: string; label: string }) {
@@ -22,11 +24,10 @@ export default function ProposerRattachementsButton({ matiere, label }: { matier
 
   return (
     <span className="flex items-center gap-2 flex-wrap justify-end text-xs">
-      {msg && <span className="text-gray-500">{msg}</span>}
-      <button type="button" onClick={run} disabled={isPending}
-        className="shrink-0 border border-violet-300 text-violet-700 rounded-lg px-2.5 py-1 hover:bg-violet-50 disabled:opacity-50">
-        {isPending ? 'Analyse…' : `✨ Rattacher ${label} avec l'IA`}
-      </button>
+      {msg && <span className="text-slate-500">{msg}</span>}
+      <Bouton type="button" variant="contour" size="sm" icon={Sparkles} onClick={run} loading={isPending} className="shrink-0">
+        {isPending ? 'Analyse…' : `Rattacher ${label} avec l'IA`}
+      </Bouton>
     </span>
   )
 }

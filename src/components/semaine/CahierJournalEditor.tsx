@@ -1,10 +1,12 @@
 'use client'
 import { useState, useTransition, useEffect, useRef } from 'react'
+import { FileDown, NotebookPen, Printer, RefreshCw, Sparkles } from 'lucide-react'
 import { JourJournal } from '@/types'
 import { genererOuChargerJournal, sauvegarderJournal, regenererJournal } from '@/lib/actions/journal'
 import { exporterJournalWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import GoogleDocsButton from './GoogleDocsButton'
+import Bouton from '@/components/ui/Bouton'
 
 export default function CahierJournalEditor({ semaineId, numeroSemaine, francais = [], maths = [] }: {
   semaineId: string; numeroSemaine: number; francais?: string[]; maths?: string[]
@@ -101,10 +103,10 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine, francais
     return (
       <div className="bg-white border rounded-2xl p-5 text-center shadow-sm">
         <h2 className="font-bold text-gray-700 mb-3">📋 Cahier journal</h2>
-        <button onClick={generer} disabled={isPending}
-          className="bg-violet-700 text-white rounded-xl px-6 py-3 font-semibold hover:bg-violet-800 disabled:opacity-50">
-          {isPending ? 'Génération...' : 'Générer le cahier journal'}
-        </button>
+        <Bouton type="button" variant="principal" size="lg" icon={NotebookPen}
+          loading={isPending} onClick={generer}>
+          Générer le cahier journal
+        </Bouton>
       </div>
     )
   }
@@ -118,26 +120,27 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine, francais
           {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
         </div>
         <div className="flex gap-2 no-print">
-          <button
+          <Bouton type="button" variant="neutre" size="sm" icon={RefreshCw}
             onClick={regenerer}
-            disabled={isPending}
+            loading={isPending}
             title="Recrée le cahier journal à partir de ton emploi du temps et de tes méthodes (remplace le contenu de la semaine)."
-            className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-30">
-            🔄 Régénérer
-          </button>
-          <button
+            className="text-sm">
+            Régénérer
+          </Bouton>
+          <Bouton type="button" variant="contour" size="sm" icon={FileDown}
             onClick={handleExportWord}
-            disabled={!journal || exporting}
+            disabled={!journal}
+            loading={exporting}
             title="Télécharge un document Word (.docx). Ouvrez-le avec Word, ou importez-le dans Google Docs (Fichier → Importer)."
-            className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50 disabled:opacity-30">
-            {exporting ? 'Génération…' : '⬇️ Word (.docx)'}
-          </button>
+            className="text-sm">
+            Word (.docx)
+          </Bouton>
           <GoogleDocsButton journal={journal} numeroSemaine={numeroSemaine} />
-          <button
+          <Bouton type="button" variant="neutre" size="sm" icon={Printer}
             onClick={() => imprimerElement(journalRef.current)}
-            className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-            🖨️ PDF
-          </button>
+            className="text-sm">
+            PDF
+          </Bouton>
         </div>
       </div>
 
@@ -156,10 +159,11 @@ export default function CahierJournalEditor({ semaineId, numeroSemaine, francais
         <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
           <div className="bg-violet-50 px-4 py-2 font-semibold text-violet-800 capitalize flex justify-between items-center">
             <span>{jour.jour}</span>
-            <button onClick={() => genererJournee(ji)} disabled={generatingJour === ji}
-              className="no-print text-xs bg-violet-600 text-white rounded-lg px-3 py-1 hover:bg-violet-700 disabled:opacity-50">
-              {generatingJour === ji ? 'Génération…' : '✨ Générer la journée'}
-            </button>
+            <Bouton type="button" variant="secondaire" size="sm" icon={Sparkles}
+              loading={generatingJour === ji} onClick={() => genererJournee(ji)}
+              className="no-print text-xs">
+              Générer la journée
+            </Bouton>
           </div>
           <table className="w-full border-collapse text-sm">
             <thead>

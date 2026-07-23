@@ -58,7 +58,7 @@ export default async function PeriodesPage() {
         <Link href="/planning" className="text-violet-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Vue par période</h1>
         <div className="ml-auto">
-          <PrintButton label="🖨️ Imprimer" />
+          <PrintButton label="Imprimer" />
         </div>
       </div>
       <p className="text-sm text-gray-600 bg-violet-50 border border-violet-100 rounded-lg p-3 leading-relaxed">

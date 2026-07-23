@@ -1,8 +1,10 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { RefreshCw, TriangleAlert, X } from 'lucide-react'
 import ManualSelector from '@/components/setup/ManualSelector'
 import { updateManuel } from '@/lib/actions/parametres'
+import Bouton from '@/components/ui/Bouton'
 import type { ProgressionSemaine } from '@/data/manuels'
 
 export default function ManuelEditor({ currentNom, prenom }: { currentNom: string; prenom?: string }) {
@@ -25,10 +27,10 @@ export default function ManuelEditor({ currentNom, prenom }: { currentNom: strin
     return (
       <div className="space-y-3">
         <p className="text-gray-700">Manuel actuel : <span className="font-semibold">{currentNom}</span></p>
-        <button onClick={() => setEditing(true)}
-          className="text-sm border border-violet-300 text-violet-700 rounded-lg px-4 py-2 hover:bg-violet-50">
+        <Bouton type="button" variant="contour" size="sm" icon={RefreshCw}
+          onClick={() => setEditing(true)}>
           Changer de manuel
-        </button>
+        </Bouton>
       </div>
     )
   }
@@ -42,24 +44,24 @@ export default function ManuelEditor({ currentNom, prenom }: { currentNom: strin
 
       {!confirmed ? (
         <div className="flex gap-2">
-          <button onClick={() => setConfirmed(true)}
-            className="bg-red-600 text-white rounded-lg px-4 py-2 font-semibold hover:bg-red-700">
+          <Bouton type="button" variant="danger" icon={TriangleAlert}
+            onClick={() => setConfirmed(true)}>
             J'ai compris, choisir un nouveau manuel
-          </button>
-          <button onClick={() => setEditing(false)}
-            className="border border-gray-300 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-50">
+          </Bouton>
+          <Bouton type="button" variant="neutre" icon={X}
+            onClick={() => setEditing(false)}>
             Annuler
-          </button>
+          </Bouton>
         </div>
       ) : isPending ? (
         <p className="text-sm text-violet-700">Régénération de la progression…</p>
       ) : (
         <>
           <ManualSelector onSelect={changer} prenom={prenom} />
-          <button onClick={() => { setConfirmed(false); setEditing(false) }}
-            className="text-sm text-gray-500 hover:text-gray-700">
-            ← Annuler
-          </button>
+          <Bouton type="button" variant="fantome" size="sm" icon={X}
+            onClick={() => { setConfirmed(false); setEditing(false) }}>
+            Annuler
+          </Bouton>
         </>
       )}
     </div>

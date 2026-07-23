@@ -1,7 +1,9 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { Check } from 'lucide-react'
 import { updateRentreeDate } from '@/lib/actions/parametres'
 import type { ZoneScolaire } from '@/lib/calendrier-officiel'
+import Bouton from '@/components/ui/Bouton'
 
 export default function RentreeEditor({ initial, initialZone = 'A' }: { initial: string; initialZone?: ZoneScolaire }) {
   const [date, setDate] = useState(initial)
@@ -34,11 +36,10 @@ export default function RentreeEditor({ initial, initialZone = 'A' }: { initial:
         </select>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={enregistrer} disabled={isPending}
-          className="bg-violet-700 text-white rounded-lg px-4 py-2 font-semibold hover:bg-violet-800 disabled:opacity-50">
-          {isPending ? 'Recalcul...' : 'Enregistrer le calendrier'}
-        </button>
-        {saved && !isPending && <span className="text-sm text-green-600">✓ Dates recalculées</span>}
+        <Bouton variant="secondaire" size="sm" onClick={enregistrer} loading={isPending}>
+          {isPending ? 'Recalcul…' : 'Enregistrer le calendrier'}
+        </Bouton>
+        {saved && !isPending && <span className="text-sm text-emerald-600 inline-flex items-center gap-1"><Check size={15} aria-hidden="true" /> Dates recalculées</span>}
       </div>
       <p className="text-xs text-gray-400">
         Les périodes P1 à P5 et les 36 semaines sont recalculées. Le suivi des élèves et les cahiers journaux sont conservés.

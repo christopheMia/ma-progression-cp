@@ -1,8 +1,10 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { FileUp, Loader2 } from 'lucide-react'
 import { updateEmploiDuTemps } from '@/lib/actions/parametres'
 import type { CreneauImporte } from '@/lib/ia/schema-edt'
 import EdtGrilleLecture from '@/components/EdtGrilleLecture'
+import Bouton from '@/components/ui/Bouton'
 
 /**
  * "Importer mon emploi du temps depuis un PDF".
@@ -65,8 +67,10 @@ export default function ImporterEdtButton() {
 
   return (
     <div className="space-y-2">
-      <label className="shrink-0 inline-flex items-center gap-1 text-xs border border-violet-300 text-violet-700 rounded-lg px-2.5 py-1 hover:bg-violet-50 cursor-pointer">
-        {chargement ? '⏳ Lecture du PDF…' : '📄 Importer depuis un PDF'}
+      <label className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold border border-violet-300 text-violet-700 bg-white rounded-xl px-3 py-1.5 hover:bg-violet-50 hover:border-violet-400 transition-colors cursor-pointer focus-within:outline-none focus-within:ring-4 focus-within:ring-violet-300/60">
+        {chargement
+          ? <><Loader2 size={16} className="animate-spin" aria-hidden="true" /> Lecture du PDF…</>
+          : <><FileUp size={16} aria-hidden="true" /> Importer depuis un PDF</>}
         <input type="file" accept=".pdf" multiple onChange={analyser} disabled={chargement} className="sr-only" />
       </label>
 
@@ -84,14 +88,12 @@ export default function ImporterEdtButton() {
             <EdtGrilleLecture creneaux={creneaux} />
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={valider} disabled={isPending}
-              className="bg-violet-600 text-white rounded-lg px-2.5 py-1 disabled:opacity-50">
+            <Bouton type="button" variant="secondaire" size="sm" onClick={valider} loading={isPending}>
               {isPending ? 'Enregistrement…' : 'Remplacer mon emploi du temps'}
-            </button>
-            <button type="button" onClick={() => setCreneaux(null)} disabled={isPending}
-              className="border border-gray-300 text-gray-600 rounded-lg px-2.5 py-1 hover:bg-gray-50">
+            </Bouton>
+            <Bouton type="button" variant="fantome" size="sm" onClick={() => setCreneaux(null)} disabled={isPending}>
               Annuler
-            </button>
+            </Bouton>
           </div>
         </div>
       )}

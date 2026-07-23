@@ -1,9 +1,11 @@
 'use client'
 import { useState } from 'react'
+import { ArrowLeft, LayoutGrid, WandSparkles } from 'lucide-react'
 import ManualSelector from '@/components/setup/ManualSelector'
 import RentreeDatePicker from '@/components/setup/RentreeDatePicker'
 import StudentListEditor from '@/components/setup/StudentListEditor'
 import TimetableGrid, { type Creneau } from '@/components/TimetableGrid'
+import Bouton from '@/components/ui/Bouton'
 import { TRAME_EDT_CP } from '@/data/trame-edt'
 import { genererEdtCP } from '@/lib/edt-generator'
 import DemoButton from '@/components/DemoButton'
@@ -82,10 +84,10 @@ export default function SetupPage() {
         <div className="flex items-center justify-between mt-2">
           <p className="text-sm text-gray-500">Étape {step}/4 — <strong className="text-violet-700">{stepTitles[step - 1]}</strong></p>
           {step > 1 && !loading && (
-            <button onClick={() => setStep(s => s - 1)}
-              className="text-sm text-violet-600 hover:underline">
-              ← Étape précédente
-            </button>
+            <Bouton type="button" variant="fantome" size="sm" icon={ArrowLeft}
+              onClick={() => setStep(s => s - 1)}>
+              Étape précédente
+            </Bouton>
           )}
         </div>
         <p className="text-sm text-gray-600 bg-violet-50 border border-violet-100 rounded-lg p-3 mt-3 leading-relaxed">
@@ -120,7 +122,10 @@ export default function SetupPage() {
             <button type="button"
               onClick={() => setData(d => ({ ...d, emploiDuTempsDraft: edtDepuisQuotas() }))}
               className="text-left border-2 border-violet-300 rounded-xl p-4 hover:bg-violet-50">
-              <span className="block font-semibold text-violet-800">✨ Générer selon les quotas officiels</span>
+              <span className="flex items-center gap-2 font-semibold text-violet-800">
+                <WandSparkles size={18} aria-hidden="true" />
+                Générer selon les quotas officiels
+              </span>
               <span className="block text-sm text-gray-600 mt-1">
                 L&apos;appli pose les blocs (Français 10h, Maths 5h, EPS 3h, Questionner le monde 2h30, Arts 2h, Anglais 1h30) au bon volume. Tu ajustes.
               </span>
@@ -128,7 +133,10 @@ export default function SetupPage() {
             <button type="button"
               onClick={() => setData(d => ({ ...d, emploiDuTempsDraft: GRILLE_VIDE }))}
               className="text-left border-2 border-violet-200 rounded-xl p-4 hover:bg-violet-50">
-              <span className="block font-semibold text-violet-800">📝 Partir d&apos;une grille vide</span>
+              <span className="flex items-center gap-2 font-semibold text-violet-800">
+                <LayoutGrid size={18} aria-hidden="true" />
+                Partir d&apos;une grille vide
+              </span>
               <span className="block text-sm text-gray-600 mt-1">
                 Le cadre de la journée (rituels, récréations, déjeuner) est posé, tu remplis toi-même les matières.
               </span>
@@ -138,16 +146,15 @@ export default function SetupPage() {
       )}
       {step === 4 && data.emploiDuTempsDraft && (
         <div className="space-y-3">
-          <button type="button"
-            onClick={() => setData(d => ({ ...d, emploiDuTempsDraft: undefined }))}
-            className="text-sm text-violet-600 hover:underline">
-            ‹ Changer de base d&apos;emploi du temps
-          </button>
+          <Bouton type="button" variant="fantome" size="sm" icon={ArrowLeft}
+            onClick={() => setData(d => ({ ...d, emploiDuTempsDraft: undefined }))}>
+            Changer de base d&apos;emploi du temps
+          </Bouton>
           <TimetableGrid
             initial={data.emploiDuTempsDraft}
             onChange={creneaux => setData(d => ({ ...d, emploiDuTempsDraft: creneaux }))}
             saving={loading}
-            finishLabel="🎉 Générer ma progression annuelle"
+            finishLabel="Générer ma progression annuelle"
             onSave={(creneaux) => handleFinish(creneaux.map((c, i) => ({ ...c, ordre: i })))}
           />
         </div>

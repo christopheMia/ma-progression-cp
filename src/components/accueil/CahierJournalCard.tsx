@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { NotebookPen, ArrowRight, ChevronUp, ChevronDown } from 'lucide-react'
 
 export type SemaineLien = { id: string; numero: number; libelle: string }
 
@@ -22,8 +23,8 @@ export default function CahierJournalCard({ courante, suivantes }: {
   if (!courante) {
     return (
       <Link href="/planning"
-        className="group flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-        <div className="text-2xl">📔</div>
+        className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+        <NotebookPen size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
         <div className="font-semibold text-slate-900 mt-1">Cahier journal</div>
         <div className="text-sm text-slate-500">Choisis une semaine dans le planning</div>
       </Link>
@@ -31,11 +32,12 @@ export default function CahierJournalCard({ courante, suivantes }: {
   }
 
   return (
-    <div className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+    <div className="carte-i flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
       <Link href={`/semaine/${courante.id}`} className="group block">
-        <div className="text-2xl">📔</div>
-        <div className="font-semibold text-slate-900 mt-1">
-          Cahier journal en cours <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+        <NotebookPen size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
+        <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">
+          Cahier journal en cours
+          <ArrowRight size={16} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
         </div>
         <div className="text-sm text-slate-500">
           Semaine {courante.numero} · {courante.libelle}

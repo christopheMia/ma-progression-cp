@@ -1,6 +1,8 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { Eraser } from 'lucide-react'
 import { reinitialiserBloc } from '@/lib/actions/parametres'
+import Bouton from '@/components/ui/Bouton'
 
 type Scope = 'eleves' | 'edt' | 'edt-vide' | 'methodes' | 'suivi' | 'journaux'
 
@@ -9,7 +11,7 @@ type Scope = 'eleves' | 'edt' | 'edt-vide' | 'methodes' | 'suivi' | 'journaux'
  *  On force un rechargement complet (location.reload) plutôt que router.refresh :
  *  les éditeurs (élèves, grille EDT) figent leur affichage sur leur prop `initial`
  *  via useState, donc un simple refresh serveur ne changerait rien à l'écran. */
-export default function ResetBlockButton({ scope, message, label = '🧹 Remettre à zéro' }: {
+export default function ResetBlockButton({ scope, message, label = 'Remettre à zéro' }: {
   scope: Scope
   message: string
   label?: string
@@ -27,26 +29,23 @@ export default function ResetBlockButton({ scope, message, label = '🧹 Remettr
 
   if (!confirm) {
     return (
-      <button
-        type="button"
+      <Bouton type="button" variant="contour" size="sm" icon={Eraser}
         onClick={() => setConfirm(true)}
-        className="shrink-0 text-xs border border-red-200 text-red-600 rounded-lg px-2.5 py-1 hover:bg-red-50">
+        className="shrink-0 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 focus-visible:ring-red-300/60">
         {label}
-      </button>
+      </Bouton>
     )
   }
 
   return (
     <span className="flex items-center gap-2 flex-wrap justify-end text-xs">
       <span className="text-red-700">{message}</span>
-      <button type="button" onClick={run} disabled={isPending}
-        className="bg-red-600 text-white rounded-lg px-2.5 py-1 disabled:opacity-50">
+      <Bouton type="button" variant="danger" size="sm" onClick={run} loading={isPending}>
         {isPending ? 'Effacement…' : 'Oui, effacer'}
-      </button>
-      <button type="button" onClick={() => setConfirm(false)} disabled={isPending}
-        className="border border-gray-300 text-gray-600 rounded-lg px-2.5 py-1 hover:bg-gray-50">
+      </Bouton>
+      <Bouton type="button" variant="fantome" size="sm" onClick={() => setConfirm(false)} disabled={isPending}>
         Annuler
-      </button>
+      </Bouton>
     </span>
   )
 }

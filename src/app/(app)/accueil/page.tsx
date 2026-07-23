@@ -9,6 +9,11 @@ import BudgetIaIndicator from '@/components/BudgetIaIndicator'
 import CahierJournalCard from '@/components/accueil/CahierJournalCard'
 import OutilsIaSection from '@/components/accueil/OutilsIaSection'
 import { semaineEnCours, getStatus } from '@/lib/semaines'
+import {
+  BookOpenText, Pencil, Hand, Sparkles, Globe, ArrowRight,
+  CalendarDays, Clock, Plus, Compass, BookOpen, Users,
+} from 'lucide-react'
+import Bouton from '@/components/ui/Bouton'
 
 export default async function AccueilPage() {
   const supabase = await createClient()
@@ -20,22 +25,51 @@ export default async function AccueilPage() {
   // Premiere visite (aucune classe) : on invite a configurer, sans jamais bloquer.
   // Le menu du haut (Parametres, etc.) reste accessible a tout moment.
   if (!classe) {
+    const apercu = [
+      { icon: BookOpen, titre: 'Ta progression', sous: 'L’IA lit ton manuel et bâtit ta progression de l’année, semaine par semaine.' },
+      { icon: Clock, titre: 'Ton emploi du temps', sous: 'Généré selon les volumes horaires officiels du cycle 2, puis ajustable.' },
+      { icon: Users, titre: 'Le suivi de tes élèves', sous: 'Graphèmes acquis, bilans et cahier journal, au quotidien.' },
+    ]
     return (
-      <div className="animate-pop-in max-w-2xl mx-auto">
+      <div className="animate-pop-in max-w-3xl mx-auto space-y-6">
         <div className="rounded-2xl bg-white border border-slate-200 p-8 text-center shadow-sm">
-          <div className="text-4xl mb-3">📖✏️</div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Bienvenue sur Ma Progression CP 👋</h1>
-          <p className="text-slate-600 mb-6 leading-relaxed">
+          <div className="flex justify-center items-center gap-2 text-violet-500 mb-3">
+            <BookOpenText size={38} aria-hidden="true" />
+            <Pencil size={30} aria-hidden="true" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2 flex items-center justify-center gap-2">
+            Bienvenue sur Ma Progression CP
+            <Hand size={22} className="text-amber-500" aria-hidden="true" />
+          </h1>
+          <p className="text-slate-600 mb-6 leading-relaxed max-w-xl mx-auto">
             Pour commencer, configure ta classe : ta méthode de lecture, la date de rentrée, tes élèves
             et ton emploi du temps. L&apos;IA construit ta progression de l&apos;année, tu pourras tout corriger ensuite.
           </p>
-          <Link href="/setup"
-            className="inline-block bg-violet-600 text-white rounded-xl px-6 py-3 font-semibold hover:bg-violet-700 transition-colors">
-            ✨ Configurer ma classe
-          </Link>
+          <Bouton variant="principal" size="lg" href="/setup">
+            <Sparkles size={18} className="relative" aria-hidden="true" />
+            Configurer ma classe
+          </Bouton>
           <p className="text-sm text-slate-400 mt-4">
             Juste pour découvrir ? Tu peux charger une classe d&apos;exemple depuis l&apos;écran de configuration.
           </p>
+        </div>
+
+        {/* Apercu de ce que fait l'app : memes cartes, meme effet de survol que
+            le reste de l'accueil (surelevation + barre d'accent). */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {apercu.map(a => {
+            const Icone = a.icon
+            return (
+              <Link key={a.titre} href="/setup"
+                className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+                <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 group-hover:-translate-y-0.5">
+                  <Icone size={22} aria-hidden="true" />
+                </div>
+                <div className="font-semibold text-slate-900 mt-3">{a.titre}</div>
+                <div className="text-sm text-slate-500 mt-0.5">{a.sous}</div>
+              </Link>
+            )
+          })}
         </div>
       </div>
     )
@@ -103,10 +137,16 @@ export default async function AccueilPage() {
         </svg>
         <div className="relative z-10 flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Bonjour {prenom ? `${prenom} ` : ''}👋</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+              Bonjour{prenom ? ` ${prenom}` : ''}
+              <Hand size={26} className="text-amber-200" aria-hidden="true" />
+            </h1>
             <p className="text-white/80 mt-1 capitalize">{aujourdhui}</p>
           </div>
-          <div className="hidden sm:block text-4xl select-none">📚✏️</div>
+          <div className="hidden sm:flex items-center gap-2 text-white/90 select-none">
+            <BookOpenText size={34} aria-hidden="true" />
+            <Pencil size={26} aria-hidden="true" />
+          </div>
         </div>
       </div>
 
@@ -118,7 +158,7 @@ export default async function AccueilPage() {
       {/* Semaine en cours */}
       {courante && (
         <Link href={`/semaine/${courante.id}`}
-          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-violet-600">
               {getStatus(courante) === 'current' ? 'Cette semaine' : 'Prochaine semaine'}
@@ -128,31 +168,31 @@ export default async function AccueilPage() {
           <div className="mt-2 text-xl font-semibold text-slate-900">
             {courante.graphemes.length ? courante.graphemes.join(', ') : 'Révisions'}
           </div>
-          <div className="text-sm text-slate-500 mt-1">🌍 {courante.edm_theme}</div>
-          <div className="text-sm text-violet-600 font-medium mt-3 group-hover:translate-x-0.5 transition-transform">Ouvrir la fiche →</div>
+          <div className="text-sm text-slate-500 mt-1 flex items-center gap-1.5"><Globe size={15} className="text-slate-400" aria-hidden="true" /> {courante.edm_theme}</div>
+          <div className="text-sm text-violet-600 font-medium mt-3 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">Ouvrir la fiche <ArrowRight size={15} aria-hidden="true" /></div>
         </Link>
       )}
 
       {/* Statistiques (cartes cliquables : chacune mène à l'endroit utile) */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Link href="/planning"
-          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{courante?.numero ?? 0}<span className="text-base font-normal text-slate-400">/{total}</span></div>
-          <div className="text-sm text-slate-500 mt-1 mb-3">Semaine de l&apos;année <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span></div>
+          <div className="text-sm text-slate-500 mt-1 mb-3 flex items-center gap-1">Semaine de l&apos;année <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
           <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-violet-500" />
         </Link>
 
         <Link href={courante ? `/semaine/${courante.id}` : '/planning'}
-          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{Math.round((acquisCount / (possible || 1)) * 100)}<span className="text-base font-normal text-slate-400">%</span></div>
-          <div className="text-sm text-slate-500 mt-1 mb-3">Graphèmes acquis (classe) <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span></div>
+          <div className="text-sm text-slate-500 mt-1 mb-3 flex items-center gap-1">Graphèmes acquis (classe) <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
           <ProgressBar value={acquisCount} max={possible} color="bg-emerald-500" />
         </Link>
 
         <Link href="/parametres"
-          className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
+          className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{nbEleves}</div>
-          <div className="text-sm text-slate-500 mt-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe <span className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity">→</span></div>
+          <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
         </Link>
       </div>
 
@@ -161,32 +201,32 @@ export default async function AccueilPage() {
           haut, ou ils portent desormais une bulle explicative au survol. */}
       <div className="grid gap-3 sm:grid-cols-3 [&>*]:h-full">
         <Link href="/planning"
-          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-          <div className="text-2xl">📅</div>
-          <div className="font-semibold text-slate-900 mt-1">Planning annuel</div>
+          className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+          <CalendarDays size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Planning annuel<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Voir les {total || 36} semaines</div>
         </Link>
 
         <CahierJournalCard courante={couranteLien} suivantes={suivantes} />
 
         <Link href="/parametres#edt"
-          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-          <div className="text-2xl">🕐</div>
-          <div className="font-semibold text-slate-900 mt-1">Emploi du temps</div>
+          className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+          <Clock size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Emploi du temps<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Tes journées, créneau par créneau</div>
         </Link>
 
         <Link href="/parametres#methodes"
-          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-          <div className="text-2xl">➕</div>
-          <div className="font-semibold text-slate-900 mt-1">Ajoute tes matières</div>
+          className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+          <Plus size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Ajoute tes matières<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Maths, Anglais, Questionner le monde…</div>
         </Link>
 
         <Link href="/setup"
-          className="flex flex-col bg-white border border-slate-200 rounded-2xl p-5 hover:border-violet-300 hover:shadow-sm transition-all">
-          <div className="text-2xl">🧭</div>
-          <div className="font-semibold text-slate-900 mt-1">Configuration initiale</div>
+          className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+          <Compass size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Configuration initiale<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Méthode, rentrée, élèves, emploi du temps</div>
         </Link>
       </div>
@@ -194,13 +234,13 @@ export default async function AccueilPage() {
       {/* Mes outils IA — tout est dans l'appli (plus de renvoi vers des outils externes) */}
       <OutilsIaSection
         outils={[
-          { href: courante ? `/semaine/${courante.id}` : '/planning', emoji: '📋', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
-          { href: '/parametres#methodes', emoji: '📚', titre: 'Mes méthodes & progression',
+          { href: courante ? `/semaine/${courante.id}` : '/planning', icon: 'ClipboardList', titre: 'Cahier journal de la semaine', sous: 'Le déroulement de ta journée, proposé par l’IA' },
+          { href: '/parametres#methodes', icon: 'BookOpen', titre: 'Mes méthodes & progression',
             sous: nomsManuels.length
-              ? `📕 ${nomsManuels.join(' · ')}`
+              ? nomsManuels.join(' · ')
               : 'L’IA lit ton manuel et construit ta progression' },
-          { href: '/competences', emoji: '🎯', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
-          { href: '/programme', emoji: '🧩', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
+          { href: '/competences', icon: 'Target', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
+          { href: '/programme', icon: 'Puzzle', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
         ]}>
         <BudgetIaIndicator />
       </OutilsIaSection>

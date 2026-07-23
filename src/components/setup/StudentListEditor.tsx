@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
+import { ArrowRight, Trash2, UserPlus } from 'lucide-react'
 import { decouperPrenoms } from '@/lib/prenoms'
+import Bouton from '@/components/ui/Bouton'
 
 export default function StudentListEditor({ onSelect, initial }: { onSelect: (eleves: string[]) => void; initial?: string[] }) {
   const [input, setInput] = useState('')
@@ -50,15 +52,17 @@ export default function StudentListEditor({ onSelect, initial }: { onSelect: (el
           onPaste={onPaste}
           placeholder="Un prénom, ou toute la liste collée"
           className="flex-1 border-2 rounded-xl p-3 focus:ring-2 focus:ring-violet-500 outline-none text-gray-900 bg-white" />
-        <button onClick={() => ajouter(input)}
-          className="bg-violet-600 text-white rounded-xl px-4 font-semibold hover:bg-violet-700">
+        <Bouton type="button" size="lg" icon={UserPlus} onClick={() => ajouter(input)}>
           Ajouter
-        </button>
+        </Bouton>
       </div>
       {eleves.length > 0 && (
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500">{eleves.length} élève{eleves.length > 1 ? 's' : ''}</span>
-          <button onClick={() => setEleves([])} className="text-violet-500 hover:underline">Tout effacer</button>
+          <Bouton type="button" variant="fantome" size="sm" icon={Trash2}
+            onClick={() => setEleves([])}>
+            Tout effacer
+          </Bouton>
         </div>
       )}
       <div className="flex flex-wrap gap-2">
@@ -71,15 +75,15 @@ export default function StudentListEditor({ onSelect, initial }: { onSelect: (el
         ))}
       </div>
       {eleves.length > 0 ? (
-        <button onClick={() => onSelect(eleves)}
-          className="w-full bg-violet-700 text-white rounded-xl p-4 font-semibold hover:bg-violet-800">
-          Continuer avec {eleves.length} élève{eleves.length > 1 ? 's' : ''} →
-        </button>
+        <Bouton type="button" variant="principal" size="lg" iconRight={ArrowRight}
+          className="w-full" onClick={() => onSelect(eleves)}>
+          Continuer avec {eleves.length} élève{eleves.length > 1 ? 's' : ''}
+        </Bouton>
       ) : (
-        <button onClick={() => onSelect([])}
-          className="w-full border-2 border-violet-300 text-violet-700 rounded-xl p-4 font-semibold hover:bg-violet-50">
-          Je les ajouterai plus tard →
-        </button>
+        <Bouton type="button" variant="contour" size="lg" iconRight={ArrowRight}
+          className="w-full" onClick={() => onSelect([])}>
+          Je les ajouterai plus tard
+        </Bouton>
       )}
       <p className="text-xs text-gray-400 text-center">
         Pas encore la liste ? Commence sans, tu les ajouteras dans <strong>Paramètres → Élèves</strong> (le suivi est conservé).

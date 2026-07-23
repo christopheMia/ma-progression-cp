@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { BookOpenText, Pencil } from 'lucide-react'
 
 // Bulles de peinture montantes (animation CSS, sans dépendance).
 // Teintes violet/fuchsia pour rester dans le thème.
@@ -53,8 +54,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <div className="relative z-10 bg-white border border-violet-100 rounded-2xl shadow-xl p-8 w-full max-w-md">
-        <div className="text-4xl text-center mb-3">📖✏️</div>
-        <h1 className="text-2xl font-bold tracking-tight text-center text-slate-900 mb-1">Ma Progression CP</h1>
+        <div className="flex justify-center items-center gap-2 text-violet-500 mb-2">
+          <BookOpenText size={32} aria-hidden="true" />
+          <Pencil size={24} aria-hidden="true" />
+        </div>
+        <h1 className="font-logo text-4xl text-center text-slate-900 mb-1">Ma Progression CP</h1>
         <p className="text-center text-slate-400 text-sm mb-8">L&apos;outil de Cécile</p>
         {children}
       </div>

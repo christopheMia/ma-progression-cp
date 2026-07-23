@@ -32,6 +32,14 @@ h1, h2, h3, h4 {
   font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
+/* Logo / nom de l'appli : calligraphie (Dancing Script). Reserve au wordmark
+   "Ma Progression CP", pas au texte courant. */
+.font-logo {
+  font-family: var(--font-logo), "Playfair Display", cursive;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
 /* Animations */
 @keyframes confetti-fall {
   to {
@@ -47,6 +55,47 @@ h1, h2, h3, h4 {
 
 .animate-pop-in {
   animation: pop-in 0.25s ease-out both;
+}
+
+/* Carte interactive de l'accueil : au survol, la carte se souleve (effet A) et
+   une fine barre d'accent violette glisse le long du haut (effet B). Combinaison
+   validee par Christophe le 23/07. La barre est un ::before, donc pas besoin
+   d'ajouter un element dans chaque carte. Necessite border + rounded sur la carte. */
+.carte-i {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.carte-i::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: #8b5cf6; /* violet-500 */
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.carte-i:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.18);
+  border-color: #c4b5fd; /* violet-300 */
+}
+.carte-i:hover::before {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carte-i,
+  .carte-i::before {
+    transition: none;
+  }
+  .carte-i:hover {
+    transform: none;
+  }
 }
 
 /* Bulles de peinture montantes (page de connexion) */

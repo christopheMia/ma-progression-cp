@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { Plus, Save, Undo2 } from 'lucide-react'
 import { couleurMatiere, couleurAffichee, COULEURS_FAMILLE } from '@/data/trame-edt'
 import { construireGrille, creneauxDeLaLigne, type LigneGrille } from '@/lib/edt-grille'
+import Bouton from '@/components/ui/Bouton'
 
 function addMinutes(t: string, mins: number): string {
   const [h, m] = t.split(':').map(Number)
@@ -205,13 +207,13 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
           Clique sur une case pour changer la matière, sur le ✏️ pour la mettre en forme (couleurs, gras…).
           Les lignes grises (accueil, récréation…) ne reçoivent pas de déroulement dans le cahier journal.
         </p>
-        <button type="button" onClick={annuler} disabled={!historique.length}
+        <Bouton type="button" variant="neutre" size="sm" icon={Undo2}
+          onClick={annuler} disabled={!historique.length}
           title="Annuler la dernière modification (Ctrl+Z)"
-          className="shrink-0 flex items-center gap-1 text-xs border border-violet-300 text-violet-700 rounded-lg px-2.5 py-1 hover:bg-violet-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
-          <span aria-hidden="true">↩</span>
+          className="shrink-0 text-xs">
           Annuler
           {historique.length > 0 && <span className="text-violet-400">({historique.length})</span>}
-        </button>
+        </Bouton>
       </div>
       <div className="rounded-xl border border-violet-100 bg-white p-1.5 sm:p-3">
         <table className="w-full table-fixed border-collapse text-[0.62rem] sm:text-xs">
@@ -358,15 +360,15 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
           </tbody>
         </table>
       </div>
-      <button type="button" onClick={ajouterLigne}
-        className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-violet-600">
-        + Ajouter une tranche horaire
-      </button>
+      <Bouton type="button" variant="contour" size="sm" icon={Plus}
+        onClick={ajouterLigne}>
+        Ajouter une tranche horaire
+      </Bouton>
 
-      <button onClick={() => onSave(creneaux)} disabled={saving}
-        className="w-full bg-green-600 text-white rounded-xl p-4 font-semibold hover:bg-green-700 disabled:opacity-50">
-        {saving ? 'Enregistrement…' : finishLabel}
-      </button>
+      <Bouton type="button" variant="principal" size="lg" icon={Save}
+        loading={saving} className="w-full" onClick={() => onSave(creneaux)}>
+        {finishLabel}
+      </Bouton>
     </div>
   )
 }

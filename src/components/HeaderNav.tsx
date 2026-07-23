@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { Menu, X, Sparkles } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 
 // Les bulles (title) expliquent chaque entree au survol : elles remplacent les
@@ -33,8 +34,8 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
   }, [ouvert])
 
   const classeLien = (actif: boolean) =>
-    `px-3 py-1.5 rounded-lg transition-colors ${
-      actif ? 'bg-white text-violet-600 font-medium' : 'text-white/85 hover:bg-white/15 hover:text-white'
+    `px-3 py-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30 ${
+      actif ? 'bg-white/20 text-white font-semibold' : 'text-white/80 hover:bg-white/10 hover:text-white'
     }`
 
   return (
@@ -43,7 +44,8 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
       <nav className="hidden sm:flex items-center gap-1 text-sm">
         {!hasClass && (
           <Link href="/setup"
-            className="px-3 py-1.5 rounded-lg font-semibold text-violet-600 bg-white hover:bg-white/90 transition-colors">
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-semibold text-violet-700 bg-white shadow-sm transition-transform duration-200 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/40">
+            <Sparkles size={16} aria-hidden="true" />
             Configurer ma classe
           </Link>
         )}
@@ -59,8 +61,8 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
       <div className="sm:hidden">
         <button type="button" onClick={() => setOuvert(o => !o)}
           aria-expanded={ouvert} aria-controls="menu-mobile" aria-label="Menu"
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white hover:bg-white/15 transition-colors">
-          <span aria-hidden="true" className="text-lg leading-none">{ouvert ? '✕' : '☰'}</span>
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white hover:bg-white/15 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30">
+          {ouvert ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
           <span className="text-sm">Menu</span>
         </button>
 
@@ -74,7 +76,8 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
               className="absolute right-2 top-full mt-1 z-40 w-60 rounded-xl bg-white shadow-xl border border-slate-200 p-2 flex flex-col gap-0.5 text-sm">
               {!hasClass && (
                 <Link href="/setup"
-                  className="rounded-lg px-3 py-2 font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
+                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors">
+                  <Sparkles size={16} aria-hidden="true" />
                   Configurer ma classe
                 </Link>
               )}

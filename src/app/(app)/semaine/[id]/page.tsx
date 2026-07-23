@@ -48,7 +48,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
         <Link href="/planning" className="text-violet-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Semaine {semaine.numero} — {dateFormatee}</h1>
         <div className="ml-auto">
-          <PrintButton label="🖨️ Imprimer la fiche" />
+          <PrintButton label="Imprimer la fiche" />
         </div>
       </div>
 

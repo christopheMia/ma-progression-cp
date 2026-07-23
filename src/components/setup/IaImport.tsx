@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { Bot, Save, Send } from 'lucide-react'
 import type { ProgressionSemaine } from '@/data/manuels'
+import Bouton from '@/components/ui/Bouton'
 import { extractPdfText } from '@/lib/ia/pdf-client'
 import { getPeriodesDisponibles, type PeriodeDispo } from '@/lib/actions/progression-periode'
 import { previsualiserProgrammation } from '@/lib/actions/progression-programmation'
@@ -236,10 +238,10 @@ export default function IaImport({
           <textarea value={texte} onChange={e => setTexte(e.target.value)} disabled={loading}
             placeholder="…ou colle ici le texte du document"
             className="w-full h-28 border-2 border-slate-300 rounded-lg p-3 text-sm text-gray-900 bg-white shadow-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200" />
-          <button onClick={importTexte} disabled={loading}
-            className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-50">
-            {loading ? 'Analyse en cours…' : '🤖 Analyser avec l’IA'}
-          </button>
+          <Bouton type="button" variant="principal" icon={Bot} loading={loading}
+            className="w-full" onClick={importTexte}>
+            Analyser avec l&apos;IA
+          </Bouton>
         </div>
       )}
 
@@ -341,15 +343,16 @@ export default function IaImport({
                 onKeyDown={e => e.key === 'Enter' && envoyerCorrection()}
                 placeholder="Écrivez votre correction ici…"
                 className="flex-1 border-2 border-slate-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200" />
-              <button onClick={envoyerCorrection} disabled={chatLoading}
-                className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-sm disabled:opacity-50">→</button>
+              <Bouton type="button" variant="secondaire" size="sm" icon={Send}
+                loading={chatLoading} aria-label="Envoyer la correction"
+                onClick={envoyerCorrection} />
             </div>
           </div>
 
-          <button onClick={valider} disabled={saving || periodeRequise}
-            className="w-full py-2 px-4 bg-violet-600 text-white rounded-lg hover:bg-violet-700 font-semibold disabled:opacity-50">
-            {saving ? 'Enregistrement…' : onSave ? '✅ Enregistrer cette méthode' : '✅ Utiliser cette progression'}
-          </button>
+          <Bouton type="button" variant="principal" icon={Save} loading={saving}
+            disabled={periodeRequise} className="w-full" onClick={valider}>
+            {onSave ? 'Enregistrer cette méthode' : 'Utiliser cette progression'}
+          </Bouton>
         </div>
       )}
     </div>

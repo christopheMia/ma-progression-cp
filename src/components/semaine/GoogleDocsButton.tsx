@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { JourJournal } from '@/types'
 import { genererBlobWord } from '@/lib/export-word'
+import Bouton from '@/components/ui/Bouton'
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
@@ -79,12 +81,15 @@ export default function GoogleDocsButton({ journal, numeroSemaine }: { journal: 
   }
 
   return (
-    <button
+    <Bouton
+      variant="contour"
+      size="sm"
+      icon={FileText}
       onClick={ouvrir}
       disabled={!ready || busy}
-      title="Crée le cahier journal directement dans votre Google Docs (connexion Google requise la 1re fois)."
-      className="text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1.5 hover:bg-violet-50 disabled:opacity-40">
-      {busy ? 'Ouverture…' : '📝 Google Docs'}
-    </button>
+      loading={busy}
+      title="Crée le cahier journal directement dans votre Google Docs (connexion Google requise la 1re fois).">
+      {busy ? 'Ouverture…' : 'Google Docs'}
+    </Bouton>
   )
 }

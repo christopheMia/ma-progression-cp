@@ -1,4 +1,5 @@
 'use client'
+import { FileDown, Printer, Sparkles } from 'lucide-react'
 import { Eleve, Acquisition, Semaine, Appreciation } from '@/types'
 import { toggleAcquisition } from '@/lib/actions/semaine'
 import { upsertAppreciation } from '@/lib/actions/appreciation'
@@ -6,6 +7,7 @@ import { exporterSuiviWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import { celebrate } from '@/lib/confetti'
 import { useTransition, useState, useEffect, useRef } from 'react'
+import Bouton from '@/components/ui/Bouton'
 
 type ApprState = { statut: string | null; commentaire: string }
 type Methode = { methode_id: string; matiere: string; items: string[]; suivi_actif: boolean }
@@ -148,11 +150,11 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
         {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
         {open && (
           <div className="no-print ml-auto flex gap-2">
-            <button
+            <Bouton type="button" variant="neutre" size="sm" icon={Printer}
               onClick={() => imprimerElement(blocRef.current)}
-              className="text-sm border border-gray-300 text-gray-700 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-              🖨️ Imprimer
-            </button>
+              className="text-sm">
+              Imprimer
+            </Bouton>
           </div>
         )}
       </div>
@@ -187,11 +189,11 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
         <section key={matiere} id={`suivi-${matiere}`} className="mb-8 last:mb-0 scroll-mt-24">
           <div className="flex items-center gap-3 mb-3">
             <h3 className="font-bold text-violet-700">{emojiMatiere(matiere)} {labelMatiere(matiere)}</h3>
-            <button
+            <Bouton type="button" variant="contour" size="sm" icon={FileDown}
               onClick={() => exportWord(matiere, items)}
-              className="no-print text-sm border border-violet-300 text-violet-700 rounded-lg px-3 py-1 hover:bg-violet-50">
-              📄 Word
-            </button>
+              className="no-print text-sm">
+              Word
+            </Bouton>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -277,12 +279,14 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
                             placeholder="Remarque libre…"
                             rows={2}
                             className="w-full border border-gray-200 rounded-lg p-1.5 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none resize-y" />
-                          <button type="button" onClick={() => generateBilan(eleve, matiere, items)}
-                            disabled={bilanLoading === k(eleve.id, matiere) || isPending}
+                          <Bouton type="button" variant="contour" size="sm" icon={Sparkles}
+                            onClick={() => generateBilan(eleve, matiere, items)}
+                            loading={bilanLoading === k(eleve.id, matiere)}
+                            disabled={isPending}
                             title="Rédige un bilan automatiquement (le prénom n'est jamais envoyé à l'IA)"
-                            className="self-start text-[11px] text-violet-700 border border-violet-200 rounded-lg px-2 py-0.5 hover:bg-violet-50 disabled:opacity-50">
-                            {bilanLoading === k(eleve.id, matiere) ? '✨ rédaction…' : '✨ Bilan IA'}
-                          </button>
+                            className="self-start px-2 py-0.5 text-[11px]">
+                            Bilan IA
+                          </Bouton>
                         </div>
                         <span className="print-only text-sm text-gray-800">{a.commentaire || '—'}</span>
                       </td>

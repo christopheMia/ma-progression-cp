@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Bouton from '@/components/ui/Bouton'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -55,10 +56,9 @@ export default function InscriptionPage() {
           className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-violet-500 outline-none" />
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
-      <button type="submit" disabled={loading}
-        className="w-full bg-violet-700 text-white rounded-lg p-3 font-semibold hover:bg-violet-800 disabled:opacity-50">
-        {loading ? 'Création...' : 'Créer mon compte'}
-      </button>
+      <Bouton type="submit" variant="principal" size="lg" loading={loading} className="w-full">
+        {loading ? 'Création…' : 'Créer mon compte'}
+      </Bouton>
       <p className="text-center text-sm text-gray-500">
         Déjà un compte ? <Link href="/connexion" className="text-violet-700 font-medium">Se connecter</Link>
       </p>
