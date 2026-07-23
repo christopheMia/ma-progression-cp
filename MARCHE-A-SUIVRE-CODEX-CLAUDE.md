@@ -251,9 +251,13 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résum�
      reussi, `git diff --check` propre. Le premier build isole avait seulement
      echoue faute d'acces reseau aux Google Fonts, puis a reussi avec cet acces.
   7. `partage/` est reste local et n'a pas ete ajoute a Git. La branche
-     `feat/accueil-icones-lucide` part exactement de `main`. Publication demandee
-     par Christophe : commit de cette branche, integration dans `main`, puis push
-     de `main` pour declencher Vercel.
+     `feat/accueil-icones-lucide` partait exactement de `main`. Publication
+     effectuee : commit `9745683`, integration en avance rapide dans `main`, puis
+     push GitHub. L'integration GitHub/Vercel n'a pas declenche automatiquement
+     de build, donc la meme version a ete deployee directement avec l'outil Vercel
+     officiel. Deploiement production `dpl_DRCJBuHTYgeyjnAs58iLqZ4wPa7D` marque
+     `READY`, domaine officiel `https://ma-progression-cp.vercel.app` verifie en
+     HTTP 200 avec la nouvelle interface.
 - **2026-07-23 - Claude Code - système de boutons unifié (`<Bouton>`) + effets de
   survol** (branche `feat/accueil-icones-lucide`, PAS poussée, en cours). Christophe
   veut une interface pro et design, cohérente partout.
