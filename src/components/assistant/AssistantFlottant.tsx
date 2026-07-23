@@ -5,6 +5,7 @@ import IaImport from '@/components/setup/IaImport'
 import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
 import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
 import type { ProgressionSemaine } from '@/data/manuels'
+import { Sparkles, X } from 'lucide-react'
 
 /**
  * "Mon assistant" : bouton TOUJOURS visible (monte dans le layout applicatif),
@@ -63,7 +64,7 @@ export default function AssistantFlottant({ hasClass, prenom }: {
       <button type="button" onClick={() => setOuvert(true)} aria-expanded={ouvert}
         style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
         className="fixed right-4 sm:right-5 z-40 flex items-center gap-2 rounded-full bg-violet-600 text-white shadow-lg px-4 sm:px-5 py-3 font-semibold hover:bg-violet-700 focus-visible:ring-4 focus-visible:ring-violet-300 transition-colors print:hidden">
-        <span aria-hidden="true" className="text-lg">🤖</span>
+        <Sparkles aria-hidden="true" className="w-5 h-5" />
         Mon assistant
       </button>
 
@@ -75,10 +76,10 @@ export default function AssistantFlottant({ hasClass, prenom }: {
           <aside role="dialog" aria-modal="true" aria-label="Mon assistant"
             className="relative w-full max-w-md h-full bg-white shadow-2xl flex flex-col animate-pop-in">
             <header className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-violet-600 text-white">
-              <span aria-hidden="true">🤖</span>
+              <Sparkles aria-hidden="true" className="w-5 h-5" />
               <h2 className="font-semibold">Mon assistant</h2>
               <button type="button" onClick={() => setOuvert(false)} aria-label="Fermer"
-                className="ml-auto rounded-lg px-2 py-1 hover:bg-white/20 transition-colors">✕</button>
+                className="ml-auto rounded-lg p-1 hover:bg-white/20 transition-colors"><X className="w-5 h-5" /></button>
             </header>
 
             <div className="flex-1 overflow-y-auto p-4">
