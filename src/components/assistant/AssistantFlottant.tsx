@@ -60,14 +60,14 @@ export default function AssistantFlottant({
           elegant qu'un clignotement, et coupe si le systeme demande moins
           d'animations. */}
       <div
-        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
+        style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
         className="fixed right-4 z-50 print:hidden sm:right-5"
       >
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -inset-[2px] overflow-hidden rounded-[14px]"
+          className="pointer-events-none absolute -inset-[3px] overflow-hidden rounded-[15px]"
         >
-          <span className="absolute left-1/2 top-1/2 aspect-square w-[220%] -translate-x-1/2 -translate-y-1/2 animate-[spin_2.5s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_250deg,#ddd6fe_300deg,#ffffff_330deg,#a78bfa_350deg,transparent_360deg)] motion-reduce:animate-none" />
+          <span className="absolute left-1/2 top-1/2 aspect-square w-[220%] -translate-x-1/2 -translate-y-1/2 animate-[spin_2.5s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_240deg,#fde68a_300deg,#ffffff_335deg,#fef3c7_352deg,transparent_360deg)] motion-reduce:animate-none" />
         </span>
         <Bouton
           type="button"
