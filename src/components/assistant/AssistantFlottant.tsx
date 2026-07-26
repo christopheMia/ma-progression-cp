@@ -67,7 +67,7 @@ export default function AssistantFlottant({
           aria-hidden="true"
           className="pointer-events-none absolute -inset-[3px] overflow-hidden rounded-[15px]"
         >
-          <span className="absolute left-1/2 top-1/2 aspect-square w-[220%] -translate-x-1/2 -translate-y-1/2 animate-[spin_2.5s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_240deg,#fde68a_300deg,#ffffff_335deg,#fef3c7_352deg,transparent_360deg)] motion-reduce:animate-none" />
+          <span className="absolute left-1/2 top-1/2 aspect-square w-[220%] -translate-x-1/2 -translate-y-1/2 animate-[spin_1.2s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_240deg,#fde68a_300deg,#ffffff_335deg,#fef3c7_352deg,transparent_360deg)] motion-reduce:animate-none" />
         </span>
         <Bouton
           type="button"
