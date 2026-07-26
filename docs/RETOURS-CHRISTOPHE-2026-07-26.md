@@ -35,9 +35,9 @@ traité le jour même (voir plus bas).
 
 | # | Bug | Statut |
 |---|---|---|
-| 3.1 | **Fréquence des mathématiques** : la progression génère **trois séances par semaine au lieu d'une**. | À corriger. Piste : `repartirProgrammation` / `repartition-periode.ts`. |
+| 3.1 | **Fréquence des mathématiques** : la progression génère **trois séances par semaine au lieu d'une**. | **CORRIGÉ le 26/07 (`ac0a8f3`)**, pas encore validé par Christophe. Deux causes : `normalizeProgression` ne fusionnait pas les entrées de même numéro de semaine, et `repartirProgrammation` empilait deux blocs décrivant la même période. Détail dans `MARCHE-A-SUIVRE-CODEX-CLAUDE.md`. |
 | 3.2 | **Résidus « Explorer le monde »** à supprimer. | **FAIT le 26/07** : c'était `EDM_PROGRESSION_CP` posé d'office sur les 36 semaines par `genererSqueletteSemaines` (commit `632302d`), plus les 36 lignes nettoyées en base. À faire confirmer par Christophe. |
-| 3.3 | **Lisibilité de l'EDT généré** : contraste majeur, le texte s'affiche en blanc ou très clair alors que les paramètres enregistrés disent noir. Lecture impossible. | À corriger. Piste : `couleur_texte` dans `emploi_du_temps` et son rendu dans `TimetableGrid` / `EdtGrilleLecture`. |
+| 3.3 | **Lisibilité de l'EDT généré** : contraste majeur, le texte s'affiche en blanc ou très clair alors que les paramètres enregistrés disent noir. Lecture impossible. | **CORRIGÉ le 26/07 (`6661eda`)**, pas encore validé par Christophe. Ce n'était pas `couleur_texte` : `globals.css` gardait le bloc `prefers-color-scheme: dark` du gabarit Next, qui repeint le texte en clair sur une interface entièrement blanche. Détail dans `MARCHE-A-SUIVRE-CODEX-CLAUDE.md`. |
 
 ## 4. Question en suspens
 

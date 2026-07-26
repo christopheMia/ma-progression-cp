@@ -263,9 +263,37 @@ d'environnement de test séparé. Au 2026-07-26 la base est **entièrement vide*
 
 **Voir d'abord `docs/RETOURS-CHRISTOPHE-2026-07-26.md`** : la liste complète de ses
 retours du 26/07 (règles métier, UI/UX, 3 bugs, 1 question), recopiée depuis son PDF.
-Rien n'y est commencé sauf les résidus « Explorer le monde », traités le jour même.
-Les deux bugs les plus bloquants : **le contraste de l'EDT généré** (texte blanc,
-illisible) et **les maths générés en trois séances par semaine au lieu d'une**.
+
+**Les 3 bugs sont corrigés, aucun n'est validé par Christophe.** État exact :
+
+- **3.3 contraste de l'EDT (`6661eda`)**. Cause trouvée : `src/app/globals.css`
+  gardait le bloc `prefers-color-scheme: dark` du gabarit Next, qui repeint
+  `--foreground` en `#ededed`. L'interface étant entièrement sur fonds blancs, un
+  poste réglé en mode sombre affichait en quasi blanc **tout texte sans classe de
+  couleur explicite**. `TimetableGrid` (édition) portait `text-slate-900` et restait
+  lisible ; `EdtGrilleLecture` (lecture, EDT généré) n'en avait aucune, d'où « ça
+  marche dans les paramètres mais pas ailleurs ». Correctif : bloc sombre supprimé,
+  `color-scheme: light` déclaré (contrôles natifs), `text-slate-900` explicite sur le
+  libellé de matière. Deux garde-fous : `src/app/__tests__/globals-contraste.test.ts`
+  relit le CSS réel, plus un test de rendu. **Ne jamais recoller le bloc du gabarit.**
+  Portée large : ce bug rendait pâle bien d'autres textes, pas seulement l'EDT.
+- **3.1 maths en triple (`ac0a8f3`)**. Deux causes distinctes, sur les deux chemins
+  d'import, corrigées ensemble :
+  1. `normalizeProgression` (`src/lib/ia/schema.ts`) ne fusionnait pas les entrées de
+     même `numero`. Les documents de maths donnent souvent une ligne par domaine pour
+     la même semaine, l'IA rendait trois objets « semaine 1 ». La fusion concatène
+     items, mots et pages sans répéter, et passe **avant** le plafond de 36 (sinon un
+     document écrit sur trois lignes perdait les deux tiers de l'année).
+  2. `repartirProgrammation` (`src/lib/repartition-periode.ts`) : deux blocs décrivant
+     la même période repartaient chacun de la première semaine et s'empilaient. Les
+     domaines sont regroupés par numéro de période avant répartition.
+  Plus une règle de prompt : une seule entrée par numéro de semaine.
+- **3.2 résidus « Explorer le monde » (`632302d`)** : fait le 26/07.
+
+Reste donc, dans l'ordre : la **question 4** (à quoi sert « générer la journée »,
+une lecture de code suffit), puis l'**UI/UX 2.1 à 2.4**, puis les **règles métier**
+du point 1 (maths, code et étude de la langue le matin), qui touchent
+`src/lib/edt-generator.ts` et demandent un cadrage avec lui.
 
 0. **Non vérifié avec de vrais documents.** Tout le travail du 26/07 est couvert par
    des tests, mais **jamais confronté aux vrais PDF de Christophe**. Deux points en
