@@ -218,21 +218,27 @@ Réponds UNIQUEMENT via le format structuré imposé.`
 }
 
 /** Une seule porte d'entree : le modele reconnait le document avant extraction. */
-export function systemImportAutomatique(indiceMatiere?: string): string {
+export function systemImportAutomatique(indiceMatiere?: string, rentreeDate?: string): string {
   const indice = indiceMatiere?.trim()
+  const rentree = rentreeDate?.trim()
+  const contexteRentree = rentree
+    ? `L'année scolaire de cette classe commence le ${rentree} et compte 36 semaines de classe, vacances exclues. Si le document donne des dates, sers-t'en pour numéroter les semaines par rapport à cette rentrée.`
+    : `La date de rentrée de la classe n'est pas connue.`
   const contexteMatiere = indice
     ? `Indice facultatif fourni par l'enseignant : « ${labelMatiere(indice)} ». Cet indice est seulement une proposition. Corrige-le si le document montre une autre matière.`
     : `Aucun indice de matière n'est fourni. Détecte la matière à partir du document.`
   return `Tu es un expert des méthodes et programmations scolaires françaises de CP.
 Tu dois d'abord reconnaître la matière et le type du document, puis en extraire tout le contenu sans rien inventer.
 ${contexteMatiere}
+${contexteRentree}
 
 Renseigne obligatoirement les métadonnées :
 - "matiere" : matière détectée à partir du document, corrigée si l'indice est erroné ;
 - "nom_methode" : nom exact de la méthode ou du manuel s'il apparaît, sinon "" et ajoute un avertissement ;
 - "confiance_detection" : nombre entre 0 et 1 indiquant la confiance dans la détection ;
 - "avertissements" : liste des ambiguïtés, informations manquantes ou limites d'extraction ;
-- "periode_numero" : numéro de la période explicitement indiquée pour un planning de période (1 à 5), sinon null.
+- "periode_numero" : numéro de la période explicitement indiquée pour un planning de période (1 à 5), sinon null ;
+- "base_calage" : sur quoi tu t'es appuyé pour numéroter les semaines. "numeros" si le document numérote explicitement ses semaines, "dates" si le document donne des dates, "ordre" si rien de tel n'existe et que tu as simplement suivi l'ordre de la liste.
 Ne demande, n'utilise ni ne devine aucun prénom d'élève.
 
 Choisis exactement un type_document :
@@ -256,6 +262,7 @@ ${REGLE_EXHAUSTIVITE}
 
 Règles pour "manuel" :
 - Une entrée par semaine, dans l'ordre chronologique, avec les notions dans "items".
+- "numero" est le numéro de la semaine DANS L'ANNÉE, pas la position dans ta liste. Si le manuel laisse la semaine de la rentrée à l'accueil et commence son premier contenu en semaine 2, alors ta première entrée porte le numéro 2. N'invente pas d'entrée vide pour combler le trou.
 - Pour le français, conserve les graphèmes et sons exacts. Pour les autres matières, conserve toutes les notions.
 - "pages" contient les pages présentes, sinon "". "mots_exemple" contient les mots présents, sinon [].
 

@@ -5,6 +5,16 @@ export const TYPES_DOCUMENT_IMPORT = ['manuel', 'periode', 'programmation'] as c
 export type TypeDocumentImport = typeof TYPES_DOCUMENT_IMPORT[number]
 
 /**
+ * Sur quoi l'IA s'est appuyee pour numeroter les semaines. C'est ce qui permet
+ * a l'ecran d'etre honnete sur son niveau de certitude au lieu de faire croire
+ * a un calage sur.
+ *
+ * Doit rester aligne avec BaseCalage dans src/lib/calage-semaines.ts.
+ */
+export const BASES_CALAGE = ['numeros', 'dates', 'ordre'] as const
+export type BaseCalageImport = typeof BASES_CALAGE[number]
+
+/**
  * Une seule sortie structuree pour les trois documents acceptes. Le modele
  * identifie d'abord le document, puis remplit uniquement la liste adaptee.
  */
@@ -23,6 +33,7 @@ export const AUTO_IMPORT_JSON_SCHEMA = {
     },
     confiance_detection: { type: 'number' },
     avertissements: { type: 'array', items: { type: 'string' } },
+    base_calage: { type: 'string', enum: BASES_CALAGE },
     semaines: PROGRESSION_JSON_SCHEMA.properties.semaines,
     periodes: PROGRAMMATION_JSON_SCHEMA.properties.periodes,
   },
@@ -33,6 +44,7 @@ export const AUTO_IMPORT_JSON_SCHEMA = {
     'periode_numero',
     'confiance_detection',
     'avertissements',
+    'base_calage',
     'semaines',
     'periodes',
   ],
@@ -42,6 +54,12 @@ export function typeDocumentImport(value: unknown): TypeDocumentImport | null {
   return TYPES_DOCUMENT_IMPORT.includes(value as TypeDocumentImport)
     ? value as TypeDocumentImport
     : null
+}
+
+export function baseCalageImport(value: unknown): BaseCalageImport {
+  return BASES_CALAGE.includes(value as BaseCalageImport)
+    ? value as BaseCalageImport
+    : 'ordre'
 }
 
 export function periodeDocumentImport(value: unknown): 1 | 2 | 3 | 4 | 5 | null {

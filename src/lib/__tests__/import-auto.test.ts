@@ -23,6 +23,7 @@ describe('import IA automatique', () => {
       'periode_numero',
       'confiance_detection',
       'avertissements',
+      'base_calage',
       'semaines',
       'periodes',
     ])
@@ -55,6 +56,14 @@ describe('import IA automatique', () => {
     expect(prompt).toContain('confiance_detection')
     expect(prompt).toContain('avertissements')
     expect(prompt).toContain('periode_numero')
+    expect(prompt).toContain('base_calage')
+  })
+
+  test('transmet la date de rentree au modele quand elle est connue', () => {
+    expect(systemImportAutomatique(undefined, '2026-09-01'))
+      .toContain('commence le 2026-09-01')
+    expect(systemImportAutomatique())
+      .toContain("date de rentrée de la classe n'est pas connue")
   })
 
   test('corrige un indice de matiere contredit par le document', () => {

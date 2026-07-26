@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
-import { normalizeProgression } from '@/lib/ia/schema'
+import { normalizeProgression, numerosSemainesFiables } from '@/lib/ia/schema'
 import { systemImportAutomatique, userImport, userImportDocument } from '@/lib/ia/prompts'
 import { normalizeProgrammation } from '@/lib/ia/schema-programmation'
 import {
   AUTO_IMPORT_JSON_SCHEMA,
+  baseCalageImport,
   periodeDocumentImport,
   typeDocumentImport,
 } from '@/lib/ia/schema-import-auto'
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     const contentType = request.headers.get('content-type') ?? ''
     let texte = ''
     let matiere = ''
+    let rentreeDate = ''
     // PDF joints tels quels : le modele lit alors la MISE EN PAGE (tableaux,
     // lignes, colonnes) au lieu d'un texte aplati. C'est la voie haute fidelite.
     const pdfsBase64: string[] = []
@@ -55,6 +57,8 @@ export async function POST(request: Request) {
       const texteColle = (form.get('texte') as string | null) ?? ''
       const matiereRaw = (form.get('matiere') as string | null) ?? ''
       if (matiereRaw.trim()) matiere = matiereRaw.trim()
+      const rentreeRaw = (form.get('rentree_date') as string | null) ?? ''
+      if (rentreeRaw.trim()) rentreeDate = rentreeRaw.trim()
 
       if (fichiers.length) {
         // Les fonctions serverless Vercel plafonnent le corps de requete a ~4,5 Mo.
@@ -76,6 +80,9 @@ export async function POST(request: Request) {
       const body = await request.json()
       texte = typeof body.texte === 'string' ? body.texte : ''
       if (typeof body.matiere === 'string' && body.matiere.trim()) matiere = body.matiere.trim()
+      if (typeof body.rentree_date === 'string' && body.rentree_date.trim()) {
+        rentreeDate = body.rentree_date.trim()
+      }
     }
 
     texte = texte.trim()
@@ -99,7 +106,7 @@ export async function POST(request: Request) {
       max_tokens: 16000,
       // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
       // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
-      system: systemImportAutomatique(matiere || undefined),
+      system: systemImportAutomatique(matiere || undefined, rentreeDate || undefined),
       output_config: {
         format: {
           type: 'json_schema',
@@ -139,7 +146,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...meta, type_document: typeDocument, progression: [], periodes })
     }
 
-    const progression = normalizeProgression(Array.isArray(parsed.semaines) ? parsed.semaines : [])
+    const semainesBrutes = Array.isArray(parsed.semaines) ? parsed.semaines : []
+    const progression = normalizeProgression(semainesBrutes)
 
     if (progression.length === 0) {
       return NextResponse.json(
@@ -147,7 +155,18 @@ export async function POST(request: Request) {
         { status: 422 }
       )
     }
-    return NextResponse.json({ ...meta, type_document: typeDocument, progression, periodes: [] })
+    // Si les numeros n'etaient pas exploitables, normalizeProgression a numerote
+    // dans l'ordre recu: quoi que l'IA ait declare, le calage repose sur l'ordre.
+    const baseCalage = numerosSemainesFiables(semainesBrutes)
+      ? baseCalageImport(parsed.base_calage)
+      : 'ordre'
+    return NextResponse.json({
+      ...meta,
+      type_document: typeDocument,
+      progression,
+      periodes: [],
+      base_calage: baseCalage,
+    })
   } catch (err) {
     console.error('ia-manuel error:', err)
     const { message, status } = messageErreurIA(err)

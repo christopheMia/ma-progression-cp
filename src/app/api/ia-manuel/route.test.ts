@@ -44,6 +44,7 @@ describe('POST /api/ia-manuel', () => {
       periode_numero: 2.5,
       confiance_detection: 1.4,
       avertissements: [' document partiel ', 42, ''],
+      base_calage: 'numeros',
       semaines: [{ numero: 4, items: [' a ', 7], pages: ' p. 3 ', mots_exemple: [' ami ', null] }],
       periodes: [],
     })
@@ -60,6 +61,7 @@ describe('POST /api/ia-manuel', () => {
       // La semaine 4 reste la semaine 4 : renumeroter decalait toute l'annee.
       progression: [{ numero: 4, items: ['a'], pages: 'p. 3', mots_exemple: ['ami'] }],
       periodes: [],
+      base_calage: 'numeros',
     })
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
       system: expect.stringContaining("Aucun indice de matière n'est fourni"),
@@ -90,6 +92,8 @@ describe('POST /api/ia-manuel', () => {
       type_document: 'periode',
       progression: [{ numero: 9, items: ['Compter jusqu a 10'], pages: '', mots_exemple: [] }],
       periodes: [],
+      // L'IA n'a rien declare : on retombe sur le calage par ordre.
+      base_calage: 'ordre',
     })
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
       system: expect.stringContaining('Indice facultatif'),
