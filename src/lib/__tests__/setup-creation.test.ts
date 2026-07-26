@@ -412,14 +412,14 @@ describe('executerCreationClasse', () => {
   })
 
   test('la Server Action passe par le RPC sans DML direct sur les sources', () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), 'src/lib/actions/setup.ts'),
-      'utf8',
-    )
-    const orchestration = fs.readFileSync(
-      path.join(process.cwd(), 'src/lib/setup-creation.ts'),
-      'utf8',
-    )
+    // Fins de ligne normalisees : avec core.autocrlf=true (Windows), les fichiers
+    // sont sur le disque en CRLF et une recherche de "\n" echouait, alors que le
+    // code etait correct. Le test verifiait la plateforme, pas le code.
+    const lire = (chemin: string) =>
+      fs.readFileSync(path.join(process.cwd(), chemin), 'utf8').replace(/\r\n/g, '\n')
+
+    const source = lire('src/lib/actions/setup.ts')
+    const orchestration = lire('src/lib/setup-creation.ts')
 
     expect(source).toContain("rpc(\n        'enregistrer_source_progression'")
     expect(source).not.toMatch(/from\(['"]methode_sources['"]\)/)
