@@ -284,7 +284,7 @@ Renseigne obligatoirement les métadonnées :
 - "matiere" : matière détectée à partir du document, corrigée si l'indice est erroné ;
 - "nom_methode" : nom exact de la méthode ou du manuel s'il apparaît, sinon "" et ajoute un avertissement ;
 - "confiance_detection" : nombre entre 0 et 1 indiquant la confiance dans la détection ;
-- "avertissements" : liste des ambiguïtés, informations manquantes ou limites d'extraction ;
+- "avertissements" : liste des ambiguïtés, informations manquantes ou limites d'extraction. CHAQUE avertissement doit dire OÙ est le problème, sinon l'enseignante ne peut pas le corriger. Renseigne "semaine" avec le numéro de la semaine concernée (1 à 36), ou null si l'avertissement porte sur tout le document. Dans "message", cite le libellé exact que tu as lu, ou décris précisément la case du tableau (colonne, ligne, page) et dis ce dont tu n'es pas sûr. Écris "Case illisible, j'ai lu « lezard » sans certitude" plutôt que "certains mots sont peu lisibles". N'écris jamais un avertissement vague et global ;
 - "periode_numero" : numéro de la période explicitement indiquée pour un planning de période (1 à 5), sinon null ;
 - "base_calage" : sur quoi tu t'es appuyé pour numéroter les semaines. "numeros" si le document numérote explicitement ses semaines, "dates" si le document donne des dates, "ordre" si rien de tel n'existe et que tu as simplement suivi l'ordre de la liste.
 Ne demande, n'utilise ni ne devine aucun prénom d'élève.

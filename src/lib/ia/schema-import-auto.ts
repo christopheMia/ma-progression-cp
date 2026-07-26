@@ -32,7 +32,20 @@ export const AUTO_IMPORT_JSON_SCHEMA = {
       ],
     },
     confiance_detection: { type: 'number' },
-    avertissements: { type: 'array', items: { type: 'string' } },
+    // Un avertissement qui ne dit pas OU est le probleme est inutilisable :
+    // l'enseignante ne peut pas corriger ce qu'elle ne peut pas situer.
+    avertissements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          semaine: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+          message: { type: 'string' },
+        },
+        required: ['semaine', 'message'],
+      },
+    },
     base_calage: { type: 'string', enum: BASES_CALAGE },
     semaines: PROGRESSION_JSON_SCHEMA.properties.semaines,
     periodes: PROGRAMMATION_JSON_SCHEMA.properties.periodes,
@@ -54,6 +67,28 @@ export function typeDocumentImport(value: unknown): TypeDocumentImport | null {
   return TYPES_DOCUMENT_IMPORT.includes(value as TypeDocumentImport)
     ? value as TypeDocumentImport
     : null
+}
+
+/** Avertissement situe : `semaine` vaut null quand il porte sur tout le document. */
+export type AvertissementImport = { semaine: number | null; message: string }
+
+export function avertissementsImport(value: unknown): AvertissementImport[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap(brut => {
+    // Tolerance : l'IA peut encore rendre une simple chaine.
+    if (typeof brut === 'string') {
+      return brut.trim() ? [{ semaine: null, message: brut.trim() }] : []
+    }
+    if (typeof brut !== 'object' || brut === null) return []
+    const item = brut as Record<string, unknown>
+    const message = typeof item.message === 'string' ? item.message.trim() : ''
+    if (!message) return []
+    const semaine = typeof item.semaine === 'number' && Number.isInteger(item.semaine)
+      && item.semaine >= 1 && item.semaine <= 36
+      ? item.semaine
+      : null
+    return [{ semaine, message }]
+  })
 }
 
 export function baseCalageImport(value: unknown): BaseCalageImport {

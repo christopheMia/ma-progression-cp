@@ -94,6 +94,33 @@ describe('SourceImporter', () => {
     if (cryptoInitial) Object.defineProperty(globalThis, 'crypto', cryptoInitial)
   })
 
+  test('un doute de l’IA s’affiche sur la semaine concernée, et suit le décalage', async () => {
+    // Un avertissement qui ne dit pas OU est le probleme est inutilisable.
+    await analyserAvecCalage({
+      ...REPONSE_MANUEL,
+      base_calage: 'ordre',
+      avertissements: [
+        { semaine: 2, message: 'Case illisible, j’ai lu « lezard » sans certitude.' },
+        { semaine: null, message: 'La dernière page est coupée.' },
+      ],
+      progression: [
+        { numero: 1, items: ['a'], pages: '', mots_exemple: [] },
+        { numero: 2, items: ['i'], pages: '', mots_exemple: [] },
+      ],
+    })
+
+    // Le recapitulatif situe le doute.
+    expect(await screen.findByText(/Semaine 2 :/)).toBeInTheDocument()
+    // Et il est rappele sur la carte de la semaine, au-dessus du champ a corriger.
+    expect(screen.getAllByText(/Case illisible/)).toHaveLength(2)
+
+    // Apres « ma progression demarre en semaine 2 », le doute suit le contenu.
+    fireEvent.change(screen.getByLabelText('Ta progression démarre à quelle semaine ?'), {
+      target: { value: '2' },
+    })
+    expect(screen.getByText(/Semaine 3 :/)).toBeInTheDocument()
+  })
+
   test('un document couvrant toutes les périodes ne bloque plus l’ajout', async () => {
     // Cas reel du 26/07 : Christophe a regroupe ses 5 periodes dans un seul PDF.
     // L'IA l'a classe « planning d'une periode » sans pouvoir dire laquelle, et la

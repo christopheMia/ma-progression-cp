@@ -43,7 +43,12 @@ describe('POST /api/ia-manuel', () => {
       type_document: 'manuel',
       periode_numero: 2.5,
       confiance_detection: 1.4,
-      avertissements: [' document partiel ', 42, ''],
+      avertissements: [
+        { semaine: 4, message: ' Case illisible, j’ai lu « lezard » sans certitude ' },
+        ' document partiel ',
+        42,
+        '',
+      ],
       base_calage: 'numeros',
       semaines: [{ numero: 4, items: [' a ', 7], pages: ' p. 3 ', mots_exemple: [' ami ', null] }],
       periodes: [],
@@ -56,7 +61,12 @@ describe('POST /api/ia-manuel', () => {
       nom_methode: "Les P'tites Poules",
       periode_numero: null,
       confiance_detection: 1,
-      avertissements: ['document partiel', ''],
+      // L'avertissement situe garde sa semaine ; une simple chaine est toleree et
+      // devient un avertissement global ; le vide et le non-texte disparaissent.
+      avertissements: [
+        { semaine: 4, message: 'Case illisible, j’ai lu « lezard » sans certitude' },
+        { semaine: null, message: 'document partiel' },
+      ],
       type_document: 'manuel',
       // La semaine 4 reste la semaine 4 : renumeroter decalait toute l'annee.
       progression: [{ numero: 4, items: ['a'], pages: 'p. 3', mots_exemple: ['ami'] }],
@@ -88,7 +98,7 @@ describe('POST /api/ia-manuel', () => {
       nom_methode: 'Compter',
       periode_numero: 3,
       confiance_detection: 0,
-      avertissements: ['manque une page'],
+      avertissements: [{ semaine: null, message: 'manque une page' }],
       type_document: 'periode',
       progression: [{ numero: 9, items: ['Compter jusqu a 10'], pages: '', mots_exemple: [] }],
       periodes: [],
@@ -119,7 +129,7 @@ describe('POST /api/ia-manuel', () => {
       nom_methode: 'Explorer',
       periode_numero: null,
       confiance_detection: 0.75,
-      avertissements: ['tableau annuel'],
+      avertissements: [{ semaine: null, message: 'tableau annuel' }],
       type_document: 'programmation',
       progression: [],
       periodes: [{ numero: 2, domaines: [{ nom: 'Vivant', items: ['Les saisons'] }] }],

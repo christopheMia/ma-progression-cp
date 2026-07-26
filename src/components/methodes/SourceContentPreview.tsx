@@ -12,6 +12,8 @@ type SourceContentPreviewProps = {
   periodes: PeriodeProgrammation[]
   /** Date du lundi réel par numéro de semaine. Absent = aucune date affichée. */
   datesParNumero?: Record<number, string>
+  /** Ce dont l'IA n'est pas sûre, rattaché à la semaine concernée. */
+  avertissementsParSemaine?: Record<number, string[]>
   onSemainesChange: (semaines: ProgressionSemaine[]) => void
   onPeriodesChange: (periodes: PeriodeProgrammation[]) => void
 }
@@ -63,6 +65,7 @@ export default function SourceContentPreview({
   semaines,
   periodes,
   datesParNumero,
+  avertissementsParSemaine,
   onSemainesChange,
   onPeriodesChange,
 }: SourceContentPreviewProps) {
@@ -231,6 +234,18 @@ export default function SourceContentPreview({
               Aucun contenu du document sur cette semaine. Tu pourras la remplir plus tard.
             </p>
           )}
+
+          {/* L'avertissement est pose SUR la semaine concernee : le champ a
+              corriger est juste en dessous. */}
+          {(avertissementsParSemaine?.[semaine.numero] ?? []).map((avertissement, indexAlerte) => (
+            <p
+              key={indexAlerte}
+              className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950"
+            >
+              <span className="font-semibold">À vérifier : </span>
+              {avertissement}
+            </p>
+          ))}
 
           <label
             className="mb-1 block text-sm font-medium text-slate-700"

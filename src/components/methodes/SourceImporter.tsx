@@ -11,7 +11,11 @@ import {
   type BaseCalage,
 } from '@/lib/calage-semaines'
 import type { ZoneScolaire } from '@/lib/calendrier-officiel'
-import { baseCalageImport } from '@/lib/ia/schema-import-auto'
+import {
+  avertissementsImport,
+  baseCalageImport,
+  type AvertissementImport,
+} from '@/lib/ia/schema-import-auto'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
 import {
@@ -39,7 +43,7 @@ type AnalyseSource = {
   typeDocument: TypeDocumentImport
   periodeNumero: NumeroPeriode | null
   confiance: number
-  avertissements: string[]
+  avertissements: AvertissementImport[]
   baseCalage: BaseCalage
   semaines: ProgressionSemaine[]
   periodes: PeriodeProgrammation[]
@@ -245,6 +249,17 @@ export default function SourceImporter({
     ? Object.fromEntries(calage.lignes.map(ligne => [ligne.numero, ligne.dateLundi]))
     : undefined
 
+  // L'IA situe son doute sur le numero du DOCUMENT ; l'apercu affiche les numeros
+  // decales. Sans ce report, l'avertissement se poserait sur la mauvaise semaine.
+  const avertissementsParSemaine = analyse
+    ? analyse.avertissements.reduce<Record<number, string[]>>((accumulateur, avertissement) => {
+        if (avertissement.semaine === null) return accumulateur
+        const numero = avertissement.semaine + decalage
+        accumulateur[numero] = [...(accumulateur[numero] ?? []), avertissement.message]
+        return accumulateur
+      }, {})
+    : undefined
+
   useEffect(() => () => {
     requeteTokenRef.current += 1
     abortControllerRef.current?.abort()
@@ -314,9 +329,7 @@ export default function SourceImporter({
         && Number.isFinite(data.confiance_detection)
         ? data.confiance_detection
         : 0
-      const avertissements = Array.isArray(data.avertissements)
-        ? data.avertissements.filter((item): item is string => typeof item === 'string')
-        : []
+      const avertissements = avertissementsImport(data.avertissements)
       const prochaineAnalyse: AnalyseSource = {
         matiere: chaine(data.matiere) || matiereInitiale.trim(),
         nomMethode: chaine(data.nom_methode) || methodeInitiale.trim(),
@@ -632,11 +645,24 @@ export default function SourceImporter({
                 Vérifie bien ces informations, confiance {Math.round(analyse.confiance * 100)} %
               </p>
               {analyse.avertissements.length > 0 ? (
+                <>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   {analyse.avertissements.map((avertissement, index) => (
-                    <li key={`${index}-${avertissement}`}>{avertissement}</li>
+                    <li key={`${index}-${avertissement.message}`}>
+                      {avertissement.semaine !== null && (
+                        <span className="font-semibold">
+                          Semaine {avertissement.semaine + decalage} :{' '}
+                        </span>
+                      )}
+                      {avertissement.message}
+                    </li>
                   ))}
                 </ul>
+                <p className="mt-2 text-xs">
+                  Chaque point est aussi rappelé sur la semaine concernée, plus bas,
+                  juste au-dessus du champ à corriger.
+                </p>
+                </>
               ) : (
                 <p className="mt-1">La détection mérite une vérification attentive.</p>
               )}
@@ -755,6 +781,7 @@ export default function SourceImporter({
               semaines={semainesAffichees}
               periodes={analyse.periodes}
               datesParNumero={datesParNumero}
+              avertissementsParSemaine={avertissementsParSemaine}
               onSemainesChange={semaines => setAnalyse({
                 ...analyse,
                 // L'apercu montre les numeros decales ; l'analyse garde les

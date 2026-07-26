@@ -6,6 +6,7 @@ import { systemImportAutomatique, userImport, userImportDocument } from '@/lib/i
 import { normalizeProgrammation } from '@/lib/ia/schema-programmation'
 import {
   AUTO_IMPORT_JSON_SCHEMA,
+  avertissementsImport,
   baseCalageImport,
   periodeDocumentImport,
   typeDocumentImport,
@@ -24,12 +25,6 @@ function confianceNormalisee(value: unknown): number {
   return Math.min(1, Math.max(0, value))
 }
 
-function avertissementsNormalises(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((avertissement): avertissement is string => typeof avertissement === 'string')
-      .map(avertissement => avertissement.trim())
-    : []
-}
 
 function normaliserMetaImport(value: Record<string, unknown>) {
   return {
@@ -37,7 +32,7 @@ function normaliserMetaImport(value: Record<string, unknown>) {
     nom_methode: chaineNormalisee(value.nom_methode),
     periode_numero: periodeDocumentImport(value.periode_numero),
     confiance_detection: confianceNormalisee(value.confiance_detection),
-    avertissements: avertissementsNormalises(value.avertissements),
+    avertissements: avertissementsImport(value.avertissements),
   }
 }
 
