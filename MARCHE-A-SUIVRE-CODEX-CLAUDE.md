@@ -288,7 +288,10 @@ Idées / options mises de côté (à ne pas oublier) :
 
 ## Journal de passation
 
-Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
+Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
+(Traits d'union simples : la convention 1 bannit le tiret cadratin, et cette ligne
+en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
+l'historique.)
 
 - **2026-07-26 - Claude Code - calage des semaines a l'import**. Un sommaire dont la
   premiere semaine de la rentree est vide decalait toute l'annee, en silence. Deux
