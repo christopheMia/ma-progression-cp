@@ -229,6 +229,25 @@ Idées / options mises de côté (à ne pas oublier) :
 
 Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
 
+- **2026-07-26 - Claude Code - calage des semaines a l'import**. Un sommaire dont la
+  premiere semaine de la rentree est vide decalait toute l'annee, en silence. Deux
+  pertes de donnees corrigees : `normalizeProgression` ne renumerote plus par position
+  (`schema.ts`), et l'apercu n'escamote plus les semaines sans contenu. Nouveau module
+  pur `src/lib/calage-semaines.ts` qui place les semaines sur les vraies dates en
+  reutilisant la chaine de `setup-creation.ts`, donc l'apercu ne peut pas mentir.
+  La date de rentree passe en etape 1 du setup et va jusqu'au prompt. Nouveau
+  `BandeauCalage.tsx` qui **pose une question** (« ta progression demarre a quelle
+  semaine ? ») au lieu d'offrir des boutons de decalage : reformulation demandee par
+  Christophe, la notion de decalage disparait de l'ecran. Les semaines vides sont
+  affichees et datees, avec la mention qu'elles pourront etre remplies plus tard ;
+  elles ne sont pas enregistrees, le trou dans la numerotation porte l'information.
+  Au passage : la progression d'exemple « questionner le monde » n'est plus imposee a
+  la creation d'une classe. 393 tests, 392 verts, build prod OK.
+  Spec : `docs/superpowers/specs/2026-07-26-calage-semaines-import-design.md`.
+  Plan : `docs/superpowers/plans/2026-07-26-calage-semaines-import.md`.
+  Reste ouvert : supprimer la methode devenue orpheline quand on retire sa derniere
+  source, et l'echec preexistant de `setup-creation.test.ts` (RPC sans DML direct).
+
 - **2026-07-26 - Claude Code - recuperation, validation et fusion de l'import progressif**.
   Codex avait ete coupe en plein milieu du chantier "import progressif", travail
   NON committe dans son worktree (`.codex/visualizations/2026/07/22/.../ma-progression-cp-import-progressif`,
