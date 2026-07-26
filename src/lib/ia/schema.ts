@@ -44,6 +44,45 @@ function nettoyerSemainesBrutes(brut: unknown[]): ProgressionSemaine[] {
   })
 }
 
+/** Concatene en gardant l'ordre et sans repeter une valeur deja presente. */
+function fusionnerListes(a: string[], b: string[]): string[] {
+  const out = [...a]
+  for (const v of b) if (!out.includes(v)) out.push(v)
+  return out
+}
+
+/**
+ * Regroupe les lignes qui portent le MEME numero de semaine.
+ *
+ * Les documents de maths, et beaucoup de programmations par periode, decrivent
+ * une semaine sur plusieurs lignes : une par domaine (« Nombres », « Calcul »,
+ * « Espace ») ou une par seance. Sans regroupement, l'application affichait
+ * trois seances pour la semaine 1 au lieu d'une (retour du 26/07), et le
+ * plafond de 36 amputait les deux tiers de l'annee.
+ *
+ * Une semaine du document reste une semaine de l'annee : ses apprentissages
+ * s'additionnent dans l'ordre de lecture.
+ */
+function fusionnerParNumero(semaines: ProgressionSemaine[]): ProgressionSemaine[] {
+  const parNumero = new Map<number, ProgressionSemaine>()
+  for (const s of semaines) {
+    const deja = parNumero.get(s.numero)
+    if (!deja) {
+      parNumero.set(s.numero, { ...s })
+      continue
+    }
+    deja.items = fusionnerListes(deja.items, s.items)
+    deja.mots_exemple = fusionnerListes(deja.mots_exemple, s.mots_exemple)
+    // Les pages s'accumulent : « p.4, p.5 » dit ou chercher les deux domaines.
+    const pages = fusionnerListes(
+      deja.pages ? deja.pages.split(', ') : [],
+      s.pages ? s.pages.split(', ') : [],
+    )
+    deja.pages = pages.join(', ')
+  }
+  return [...parNumero.values()]
+}
+
 /**
  * Vrai quand TOUS les numeros rendus par l'IA sont des semaines plausibles
  * (entiers de 1 a 36). Dans ce cas seulement ils peuvent servir au calage.
@@ -70,5 +109,9 @@ export function normalizeProgression(brut: unknown[]): ProgressionSemaine[] {
     // Aucun numero exploitable : on numerote dans l'ordre recu.
     return cleaned.slice(0, MAX_SEMAINES).map((s, i) => ({ ...s, numero: i + 1 }))
   }
-  return [...cleaned].sort((a, b) => a.numero - b.numero).slice(0, MAX_SEMAINES)
+  // Fusion AVANT le plafond : sinon un document ecrit sur trois lignes par
+  // semaine perdait les deux tiers de son annee.
+  return fusionnerParNumero(cleaned)
+    .sort((a, b) => a.numero - b.numero)
+    .slice(0, MAX_SEMAINES)
 }

@@ -22,6 +22,52 @@ describe('normalizeProgression', () => {
     ])).toBe(false)
   })
 
+  test('fusionne les lignes qui portent le même numéro de semaine', () => {
+    // Bug du 26/07 : les documents de maths listent souvent trois lignes pour
+    // une même semaine (une par domaine, ou une par séance). L'IA rendait alors
+    // trois objets « semaine 1 », et la progression affichait trois séances par
+    // semaine au lieu d'une. Une semaine du document = une semaine de l'année.
+    const out = normalizeProgression([
+      { numero: 1, items: ['Nombres jusqu’à 10'], pages: 'p.4', mots_exemple: [] },
+      { numero: 1, items: ['Comparer deux collections'], pages: 'p.5', mots_exemple: [] },
+      { numero: 1, items: ['Se repérer dans l’espace'], pages: '', mots_exemple: [] },
+      { numero: 2, items: ['Ajouter'], pages: 'p.8', mots_exemple: [] },
+    ])
+
+    expect(out.map(s => s.numero)).toEqual([1, 2])
+    expect(out[0].items).toEqual([
+      'Nombres jusqu’à 10', 'Comparer deux collections', 'Se repérer dans l’espace',
+    ])
+    expect(out[0].pages).toBe('p.4, p.5')
+  })
+
+  test('la fusion ne recopie pas deux fois le même apprentissage', () => {
+    const out = normalizeProgression([
+      { numero: 3, items: ['Le son [a]'], pages: 'p.12', mots_exemple: ['ami'] },
+      { numero: 3, items: ['Le son [a]', 'Écriture du a'], pages: 'p.12', mots_exemple: ['ami', 'abri'] },
+    ])
+
+    expect(out).toHaveLength(1)
+    expect(out[0].items).toEqual(['Le son [a]', 'Écriture du a'])
+    expect(out[0].pages).toBe('p.12')
+    expect(out[0].mots_exemple).toEqual(['ami', 'abri'])
+  })
+
+  test('les 36 semaines sont comptées APRÈS fusion, pas avant', () => {
+    // Sinon un document de 36 semaines ecrit sur trois lignes chacune se
+    // retrouvait ampute des deux tiers de l'annee.
+    const brut = Array.from({ length: 36 }, (_, i) => i + 1).flatMap(numero => [
+      { numero, items: [`a${numero}`], pages: '', mots_exemple: [] },
+      { numero, items: [`b${numero}`], pages: '', mots_exemple: [] },
+      { numero, items: [`c${numero}`], pages: '', mots_exemple: [] },
+    ])
+
+    const out = normalizeProgression(brut)
+    expect(out).toHaveLength(36)
+    expect(out[35].numero).toBe(36)
+    expect(out[35].items).toEqual(['a36', 'b36', 'c36'])
+  })
+
   test('coupe à 36 semaines maximum', () => {
     const brut = Array.from({ length: 50 }, (_, i) => ({
       numero: i + 1, items: ['a'], pages: '', mots_exemple: [],

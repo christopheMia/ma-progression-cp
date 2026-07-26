@@ -65,6 +65,25 @@ export function repartirSurSemaines(items: string[], semaines: number[]): Semain
 }
 
 /**
+ * Rassemble les blocs qui decrivent la MEME periode.
+ *
+ * Un document peut decouper sa periode 1 en plusieurs tableaux (un par domaine,
+ * ou une page par demi-periode). Sans ce regroupement, chaque bloc repartait de
+ * la premiere semaine de la periode et empilait ses lignes sur les precedentes :
+ * l'enseignante voyait deux ou trois seances par semaine au lieu d'une (retour
+ * du 26/07). Les domaines s'enchainent dans l'ordre de lecture du document.
+ */
+function regrouperPeriodes(periodes: PeriodeProgrammation[]): PeriodeProgrammation[] {
+  const parNumero = new Map<number, PeriodeProgrammation>()
+  for (const p of periodes) {
+    const deja = parNumero.get(p.numero)
+    if (deja) deja.domaines.push(...p.domaines)
+    else parNumero.set(p.numero, { numero: p.numero, domaines: [...p.domaines] })
+  }
+  return [...parNumero.values()]
+}
+
+/**
  * Repartition complete : pour chaque periode du document, on prend les VRAIES
  * semaines de cette periode dans la classe et on y etale ses apprentissages.
  *
@@ -79,7 +98,7 @@ export function repartirProgrammation(
   const semaines: SemaineRepartie[] = []
   const periodesIgnorees: number[] = []
 
-  for (const p of periodes) {
+  for (const p of regrouperPeriodes(periodes)) {
     const numeros = semainesParPeriode.get(p.numero)
     if (!numeros || !numeros.length) {
       periodesIgnorees.push(p.numero)

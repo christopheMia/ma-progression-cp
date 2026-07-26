@@ -120,6 +120,23 @@ describe('repartirProgrammation', () => {
     expect(semaines.map(s => s.numero)).toEqual([1, 9])
   })
 
+  test('deux blocs pour la meme periode se rassemblent au lieu de se superposer', () => {
+    // Bug du 26/07 : un document de maths dont la periode 1 est decoupee en
+    // plusieurs tableaux faisait deux passages sur les memes semaines, donc
+    // deux lignes de progression par semaine au lieu d'une.
+    const { semaines } = repartirProgrammation(
+      [
+        { numero: 1, domaines: [{ nom: 'Nombres', items: ['Jusqu\'à 10', 'Ordinaux'] }] },
+        { numero: 1, domaines: [{ nom: 'Calcul', items: ['Doubles', 'Moitiés'] }] },
+      ],
+      new Map([[1, [1, 2]]]),
+    )
+
+    expect(semaines.map(s => s.numero)).toEqual([1, 2])
+    expect(semaines[0].items).toEqual(['Nombres : Jusqu\'à 10', 'Nombres : Ordinaux'])
+    expect(semaines[1].items).toEqual(['Calcul : Doubles', 'Calcul : Moitiés'])
+  })
+
   test('une periode sans aucun item ne cree aucune ligne', () => {
     const { semaines } = repartirProgrammation(
       [{ numero: 1, domaines: [{ nom: 'Vide', items: [] }] }],

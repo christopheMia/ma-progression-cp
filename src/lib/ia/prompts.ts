@@ -310,12 +310,13 @@ ${REGLE_EXHAUSTIVITE}
 
 Règles pour "manuel" :
 - Une entrée par semaine, dans l'ordre chronologique, avec les notions dans "items".
+- UNE SEULE entrée par numéro de semaine. Beaucoup de documents, en maths surtout, consacrent plusieurs lignes à la même semaine : une par domaine ("Nombres", "Calcul", "Espace et géométrie") ou une par séance. Rassemble-les dans UNE entrée, dont "items" liste tous ces contenus. Ne crée jamais deux entrées portant le même "numero".
 - "numero" est le numéro de la semaine DANS L'ANNÉE, pas la position dans ta liste. Si le manuel laisse la semaine de la rentrée à l'accueil et commence son premier contenu en semaine 2, alors ta première entrée porte le numéro 2. N'invente pas d'entrée vide pour combler le trou.
 - Pour le français, conserve les graphèmes et sons exacts. Pour les autres matières, conserve toutes les notions.
 - "pages" contient les pages présentes, sinon "". "mots_exemple" contient les mots présents, sinon [].
 
 Règles pour "periode" :
-- Une entrée par semaine du document, en repartant de 1.
+- Une entrée par semaine du document, en repartant de 1, et une seule par numéro.
 - "items" contient TOUTES les séances et tous les domaines de la semaine.
 - Préfixe chaque contenu par son domaine quand il est indiqué, sous la forme "Domaine : contenu".
 - Ne perds pas les séances répétées d'une semaine à l'autre.
