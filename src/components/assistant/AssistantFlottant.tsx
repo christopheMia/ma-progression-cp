@@ -62,8 +62,8 @@ export default function AssistantFlottant({
         icon={Sparkles}
         onClick={() => setOuvert(true)}
         aria-expanded={ouvert}
-        style={{ bottom: 'calc(2.5rem + env(safe-area-inset-bottom, 0px))' }}
-        className="fixed right-4 z-50 shadow-lg print:hidden sm:right-5"
+        style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
+        className="fixed right-4 z-50 shadow-lg shadow-violet-500/40 ring-4 ring-violet-300/70 animate-pulse [animation-duration:2.5s] motion-reduce:animate-none print:hidden sm:right-5"
       >
         Mon assistant
       </Bouton>
