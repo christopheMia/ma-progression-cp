@@ -700,6 +700,18 @@ export default function SourceImporter({
                   value={analyse.periodeNumero ?? ''}
                   disabled={saving}
                   onChange={event => {
+                    // « Toutes les périodes » : un document qui couvre l'année
+                    // entière n'est pas le planning d'UNE periode, c'est une
+                    // progression annuelle. Sans cette issue, une enseignante qui
+                    // regroupe ses 5 periodes dans un seul PDF reste bloquee : on
+                    // lui demande de choisir une periode, et aucune n'est vraie.
+                    if (event.target.value === 'toutes') {
+                      setAnalyse({ ...analyse, typeDocument: 'manuel', periodeNumero: null })
+                      setConfirmation(
+                        'Document classé sur l’année entière. Tu peux vérifier le contenu semaine par semaine ci-dessous.',
+                      )
+                      return
+                    }
                     const numero = Number(event.target.value)
                     setAnalyse({
                       ...analyse,
@@ -711,7 +723,12 @@ export default function SourceImporter({
                   {[1, 2, 3, 4, 5].map(numero => (
                     <option key={numero} value={numero}>Période {numero}</option>
                   ))}
+                  <option value="toutes">Toutes les périodes (document sur l’année)</option>
                 </select>
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  Ton document regroupe plusieurs périodes ? Choisis
+                  «&nbsp;Toutes les périodes&nbsp;».
+                </p>
               </div>
             )}
           </div>

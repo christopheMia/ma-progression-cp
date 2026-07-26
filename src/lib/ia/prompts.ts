@@ -291,7 +291,7 @@ Ne demande, n'utilise ni ne devine aucun prénom d'élève.
 
 Choisis exactement un type_document :
 - "manuel" : sommaire, guide ou progression donnant des notions, sons ou pages dans l'ordre de l'année ;
-- "periode" : planning détaillé d'UNE période, découpé semaine par semaine et souvent par domaines ou séances ;
+- "periode" : planning détaillé d'UNE SEULE période, découpé semaine par semaine et souvent par domaines ou séances. Si le document couvre PLUSIEURS périodes (par exemple les 5 périodes de l'année regroupées dans un même fichier), ce n'est pas "periode" : choisis "manuel" et numérote les semaines en continu sur l'année. Ne choisis "periode" que si tu peux nommer la période unique concernée ;
 - "programmation" : programmation ANNUELLE dont les colonnes sont les périodes 1 à 5 et les lignes les domaines, sans découpage hebdomadaire précis.
 
 Règles communes :

@@ -94,6 +94,46 @@ describe('SourceImporter', () => {
     if (cryptoInitial) Object.defineProperty(globalThis, 'crypto', cryptoInitial)
   })
 
+  test('un document couvrant toutes les périodes ne bloque plus l’ajout', async () => {
+    // Cas reel du 26/07 : Christophe a regroupe ses 5 periodes dans un seul PDF.
+    // L'IA l'a classe « planning d'une periode » sans pouvoir dire laquelle, et la
+    // validation exigeait un numero entre 1 et 5. Aucune reponse n'etait vraie.
+    const onSourceReady = jest.fn()
+    jest.mocked(fetch).mockResolvedValueOnce(reponseJson({
+      ...REPONSE_MANUEL,
+      type_document: 'periode',
+      periode_numero: null,
+      avertissements: [],
+      base_calage: 'numeros',
+      progression: [{ numero: 1, items: ['Découvrir le son a'], pages: '', mots_exemple: [] }],
+    }))
+    render(<SourceImporter prenom="Cécile" onSourceReady={onSourceReady} />)
+
+    fireEvent.change(screen.getByLabelText('Texte du document'), {
+      target: { value: 'Un contenu de progression assez long pour être analysé.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Analyser le document' }))
+    await screen.findByLabelText('Période')
+
+    // Bloque tant qu'aucune periode n'est choisie.
+    expect(screen.getByText('Pour un planning de période, choisis une période entre 1 et 5.'))
+      .toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Période'), { target: { value: 'toutes' } })
+
+    // Le document devient une progression annuelle : plus rien ne bloque.
+    expect(screen.getByLabelText('Type de document')).toHaveValue('manuel')
+    expect(screen.queryByText('Pour un planning de période, choisis une période entre 1 et 5.'))
+      .toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
+    expect(onSourceReady.mock.calls[0][0]).toEqual(expect.objectContaining({
+      typeDocument: 'manuel',
+      periodeNumero: null,
+    }))
+  })
+
   test('affiche une première semaine de rentrée vide, datée, sans l’enregistrer', async () => {
     // Le manuel commence en semaine 2 : la semaine 1 est laissée à l'accueil.
     const onSourceReady = await analyserAvecCalage({
