@@ -95,6 +95,18 @@ describe('AssistantFlottant', () => {
     jest.useRealTimers()
   })
 
+  test('parle même sans classe configurée, c’est là qu’on a le plus besoin d’aide', () => {
+    render(<AssistantFlottant hasClass={false} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mon assistant' }))
+
+    // La conversation est disponible des la page de configuration.
+    expect(screen.getByLabelText('Ta question')).toBeInTheDocument()
+    // Seul l'import attend une classe: pas d'onglets tant qu'il n'y en a pas.
+    expect(screen.queryByRole('tab')).toBeNull()
+    expect(screen.getByRole('link', { name: 'lance la configuration' })).toBeInTheDocument()
+  })
+
   test('s’ouvre sur la conversation, pas sur le formulaire d’import', () => {
     render(<AssistantFlottant hasClass prenom="Cécile" />)
 

@@ -291,6 +291,10 @@ export default function AssistantFlottant({
               </button>
             </header>
 
+            {/* Sans classe, seule la conversation a un sens : l'import a besoin
+                d'une classe ou ranger le document. Mais la conversation, elle,
+                doit etre disponible DES la configuration, c'est justement la
+                qu'on a le plus besoin d'aide. */}
             {hasClass && (
               <div
                 role="tablist"
@@ -321,15 +325,17 @@ export default function AssistantFlottant({
 
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
               {!hasClass ? (
-                <p className="text-sm text-slate-600">
-                  Configure d&apos;abord ta classe pour utiliser l&apos;assistant.{' '}
-                  <Link
-                    href="/setup"
-                    className="text-violet-600 hover:underline"
-                  >
-                    Commencer la configuration
-                  </Link>
-                </p>
+                <>
+                  <p className="mb-3 rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm leading-6 text-violet-950">
+                    Ta classe n’est pas encore configurée, mais je peux déjà t’aider.
+                    Pose-moi tes questions, ou{' '}
+                    <Link href="/setup" className="font-semibold underline">
+                      lance la configuration
+                    </Link>
+                    . Tu pourras importer tes documents une fois ta classe créée.
+                  </p>
+                  <ChatAssistant prenom={prenom} rentreeDate={rentreeDate} matieres={matieres} />
+                </>
               ) : onglet === 'discuter' ? (
                 <ChatAssistant
                   prenom={prenom}
