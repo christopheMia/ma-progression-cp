@@ -1,22 +1,7 @@
 import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '@/types'
+import { trouverProgressionMatiere } from '@/lib/matieres'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
-
-/**
- * Devine le code matière d'une progression à partir du libellé d'un créneau
- * de l'emploi du temps (ex : "Appropriation des graphèmes" -> "francais",
- * "Calcul mental" -> "maths"). Sert de repli quand le créneau n'a pas encore
- * été relié manuellement à une méthode, pour que le cahier journal se remplisse
- * quand même. Renvoie null si aucun rapprochement évident.
- */
-function codeMatiereDepuisLibelle(libelle: string): string | null {
-  const m = libelle.toLowerCase()
-  if (m.includes('graphème') || m.includes('grapheme') || m.includes('graphe') ||
-      m.includes('écriture') || m.includes('ecriture') || m.includes('phono') ||
-      m.includes('vocabulaire') || m.includes('lecture')) return 'francais'
-  if (m.includes('math') || m.includes('calcul')) return 'maths'
-  return null
-}
 
 /**
  * Trouve la ligne de progression qui alimente un créneau : d'abord par lien
@@ -29,15 +14,7 @@ function progressionPourCreneau(
   if (creneau.methode_id) {
     return progression.find(x => x.methode_id === creneau.methode_id) ?? null
   }
-  // Repli 1 : rapprochement par mots-clés (français / maths)
-  const code = codeMatiereDepuisLibelle(creneau.matiere)
-  if (code) {
-    const p = progression.find(x => x.matiere === code)
-    if (p) return p
-  }
-  // Repli 2 : correspondance directe du libellé (matières personnalisées)
-  const norm = creneau.matiere.trim().toLowerCase()
-  return progression.find(x => x.matiere.trim().toLowerCase() === norm) ?? null
+  return trouverProgressionMatiere(progression, creneau.matiere) ?? null
 }
 
 function deroulementInitial(creneau: CreneauHoraire, progression: ProgressionMatiere[]): string {

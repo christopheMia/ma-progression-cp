@@ -1,213 +1,399 @@
 'use client'
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { Bot, CalendarDays, Plus, Save } from 'lucide-react'
-import IaImport from '@/components/setup/IaImport'
-import Bouton from '@/components/ui/Bouton'
-import { enregistrerProgressionMatiere } from '@/lib/actions/progression-matiere'
-import { enregistrerProgressionPeriode } from '@/lib/actions/progression-periode'
-import { createMethode, updateSuiviActif, lierCreneaux } from '@/lib/actions/methodes'
-import NomMethodeEditor from '@/components/parametres/NomMethodeEditor'
-import type { Methode } from '@/types'
-import type { ProgressionSemaine } from '@/data/manuels'
 
-type CreneauInfo = { id: string; matiere: string; jour: string; methode_id: string | null }
+import { useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { CalendarDays, FilePlus2, Save, Trash2 } from 'lucide-react'
+import SourceImporter from '@/components/methodes/SourceImporter'
+import Bouton from '@/components/ui/Bouton'
+import {
+  ajouterSourceProgression,
+  retirerSourceProgression,
+} from '@/lib/actions/methode-sources'
+import { updateSuiviActif, lierCreneaux } from '@/lib/actions/methodes'
+import { libelleMatiereCanonique } from '@/lib/matieres'
+import NomMethodeEditor from '@/components/parametres/NomMethodeEditor'
+import type { Methode, MethodeSource } from '@/types'
+import type { SourceProgression } from '@/lib/progression-sources'
+
+type CreneauInfo = {
+  id: string
+  matiere: string
+  jour: string
+  methode_id: string | null
+}
+
+type Message = {
+  type: 'succes' | 'erreur'
+  texte: string
+}
+
+const LIBELLES_TYPE: Record<MethodeSource['type_document'], string> = {
+  manuel: 'Manuel ou sommaire',
+  programmation: 'Programmation annuelle',
+  periode: 'Planning de période',
+}
 
 export default function MethodesEditor({
   prenom,
   methodes,
+  sources,
   creneaux,
   resumes,
 }: {
   prenom?: string
   methodes: Methode[]
+  sources: MethodeSource[]
   creneaux: CreneauInfo[]
   resumes?: Record<string, { semaines: number; notions: number }>
 }) {
-  const [ouverte, setOuverte] = useState<string | null>(null)
+  const [importOuvert, setImportOuvert] = useState<string | 'nouvelle' | null>(null)
   const [lienOuvert, setLienOuvert] = useState<string | null>(null)
-  const [nouveauNom, setNouveauNom] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [message, setMessage] = useState<Message | null>(null)
+  const [ajoutEnCours, setAjoutEnCours] = useState(false)
+  const [retraitEnCours, setRetraitEnCours] = useState<string | null>(null)
+  const ajoutRef = useRef(false)
+  const retraitRef = useRef<string | null>(null)
+  const [liaisonEnCours, startLiaison] = useTransition()
   const router = useRouter()
 
-  // Sélection des créneaux (state local avant sauvegarde)
-  const [creneauxSelectionnes, setCreneauxSelectionnes] = useState<Record<string, Set<string>>>(() => {
+  const [creneauxSelectionnes, setCreneauxSelectionnes] = useState<
+    Record<string, Set<string>>
+  >(() => {
     const init: Record<string, Set<string>> = {}
-    for (const m of methodes) {
-      init[m.id] = new Set(creneaux.filter(c => c.methode_id === m.id).map(c => c.id))
+    for (const methode of methodes) {
+      init[methode.id] = new Set(
+        creneaux
+          .filter(creneau => creneau.methode_id === methode.id)
+          .map(creneau => creneau.id),
+      )
     }
     return init
   })
 
-  function getSelectionMethode(methodeId: string): Set<string> {
-    return creneauxSelectionnes[methodeId] ?? new Set(creneaux.filter(c => c.methode_id === methodeId).map(c => c.id))
+  function selectionMethode(methodeId: string): Set<string> {
+    return creneauxSelectionnes[methodeId]
+      ?? new Set(
+        creneaux
+          .filter(creneau => creneau.methode_id === methodeId)
+          .map(creneau => creneau.id),
+      )
   }
 
   function toggleCreneau(methodeId: string, creneauId: string) {
-    setCreneauxSelectionnes(prev => {
-      const current = new Set(prev[methodeId] ?? creneaux.filter(c => c.methode_id === methodeId).map(c => c.id))
-      if (current.has(creneauId)) current.delete(creneauId)
-      else current.add(creneauId)
-      return { ...prev, [methodeId]: current }
+    setCreneauxSelectionnes(precedent => {
+      const selection = new Set(
+        precedent[methodeId]
+          ?? creneaux
+            .filter(creneau => creneau.methode_id === methodeId)
+            .map(creneau => creneau.id),
+      )
+      if (selection.has(creneauId)) selection.delete(creneauId)
+      else selection.add(creneauId)
+      return { ...precedent, [methodeId]: selection }
     })
   }
 
-  async function saveImport(
-    methodeId: string,
-    matiere: string,
-    progression: ProgressionSemaine[],
-    periode?: number,
-    nomManuel?: string,
-  ) {
-    // Import d'un planning de periode : on recale sur les semaines de cette
-    // periode et on ne touche pas aux autres periodes deja saisies.
-    if (periode) {
-      const { premiereSemaine, derniereSemaine } =
-        await enregistrerProgressionPeriode(matiere, periode, progression, nomManuel)
-      setMessage(`${matiere} · période ${periode} enregistrée (semaines ${premiereSemaine} à ${derniereSemaine}) ✓`)
-    } else {
-      await enregistrerProgressionMatiere(matiere, progression, nomManuel)
-      setMessage(`${matiere} enregistré ✓`)
+  async function ajouter(source: SourceProgression) {
+    if (ajoutRef.current) return
+    ajoutRef.current = true
+    setAjoutEnCours(true)
+    setMessage(null)
+    try {
+      await ajouterSourceProgression(source)
+      setMessage({
+        type: 'succes',
+        texte: `Document ajouté : ${source.nomSource}`,
+      })
+      router.refresh()
+    } catch (error) {
+      const texte = error instanceof Error ? error.message : String(error)
+      setMessage({ type: 'erreur', texte })
+      throw error
+    } finally {
+      ajoutRef.current = false
+      setAjoutEnCours(false)
     }
-    setOuverte(null)
-    router.refresh()
   }
 
-  function saveLien(methodeId: string) {
-    startTransition(async () => {
-      await lierCreneaux(methodeId, Array.from(getSelectionMethode(methodeId)))
-      setMessage('Créneaux liés ✓')
-      setLienOuvert(null)
+  async function retirer(source: MethodeSource) {
+    if (retraitRef.current) return
+    const confirme = window.confirm(
+      `Retirer « ${source.nom_source} » et recalculer la progression ?`,
+    )
+    if (!confirme) return
+
+    retraitRef.current = source.id
+    setRetraitEnCours(source.id)
+    setMessage(null)
+    try {
+      await retirerSourceProgression(source.id)
+      setMessage({
+        type: 'succes',
+        texte: `Document retiré : ${source.nom_source}`,
+      })
       router.refresh()
+    } catch (error) {
+      setMessage({
+        type: 'erreur',
+        texte: error instanceof Error ? error.message : String(error),
+      })
+    } finally {
+      retraitRef.current = null
+      setRetraitEnCours(null)
+    }
+  }
+
+  function enregistrerLiaisons(methodeId: string) {
+    startLiaison(async () => {
+      try {
+        await lierCreneaux(methodeId, [...selectionMethode(methodeId)])
+        setMessage({ type: 'succes', texte: 'Créneaux liés.' })
+        setLienOuvert(null)
+        router.refresh()
+      } catch (error) {
+        setMessage({
+          type: 'erreur',
+          texte: error instanceof Error ? error.message : String(error),
+        })
+      }
     })
   }
 
-  function toggleSuivi(methodeId: string, current: boolean) {
-    startTransition(async () => {
-      await updateSuiviActif(methodeId, !current)
-      router.refresh()
+  function toggleSuivi(methodeId: string, actif: boolean) {
+    startLiaison(async () => {
+      try {
+        await updateSuiviActif(methodeId, !actif)
+        router.refresh()
+      } catch (error) {
+        setMessage({
+          type: 'erreur',
+          texte: error instanceof Error ? error.message : String(error),
+        })
+      }
     })
-  }
-
-  async function ajouterMethode() {
-    const nom = nouveauNom.trim()
-    if (!nom) return
-    await createMethode(nom)
-    setNouveauNom('')
-    router.refresh()
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-sm text-gray-600 bg-violet-50 border border-violet-100 rounded-lg p-3 leading-relaxed">
-        Ici tu importes chaque méthode séparément (Français, Maths, Anglais…).
-        Pour chaque matière, tu peux <strong>cocher la case « Suivre les acquis »</strong> si
-        tu veux noter les progrès des élèves dans cette matière (cela fait apparaître les étoiles ★ dans le suivi).
-        Réimporter une matière ne touche jamais les autres.
+        Ajoute ici les documents de chaque méthode. Un planning de période plus précis
+        remplace seulement la période concernée, sans effacer les autres matières.
+        Le suivi des acquis et les créneaux liés restent réglables séparément.
       </p>
-      {message && <p className="text-sm text-green-600">{message}</p>}
 
-      {methodes.map(m => {
-        const selection = getSelectionMethode(m.id)
-        const creneauxLies = creneaux.filter(c => selection.has(c.id))
-        const labelMethode = m.matiere === 'francais' ? 'Français' : m.matiere === 'maths' ? 'Maths' : m.matiere.charAt(0).toUpperCase() + m.matiere.slice(1)
+      {message && (
+        <p
+          role={message.type === 'erreur' ? 'alert' : 'status'}
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            message.type === 'erreur'
+              ? 'border-red-200 bg-red-50 text-red-700'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          }`}
+        >
+          {message.texte}
+        </p>
+      )}
+
+      {methodes.length === 0 && (
+        <div className="rounded-xl border border-dashed border-violet-300 bg-violet-50/50 p-4">
+          <p className="font-medium text-slate-800">
+            Aucune méthode n’est encore configurée.
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            Ajoute ton premier document. La matière et la méthode seront créées après
+            ta vérification.
+          </p>
+          <Bouton
+            type="button"
+            variant="principal"
+            size="sm"
+            icon={FilePlus2}
+            className="mt-3"
+            onClick={() => setImportOuvert(
+              importOuvert === 'nouvelle' ? null : 'nouvelle',
+            )}
+          >
+            Ajouter un document ou une méthode
+          </Bouton>
+        </div>
+      )}
+
+      {methodes.map(methode => {
+        const selection = selectionMethode(methode.id)
+        const creneauxLies = creneaux.filter(creneau => selection.has(creneau.id))
+        const sourcesMethode = sources.filter(
+          source => source.methode_id === methode.id,
+        )
+        const importActif = importOuvert === methode.id
 
         return (
-          <div key={m.id} className="border rounded-xl p-3 space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-gray-700">{labelMethode}</span>
-                {/* Nom du manuel importe, modifiable sur place : sans lui, on ne
-                    sait pas d'ou vient la progression affichee (retour du 20/07). */}
-                <NomMethodeEditor methodeId={m.id} nom={m.manuel} />
-                {resumes?.[m.id] && resumes[m.id].semaines > 0 ? (
-                  <span className="text-xs text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5">
-                    📊 {resumes[m.id].semaines} semaine{resumes[m.id].semaines > 1 ? 's' : ''} · {resumes[m.id].notions} notion{resumes[m.id].notions > 1 ? 's' : ''}
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-400">Pas encore importée</span>
-                )}
+          <article key={methode.id} className="rounded-xl border border-slate-200 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-slate-800">
+                  {libelleMatiereCanonique(methode.matiere)}
+                </p>
+                <div className="mt-0.5">
+                  <NomMethodeEditor methodeId={methode.id} nom={methode.manuel} />
+                </div>
+                {resumes?.[methode.id]?.semaines ? (
+                  <p className="mt-1 text-xs text-violet-700">
+                    {resumes[methode.id].semaines} semaine(s),{' '}
+                    {resumes[methode.id].notions} notion(s)
+                  </p>
+                ) : null}
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={m.suivi_actif}
-                    onChange={() => toggleSuivi(m.id, m.suivi_actif)}
-                    className="accent-violet-600"
-                  />
-                  📊 Suivre les acquis des élèves <span className="text-gray-400">(affiche les étoiles ★)</span>
-                </label>
-                <Bouton type="button" variant="neutre" size="sm" icon={CalendarDays}
-                  onClick={() => setLienOuvert(lienOuvert === m.id ? null : m.id)}
-                  className="text-xs">
-                  {creneauxLies.length > 0 ? `${creneauxLies.length} créneau${creneauxLies.length > 1 ? 'x' : ''} de la semaine` : 'Choisir les créneaux de la semaine'}
-                </Bouton>
-                <Bouton type="button" variant="contour" size="sm" icon={Bot}
-                  onClick={() => { setMessage(null); setOuverte(ouverte === m.id ? null : m.id) }}
-                  className="text-sm">
-                  {ouverte === m.id ? 'Fermer' : 'Importer ou corriger la méthode'}
-                </Bouton>
-              </div>
+
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={methode.suivi_actif}
+                  onChange={() => toggleSuivi(methode.id, methode.suivi_actif)}
+                  disabled={liaisonEnCours}
+                  className="accent-violet-600"
+                />
+                Suivre les acquis des élèves
+              </label>
             </div>
 
-            {lienOuvert === m.id && (
-              <div className="border-t pt-2 space-y-2">
-                <p className="text-xs text-gray-500">Coche les créneaux de ton EDT alimentés par cette méthode :</p>
-                <div className="grid grid-cols-2 gap-1">
-                  {creneaux.map(c => (
-                    <label key={c.id} className="flex items-center gap-1.5 text-xs cursor-pointer">
+            <div className="mt-4 space-y-2" aria-label={`Documents de ${methode.manuel ?? methode.matiere}`}>
+              {sourcesMethode.length === 0 && (
+                <p className="text-sm text-slate-500">Aucun document enregistré.</p>
+              )}
+              {sourcesMethode.map(source => (
+                <div
+                  key={source.id}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-700">
+                      {source.nom_source}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {LIBELLES_TYPE[source.type_document]}
+                      {source.periode_numero ? ` · Période ${source.periode_numero}` : ''}
+                    </p>
+                  </div>
+                  <Bouton
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    icon={Trash2}
+                    aria-label={`Retirer ${source.nom_source}`}
+                    loading={retraitEnCours === source.id}
+                    disabled={retraitEnCours !== null}
+                    onClick={() => void retirer(source)}
+                  >
+                    Retirer
+                  </Bouton>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Bouton
+                type="button"
+                variant="contour"
+                size="sm"
+                icon={FilePlus2}
+                disabled={ajoutEnCours}
+                onClick={() => setImportOuvert(importActif ? null : methode.id)}
+              >
+                {importActif ? 'Fermer l’import' : 'Ajouter un document'}
+              </Bouton>
+              <Bouton
+                type="button"
+                variant="neutre"
+                size="sm"
+                icon={CalendarDays}
+                onClick={() => setLienOuvert(
+                  lienOuvert === methode.id ? null : methode.id,
+                )}
+              >
+                {creneauxLies.length
+                  ? `${creneauxLies.length} créneau(x) lié(s)`
+                  : 'Choisir les créneaux'}
+              </Bouton>
+            </div>
+
+            {lienOuvert === methode.id && (
+              <div className="mt-3 border-t border-slate-200 pt-3">
+                <p className="mb-2 text-xs text-slate-500">
+                  Coche les créneaux alimentés par cette méthode.
+                </p>
+                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                  {creneaux.map(creneau => (
+                    <label
+                      key={creneau.id}
+                      className="flex items-center gap-2 text-xs text-slate-700"
+                    >
                       <input
                         type="checkbox"
-                        checked={selection.has(c.id)}
-                        onChange={() => toggleCreneau(m.id, c.id)}
+                        checked={selection.has(creneau.id)}
+                        onChange={() => toggleCreneau(methode.id, creneau.id)}
                         className="accent-violet-600"
                       />
-                      <span className="text-gray-700">{c.jour} — {c.matiere}</span>
+                      {creneau.jour} : {creneau.matiere}
                     </label>
                   ))}
                   {creneaux.length === 0 && (
-                    <p className="text-xs text-gray-400 col-span-2">Aucun créneau dans l’emploi du temps.</p>
+                    <p className="text-xs text-slate-400">
+                      Aucun créneau dans l’emploi du temps.
+                    </p>
                   )}
                 </div>
-                <Bouton type="button" variant="secondaire" size="sm" icon={Save}
-                  onClick={() => saveLien(m.id)}
-                  loading={isPending}>
+                <Bouton
+                  type="button"
+                  variant="secondaire"
+                  size="sm"
+                  icon={Save}
+                  className="mt-2"
+                  loading={liaisonEnCours}
+                  onClick={() => enregistrerLiaisons(methode.id)}
+                >
                   Enregistrer les créneaux liés
                 </Bouton>
               </div>
             )}
 
-            {ouverte === m.id && (
-              <div className="mt-2">
-                <IaImport prenom={prenom} matiereFixe={m.matiere}
-                  onSave={(matiere, prog, periode, nom) => saveImport(m.id, matiere, prog, periode, nom)} />
+            {importActif && (
+              <div className="mt-4 border-t border-slate-200 pt-4">
+                <SourceImporter
+                  prenom={prenom}
+                  matiereInitiale={methode.matiere}
+                  methodeInitiale={methode.manuel ?? ''}
+                  onSourceReady={ajouter}
+                  onCancel={() => setImportOuvert(null)}
+                />
               </div>
             )}
-          </div>
+          </article>
         )
       })}
 
-      <div className="border border-dashed border-violet-300 rounded-xl p-3 space-y-2">
-        <p className="text-sm font-medium text-gray-700">➕ Ajouter une nouvelle matière</p>
-        <p className="text-xs text-gray-400">Écris le nom d’une matière (Anglais, Sciences, EMC…) puis clique « Ajouter ».</p>
-        <div className="flex gap-2">
-          <input
-            value={nouveauNom}
-            onChange={e => setNouveauNom(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && ajouterMethode()}
-            placeholder="Ex : Anglais, EMC, Sciences…"
-            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-900 bg-white"
+      {importOuvert === 'nouvelle' && (
+        <div className="rounded-xl border border-violet-200 bg-white p-4">
+          <SourceImporter
+            prenom={prenom}
+            onSourceReady={ajouter}
+            onCancel={() => setImportOuvert(null)}
           />
-          <Bouton type="button" variant="contour" size="sm" icon={Plus}
-            onClick={ajouterMethode}
-            disabled={!nouveauNom.trim()}
-            className="text-sm">
-            Ajouter
-          </Bouton>
         </div>
-      </div>
+      )}
+
+      {methodes.length > 0 && (
+        <Bouton
+          type="button"
+          variant="contour"
+          size="sm"
+          icon={FilePlus2}
+          onClick={() => setImportOuvert(
+            importOuvert === 'nouvelle' ? null : 'nouvelle',
+          )}
+        >
+          Ajouter un document ou une méthode
+        </Bouton>
+      )}
     </div>
   )
 }

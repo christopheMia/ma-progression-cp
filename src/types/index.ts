@@ -1,3 +1,6 @@
+import type { ProgressionSemaine } from '@/data/manuels'
+import type { PeriodeProgrammation } from '@/lib/repartition-periode'
+
 export type Manuel = { id: string; nom: string; editeur: string }
 
 export type Semaine = {
@@ -33,6 +36,36 @@ export type Methode = {
   niveau: string | null
   suivi_actif: boolean
 }
+
+export type MethodeSourceBase = {
+  id: string
+  methode_id: string
+  nom_source: string
+  contenu_structure: {
+    semaines: ProgressionSemaine[]
+    periodes: PeriodeProgrammation[]
+  }
+  empreinte_contenu: string
+  created_at: string
+}
+
+export type MethodeSource = MethodeSourceBase & (
+  | {
+      type_document: 'manuel'
+      periode_numero: null
+      niveau_precision: 1
+    }
+  | {
+      type_document: 'programmation'
+      periode_numero: null
+      niveau_precision: 2
+    }
+  | {
+      type_document: 'periode'
+      periode_numero: 1 | 2 | 3 | 4 | 5
+      niveau_precision: 3
+    }
+)
 
 export type Eleve = {
   id: string

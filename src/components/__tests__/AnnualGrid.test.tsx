@@ -3,9 +3,9 @@
  */
 import { render, screen, within } from '@testing-library/react'
 import AnnualGrid from '../planning/AnnualGrid'
-import type { Semaine } from '@/types'
+import type { SemainePlanning } from '@/lib/planning-annuel'
 
-function semaine(numero: number, periode_numero: number | null): Semaine {
+function semaine(numero: number, periode_numero: number | null): SemainePlanning {
   return {
     id: `s${numero}`,
     class_id: 'classe',
@@ -18,6 +18,8 @@ function semaine(numero: number, periode_numero: number | null): Semaine {
     mots_exemple: null,
     note: null,
     periode_numero,
+    contenus: [],
+    avancement: { acquis: 0, total: 0 },
   }
 }
 
@@ -54,5 +56,46 @@ describe('AnnualGrid', () => {
     const aRattacher = screen.getByText('Semaines à rattacher').closest('.print-section')
     expect(aRattacher).not.toBeNull()
     expect(within(aRattacher as HTMLElement).getByText('S2')).toBeTruthy()
+  })
+
+  test('affiche séparément les matières et les vrais noms de méthodes', () => {
+    const avecContenu = semaine(1, 1)
+    avecContenu.contenus = [
+      {
+        codeMatiere: 'francais',
+        libelleMatiere: 'Français',
+        nomMethode: "Les P'tites Poules",
+        suiviActif: true,
+        items: ['Son a'],
+      },
+      {
+        codeMatiere: 'maths',
+        libelleMatiere: 'Mathématiques',
+        nomMethode: 'Maths en CP',
+        suiviActif: false,
+        items: ['Comparer'],
+      },
+    ]
+
+    render(<AnnualGrid semaines={[avecContenu]} />)
+
+    expect(screen.getByText('Français')).toBeTruthy()
+    expect(screen.getByText("Les P'tites Poules")).toBeTruthy()
+    expect(screen.getByText('Mathématiques')).toBeTruthy()
+    expect(screen.getByText('Maths en CP')).toBeTruthy()
+    expect(screen.getByText('Son a')).toBeTruthy()
+    expect(screen.getByText('Comparer')).toBeTruthy()
+  })
+
+  test('garde le squelette et explique clairement l’absence de méthode', () => {
+    const semaines = Array.from({ length: 36 }, (_, index) =>
+      semaine(index + 1, index < 7 ? 1 : null)
+    )
+
+    render(<AnnualGrid semaines={semaines} aucuneMethode />)
+
+    expect(screen.getByText(/Aucune méthode n’est encore configurée/i)).toBeTruthy()
+    expect(screen.getByText('S1')).toBeTruthy()
+    expect(screen.getByText('S36')).toBeTruthy()
   })
 })

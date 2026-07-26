@@ -1,4 +1,4 @@
-import { Semaine } from '@/types'
+import type { SemainePlanning } from '@/lib/planning-annuel'
 import WeekCard from './WeekCard'
 
 export type PeriodePlanning = {
@@ -26,13 +26,11 @@ const PERIODES_HISTORIQUES = [
 export default function AnnualGrid({
   semaines,
   periodes = [],
-  acquisParSemaine = {},
-  elevesCount = 0,
+  aucuneMethode = false,
 }: {
-  semaines: Semaine[]
+  semaines: SemainePlanning[]
   periodes?: PeriodePlanning[]
-  acquisParSemaine?: Record<string, number>
-  elevesCount?: number
+  aucuneMethode?: boolean
 }) {
   const utilisePeriodesReelles = periodes.length > 0
     && semaines.some(s => s.periode_numero != null)
@@ -61,6 +59,11 @@ export default function AnnualGrid({
 
   return (
     <div className="space-y-6">
+      {aucuneMethode && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Aucune méthode n’est encore configurée. Les 36 semaines restent accessibles et se rempliront après l’ajout d’une méthode.
+        </div>
+      )}
       {groupes.map(groupe => (
         <div key={`${groupe.numero}-${groupe.nom}`} className="print-section">
           <h2 className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -74,8 +77,6 @@ export default function AnnualGrid({
                 <WeekCard
                   key={s.id}
                   semaine={s}
-                  acquiredCount={acquisParSemaine[s.id] ?? 0}
-                  elevesCount={elevesCount}
                 />
             ))}
           </div>

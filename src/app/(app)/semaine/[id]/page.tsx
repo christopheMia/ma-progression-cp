@@ -10,6 +10,7 @@ import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
 import CollapsibleSection from '@/components/semaine/CollapsibleSection'
 import EdtApercu from '@/components/semaine/EdtApercu'
 import PrintButton from '@/components/PrintButton'
+import { trouverProgressionMatiere } from '@/lib/matieres'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -41,6 +42,8 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   })
 
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
+  const progressionFrancais = trouverProgressionMatiere(progression ?? [], 'francais')
+  const progressionMaths = trouverProgressionMatiere(progression ?? [], 'maths')
 
   return (
     <div className="space-y-4">
@@ -89,8 +92,8 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       <CahierJournalEditor
         semaineId={semaine.id}
         numeroSemaine={semaine.numero}
-        francais={(progression?.find(p => p.matiere === 'francais')?.items as string[]) ?? []}
-        maths={(progression?.find(p => p.matiere === 'maths')?.items as string[]) ?? []}
+        francais={(progressionFrancais?.items as string[]) ?? []}
+        maths={(progressionMaths?.items as string[]) ?? []}
       />
     </div>
   )

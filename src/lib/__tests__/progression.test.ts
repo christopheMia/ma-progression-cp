@@ -1,4 +1,24 @@
-import { genererProgression, genererProgressionFrancais } from '../progression'
+import { genererProgression, genererProgressionFrancais, genererSqueletteSemaines } from '../progression'
+
+test('genere un squelette de 36 semaines sans methode ni contenu de manuel', () => {
+  const semaines = genererSqueletteSemaines('2025-09-02')
+
+  expect(semaines).toHaveLength(36)
+  expect(semaines[0]).toEqual({
+    numero: 1,
+    date_debut: '2025-09-02',
+    graphemes: [],
+    edm_theme: 'Moi',
+    edm_competences: expect.any(String),
+    manuel_pages: null,
+    mots_exemple: null,
+    note: null,
+  })
+  expect(semaines[1].date_debut).toBe('2025-09-09')
+  expect(semaines[35].graphemes).toEqual([])
+  expect(semaines[35].manuel_pages).toBeNull()
+  expect(semaines[35].mots_exemple).toBeNull()
+})
 
 test('génère 36 semaines', () => {
   const semaines = genererProgression('lecture-piano', '2025-09-02')

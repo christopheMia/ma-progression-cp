@@ -10,6 +10,27 @@ const MANUELS_DATA = {
   'lecture-piano': LECTURE_PIANO,
 }
 
+/** Base commune : une annee complete, avant tout apport de methode. */
+export function genererSqueletteSemaines(rentreeDate: string): Omit<Semaine, 'id' | 'class_id'>[] {
+  const debut = new Date(rentreeDate)
+
+  return Array.from({ length: 36 }, (_, i) => {
+    const semEdm = EDM_PROGRESSION_CP[i]
+    const dateDebut = addWeeks(debut, i)
+
+    return {
+      numero: i + 1,
+      date_debut: format(dateDebut, 'yyyy-MM-dd'),
+      graphemes: [],
+      edm_theme: semEdm.theme,
+      edm_competences: semEdm.competences,
+      manuel_pages: null,
+      mots_exemple: null,
+      note: null,
+    }
+  })
+}
+
 export function genererProgression(
   manuelId: string,
   rentreeDate: string,
@@ -18,22 +39,14 @@ export function genererProgression(
   const semaines = customProgression ?? MANUELS_DATA[manuelId as keyof typeof MANUELS_DATA]?.semaines
   if (!semaines) throw new Error(`Manuel inconnu : ${manuelId}`)
 
-  const debut = new Date(rentreeDate)
-
-  return Array.from({ length: 36 }, (_, i) => {
+  return genererSqueletteSemaines(rentreeDate).map((semaine, i) => {
     const semManuel = semaines[i]
-    const semEdm = EDM_PROGRESSION_CP[i]
-    const dateDebut = addWeeks(debut, i)
 
     return {
-      numero: i + 1,
-      date_debut: format(dateDebut, 'yyyy-MM-dd'),
+      ...semaine,
       graphemes: semManuel?.items ?? [],
-      edm_theme: semEdm.theme,
-      edm_competences: semEdm.competences,
       manuel_pages: semManuel?.pages ?? null,
       mots_exemple: semManuel?.mots_exemple ?? null,
-      note: null,
     }
   })
 }

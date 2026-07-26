@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ArrowLeft, LayoutGrid, WandSparkles } from 'lucide-react'
-import ManualSelector from '@/components/setup/ManualSelector'
+import ProgressionsSetup from '@/components/setup/ProgressionsSetup'
 import RentreeDatePicker from '@/components/setup/RentreeDatePicker'
 import StudentListEditor from '@/components/setup/StudentListEditor'
 import TimetableGrid, { type Creneau } from '@/components/TimetableGrid'
@@ -10,16 +10,9 @@ import { TRAME_EDT_CP } from '@/data/trame-edt'
 import { genererEdtCP } from '@/lib/edt-generator'
 import DemoButton from '@/components/DemoButton'
 import { creerClasse } from '@/lib/actions/setup'
-import type { ProgressionSemaine } from '@/data/manuels'
-import type { ZoneScolaire } from '@/lib/calendrier-officiel'
+import type { DonneesCreationClasse } from '@/lib/setup-creation'
 
-type WizardData = {
-  manuelId: string
-  rentreeDate: string
-  zoneScolaire: ZoneScolaire
-  eleves: string[]
-  emploiDuTemps: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur?: string | null; type?: 'cours' | 'routine' }>
-  customProgression?: ProgressionSemaine[]
+type WizardData = Omit<DonneesCreationClasse, 'emploiDuTemps'> & {
   /** Brouillon complet de l'EDT, conserve entre allers-retours d'etapes. */
   emploiDuTempsDraft?: Creneau[]
 }
@@ -50,18 +43,40 @@ export default function SetupPage() {
   const [step, setStep] = useState(1)
   const [data, setData] = useState<Partial<WizardData>>({})
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const stepTitles = ['Ta méthode de lecture', 'Date de la rentrée', 'Tes élèves', 'Ton emploi du temps']
+  const stepTitles = ['Tes progressions', 'Date de la rentrée', 'Tes élèves', 'Ton emploi du temps']
   const stepHelp = [
-    'Dépose le PDF de ton manuel de lecture (ou colle son sommaire) : l’IA construit ta progression de l’année, tu pourras tout corriger ensuite.',
+    'Ajoute les documents que tu as déjà, pour toutes tes matières. Tu peux aussi continuer sans source et tout compléter plus tard.',
     'Choisis le jour de la rentrée et ta zone : l’appli place les 36 semaines en sautant les vacances.',
     'Ajoute les prénoms de tes élèves. Tu peux aussi le faire plus tard, dans Paramètres.',
     'Indique tes horaires de la semaine : ils servent à pré-remplir ton cahier journal jour par jour.',
   ]
 
-  async function handleFinish(emploiDuTemps: WizardData['emploiDuTemps']) {
+  async function handleFinish(emploiDuTemps: DonneesCreationClasse['emploiDuTemps']) {
+    if (!data.rentreeDate || !data.zoneScolaire) {
+      setError('La date de rentrée et la zone scolaire sont nécessaires pour continuer.')
+      return
+    }
+
     setLoading(true)
-    await creerClasse({ ...data, emploiDuTemps } as WizardData)
+    setError(null)
+    try {
+      await creerClasse({
+        sourcesProgression: data.sourcesProgression ?? [],
+        rentreeDate: data.rentreeDate,
+        zoneScolaire: data.zoneScolaire,
+        eleves: data.eleves ?? [],
+        emploiDuTemps,
+      })
+    } catch (erreur) {
+      setError(
+        `La création de ta classe a échoué : ${
+          erreur instanceof Error ? erreur.message : String(erreur)
+        }`,
+      )
+      setLoading(false)
+    }
   }
 
   return (
@@ -69,7 +84,7 @@ export default function SetupPage() {
       {step === 1 && !loading && (
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 bg-violet-50 border border-violet-200 rounded-xl p-4">
           <div className="text-sm text-violet-900">
-            <strong>Juste pour découvrir l&apos;outil ?</strong> Chargez une classe d&apos;exemple, déjà remplie partout.
+            <strong>Juste pour découvrir l&apos;outil ?</strong> Charge une classe d&apos;exemple, déjà remplie partout.
           </div>
           <div className="sm:ml-auto"><DemoButton /></div>
         </div>
@@ -82,7 +97,7 @@ export default function SetupPage() {
           ))}
         </div>
         <div className="flex items-center justify-between mt-2">
-          <p className="text-sm text-gray-500">Étape {step}/4 — <strong className="text-violet-700">{stepTitles[step - 1]}</strong></p>
+          <p className="text-sm text-gray-500">Étape {step}/4 - <strong className="text-violet-700">{stepTitles[step - 1]}</strong></p>
           {step > 1 && !loading && (
             <Bouton type="button" variant="fantome" size="sm" icon={ArrowLeft}
               onClick={() => setStep(s => s - 1)}>
@@ -96,12 +111,21 @@ export default function SetupPage() {
       </div>
 
       {step === 1 && (
-        <ManualSelector prenom={undefined}
-          initial={data.manuelId ? { manuelId: data.manuelId, progression: data.customProgression } : undefined}
-          onSelect={(manuelId, customProgression) => {
-            setData(d => ({ ...d, manuelId, customProgression }))
+        <ProgressionsSetup
+          initialSources={data.sourcesProgression}
+          onContinue={sources => {
+            setData(d => ({ ...d, sourcesProgression: sources }))
             setStep(2)
-          }} />
+          }}
+        />
+      )}
+      {error && (
+        <p
+          role="alert"
+          className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800"
+        >
+          {error}
+        </p>
       )}
       {step === 2 && (
         <RentreeDatePicker initial={data.rentreeDate} initialZone={data.zoneScolaire ?? 'A'}

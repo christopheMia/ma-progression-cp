@@ -128,8 +128,10 @@ navigateur pour la voir). Caractéristiques à respecter :
 
 - `src/app/(app)/setup/page.tsx` : assistant de configuration en 4 étapes (méthode,
   date de rentrée, élèves, EDT).
-- `src/components/setup/` : `ManualSelector`, `IaImport`, `RentreeDatePicker`,
+- `src/components/setup/` : `ProgressionsSetup`, `RentreeDatePicker`,
   `StudentListEditor`.
+- `src/components/methodes/` : import progressif avec `SourceImporter` et
+  `SourceContentPreview`.
 - `src/components/TimetableGrid.tsx` : grille EDT éditable.
 - `src/components/EdtGrilleLecture.tsx` : grille EDT lecture seule (design validé).
 - `src/lib/edt-grille.ts` : calcul de la grille fusionnée (`construireGrille`).
@@ -159,7 +161,8 @@ navigateur pour la voir). Caractéristiques à respecter :
 - Bug de navigation du setup corrigé (données conservées entre allers-retours).
 - Étape EDT = **choix** "grille vide" / "générer selon les quotas officiels"
   (`genererEdtCP`, arrêté 9/11/2015). Plus de trame figée imposée.
-- Import IA à **une seule porte** (`IaImport.tsx` + `schema-import-auto.ts`) : l'IA
+- Import IA à **une seule porte** (`IaImport.tsx` sur `main` +
+  `schema-import-auto.ts`) : l'IA
   reconnaît seule manuel / planning de période / programmation annuelle ; le choix de
   la période n'apparaît qu'après détection. Fini les 3 radios.
 - Grille d'édition (`TimetableGrid`) au **design validé** : fusion, couleurs par
@@ -226,6 +229,217 @@ Idées / options mises de côté (à ne pas oublier) :
 
 Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
 
+- **2026-07-23 - Codex - gestion persistante des sources dans les parametres**.
+  Ajout de `methode-sources.ts` et des Server Actions
+  `ajouterSourceProgression` et `retirerSourceProgression`. Elles reconstruisent
+  toutes les sources persistantes avec validation runtime, materialisent la
+  progression complete selon les vraies semaines de periode et passent uniquement
+  par les RPC atomiques de la migration 016. Les snapshots de concurrence sont des
+  copies de tous les identifiants courants, cible incluse au retrait. Les conflits de
+  nom de methode, doublons, sources obsoletes et erreurs de concurrence produisent des
+  messages explicites. Une methode creee pour un premier import en echec est supprimee
+  seulement si elle est encore vide; aucune methode existante ou non vide ne l est.
+  Les caches des parametres, du planning, des periodes, de l accueil et des semaines
+  concernees sont revalides apres succes.
+  La page Parametres charge les sources dans l ordre de creation uniquement quand des
+  methodes existent. `MethodesEditor` liste chaque fichier, son type et sa periode,
+  ouvre `SourceImporter` avec la matiere et la methode pre-remplies, confirme le
+  retrait et conserve le suivi des acquis et les liaisons EDT. Une classe sans methode
+  ouvre directement l importeur. L ancien bloc `Tout regenerer`, `MANUELS`,
+  `ManuelEditor`, `ManualSelector` et `IaImport` ont ete retires apres verification
+  de leurs references. L assistant flottant utilise maintenant le meme importeur et
+  la nouvelle action, sans ecriture directe dans `progression`. Les anciennes actions
+  `progression-matiere` et `progression-periode` restent uniquement parce que les tests
+  de remplacement atomique couvrent encore leur securite; aucun composant runtime ne les
+  importe.
+  TDD rouge observe avant les modules serveur puis avant les interfaces. Validation
+  finale : 44 suites et 367 tests verts, type-check propre, controle de diff et U+2014
+  propres. Le build de production reste non valide dans cet environnement : il a
+  echoue uniquement parce que les onze polices Google ne pouvaient pas etre
+  telechargees, puis la relance reseau a ete refusee par la limite d usage. La
+  migration 016 reste ecrite mais non appliquee a une base distante. `partage/` est
+  intact. Non committe.
+
+- **2026-07-23 - Codex - dedoublonnage des acquisitions par eleve**.
+  La requete du planning selectionne aussi `acquisitions.eleve_id`, rendu obligatoire
+  dans `AcquisitionPlanning`. Apres l intersection avec les methodes actives et les
+  items courants, le numerateur est dedoublonne par tuple exact
+  `[eleve_id, codeMatiereCanonique(matiere), grapheme]`. La cle utilise
+  `JSON.stringify` pour eviter les collisions possibles avec une concatenation et un
+  separateur present dans les donnees. Ainsi, le meme eleve avec `Lecture` puis
+  `francais` sur la meme notion compte une fois, tandis que deux eleves distincts
+  comptent deux fois. Les doublons d items dans la progression restent un seul item
+  par eleve au denominateur. Les tests et mocks portent explicitement `eleve_id` :
+  aucune valeur artificielle n est ajoutee dans le code de production. TDD rouge
+  observe sur le doublon d alias et le champ absent de la requete, puis vert.
+  Validation finale : 39 suites et 351 tests verts, type-check propre. Controle de
+  diff et U+2014 propres, aucun changement RPC, `partage/` intact. Non committe.
+
+- **2026-07-23 - Codex - avancement exact du planning par methode suivie**.
+  `/planning` charge maintenant `methodes.suivi_actif` et, parmi les acquisitions
+  acquises, `semaine_id`, `matiere` et `grapheme`. Le modele pur annuel marque chaque
+  contenu avec son etat de suivi et calcule lui-meme le numerateur et le denominateur.
+  Il construit l ensemble exact des items actuellement materialises pour les seules
+  methodes actives. Le denominateur vaut ces items uniques multiplies par le nombre
+  d eleves. Le numerateur compte une fois chaque ligne d acquisition retournee dont la
+  semaine, la matiere canonisee et l item strictement identique appartiennent a cet
+  ensemble. Les acquisitions obsoletes, les variantes de texte et les methodes
+  inactives sont exclues. Les contenus des methodes inactives restent affiches.
+  `WeekCard` consomme ce resultat commun et borne seulement la largeur visuelle a 100 %.
+  TDD rouge observe sur l ancien comptage global, puis tests verts pour methode inactive,
+  melange actif et inactif, doublon de notion, acquisitions reelles multiples,
+  acquisition obsolete, progression remplacee et zero item actif. Validation finale :
+  39 suites et 350 tests verts, type-check propre. Aucun changement RPC. Controle de
+  diff et U+2014 propres, `partage/` intact. Non committe.
+
+- **2026-07-23 - Codex - planning multi-matieres et codes canoniques relies**.
+  La page `/planning` lit maintenant `progression` et `methodes`, puis passe par le
+  modele pur `construirePlanningAnnuel`. Les contenus sont groupes par semaine et par
+  matiere, avec le vrai nom importe de chaque methode. `AnnualGrid` et `WeekCard`
+  conservent les periodes, les liens, l etat temporel et l avancement des acquisitions,
+  mais n utilisent plus `semaines.graphemes`. Une classe sans methode garde ses 36
+  semaines et affiche une explication claire. Ajout de `matieres.ts`, source unique
+  des codes persistants, fondee sur `familleMatiere` : francais, maths, qlm, eps, arts,
+  anglais, emc, routine et slug stable pour une matiere personnalisee. La creation
+  canonise seulement des copies des sources, detecte les conflits entre alias,
+  enregistre les codes canoniques dans `methodes` et le RPC de progression, puis relie
+  chaque creneau de cours a son `methode_id`; les routines et matieres sans methode
+  restent a null. Le cahier journal et la page semaine partagent le meme rapprochement
+  canonique. Aucun DML direct ni changement du contrat RPC. TDD rouge observe sur les
+  modules absents, les anciens graphemes et les liens EDT manquants. Les tests couvrent
+  creation vers planning francais et maths, zero methode, creation vers EDT lie puis
+  journal, alias, accents, casse, matiere inconnue et non-mutation. Validation finale :
+  39 suites et 347 tests verts, type-check propre. Controle de diff et U+2014 propres.
+  Non committe.
+
+- **2026-07-23 - Codex - creation atomique depuis toutes les sources du setup**.
+  `creerClasse` accepte maintenant `sourcesProgression`, sans ancien
+  `manuelId/customProgression`. Avec ou sans source, la classe recoit toujours les 36
+  semaines de `genererSqueletteSemaines`, recalees par le calendrier officiel. La
+  colonne `classes.manuel_id` vaut `custom` avec une source et `sans-methode` sinon.
+  Les groupes sont crees dans l ordre, via `ensureMethode` avec le nom importe. Deux
+  noms de methode pour la meme matiere sont refuses avant toute ecriture, conformement
+  a la contrainte unique actuelle. Les sources de chaque groupe sont triees sur
+  `creeLe`, sans mutation, puis enregistrees sequentiellement par le seul RPC
+  `enregistrer_source_progression`. Chaque appel recoit le snapshot courant des UUID,
+  le niveau de precision, le contenu structure et les lignes produites par
+  `materialiserSources` avec les vraies semaines de chaque periode. Aucun DML direct
+  ne vise `methode_sources` ou `progression`. En cas d echec, la nouvelle classe et ses
+  dependances sont supprimees; l ancienne classe n est retiree qu apres les eleves, les
+  periodes, les semaines, les sources, les progressions et l EDT. La page n utilise
+  plus de cast transitoire. Elle affiche une alerte claire et reactive l interface si
+  la Server Action echoue; `redirect` reste hors du `try/catch`, selon Next.js 16.
+  TDD rouge constate sur l orchestrateur absent, puis tests du calendrier et des noms
+  accessibles ajustes aux contrats reels. Validation ciblee : 7 suites et 90 tests
+  verts. Suite complete : 36 suites et 325 tests verts avec
+  `npm.cmd test -- --runInBand`. Type-check, controle de diff et U+2014 propres.
+  La migration 016 reste seulement ecrite, non appliquee a une base distante. Non
+  committe.
+
+- **2026-07-23 - Codex - premiere etape du setup en import progressif**. Ajout de
+  `ProgressionsSetup`, branche sur le vrai `SourceImporter` et utilise a la place de
+  `ManualSelector` dans `setup/page.tsx`. L enseignante peut continuer sans source,
+  importer plusieurs documents sans quitter l etape, revenir en arriere sans perdre
+  ses brouillons, retirer une source et continuer explicitement avec tout le classeur.
+  Les sources sont regroupees par matiere et methode, avec leur nombre, leur fichier,
+  leur type et leur periode eventuelle. Un doublon est bloque seulement dans la meme
+  methode, car l empreinte pedagogique ne contient ni matiere ni nom de methode. Une
+  note explique qu un planning de periode plus precis remplace uniquement la partie
+  concernee du sommaire general. Direction visuelle : classeur enseignant avec tranche
+  violette, cartes simples sans tableau, largeurs contraintes pour 375 px, boutons
+  nommes, focus existant de `Bouton` et mouvements reduits. `ManualSelector` est
+  conserve car `ManuelEditor` l utilise encore. La page stocke les sources dans le
+  brouillon du wizard; leur raccord persistant est decrit dans l entree ci-dessus.
+  TDD rouge constate
+  sur le composant absent, puis second rouge sur la portee des doublons. Validation :
+  3 suites ciblees et 60 tests verts avec
+  `npm.cmd test -- --runInBand src/components/setup/__tests__/ProgressionsSetup.test.tsx src/components/methodes/__tests__/SourceImporter.test.tsx src/lib/__tests__/progression-sources.test.ts`.
+  Type-check, controle de diff et U+2014 propres. Non committe.
+
+- **2026-07-23 - Codex - import progressif d une source de progression**. Ajout de
+  `SourceImporter` et `SourceContentPreview` dans `src/components/methodes/`.
+  Apres revue de specification, l apercu permet aussi de construire explicitement
+  une structure absente : ajout de semaines 1 a 36, de periodes P1 a P5 sans doublon
+  et de plusieurs domaines par periode. Un changement entre format hebdomadaire et
+  programmation affiche une confirmation de restructuration, tout en conservant les
+  deux brouillons en memoire pour restaurer les saisies lors d un retour au type initial.
+  La source finale ne garde que la structure coherente avec le type valide.
+  L import accepte un texte ou plusieurs PDF, avec 10 fichiers et 25 Mio au maximum.
+  Jusqu a 4 Mo au total, les PDF sont envoyes bruts dans un `FormData`; au-dela, leur
+  texte est extrait sequentiellement dans le navigateur puis concatene avec un separateur.
+  Les lectures PDF liberent chaque page et le document, meme en cas d erreur. L indice de
+  matiere reste facultatif et aucun
+  prenom n est envoye a la route. Apres l analyse, la matiere, la methode, le type et
+  la periode eventuelle sont corrigibles. Une faible confiance ou un avertissement
+  produit un encart ambre. Les erreurs et confirmations utilisent respectivement
+  `role="alert"` et `role="status"`. L apercu edite les semaines et les domaines sans
+  muter les props, avec une notion complete par ligne. Les programmations gardent leurs
+  periodes brutes, sans appel a `previsualiserProgrammation` ni
+  `getPeriodesDisponibles`. Les saisies sont conservees brutes pendant la frappe, y
+  compris les espaces saisis caractere par caractere avec `userEvent`, puis nettoyees
+  uniquement lors de la validation finale. Celle-ci construit l union
+  `SourceProgression`, calcule une empreinte du seul contenu pedagogique effectif avant
+  `onSourceReady`, et bloque les doubles validations. Une validation reussie fige
+  definitivement l ecran sur `Document pret`. Les requetes utilisent `AbortController` :
+  annuler ou demonter le composant interrompt la requete et ignore toute reponse tardive.
+  Direction visuelle appliquee sans redesign global : palette existante, cartes
+  mobiles et trois intercalaires `Document`, `Verification`, `Ajouter`, avec focus
+  visible et reduction des mouvements. Ajout de la dependance de test
+  `@testing-library/user-event`. Tests rouges observes avant les implementations et les
+  corrections de qualite. Apres implementation, 5 suites ciblees et 72 tests sont verts.
+  `npx.cmd tsc --noEmit` est propre. Commande reproduite :
+  `npm.cmd test -- --runInBand src/components/methodes/__tests__/SourceContentPreview.test.tsx src/components/methodes/__tests__/SourceImporter.test.tsx src/lib/__tests__/progression-sources.test.ts src/lib/__tests__/import-auto.test.ts src/lib/ia/__tests__/pdf-client.test.ts`.
+  `git diff --check` et
+  controle U+2014 propres. `IaImport.tsx` et `partage/` sont restes intacts. Non committe.
+
+- **2026-07-23 - Codex - materialisation pure des sources de progression**. Ajout de
+  `materialiserSources` et `ResultatMaterialisation` dans
+  `src/lib/progression-sources.ts`. Les sources manuelles gardent leurs numeros globaux,
+  les programmations passent par `repartirProgrammation` avec les vraies semaines de la
+  classe, et les sources de periode sont recalees sans debordement vers la periode
+  suivante. Les numeros locaux invalides d une source de periode sont ignores avant le
+  recalage, tout en gardant leur rang initial pour ne pas decaler les lignes suivantes.
+  Les blocs de programmation avec le meme numero de periode sont regroupes avant leur
+  repartition, dans l ordre des domaines et notions fournis, avec un avertissement.
+  La priorite est manuel, programmation, periode, puis `creeLe` ancien vers recent et
+  `clientId` binaire. `creeLe` est un ISO requis, issu de `methode_sources.created_at`,
+  mais n entre pas dans l empreinte de contenu. Les lignes vides n ecrasent jamais une
+  ligne existante, les numeros hors 1 a 36 sont avertis, les sorties sont triees et les
+  entrees restent immuables. Ajout de `genererSqueletteSemaines`, base de 36 semaines
+  sans methode,
+  utilisee ensuite par `genererProgression` sans changement de son contrat public.
+  Tests rouges observes avant implementation, puis 54 tests dedies verts, type-check et
+  `git diff --check` propres. Non committe.
+
+- **2026-07-23 - Codex - sources persistantes et operations atomiques**. Ajout de
+  `methode_sources` avec contraintes coherentes selon le type de document, contenu JSON
+  structure, unicite par methode et empreinte, RLS et policy de lecture proprietaire.
+  Les ecritures directes sont revoquees pour les roles applicatifs. Les fonctions
+  PostgreSQL `enregistrer_source_progression` et `retirer_source_progression` sont
+  `security definer` avec un `search_path` vide, controlent strictement le proprietaire,
+  verrouillent la methode et refusent un snapshot de sources obsolete avant toute
+  mutation. Elles ajoutent ou retirent ensuite une source puis recalculent toute la
+  progression dans la meme transaction. Le setup futur devra appeler ces RPC
+  sequentiellement, jamais ecrire directement dans la table. La reconstruction autonome
+  006 reproduit ce schema apres la definition complete de 014. `MethodeSource` est une
+  union discriminee. Deux cycles rouges ont ete observes, d'abord sur la migration
+  absente, puis sur les exigences de concurrence et de securite. Les 14 tests dedies,
+  les 17 tests de sources partages et le type-check passent. Migration ecrite seulement,
+  non appliquee a une base et non validee par un moteur PostgreSQL local. Non committe.
+- **2026-07-23 - Codex - detection enrichie de l'import IA**. Le schema automatique
+  renvoie maintenant la matiere, le nom de methode, le type, la periode, la confiance
+  et les avertissements. Le prompt detecte ces informations sans imposer le francais,
+  traite la matiere recue comme un simple indice corrigible et ne demande aucun prenom
+  d'eleve. La route normalise les metadonnees et garde toujours les deux tableaux de
+  sortie, vides quand ils ne concernent pas le type de document. Tests rouges puis verts,
+  type-check et controle U+2014 propres. Non committe.
+- **2026-07-23 - Codex - sources de progression importees**. Ajout de
+  `src/lib/progression-sources.ts` et de ses 17 tests : regroupement par matiere et
+  methode normalisees (apostrophes, ligatures et tirets inclus), ordre conserve,
+  priorite periode/programmation/manuel, blocage des empreintes identiques et
+  empreinte SHA-256 canonicalisee avec un ordre binaire stable. La source est une union discriminee avec
+  validation runtime pour la frontiere IA. Tests dedies et type-check propres.
+  Non committe.
 - **2026-07-23 - Codex - reprise apres la coupure de Claude, boutons unifies
   termines et publication demandee**. Les modifications non journalisees de
   Claude ont ete retrouvees et conservees. La liste "RESTE A MIGRER" de l'entree

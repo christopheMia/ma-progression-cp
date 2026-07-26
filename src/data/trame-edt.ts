@@ -41,7 +41,7 @@ const REGLES: Array<[RegExp, Famille]> = [
 
   // Cas ambigus, avant les familles génériques.
   [/histoire des arts/, 'arts'],
-  [/langue vivante|anglais/, 'langueVivante'],
+  [/langue vivante|anglais|english/, 'langueVivante'],
 
   // « artistiques » ne contient pas la sous-chaîne « arts », d'où les deux formes.
   [/arts|artistique|musique|chant|chorale/, 'arts'],

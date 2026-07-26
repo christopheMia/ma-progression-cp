@@ -4,17 +4,47 @@ import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
 import { normalizeProgression } from '@/lib/ia/schema'
 import { systemImportAutomatique, userImport, userImportDocument } from '@/lib/ia/prompts'
 import { normalizeProgrammation } from '@/lib/ia/schema-programmation'
-import { AUTO_IMPORT_JSON_SCHEMA, typeDocumentImport } from '@/lib/ia/schema-import-auto'
+import {
+  AUTO_IMPORT_JSON_SCHEMA,
+  periodeDocumentImport,
+  typeDocumentImport,
+} from '@/lib/ia/schema-import-auto'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 
 export const maxDuration = 60
 
+function chaineNormalisee(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function confianceNormalisee(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0
+  return Math.min(1, Math.max(0, value))
+}
+
+function avertissementsNormalises(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((avertissement): avertissement is string => typeof avertissement === 'string')
+      .map(avertissement => avertissement.trim())
+    : []
+}
+
+function normaliserMetaImport(value: Record<string, unknown>) {
+  return {
+    matiere: chaineNormalisee(value.matiere),
+    nom_methode: chaineNormalisee(value.nom_methode),
+    periode_numero: periodeDocumentImport(value.periode_numero),
+    confiance_detection: confianceNormalisee(value.confiance_detection),
+    avertissements: avertissementsNormalises(value.avertissements),
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get('content-type') ?? ''
     let texte = ''
-    let matiere = 'francais'
+    let matiere = ''
     // PDF joints tels quels : le modele lit alors la MISE EN PAGE (tableaux,
     // lignes, colonnes) au lieu d'un texte aplati. C'est la voie haute fidelite.
     const pdfsBase64: string[] = []
@@ -69,7 +99,7 @@ export async function POST(request: Request) {
       max_tokens: 16000,
       // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
       // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
-      system: systemImportAutomatique(matiere),
+      system: systemImportAutomatique(matiere || undefined),
       output_config: {
         format: {
           type: 'json_schema',
@@ -83,12 +113,20 @@ export async function POST(request: Request) {
 
     // Récupère le bloc texte (JSON garanti par le schéma)
     const jsonBlock = message.content.find(b => b.type === 'text')
-    const parsed = jsonBlock && 'text' in jsonBlock ? JSON.parse(jsonBlock.text) : { semaines: [] }
+    const parsedBrut: unknown = jsonBlock && 'text' in jsonBlock
+      ? JSON.parse(jsonBlock.text)
+      : { semaines: [] }
+    const parsed: Record<string, unknown> = parsedBrut
+      && typeof parsedBrut === 'object'
+      && !Array.isArray(parsedBrut)
+      ? parsedBrut as Record<string, unknown>
+      : {}
 
     const typeDocument = typeDocumentImport(parsed.type_document)
     if (!typeDocument) {
       return NextResponse.json({ error: "L'IA n'a pas reconnu le type de document." }, { status: 422 })
     }
+    const meta = normaliserMetaImport(parsed)
 
     if (typeDocument === 'programmation') {
       const periodes = normalizeProgrammation(parsed)
@@ -98,10 +136,10 @@ export async function POST(request: Request) {
           { status: 422 }
         )
       }
-      return NextResponse.json({ type_document: typeDocument, periodes })
+      return NextResponse.json({ ...meta, type_document: typeDocument, progression: [], periodes })
     }
 
-    const progression = normalizeProgression(parsed.semaines ?? [])
+    const progression = normalizeProgression(Array.isArray(parsed.semaines) ? parsed.semaines : [])
 
     if (progression.length === 0) {
       return NextResponse.json(
@@ -109,7 +147,7 @@ export async function POST(request: Request) {
         { status: 422 }
       )
     }
-    return NextResponse.json({ type_document: typeDocument, progression })
+    return NextResponse.json({ ...meta, type_document: typeDocument, progression, periodes: [] })
   } catch (err) {
     console.error('ia-manuel error:', err)
     const { message, status } = messageErreurIA(err)

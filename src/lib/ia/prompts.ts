@@ -137,7 +137,7 @@ export function userBilan(opts: {
   const { numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut } = opts
   const label = labelMatiere(matiere)
   const bilanGlobal = statut === 'acquis' ? 'objectifs atteints' : statut === 'pas_acquis' ? 'objectifs non encore atteints' : 'non précisé'
-  return `Semaine ${numeroSemaine} — ${label}.
+  return `Semaine ${numeroSemaine} - ${label}.
 Notions maîtrisées : ${itemsAcquis.length ? itemsAcquis.join(', ') : 'aucune pour l’instant'}.
 Notions à retravailler : ${itemsNonAcquis.length ? itemsNonAcquis.join(', ') : 'aucune'}.
 Bilan global de l’enseignant : ${bilanGlobal}.`
@@ -150,7 +150,7 @@ export function systemChat(prenom?: string): string {
     : `Tu t'adresses à un(e) enseignant(e) de CP avec chaleur.`
   return `Tu es l'assistant progression de l'application "Ma Progression CP".
 ${salut}
-IMPORTANT : tutoie toujours l'enseignant(e) (dis « tu », « ton », « ta » — jamais « vous » ni « votre »).
+IMPORTANT : tutoie toujours l'enseignant(e) (dis « tu », « ton », « ta », jamais « vous » ni « votre »).
 Tu aides à corriger une progression de lecture CP (sons, semaines, pages, mots).
 
 La progression est une liste d'entrées : CHAQUE entrée représente UNE semaine, et le champ "numero" EST le numéro de la semaine (1 = semaine 1, 2 = semaine 2, etc.).
@@ -178,10 +178,10 @@ export function userJournal(d: {
   francais: string[]
   maths: string[]
 }): string {
-  const lignes = d.creneaux.map((c, i) => `${i + 1}. ${c.heure_debut}-${c.heure_fin} — ${c.matiere}`).join('\n')
+  const lignes = d.creneaux.map((c, i) => `${i + 1}. ${c.heure_debut}-${c.heure_fin} - ${c.matiere}`).join('\n')
   return `Semaine ${d.numeroSemaine}.
-Sons de lecture (français) de la semaine : ${d.francais.join(', ') || '—'}.
-Notions de maths de la semaine : ${d.maths.join(', ') || '—'}.
+Sons de lecture (français) de la semaine : ${d.francais.join(', ') || '-'}.
+Notions de maths de la semaine : ${d.maths.join(', ') || '-'}.
 
 Créneaux de la journée (rédige un déroulement pour chacun, dans cet ordre) :
 ${lignes}`
@@ -218,10 +218,22 @@ Réponds UNIQUEMENT via le format structuré imposé.`
 }
 
 /** Une seule porte d'entree : le modele reconnait le document avant extraction. */
-export function systemImportAutomatique(matiere: string): string {
-  const sujet = labelMatiere(matiere || 'francais')
-  return `Tu es un expert des méthodes et programmations scolaires françaises de CP pour la matière « ${sujet} ».
-Tu dois d'abord reconnaître le type du document, puis en extraire tout le contenu sans rien inventer.
+export function systemImportAutomatique(indiceMatiere?: string): string {
+  const indice = indiceMatiere?.trim()
+  const contexteMatiere = indice
+    ? `Indice facultatif fourni par l'enseignant : « ${labelMatiere(indice)} ». Cet indice est seulement une proposition. Corrige-le si le document montre une autre matière.`
+    : `Aucun indice de matière n'est fourni. Détecte la matière à partir du document.`
+  return `Tu es un expert des méthodes et programmations scolaires françaises de CP.
+Tu dois d'abord reconnaître la matière et le type du document, puis en extraire tout le contenu sans rien inventer.
+${contexteMatiere}
+
+Renseigne obligatoirement les métadonnées :
+- "matiere" : matière détectée à partir du document, corrigée si l'indice est erroné ;
+- "nom_methode" : nom exact de la méthode ou du manuel s'il apparaît, sinon "" et ajoute un avertissement ;
+- "confiance_detection" : nombre entre 0 et 1 indiquant la confiance dans la détection ;
+- "avertissements" : liste des ambiguïtés, informations manquantes ou limites d'extraction ;
+- "periode_numero" : numéro de la période explicitement indiquée pour un planning de période (1 à 5), sinon null.
+Ne demande, n'utilise ni ne devine aucun prénom d'élève.
 
 Choisis exactement un type_document :
 - "manuel" : sommaire, guide ou progression donnant des notions, sons ou pages dans l'ordre de l'année ;
@@ -233,6 +245,7 @@ ${REGLE_EXHAUSTIVITE}
 - Recopie les libellés du document, sans les reformuler ni compléter les cases vides.
 - Pour "manuel" ou "periode", remplis "semaines" et renvoie "periodes": [].
 - Pour "programmation", remplis "periodes" et renvoie "semaines": [].
+- Pour "manuel" et "programmation", "periode_numero" vaut null.
 
 Règles pour "manuel" :
 - Une entrée par semaine, dans l'ordre chronologique, avec les notions dans "items".

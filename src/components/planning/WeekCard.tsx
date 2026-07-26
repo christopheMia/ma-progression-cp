@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Semaine } from '@/types'
+import type { SemainePlanning } from '@/lib/planning-annuel'
 import { getStatus, type Status } from '@/lib/semaines'
 
 const statusStyles: Record<Status, string> = {
@@ -10,17 +10,13 @@ const statusStyles: Record<Status, string> = {
 
 export default function WeekCard({
   semaine,
-  acquiredCount = 0,
-  elevesCount = 0,
 }: {
-  semaine: Semaine
-  acquiredCount?: number
-  elevesCount?: number
+  semaine: SemainePlanning
 }) {
   const status = getStatus(semaine)
-  const total = semaine.graphemes.length * elevesCount
-  const pct = total > 0 ? Math.round((acquiredCount / total) * 100) : 0
-  const complete = total > 0 && acquiredCount >= total
+  const { acquis, total } = semaine.avancement
+  const pct = total > 0 ? Math.min(100, Math.round((acquis / total) * 100)) : 0
+  const complete = total > 0 && acquis >= total
 
   return (
     <Link href={`/semaine/${semaine.id}`}>
@@ -31,7 +27,20 @@ export default function WeekCard({
           {!complete && status === 'done' && <span className="text-emerald-500 text-xs">✓</span>}
           {!complete && status === 'current' && <span className="text-violet-600 text-xs font-bold">▶</span>}
         </div>
-        <div className="text-xs font-medium min-h-[1rem]">{semaine.graphemes.join(', ')}</div>
+        <div className="space-y-1.5 min-h-[1rem]">
+          {semaine.contenus.map(contenu => (
+            <div key={contenu.codeMatiere} className="min-w-0">
+              <div className="text-[10px] leading-tight font-semibold text-slate-700 truncate">
+                <span>{contenu.libelleMatiere}</span>
+                <span className="font-normal text-slate-400"> · </span>
+                <span className="font-normal text-slate-400">{contenu.nomMethode}</span>
+              </div>
+              <div className="text-xs font-medium line-clamp-2" title={contenu.items.join(', ')}>
+                {contenu.items.join(', ')}
+              </div>
+            </div>
+          ))}
+        </div>
         <div className="text-xs text-gray-500 mt-1 truncate">🌍 {semaine.edm_theme}</div>
         {total > 0 && (
           <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">

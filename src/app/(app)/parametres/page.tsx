@@ -1,12 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { MANUELS } from '@/data/manuels'
 import PrenomEnseignantEditor from '@/components/parametres/PrenomEnseignantEditor'
 import ElevesEditor from '@/components/parametres/ElevesEditor'
 import EmploiDuTempsGrille from '@/components/parametres/EmploiDuTempsGrille'
 import RentreeEditor from '@/components/parametres/RentreeEditor'
-import ManuelEditor from '@/components/parametres/ManuelEditor'
 import MethodesEditor from '@/components/parametres/MethodesEditor'
 import ResetButton from '@/components/parametres/ResetButton'
 import ResetBlockButton from '@/components/parametres/ResetBlockButton'
@@ -15,7 +13,7 @@ import GenererEdtButton from '@/components/parametres/GenererEdtButton'
 import ImporterEdtButton from '@/components/parametres/ImporterEdtButton'
 import RealignerSemainesButton from '@/components/parametres/RealignerSemainesButton'
 import DemoButton from '@/components/DemoButton'
-import type { Methode } from '@/types'
+import type { Methode, MethodeSource } from '@/types'
 
 function Section({ titre, children, id, headerRight }: { titre: string; children: React.ReactNode; id?: string; headerRight?: React.ReactNode }) {
   return (
@@ -45,6 +43,19 @@ export default async function ParametresPage() {
     .from('methodes').select('*').eq('class_id', classe.id).order('created_at')
   const { data: progression } = await supabase
     .from('progression').select('methode_id, items').eq('class_id', classe.id)
+  const methodeIds = (methodes ?? []).map(methode => methode.id)
+  let sources: MethodeSource[] = []
+  if (methodeIds.length > 0) {
+    const { data: sourcesLues, error: sourcesError } = await supabase
+      .from('methode_sources')
+      .select('*')
+      .in('methode_id', methodeIds)
+      .order('created_at')
+    if (sourcesError) {
+      throw new Error(`Lecture des documents impossible : ${sourcesError.message}`)
+    }
+    sources = (sourcesLues ?? []) as MethodeSource[]
+  }
 
   // Recap par methode : ce que l'IA a produit a l'import (nb de semaines + nb de notions).
   const resumes: Record<string, { semaines: number; notions: number }> = {}
@@ -56,9 +67,6 @@ export default async function ParametresPage() {
     r.notions += items.length
     resumes[p.methode_id] = r
   }
-
-  const manuelNom = MANUELS.find(m => m.id === classe.manuel_id)?.nom
-    ?? (classe.manuel_id === 'custom' ? 'Manuel importé' : classe.manuel_id)
 
   return (
     <div className="space-y-4">
@@ -101,13 +109,10 @@ export default async function ParametresPage() {
         <MethodesEditor
           prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
           methodes={(methodes ?? []) as Methode[]}
+          sources={sources}
           creneaux={(edt ?? []).map(c => ({ id: c.id, matiere: c.matiere, jour: c.jour, methode_id: c.methode_id ?? null }))}
           resumes={resumes}
         />
-      </Section>
-
-      <Section titre="♻️ Tout régénérer (changer de manuel)">
-        <ManuelEditor currentNom={manuelNom} prenom={(classe.prenom_enseignant ?? '').trim() || undefined} />
       </Section>
 
       <section className="bg-white border border-violet-200 rounded-2xl p-5">

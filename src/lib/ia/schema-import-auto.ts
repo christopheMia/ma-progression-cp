@@ -12,15 +12,43 @@ export const AUTO_IMPORT_JSON_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
+    matiere: { type: 'string' },
+    nom_methode: { type: 'string' },
     type_document: { type: 'string', enum: TYPES_DOCUMENT_IMPORT },
+    periode_numero: {
+      anyOf: [
+        { type: 'integer' },
+        { type: 'null' },
+      ],
+    },
+    confiance_detection: { type: 'number' },
+    avertissements: { type: 'array', items: { type: 'string' } },
     semaines: PROGRESSION_JSON_SCHEMA.properties.semaines,
     periodes: PROGRAMMATION_JSON_SCHEMA.properties.periodes,
   },
-  required: ['type_document', 'semaines', 'periodes'],
+  required: [
+    'matiere',
+    'nom_methode',
+    'type_document',
+    'periode_numero',
+    'confiance_detection',
+    'avertissements',
+    'semaines',
+    'periodes',
+  ],
 } as const
 
 export function typeDocumentImport(value: unknown): TypeDocumentImport | null {
   return TYPES_DOCUMENT_IMPORT.includes(value as TypeDocumentImport)
     ? value as TypeDocumentImport
+    : null
+}
+
+export function periodeDocumentImport(value: unknown): 1 | 2 | 3 | 4 | 5 | null {
+  return typeof value === 'number'
+    && Number.isInteger(value)
+    && value >= 1
+    && value <= 5
+    ? value as 1 | 2 | 3 | 4 | 5
     : null
 }

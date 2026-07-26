@@ -56,39 +56,46 @@ export async function extractPdfText(file: File): Promise<string> {
   const doc = await pdfjs.getDocument({ data }).promise
 
   const pages: string[] = []
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i)
-    const content = await page.getTextContent()
+  try {
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i)
+      try {
+        const content = await page.getTextContent()
 
-    // Regroupement par ligne : la cle est le y arrondi a la tolerance pres.
-    const lignes = new Map<number, Fragment[]>()
-    for (const brut of content.items) {
-      const item = brut as Partial<FragmentPdf>
-      if (typeof item.str !== 'string' || !item.str.trim()) continue
-      if (!Array.isArray(item.transform)) continue
+        // Regroupement par ligne : la cle est le y arrondi a la tolerance pres.
+        const lignes = new Map<number, Fragment[]>()
+        for (const brut of content.items) {
+          const item = brut as Partial<FragmentPdf>
+          if (typeof item.str !== 'string' || !item.str.trim()) continue
+          if (!Array.isArray(item.transform)) continue
 
-      const x = item.transform[4]
-      const y = item.transform[5]
-      const cle = Math.round(y / TOLERANCE_LIGNE)
-      const fragment: Fragment = {
-        x,
-        fin: x + (typeof item.width === 'number' ? item.width : 0),
-        texte: item.str,
+          const x = item.transform[4]
+          const y = item.transform[5]
+          const cle = Math.round(y / TOLERANCE_LIGNE)
+          const fragment: Fragment = {
+            x,
+            fin: x + (typeof item.width === 'number' ? item.width : 0),
+            texte: item.str,
+          }
+          const existant = lignes.get(cle)
+          if (existant) existant.push(fragment)
+          else lignes.set(cle, [fragment])
+        }
+
+        // Dans un PDF l'origine est en BAS a gauche : y decroissant = lecture de haut en bas.
+        const texte = [...lignes.entries()]
+          .sort((a, b) => b[0] - a[0])
+          .map(([, fragments]) => assemblerLigne(fragments))
+          .filter(Boolean)
+          .join('\n')
+
+        if (texte) pages.push(`--- page ${i} ---\n${texte}`)
+      } finally {
+        if (typeof page.cleanup === 'function') page.cleanup()
       }
-      const existant = lignes.get(cle)
-      if (existant) existant.push(fragment)
-      else lignes.set(cle, [fragment])
     }
-
-    // Dans un PDF l'origine est en BAS a gauche : y decroissant = lecture de haut en bas.
-    const texte = [...lignes.entries()]
-      .sort((a, b) => b[0] - a[0])
-      .map(([, fragments]) => assemblerLigne(fragments))
-      .filter(Boolean)
-      .join('\n')
-
-    if (texte) pages.push(`--- page ${i} ---\n${texte}`)
+    return pages.join('\n\n').trim()
+  } finally {
+    await doc.destroy()
   }
-
-  return pages.join('\n\n').trim()
 }

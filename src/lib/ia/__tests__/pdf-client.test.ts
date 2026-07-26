@@ -1,4 +1,11 @@
-import { assemblerLigne } from '../pdf-client'
+const mockGetDocument = jest.fn()
+
+jest.mock('pdfjs-dist', () => ({
+  GlobalWorkerOptions: { workerSrc: '' },
+  getDocument: (...args: unknown[]) => mockGetDocument(...args),
+}))
+
+import { assemblerLigne, extractPdfText } from '../pdf-client'
 
 /**
  * Coeur du correctif "l'IA ne lit pas les tableaux PDF" : une ligne de tableau
@@ -32,5 +39,28 @@ describe('assemblerLigne (reconstruction des colonnes d\'un PDF)', () => {
 
   test('une cellule vide ne casse pas la ligne', () => {
     expect(assemblerLigne([])).toBe('')
+  })
+
+  test('nettoie chaque page et detruit le document meme si une page echoue', async () => {
+    const cleanup = jest.fn()
+    const destroy = jest.fn().mockResolvedValue(undefined)
+    const erreur = new Error('page illisible')
+    mockGetDocument.mockReturnValueOnce({
+      promise: Promise.resolve({
+        numPages: 1,
+        getPage: jest.fn().mockResolvedValue({
+          getTextContent: jest.fn().mockRejectedValue(erreur),
+          cleanup,
+        }),
+        destroy,
+      }),
+    })
+    const fichier = {
+      arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(8)),
+    } as unknown as File
+
+    await expect(extractPdfText(fichier)).rejects.toThrow('page illisible')
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(destroy).toHaveBeenCalledTimes(1)
   })
 })
