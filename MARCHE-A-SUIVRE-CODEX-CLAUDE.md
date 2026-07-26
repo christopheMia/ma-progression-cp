@@ -72,7 +72,7 @@ explicite.
      tolérante aux espaces, ou mieux, tester le comportement.
 9. **Vérifier la suite complète avant de rendre la main** : `npx jest` doit être à
    **zéro échec**. Un échec laissé derrière masque les vrais problèmes du suivant. Au
-   2026-07-26 : 49 suites, 405 tests, tout vert.
+   2026-07-26 : 54 suites, 454 tests, tout vert.
 
 ## 4. Modèle métier (verrouillé le 2026-07-22)
 
@@ -184,18 +184,25 @@ navigateur pour la voir). Caractéristiques à respecter :
 
 ## 8. État courant / chantiers ouverts (au 2026-07-26)
 
-### Fait le 2026-07-26, sur `main` en local, NON POUSSÉ sur GitHub
+### Fait et publié le 2026-07-26 sur `main`
 
-**`main` local est 36 commits devant `origin/main`.** Le dernier commit POUSSÉ est
-`31a935d`. Autrement dit, **rien de tout ce qui suit n'est en ligne** : la version
-officielle que voit Cécile contient encore le décalage silencieux des semaines.
-Christophe n'a pas encore demandé le push.
-Suite complète : **49 suites, 409 tests, zéro échec**, types propres, build de prod OK.
+Le commit fonctionnel **`7a389f6`**
+(`7a389f693cf5c073412b3f31e1f8709938351bfd`) a été poussé sur
+`origin/main`. Le push `31a935d..7a389f6` publie les corrections locales qui
+étaient en attente, dont la suppression complète des résidus « Explorer le monde »
+et la priorité commune du matin. Le déploiement Vercel de production
+**`dpl_8sUiqvXBUnWg7WssSoTEgmW7ZmCg`** est prêt et correspond exactement à ce
+commit. Le domaine `https://ma-progression-cp.vercel.app/` et l'URL directe du
+déploiement répondent en HTTP 200.
+
+Validation avant publication : **54 suites, 454 tests, zéro échec**, types propres,
+`git diff --check` propre. Le dossier local non suivi `partage/` n'a pas été publié.
 
 **Une seule base pour le local ET la production** : `odwgkakeepcqbgpsfugl`. Le
 `npm run dev` de Christophe écrit dans la base que Cécile utilisera. Il n'y a pas
-d'environnement de test séparé. Au 2026-07-26 la base est **entièrement vide**
-(0 classe, 0 compte). Chantier possible, pas encore arbitré : séparer une base de test.
+d'environnement de test séparé. La publication du 2026-07-26 n'a effectué aucune
+remise à zéro, aucune écriture Supabase et aucune modification des données de classe
+saisies par Christophe. Chantier possible, pas encore arbitré : séparer une base de test.
 
 - **Calage des semaines à l'import** (le gros morceau). Un sommaire dont la première
   semaine de rentrée est vide décalait toute l'année, en silence. Deux destructions de
@@ -264,7 +271,9 @@ d'environnement de test séparé. Au 2026-07-26 la base est **entièrement vide*
 **Voir d'abord `docs/RETOURS-CHRISTOPHE-2026-07-26.md`** : la liste complète de ses
 retours du 26/07 (règles métier, UI/UX, 3 bugs, 1 question), recopiée depuis son PDF.
 
-**Les 3 bugs sont corrigés, aucun n'est validé par Christophe.** État exact :
+**Les 3 bugs sont corrigés et publiés.** Le contraste sombre et le PDF de maths ont
+été validés techniquement en local. Christophe n'a pas encore fait la validation
+manuelle finale dans une session authentifiée de production. État exact :
 
 - **3.3 contraste de l'EDT (`6661eda`)**. Cause trouvée : `src/app/globals.css`
   gardait le bloc `prefers-color-scheme: dark` du gabarit Next, qui repeint
@@ -277,6 +286,10 @@ retours du 26/07 (règles métier, UI/UX, 3 bugs, 1 question), recopiée depuis 
   libellé de matière. Deux garde-fous : `src/app/__tests__/globals-contraste.test.ts`
   relit le CSS réel, plus un test de rendu. **Ne jamais recoller le bloc du gabarit.**
   Portée large : ce bug rendait pâle bien d'autres textes, pas seulement l'EDT.
+  Validation locale réelle : préférence système sombre détectée, palette claire
+  forcée, page de connexion lisible et CSS compilé sans règle sombre concurrente.
+  Le composant de lecture seule et ses tests sont validés. Limite : la grille avec
+  les données réelles n'a pas été ouverte, car elle exigeait une session existante.
 - **3.1 maths en triple (`ac0a8f3`)**. Deux causes distinctes, sur les deux chemins
   d'import, corrigées ensemble :
   1. `normalizeProgression` (`src/lib/ia/schema.ts`) ne fusionnait pas les entrées de
@@ -288,19 +301,30 @@ retours du 26/07 (règles métier, UI/UX, 3 bugs, 1 question), recopiée depuis 
      la même période repartaient chacun de la première semaine et s'empilaient. Les
      domaines sont regroupés par numéro de période avant répartition.
   Plus une règle de prompt : une seule entrée par numéro de semaine.
-- **3.2 résidus « Explorer le monde » (`632302d`)** : fait le 26/07.
+  Validation réelle avec
+  `docsmethodes/programmation-maths-en-cp-acces-ecole.pdf` : l'appel Anthropic isolé
+  a rendu `type_document=programmation`, `matiere=Mathématiques`, cinq périodes
+  uniques de 1 à 5 et aucune pseudo-semaine. Aucun enregistrement applicatif ni aucune
+  écriture Supabase n'a été effectué.
+- **3.2 résidus « Explorer le monde » (`632302d`, complété par `7a389f6`)** :
+  la progression automatique avait été retirée par `632302d`. Le commit publié
+  `7a389f6` supprime aussi les composants, imports, constantes et faux contenus
+  restants. Une vraie progression « Questionner le monde » saisie par l'utilisateur
+  reste préservée et affichée par le chemin générique multi-matières.
+- **Règle métier du matin (`7a389f6`)** : mathématiques, code et étude de la langue
+  sont servis en priorité dans les créneaux du matin, avant les autres matières.
+  La protection couvre le setup, les paramètres, l'import d'EDT, l'édition et la
+  validation avant enregistrement. Une correction déterministe échange des séances
+  complètes de même durée. Si cela n'est pas possible sans altérer une séance,
+  l'enregistrement est bloqué avec un message compréhensible.
 
-Reste donc, dans l'ordre : la **question 4** (à quoi sert « générer la journée »,
-une lecture de code suffit), puis l'**UI/UX 2.1 à 2.4**, puis les **règles métier**
-du point 1 (maths, code et étude de la langue le matin), qui touchent
-`src/lib/edt-generator.ts` et demandent un cadrage avec lui.
+Reste donc, dans l'ordre : la **question 4** sur « générer la journée », puis
+l'**UI/UX 2.1 à 2.4**. La règle métier du matin et le retrait des résidus
+« Explorer le monde » ne sont plus des chantiers ouverts.
 
-0. **Non vérifié avec de vrais documents.** Tout le travail du 26/07 est couvert par
-   des tests, mais **jamais confronté aux vrais PDF de Christophe**. Deux points en
-   attente de son retour : le calage réel du sommaire de français, et un bug qu'il a
-   signalé sur le **programme de maths** (l'IA empilait plusieurs thèmes sur la semaine
-   1, elle semble prendre la colonne de chiffres à gauche pour des jours). Une règle a
-   été ajoutée au prompt (`cb089d4`) mais **elle n'est pas prouvée**.
+0. **Validation sur les vrais documents.** Le PDF de maths a été analysé réellement
+   par Anthropic et confirme une programmation annuelle à cinq périodes sans doublon.
+   Le calage réel du sommaire de français reste à confronter au document concerné.
 1. **Import ciblé sur une semaine précise.** Demande de Christophe du 26/07, ni
    spécifiée ni commencée : pouvoir importer un document qui vient remplir UNE semaine
    restée vide. Aujourd'hui l'import prend un document entier et l'IA décide où ça
@@ -363,6 +387,20 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-26 - Codex - publication des corrections sur `main` et en production**.
+  Le commit fonctionnel `7a389f6`
+  (`7a389f693cf5c073412b3f31e1f8709938351bfd`) regroupe la suppression complète
+  des résidus « Explorer le monde » et la priorité commune du matin pour
+  mathématiques, code et étude de la langue. Il a été intégré à `main`, puis poussé
+  vers `origin/main` avec tous les commits locaux en attente depuis `31a935d`.
+  Le déploiement Vercel de production `dpl_8sUiqvXBUnWg7WssSoTEgmW7ZmCg` est prêt,
+  correspond au commit complet ci-dessus et sert
+  `https://ma-progression-cp.vercel.app/` en HTTP 200. Validation avant publication :
+  54 suites, 454 tests verts, type-check et `git diff --check` propres. Le dossier
+  local non suivi `partage/` est resté hors du commit. Aucune remise à zéro, aucune
+  écriture Supabase et aucune modification des données de classe de Christophe.
+  La présente mise à jour de passation est publiée dans un second commit documentaire.
+
 - **2026-07-26 - Codex - priorité commune des matières imposées le matin**.
   Décision explicite de Christophe appliquée sans remise à zéro et sans écriture
   distante. Nouveau moteur pur `src/lib/edt-matin.ts` : mathématiques, code et étude
@@ -382,7 +420,8 @@ l'historique.)
   Validation finale : 54 suites et 454 tests verts, type-check propre,
   `git diff --check` propre et aucun tiret cadratin dans les fichiers du chantier.
   Aucune donnée de classe de Christophe n'a été lue, modifiée ou supprimée. Aucun
-  commit ni push.
+  reset n'a été effectué. Travail ensuite publié dans le commit `7a389f6` sur
+  `origin/main` et déployé en production.
 
 - **2026-07-26 - Codex - suppression complete des residus Explorer le monde**.
   Decision explicite de Christophe appliquee. `EdmBlock` et l'ancienne constante
@@ -395,7 +434,8 @@ l'historique.)
   multi-matieres et son libelle canonique. Le mode demonstration emploie maintenant
   le nom officiel « Questionner le monde ». Tests ajoutes sur les semaines vides, les
   anciens champs et les vraies donnees QLM. Validation : 53 suites et 425 tests verts,
-  type-check propre, `git diff --check` propre. Aucun commit ni push.
+  type-check propre, `git diff --check` propre. Travail ensuite publié dans le commit
+  `7a389f6` sur `origin/main` et déployé en production.
   Controle en lecture seule ajoute sur la regle « mathematiques, code et etude de la
   langue uniquement le matin ». Violation confirmee, non corrigee dans ce chantier :
   `genererEdtCP(true)` garantit seulement le code a 08:45. Son algorithme general
@@ -404,6 +444,8 @@ l'historique.)
   le code reste garanti le matin. L'import PDF, l'edition manuelle et
   `updateEmploiDuTemps` ne valident aucune contrainte matinale, puis le cahier journal
   recopie les horaires sans les corriger. Ce point demande un correctif separe.
+  Cette violation a ensuite été corrigée dans le même commit publié `7a389f6`, avec
+  une contrainte commune aux trois matières sur tous les chemins concernés.
 
 - **2026-07-26 - Claude Code - calage des semaines a l'import**. Un sommaire dont la
   premiere semaine de la rentree est vide decalait toute l'annee, en silence. Deux
