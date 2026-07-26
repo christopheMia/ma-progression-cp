@@ -15,15 +15,18 @@ export function genererSqueletteSemaines(rentreeDate: string): Omit<Semaine, 'id
   const debut = new Date(rentreeDate)
 
   return Array.from({ length: 36 }, (_, i) => {
-    const semEdm = EDM_PROGRESSION_CP[i]
     const dateDebut = addWeeks(debut, i)
 
     return {
       numero: i + 1,
       date_debut: format(dateDebut, 'yyyy-MM-dd'),
       graphemes: [],
-      edm_theme: semEdm.theme,
-      edm_competences: semEdm.competences,
+      // Aucun contenu impose a la creation : les semaines partent vides et se
+      // remplissent avec les documents que l'enseignante importe. Une ancienne
+      // progression d'exemple (« questionner le monde ») etait posee ici d'office
+      // sur les 36 semaines de toute nouvelle classe. Retiree le 26/07/2026.
+      edm_theme: '',
+      edm_competences: '',
       manuel_pages: null,
       mots_exemple: null,
       note: null,

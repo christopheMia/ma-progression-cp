@@ -8,8 +8,8 @@ test('genere un squelette de 36 semaines sans methode ni contenu de manuel', () 
     numero: 1,
     date_debut: '2025-09-02',
     graphemes: [],
-    edm_theme: 'Moi',
-    edm_competences: expect.any(String),
+    edm_theme: '',
+    edm_competences: '',
     manuel_pages: null,
     mots_exemple: null,
     note: null,
@@ -36,9 +36,13 @@ test('les semaines ont les graphèmes du manuel', () => {
   expect(semaines[7].graphemes).toEqual(['ou'])
 })
 
-test('les semaines ont les thèmes EDM', () => {
+test('aucun thème n’est imposé à la création : les semaines partent vides', () => {
+  // Une progression d'exemple (« questionner le monde ») etait posee d'office sur
+  // les 36 semaines de toute nouvelle classe. Retiree le 26/07/2026 : le contenu
+  // vient desormais uniquement des documents importes par l'enseignante.
   const semaines = genererProgression('lecture-piano', '2025-09-02')
-  expect(semaines[0].edm_theme).toBe('Moi')
+  expect(semaines.every(semaine => semaine.edm_theme === '')).toBe(true)
+  expect(semaines.every(semaine => semaine.edm_competences === '')).toBe(true)
 })
 
 test('genererProgressionFrancais renvoie les items du manuel (mode démo)', () => {
