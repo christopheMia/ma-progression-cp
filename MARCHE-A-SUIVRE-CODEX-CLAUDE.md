@@ -59,6 +59,20 @@ explicite.
    le terminal avec `!` (voir `CLAUDE.md`, section "Règle token GitHub").
 7. **Ne rien commiter/pousser sans que Christophe le demande.** Brancher si on n'est
    pas déjà sur une branche de travail.
+8. **Christophe travaille sous Windows, avec `core.autocrlf=true`.** Les fichiers sont
+   donc sur son disque en **CRLF**, alors qu'ils sont en LF côté Linux. Conséquence
+   concrète, déjà vécue le 2026-07-26 : un test qui lisait le texte source d'un fichier
+   et y cherchait `"rpc(\n        '...'"` passait sous Linux et **échouait chez lui pour
+   toujours**, alors que le code était correct. Le test mesurait la plateforme, pas le
+   code. Deux règles qui en découlent :
+   - Si un test lit un fichier source, **normaliser les fins de ligne**
+     (`.replace(/\r\n/g, '\n')`) avant toute comparaison.
+   - Plus généralement, **éviter les tests qui vérifient du code en cherchant une chaîne
+     exacte** avec indentation. Ils cassent au moindre reformatage. Préférer une regex
+     tolérante aux espaces, ou mieux, tester le comportement.
+9. **Vérifier la suite complète avant de rendre la main** : `npx jest` doit être à
+   **zéro échec**. Un échec laissé derrière masque les vrais problèmes du suivant. Au
+   2026-07-26 : 49 suites, 405 tests, tout vert.
 
 ## 4. Modèle métier (verrouillé le 2026-07-22)
 
@@ -126,12 +140,25 @@ navigateur pour la voir). Caractéristiques à respecter :
 
 ## 6. Carte des fichiers clés
 
-- `src/app/(app)/setup/page.tsx` : assistant de configuration en 4 étapes (méthode,
-  date de rentrée, élèves, EDT).
+- `src/app/(app)/setup/page.tsx` : assistant de configuration en 4 étapes. **Ordre
+  changé le 2026-07-26** : 1 date de rentrée, 2 progressions, 3 élèves, 4 EDT. La date
+  vient en premier parce que sans elle l'écran d'import ne peut afficher aucune date.
 - `src/components/setup/` : `ProgressionsSetup`, `RentreeDatePicker`,
   `StudentListEditor`.
-- `src/components/methodes/` : import progressif avec `SourceImporter` et
-  `SourceContentPreview`.
+- `src/components/methodes/` : import progressif avec `SourceImporter`,
+  `SourceContentPreview` et `BandeauCalage`.
+- `src/lib/calage-semaines.ts` : **fonction pure** qui place les semaines rendues par
+  l'IA sur les vraies dates de l'année. Réutilise obligatoirement la chaîne de dates de
+  `setup-creation.ts` (`periodesOfficielles` puis `datesSemainesCalendaires`), sinon
+  l'aperçu afficherait une date et l'application en enregistrerait une autre.
+  `decalagePourDemarrerEn` traduit « ma progression démarre en semaine N » en décalage.
+- `src/components/assistant/` : `AssistantFlottant` (bouton flottant déplaçable +
+  panneau à deux onglets) et `ChatAssistant` (la conversation).
+- `src/app/api/assistant/route.ts` : conversation libre, réponse en **texte**.
+  À ne pas confondre avec `src/app/api/ia-chat/route.ts`, qui corrige une progression
+  et rend une **sortie structurée**.
+- `src/lib/position-flottante.ts` : fonction pure pour le bouton déplaçable (seuil
+  clic/glissement, contrainte dans la fenêtre, relecture tolérante).
 - `src/components/TimetableGrid.tsx` : grille EDT éditable.
 - `src/components/EdtGrilleLecture.tsx` : grille EDT lecture seule (design validé).
 - `src/lib/edt-grille.ts` : calcul de la grille fusionnée (`construireGrille`).
@@ -155,9 +182,36 @@ navigateur pour la voir). Caractéristiques à respecter :
   projet : `./node_modules/.bin/tsc --noEmit` (ne PAS faire `npx tsc` seul, ça installe
   un faux paquet `tsc`).
 
-## 8. État courant / chantiers ouverts (au 2026-07-22)
+## 8. État courant / chantiers ouverts (au 2026-07-26)
 
-**FAIT et EN LIGNE sur `main` (déployé)** :
+### Fait le 2026-07-26, sur `main` en local, NON POUSSÉ sur GitHub
+
+Treize commits, de `c432bdf` à `34fb6f8`. Christophe n'a pas encore demandé le push.
+Suite complète : **49 suites, 405 tests, zéro échec**, types propres, build de prod OK.
+
+- **Calage des semaines à l'import** (le gros morceau). Un sommaire dont la première
+  semaine de rentrée est vide décalait toute l'année, en silence. Deux destructions de
+  données corrigées : `normalizeProgression` ne renumérote plus par position, et
+  l'aperçu n'escamote plus les semaines sans contenu. Nouveau module pur
+  `calage-semaines.ts`. L'écran **pose une question** (« ta progression démarre à
+  quelle semaine ? ») au lieu d'offrir des boutons de décalage : reformulation exigée
+  par Christophe, le mot « décalage » ne doit pas apparaître dans l'interface.
+  Les semaines vides sont **affichées et datées** mais **pas enregistrées** : le trou
+  dans la numérotation porte déjà l'information.
+- **Nouveau champ `base_calage`** dans la sortie structurée de l'import (`numeros`,
+  `dates` ou `ordre`) : l'écran doit être honnête sur son niveau de certitude. La route
+  le force à `ordre` si les numéros rendus n'étaient pas exploitables.
+- **Migration `017_supprimer_methode_orpheline` appliquée en prod.** Retirer le dernier
+  document d'une méthode laissait la méthode derrière, vide. Double condition (aucun
+  document ET aucune progression) pour ne jamais supprimer du contenu.
+- **Progression d'exemple « questionner le monde » retirée.** Elle était posée d'office
+  sur les 36 semaines de toute nouvelle classe par `genererSqueletteSemaines`. Vestige
+  des débuts, jamais nettoyé. Les semaines partent maintenant vides.
+- **L'assistant est devenu un vrai chat.** « Mon assistant » n'ouvrait qu'un formulaire
+  d'import : aucun moyen de parler à l'IA. Panneau à deux onglets, conversation par
+  défaut. Le bouton flottant est déplaçable à la souris et sa position est mémorisée.
+
+### Fait avant, EN LIGNE sur `main` (déployé)
 - Bug de navigation du setup corrigé (données conservées entre allers-retours).
 - Étape EDT = **choix** "grille vide" / "générer selon les quotas officiels"
   (`genererEdtCP`, arrêté 9/11/2015). Plus de trame figée imposée.
@@ -171,9 +225,16 @@ navigateur pour la voir). Caractéristiques à respecter :
   sautées). Migrations **014 et 015 appliquées en prod et vérifiées**.
 
 **RESTE À FAIRE** :
-1. **Test réel (Christophe)** : recréer une classe, importer français (Petites Poules)
-   + maths (Maths en CP par période), vérifier le calage des périodes et la détection
-   auto de l'import de bout en bout.
+0. **Non vérifié avec de vrais documents.** Tout le travail du 26/07 est couvert par
+   des tests, mais **jamais confronté aux vrais PDF de Christophe**. Deux points en
+   attente de son retour : le calage réel du sommaire de français, et un bug qu'il a
+   signalé sur le **programme de maths** (l'IA empilait plusieurs thèmes sur la semaine
+   1, elle semble prendre la colonne de chiffres à gauche pour des jours). Une règle a
+   été ajoutée au prompt (`cb089d4`) mais **elle n'est pas prouvée**.
+1. **Import ciblé sur une semaine précise.** Demande de Christophe du 26/07, ni
+   spécifiée ni commencée : pouvoir importer un document qui vient remplir UNE semaine
+   restée vide. Aujourd'hui l'import prend un document entier et l'IA décide où ça
+   tombe. C'est un chantier à part entière, à cadrer avant de coder.
 2. **Le CUMUL**. Investigation Claude du 2026-07-22 :
    - **Partie cahier journal : DÉJÀ FAITE, ne pas la recoder.** `genererCahierJournal`
      (`src/lib/cahier-journal.ts`) + `actions/journal.ts` composent le journal en
@@ -245,8 +306,22 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résum�
   la creation d'une classe. 393 tests, 392 verts, build prod OK.
   Spec : `docs/superpowers/specs/2026-07-26-calage-semaines-import-design.md`.
   Plan : `docs/superpowers/plans/2026-07-26-calage-semaines-import.md`.
-  Reste ouvert : supprimer la methode devenue orpheline quand on retire sa derniere
-  source, et l'echec preexistant de `setup-creation.test.ts` (RPC sans DML direct).
+  Fait dans la meme session, apres le calage :
+  - **Migration 017 appliquee en prod** : `retirer_source_progression` supprime la
+    methode devenue orpheline. Une methode « Maths en CP » etait restee vide chez
+    Christophe apres suppression de sa source, sans aucun ecran pour l'enlever.
+  - **« Questionner le monde » retire** de `genererSqueletteSemaines`. C'etait une
+    progression d'exemple des debuts, posee d'office sur les 36 semaines de toute
+    nouvelle classe. Les 36 lignes de sa base ont aussi ete nettoyees.
+  - **L'assistant est devenu un vrai chat** : le bouton « Mon assistant » n'ouvrait
+    qu'un formulaire d'import, il etait « bloque en analyse de documents » (ses mots).
+    Nouvelle route `/api/assistant` en texte libre, panneau a deux onglets, bouton
+    flottant deplacable a la souris avec position memorisee.
+  - **Dernier echec de la suite corrige** : le test « la Server Action passe par le RPC »
+    cherchait `"rpc(\n        '...'"` dans le texte source. Avec `core.autocrlf=true`
+    sous Windows, le fichier est en CRLF : le test echouait chez Christophe alors que le
+    code etait correct, et passait chez Codex sous Linux. Voir la convention 8, section 3.
+  Suite complete : **49 suites, 405 tests, zero echec**. 13 commits locaux, non pousses.
 
 - **2026-07-26 - Claude Code - recuperation, validation et fusion de l'import progressif**.
   Codex avait ete coupe en plein milieu du chantier "import progressif", travail
