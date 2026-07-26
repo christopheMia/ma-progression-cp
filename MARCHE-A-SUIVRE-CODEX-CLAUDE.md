@@ -229,6 +229,21 @@ Idées / options mises de côté (à ne pas oublier) :
 
 Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ — [assistant] — résumé`.
 
+- **2026-07-26 - Claude Code - recuperation, validation et fusion de l'import progressif**.
+  Codex avait ete coupe en plein milieu du chantier "import progressif", travail
+  NON committe dans son worktree (`.codex/visualizations/2026/07/22/.../ma-progression-cp-import-progressif`,
+  branche `codex/import-progressif-setup`). Aucune perte : tout a ete committe sur sa
+  branche pour le mettre a l'abri, puis valide chez Christophe (44 suites / 367 tests
+  verts, type-check propre, build prod Next.js 16 reussi ; l'echec de build cote Codex
+  ne venait que des polices Google bloquees par son reseau). Verification de la base :
+  migrations 014 et 015 deja appliquees, `remplacer_progression(uuid,uuid,text,integer[],jsonb,boolean)`
+  present et compatible. **Migration `016_methode_sources` appliquee en prod** (projet
+  `odwgkakeepcqbgpsfugl`) : table `methode_sources` + RLS + RPC `enregistrer_source_progression`
+  et `retirer_source_progression`, purement additif, aucune donnee touchee. Message du
+  commit reecrit proprement, puis **fusion fast-forward dans `main`** (commit `5cecca2`),
+  en local uniquement, rien pousse sur GitHub. RESTE : pousser quand Christophe le demande,
+  tester le nouveau flux d'import en vrai dans l'app.
+
 - **2026-07-23 - Codex - gestion persistante des sources dans les parametres**.
   Ajout de `methode-sources.ts` et des Server Actions
   `ajouterSourceProgression` et `retirerSourceProgression`. Elles reconstruisent
