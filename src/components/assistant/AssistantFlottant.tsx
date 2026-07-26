@@ -60,7 +60,7 @@ export default function AssistantFlottant({
           elegant qu'un clignotement, et coupe si le systeme demande moins
           d'animations. */}
       <div
-        style={{ top: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+        style={{ top: 'calc(5.5rem + env(safe-area-inset-top, 0px))' }}
         className="fixed right-4 z-50 print:hidden sm:right-5"
       >
         <span
