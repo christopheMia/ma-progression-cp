@@ -1,0 +1,59 @@
+# Retours de Christophe, 26 juillet 2026
+
+Source : `partage/probleme a regler.pdf` (hors git, copyright). Contenu recopié ici
+pour qu'il survive aux sessions et que Codex comme Claude puissent le reprendre.
+
+Statut au moment de la saisie : **rien n'est commencé**, sauf le point 4.2 qui a été
+traité le jour même (voir plus bas).
+
+---
+
+## 1. Règles métier à respecter (méthodologie et planning)
+
+- **Méthodes de français** : supports type « Les p'tites poules », avec sommaire et
+  progression intégrés.
+- **Planning annuel** : structure hebdomadaire détaillée, incluant la progression
+  pédagogique.
+- **Détail des périodes** : planification précise des séances, semaine par semaine.
+- **Gestion hors méthode** : saisie manuelle pour les matières régies par les
+  programmes officiels et les quotas réglementaires.
+- **Règle d'emploi du temps** : les mathématiques, le code et l'étude de la langue
+  sont **impérativement placés le matin**.
+- **L'IA doit analyser et interpréter ces règles** pour s'adapter aux contraintes
+  métier, au lieu de les ignorer.
+
+## 2. Interface et expérience (UI/UX)
+
+| # | Demande | Note |
+|---|---|---|
+| 2.1 | **Bouton « Valider » après chaque saisie de progression**, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter`. |
+| 2.2 | **Importer un emploi du temps existant** (PDF ou DOC) avant la génération automatique. | Une route d'import EDT existe déjà côté prompt (`SYSTEM_IMPORT_EDT`, `userImportEdt`) : vérifier ce qui est déjà branché avant de recoder. |
+| 2.3 | **Barre d'outils de mise en forme** (couleurs, soulignement) : ajouter une validation explicite pour fermer la fenêtre. | Touche `TimetableGrid`. |
+| 2.4 | **Refonte du suivi des élèves** : alléger visuellement, corriger le cadrage, raccourcir les intitulés trop longs. | |
+
+## 3. Bugs identifiés
+
+| # | Bug | Statut |
+|---|---|---|
+| 3.1 | **Fréquence des mathématiques** : la progression génère **trois séances par semaine au lieu d'une**. | À corriger. Piste : `repartirProgrammation` / `repartition-periode.ts`. |
+| 3.2 | **Résidus « Explorer le monde »** à supprimer. | **FAIT le 26/07** : c'était `EDM_PROGRESSION_CP` posé d'office sur les 36 semaines par `genererSqueletteSemaines` (commit `632302d`), plus les 36 lignes nettoyées en base. À faire confirmer par Christophe. |
+| 3.3 | **Lisibilité de l'EDT généré** : contraste majeur, le texte s'affiche en blanc ou très clair alors que les paramètres enregistrés disent noir. Lecture impossible. | À corriger. Piste : `couleur_texte` dans `emploi_du_temps` et son rendu dans `TimetableGrid` / `EdtGrilleLecture`. |
+
+## 4. Question en suspens
+
+- **À quoi sert exactement le bouton « générer la journée »** dans le cahier journal ?
+  Christophe attend une réponse, pas forcément une modification. Regarder
+  `src/lib/cahier-journal.ts` et `src/lib/actions/journal.ts` avant de répondre.
+
+---
+
+## Ordre de traitement suggéré
+
+Les bugs d'abord, parce qu'ils rendent l'outil inutilisable ou faux :
+
+1. **3.3 contraste de l'EDT** : un emploi du temps illisible ne sert à rien.
+2. **3.1 maths en triple** : fausse la progression, donc le cahier journal.
+3. **4 la question** : coûte une lecture de code, pas un chantier.
+4. Puis l'UI/UX (2.1 à 2.4), et enfin les règles métier du point 1, qui demandent
+   un vrai cadrage avec lui (notamment « maths, code et étude de la langue le matin »,
+   qui touche au générateur d'emploi du temps).

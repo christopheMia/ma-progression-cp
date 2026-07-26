@@ -260,6 +260,13 @@ d'environnement de test séparé. Au 2026-07-26 la base est **entièrement vide*
   sautées). Migrations **014 et 015 appliquées en prod et vérifiées**.
 
 **RESTE À FAIRE** :
+
+**Voir d'abord `docs/RETOURS-CHRISTOPHE-2026-07-26.md`** : la liste complète de ses
+retours du 26/07 (règles métier, UI/UX, 3 bugs, 1 question), recopiée depuis son PDF.
+Rien n'y est commencé sauf les résidus « Explorer le monde », traités le jour même.
+Les deux bugs les plus bloquants : **le contraste de l'EDT généré** (texte blanc,
+illisible) et **les maths générés en trois séances par semaine au lieu d'une**.
+
 0. **Non vérifié avec de vrais documents.** Tout le travail du 26/07 est couvert par
    des tests, mais **jamais confronté aux vrais PDF de Christophe**. Deux points en
    attente de son retour : le calage réel du sommaire de français, et un bug qu'il a
