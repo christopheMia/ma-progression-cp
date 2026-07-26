@@ -105,7 +105,7 @@ export default function SetupPage() {
             </Bouton>
           )}
         </div>
-        <p className="text-sm text-gray-600 bg-violet-50 border border-violet-100 rounded-lg p-3 mt-3 leading-relaxed">
+        <p className="text-sm text-violet-900 bg-violet-50 border border-violet-100 rounded-lg p-3 mt-3 leading-relaxed">
           {stepHelp[step - 1]}
         </p>
       </div>
