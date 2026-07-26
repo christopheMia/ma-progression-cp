@@ -3,13 +3,20 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import HeaderNav from '@/components/HeaderNav'
 import AssistantFlottant from '@/components/assistant/AssistantFlottant'
+import { estZoneScolaire } from '@/lib/calendrier-officiel'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/connexion')
 
-  const { data: classe } = await supabase.from('classes').select('id, prenom_enseignant').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const { data: classe } = await supabase.from('classes').select('id, prenom_enseignant, rentree_date, zone_scolaire').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+
+  // Contexte minimal pour que l'assistant sache de quelle classe on parle.
+  const { data: methodes } = classe
+    ? await supabase.from('methodes').select('matiere').eq('class_id', classe.id)
+    : { data: null }
+  const matieres = [...new Set((methodes ?? []).map(m => m.matiere as string))]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-300 via-purple-200 to-fuchsia-200">
@@ -28,6 +35,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AssistantFlottant
         hasClass={!!classe}
         prenom={(classe?.prenom_enseignant ?? '').trim() || undefined}
+        rentreeDate={classe?.rentree_date ?? undefined}
+        zone={estZoneScolaire(classe?.zone_scolaire) ? classe.zone_scolaire : undefined}
+        matieres={matieres}
       />
     </div>
   )

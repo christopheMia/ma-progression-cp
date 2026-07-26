@@ -5,18 +5,31 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Check, Sparkles, X } from 'lucide-react'
 import SourceImporter from '@/components/methodes/SourceImporter'
+import ChatAssistant from '@/components/assistant/ChatAssistant'
 import Bouton from '@/components/ui/Bouton'
 import { ajouterSourceProgression } from '@/lib/actions/methode-sources'
 import type { SourceProgression } from '@/lib/progression-sources'
+import type { ZoneScolaire } from '@/lib/calendrier-officiel'
+
+type Onglet = 'discuter' | 'document'
 
 export default function AssistantFlottant({
   hasClass,
   prenom,
+  rentreeDate,
+  zone,
+  matieres,
 }: {
   hasClass: boolean
   prenom?: string
+  rentreeDate?: string
+  zone?: ZoneScolaire
+  matieres?: string[]
 }) {
   const [ouvert, setOuvert] = useState(false)
+  // La conversation d'abord: c'est ce qu'on attend en cliquant « Mon assistant ».
+  // L'import reste a un clic, mais il ne monopolise plus le panneau.
+  const [onglet, setOnglet] = useState<Onglet>('discuter')
   const [message, setMessage] = useState<{
     type: 'succes' | 'erreur'
     texte: string
@@ -115,7 +128,35 @@ export default function AssistantFlottant({
               </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            {hasClass && (
+              <div
+                role="tablist"
+                aria-label="Que veux-tu faire ?"
+                className="flex gap-1 border-b border-slate-200 bg-slate-50 p-2"
+              >
+                {([
+                  ['discuter', 'Discuter'],
+                  ['document', 'Ajouter un document'],
+                ] as const).map(([cle, libelle]) => (
+                  <button
+                    key={cle}
+                    type="button"
+                    role="tab"
+                    aria-selected={onglet === cle}
+                    onClick={() => setOnglet(cle)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors motion-reduce:transition-none ${
+                      onglet === cle
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'text-slate-700 hover:bg-white'
+                    }`}
+                  >
+                    {libelle}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
               {!hasClass ? (
                 <p className="text-sm text-slate-600">
                   Configure d&apos;abord ta classe pour utiliser l&apos;assistant.{' '}
@@ -126,6 +167,12 @@ export default function AssistantFlottant({
                     Commencer la configuration
                   </Link>
                 </p>
+              ) : onglet === 'discuter' ? (
+                <ChatAssistant
+                  prenom={prenom}
+                  rentreeDate={rentreeDate}
+                  matieres={matieres}
+                />
               ) : (
                 <>
                   <p className="mb-3 text-sm text-slate-600">
@@ -153,6 +200,8 @@ export default function AssistantFlottant({
                   )}
                   <SourceImporter
                     prenom={prenom}
+                    rentreeDate={rentreeDate}
+                    zone={zone}
                     onSourceReady={ajouter}
                   />
                 </>
