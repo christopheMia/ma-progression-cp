@@ -10,6 +10,8 @@ type SourceContentPreviewProps = {
   typeDocument: TypeDocumentImport
   semaines: ProgressionSemaine[]
   periodes: PeriodeProgrammation[]
+  /** Date du lundi réel par numéro de semaine. Absent = aucune date affichée. */
+  datesParNumero?: Record<number, string>
   onSemainesChange: (semaines: ProgressionSemaine[]) => void
   onPeriodesChange: (periodes: PeriodeProgrammation[]) => void
 }
@@ -21,6 +23,31 @@ const CHAMP =
 
 function lignes(texte: string): string[] {
   return texte.split(/\r?\n/)
+}
+
+const MOIS = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+]
+
+/** '2026-09-07' devient 'Semaine du 7 septembre'. */
+function libelleSemaine(numero: number, dateLundi?: string): string {
+  if (!dateLundi) return `Semaine ${numero}`
+  const [, mois, jour] = dateLundi.split('-')
+  const nomMois = MOIS[Number(mois) - 1]
+  if (!nomMois) return `Semaine ${numero}`
+  return `Semaine du ${Number(jour)} ${nomMois}`
+}
+
+/**
+ * Une semaine sans aucun contenu. Elle reste AFFICHEE : c'est l'information
+ * « le document ne met rien ici », souvent la semaine de rentree consacree a
+ * l'accueil et a la presentation des manuels.
+ */
+function semaineEstVide(semaine: ProgressionSemaine): boolean {
+  return semaine.items.every(item => !item.trim())
+    && !semaine.pages.trim()
+    && semaine.mots_exemple.every(mot => !mot.trim())
 }
 
 function premierNumeroDisponible(numeros: number[], maximum: number): number | null {
@@ -35,6 +62,7 @@ export default function SourceContentPreview({
   typeDocument,
   semaines,
   periodes,
+  datesParNumero,
   onSemainesChange,
   onPeriodesChange,
 }: SourceContentPreviewProps) {
@@ -189,8 +217,20 @@ export default function SourceContentPreview({
             <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg bg-violet-100 px-2 text-sm font-bold text-violet-800">
               S{semaine.numero}
             </span>
-            <h3 className="font-semibold text-slate-900">Semaine {semaine.numero}</h3>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-slate-900">
+                {libelleSemaine(semaine.numero, datesParNumero?.[semaine.numero])}
+              </h3>
+              {datesParNumero?.[semaine.numero] && (
+                <p className="text-xs text-slate-500">Semaine {semaine.numero}</p>
+              )}
+            </div>
           </div>
+          {semaineEstVide(semaine) && (
+            <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              Aucun contenu du document sur cette semaine. Tu pourras la remplir plus tard.
+            </p>
+          )}
 
           <label
             className="mb-1 block text-sm font-medium text-slate-700"

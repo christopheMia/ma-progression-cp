@@ -44,6 +44,57 @@ function ApercuProgrammationControle() {
 }
 
 describe('SourceContentPreview', () => {
+  test('affiche la date du lundi à côté de chaque semaine', () => {
+    render(
+      <SourceContentPreview
+        typeDocument="manuel"
+        semaines={[{ numero: 2, items: ['a'], pages: '', mots_exemple: [] }]}
+        periodes={[]}
+        datesParNumero={{ 2: '2026-09-07' }}
+        onSemainesChange={() => {}}
+        onPeriodesChange={() => {}}
+      />
+    )
+
+    expect(screen.getByText('Semaine du 7 septembre')).toBeInTheDocument()
+    expect(screen.getByText('Semaine 2')).toBeInTheDocument()
+  })
+
+  test('affiche une semaine vide au lieu de la faire disparaître', () => {
+    render(
+      <SourceContentPreview
+        typeDocument="manuel"
+        semaines={[
+          { numero: 1, items: [], pages: '', mots_exemple: [] },
+          { numero: 2, items: ['a'], pages: '', mots_exemple: [] },
+        ]}
+        periodes={[]}
+        datesParNumero={{ 1: '2026-08-31', 2: '2026-09-07' }}
+        onSemainesChange={() => {}}
+        onPeriodesChange={() => {}}
+      />
+    )
+
+    expect(screen.getByText('Semaine du 31 août')).toBeInTheDocument()
+    expect(
+      screen.getByText('Aucun contenu du document sur cette semaine. Tu pourras la remplir plus tard.')
+    ).toBeInTheDocument()
+  })
+
+  test('sans dates fournies, garde l’ancien libellé par numéro', () => {
+    render(
+      <SourceContentPreview
+        typeDocument="manuel"
+        semaines={[{ numero: 3, items: ['o'], pages: '', mots_exemple: [] }]}
+        periodes={[]}
+        onSemainesChange={() => {}}
+        onPeriodesChange={() => {}}
+      />
+    )
+
+    expect(screen.getByText('Semaine 3')).toBeInTheDocument()
+  })
+
   test('conserve les espaces pendant la frappe des notions et mots d une semaine', async () => {
     const user = userEvent.setup()
     render(<ApercuSemainesControle />)
