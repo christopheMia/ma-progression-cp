@@ -576,7 +576,7 @@ export default function SourceImporter({
               multiple
               disabled={loading}
               onChange={event => void importerPdf(event)}
-              className="mt-3 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-violet-700 hover:file:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300/70"
+              className="mt-3 block w-full text-sm text-violet-900 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-violet-700 hover:file:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300/70"
             />
           </div>
 
