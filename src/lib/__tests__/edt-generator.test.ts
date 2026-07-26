@@ -1,4 +1,5 @@
 import { genererEdtCP, budgetHebdomadaire, JOURS_EDT } from '../edt-generator'
+import { matiereImposeeLeMatin } from '../edt-matin'
 
 const toMin = (h: string) => {
   const [a, b] = h.split(':').map(Number)
@@ -18,6 +19,39 @@ describe('genererEdtCP', () => {
       expect(code).toBeTruthy()
       expect(toMin(code!.heure_debut)).toBe(8 * 60 + 45) // 1er creneau du matin
     }
+  })
+
+  test('les trois matières imposées occupent le matin en priorité', () => {
+    const coursMatin = edt.filter(c =>
+      c.type === 'cours'
+      && c.heure_fin <= '11:30'
+      && !c.matiere.startsWith('Rituels'))
+    const categories = new Set(
+      coursMatin.map(c => matiereImposeeLeMatin(c.matiere)).filter(Boolean),
+    )
+
+    expect(categories).toEqual(new Set([
+      'mathematiques',
+      'code',
+      'etude-langue',
+    ]))
+    expect(coursMatin.every(c => matiereImposeeLeMatin(c.matiere) !== null))
+      .toBe(true)
+  })
+
+  test('aucune autre matière ne prend le matin pendant qu’une matière imposée déborde', () => {
+    const imposeesApresMidi = edt.filter(c =>
+      c.type === 'cours'
+      && c.heure_debut >= '13:30'
+      && matiereImposeeLeMatin(c.matiere) !== null)
+    const autresMatin = edt.filter(c =>
+      c.type === 'cours'
+      && c.heure_fin <= '11:30'
+      && !c.matiere.startsWith('Rituels')
+      && matiereImposeeLeMatin(c.matiere) === null)
+
+    expect(imposeesApresMidi.length).toBeGreaterThan(0)
+    expect(autresMatin).toEqual([])
   })
 
   test('les recreations fixes 10h00-10h15 et 15h00-15h15 sont presentes chaque jour', () => {

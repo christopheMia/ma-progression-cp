@@ -1,7 +1,9 @@
+import { libelleMatiereCanonique } from '@/lib/matieres'
+
 function labelMatiere(matiere: string): string {
   if (matiere === 'francais') return '📖 Français'
   if (matiere === 'maths') return '🔢 Maths'
-  return '📋 ' + matiere.charAt(0).toUpperCase() + matiere.slice(1)
+  return `📋 ${libelleMatiereCanonique(matiere)}`
 }
 
 function accentMatiere(matiere: string): string {

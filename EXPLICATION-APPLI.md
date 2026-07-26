@@ -246,7 +246,7 @@ Les écritures en base passent par des **Server Actions** Next.js (`'use server'
 - **`usageMoisCourant()`** : somme les tokens du mois courant → alimente la jauge de budget.
 
 ### 7.7 Helpers (logique pure, sans base)
-- **`genererProgression(manuelId, rentreeDate, customProgression?)`** (`progression.ts`) : construit les 36 semaines (dates + graphèmes + thème « Explorer le monde » via `EDM_PROGRESSION_CP`).
+- **`genererProgression(manuelId, rentreeDate, customProgression?)`** (`progression.ts`) : construit les 36 semaines avec leurs dates et le contenu réellement fourni par le manuel.
 - **`genererProgressionFrancais(...)`** : version pour la table `progression` (items/pages/mots, max 36).
 - **`genererCahierJournal(emploiDuTemps, progression)`** (`cahier-journal.ts`) : regroupe les créneaux par jour (lundi→vendredi), les trie, et pré-remplit le déroulement des créneaux « cours » à partir de la progression (lecture/maths) ; les créneaux « routine » restent vides. `matiereMethode()` mappe un libellé de créneau vers `'francais'`/`'maths'`.
 - **`getStatus(semaine)`** & **`semaineEnCours(semaines)`** (`semaines.ts`) : statut d'une semaine (`done`/`current`/`upcoming`) et sélection de la semaine active.

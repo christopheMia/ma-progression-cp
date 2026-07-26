@@ -21,20 +21,28 @@ import Bouton from '@/components/ui/Bouton'
 export default function ImporterEdtButton() {
   const [creneaux, setCreneaux] = useState<CreneauImporte[] | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
+  const [correctionMatin, setCorrectionMatin] = useState<string | null>(null)
   const [chargement, setChargement] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   async function analyser(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
     if (!files?.length) return
-    setErreur(null); setChargement(true); setCreneaux(null)
+    setErreur(null); setCorrectionMatin(null); setChargement(true); setCreneaux(null)
     try {
       const form = new FormData()
       for (const f of Array.from(files)) form.append('pdf', f)
       const res = await fetch('/api/ia-edt', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) setErreur(data.error ?? `Erreur ${res.status}`)
-      else setCreneaux(data.creneaux as CreneauImporte[])
+      else {
+        setCreneaux(data.creneaux as CreneauImporte[])
+        setCorrectionMatin(
+          typeof data.correction_matin === 'string'
+            ? data.correction_matin
+            : null,
+        )
+      }
     } catch (err) {
       setErreur(`Erreur réseau : ${err instanceof Error ? err.message : String(err)}`)
     } finally {
@@ -46,20 +54,24 @@ export default function ImporterEdtButton() {
   function valider() {
     if (!creneaux) return
     startTransition(async () => {
-      await updateEmploiDuTemps(creneaux.map(c => ({
-        jour: c.jour,
-        heure_debut: c.heure_debut,
-        heure_fin: c.heure_fin,
-        matiere: c.matiere,
-        type: c.type,
-        couleur: null,
-        couleur_texte: null,
-        texte_gras: false,
-        texte_italique: false,
-        texte_souligne: false,
-        visible_journal: c.type !== 'routine',
-      })))
-      window.location.reload()
+      try {
+        await updateEmploiDuTemps(creneaux.map(c => ({
+          jour: c.jour,
+          heure_debut: c.heure_debut,
+          heure_fin: c.heure_fin,
+          matiere: c.matiere,
+          type: c.type,
+          couleur: null,
+          couleur_texte: null,
+          texte_gras: false,
+          texte_italique: false,
+          texte_souligne: false,
+          visible_journal: c.type !== 'routine',
+        })))
+        window.location.reload()
+      } catch (err) {
+        setErreur(err instanceof Error ? err.message : String(err))
+      }
     })
   }
 
@@ -74,7 +86,7 @@ export default function ImporterEdtButton() {
         <input type="file" accept=".pdf" multiple onChange={analyser} disabled={chargement} className="sr-only" />
       </label>
 
-      {erreur && <p className="text-xs text-red-600">{erreur}</p>}
+      {erreur && <p role="alert" className="text-xs text-red-600">{erreur}</p>}
 
       {creneaux && (
         <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-3 space-y-2 text-xs">
@@ -82,6 +94,11 @@ export default function ImporterEdtButton() {
             <strong>{creneaux.length} créneaux</strong> lus sur {jours.length} jour{jours.length > 1 ? 's' : ''} ({jours.join(', ')}).
             Vérifie avant de remplacer ta grille actuelle.
           </p>
+          {correctionMatin && (
+            <p role="status" className="rounded-lg bg-emerald-50 p-2 text-emerald-800">
+              {correctionMatin}
+            </p>
+          )}
           {/* La grille, pas une liste : sur l'EDT de Cécile la liste faisait
               90 lignes à faire défiler pour vérifier une seule lecture. */}
           <div className="rounded-lg bg-white border border-slate-200 p-1">
@@ -91,7 +108,10 @@ export default function ImporterEdtButton() {
             <Bouton type="button" variant="secondaire" size="sm" onClick={valider} loading={isPending}>
               {isPending ? 'Enregistrement…' : 'Remplacer mon emploi du temps'}
             </Bouton>
-            <Bouton type="button" variant="fantome" size="sm" onClick={() => setCreneaux(null)} disabled={isPending}>
+            <Bouton type="button" variant="fantome" size="sm" onClick={() => {
+              setCreneaux(null)
+              setCorrectionMatin(null)
+            }} disabled={isPending}>
               Annuler
             </Bouton>
           </div>

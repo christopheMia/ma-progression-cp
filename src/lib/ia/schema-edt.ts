@@ -9,6 +9,8 @@
  * importer sa grille telle quelle.
  */
 
+import { corrigerPrioriteMatin } from '@/lib/edt-matin'
+
 export const EDT_JSON_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -88,4 +90,12 @@ export function normaliserEdtImporte(brut: unknown[]): CreneauImporte[] {
   propres.sort((a, b) =>
     rang(a.jour) - rang(b.jour) || a.heure_debut.localeCompare(b.heure_debut))
   return propres
+}
+
+/**
+ * Frontière complète de l'import : normalise la sortie IA puis applique la
+ * règle du matin avant que l'aperçu puisse être validé.
+ */
+export function normaliserEtCorrigerEdtImporte(brut: unknown[]) {
+  return corrigerPrioriteMatin(normaliserEdtImporte(brut))
 }

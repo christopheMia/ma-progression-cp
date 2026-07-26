@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import TimetableGrid, { type Creneau } from '../TimetableGrid'
 
 const c = (
@@ -100,5 +100,58 @@ describe('TimetableGrid : rendu de la grille fusionnée', () => {
     poser([c('lundi', '14:00', '15:00', 'Mathématiques', { couleur: '#ff0000' })])
     const cellule = screen.getByLabelText('Lundi 14:00-15:00').closest('td')
     expect(cellule?.style.backgroundColor).toBe('rgb(255, 0, 0)')
+  })
+
+  test('corrige une édition non conforme avant de l’enregistrer', () => {
+    const onSave = jest.fn()
+    render(
+      <TimetableGrid
+        initial={[
+          c('lundi', '09:00', '10:00', 'Arts visuels'),
+          c('lundi', '14:00', '15:00', 'Mathématiques'),
+        ]}
+        onSave={onSave}
+        saving={false}
+        finishLabel="Enregistrer"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(onSave.mock.calls[0][0]).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        matiere: 'Arts visuels',
+        heure_debut: '14:00',
+        heure_fin: '15:00',
+      }),
+      expect.objectContaining({
+        matiere: 'Mathématiques',
+        heure_debut: '09:00',
+        heure_fin: '10:00',
+      }),
+    ]))
+    expect(screen.getByRole('status').textContent).toMatch(/remise.*le matin/)
+  })
+
+  test('bloque une édition impossible à corriger sans découper une séance', () => {
+    const onSave = jest.fn()
+    render(
+      <TimetableGrid
+        initial={[
+          c('lundi', '09:00', '09:30', 'Arts visuels'),
+          c('lundi', '14:00', '15:00', 'Vocabulaire'),
+        ]}
+        onSave={onSave}
+        saving={false}
+        finishLabel="Enregistrer"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(onSave).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert').textContent).toMatch(/Vocabulaire/)
+    expect(screen.getByRole('alert').textContent).toMatch(/matin/)
   })
 })

@@ -1,4 +1,8 @@
-import { normaliserHeure, normaliserEdtImporte } from '../schema-edt'
+import {
+  normaliserEtCorrigerEdtImporte,
+  normaliserHeure,
+  normaliserEdtImporte,
+} from '../schema-edt'
 
 describe('normaliserHeure', () => {
   test('accepte les formats du terrain', () => {
@@ -46,5 +50,31 @@ describe('normaliserEdtImporte', () => {
       { jour: 'lundi', heure_debut: '08:00', heure_fin: '09:00', matiere: 'A', type: 'nimporte' },
     ])
     expect(out[0].type).toBe('cours')
+  })
+})
+
+describe('normaliserEtCorrigerEdtImporte', () => {
+  test('corrige un import qui laisse les mathématiques l’après-midi', () => {
+    const resultat = normaliserEtCorrigerEdtImporte([
+      { jour: 'lundi', heure_debut: '9h', heure_fin: '10h', matiere: 'Arts visuels', type: 'cours' },
+      { jour: 'lundi', heure_debut: '14h', heure_fin: '15h', matiere: 'Mathématiques', type: 'cours' },
+    ])
+
+    expect(resultat.ok).toBe(true)
+    if (!resultat.ok) return
+    expect(resultat.modifie).toBe(true)
+    expect(resultat.creneaux.find(c => c.matiere === 'Mathématiques'))
+      .toEqual(expect.objectContaining({ heure_debut: '09:00', heure_fin: '10:00' }))
+  })
+
+  test('refuse un import impossible à corriger sans modifier les durées', () => {
+    const resultat = normaliserEtCorrigerEdtImporte([
+      { jour: 'lundi', heure_debut: '9h', heure_fin: '9h30', matiere: 'Arts visuels', type: 'cours' },
+      { jour: 'lundi', heure_debut: '14h', heure_fin: '15h', matiere: 'Étude de la langue', type: 'cours' },
+    ])
+
+    expect(resultat.ok).toBe(false)
+    if (resultat.ok) return
+    expect(resultat.message).toMatch(/Étude de la langue/)
   })
 })

@@ -41,7 +41,6 @@ export default function WeekCard({
             </div>
           ))}
         </div>
-        <div className="text-xs text-gray-500 mt-1 truncate">🌍 {semaine.edm_theme}</div>
         {total > 0 && (
           <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${complete ? 'bg-amber-400' : 'bg-emerald-400'}`} style={{ width: `${pct}%` }} />

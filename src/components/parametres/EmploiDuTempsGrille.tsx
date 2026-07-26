@@ -9,13 +9,17 @@ export default function EmploiDuTempsGrille({ initial }: { initial: Creneau[] })
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [reloading, setReloading] = useState(false)
+  const [erreur, setErreur] = useState<string | null>(null)
 
   function recharger() {
     setReloading(true)
     startTransition(async () => {
       try {
+        setErreur(null)
         await rechargerEmploiDuTempsType()
         location.reload()
+      } catch (error) {
+        setErreur(error instanceof Error ? error.message : String(error))
       } finally {
         setReloading(false)
       }
@@ -30,10 +34,23 @@ export default function EmploiDuTempsGrille({ initial }: { initial: Creneau[] })
         finishLabel="Enregistrer l'emploi du temps"
         onSave={(creneaux) => {
           setSaved(false)
-          startTransition(async () => { await updateEmploiDuTemps(creneaux); setSaved(true) })
+          setErreur(null)
+          startTransition(async () => {
+            try {
+              await updateEmploiDuTemps(creneaux)
+              setSaved(true)
+            } catch (error) {
+              setErreur(error instanceof Error ? error.message : String(error))
+            }
+          })
         }}
       />
       {saved && !isPending && <span className="text-sm text-green-600">✓ Enregistré</span>}
+      {erreur && (
+        <p role="alert" className="rounded-lg bg-red-50 p-2 text-sm text-red-700">
+          {erreur}
+        </p>
+      )}
       <Bouton type="button" variant="danger" size="sm" icon={RefreshCw}
         loading={reloading} disabled={isPending && !reloading} onClick={recharger}>
         Recharger l&apos;emploi du temps type (efface le mien)

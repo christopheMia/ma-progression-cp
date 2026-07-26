@@ -18,6 +18,10 @@
 // Fonction pure : aucun effet de bord, aucune dependance base.
 
 import { couleurMatiere, type CreneauTrame } from '@/data/trame-edt'
+import {
+  corrigerPrioriteMatin,
+  matiereImposeeLeMatin,
+} from '@/lib/edt-matin'
 
 export const JOURS_EDT = ['lundi', 'mardi', 'jeudi', 'vendredi'] as const
 
@@ -188,9 +192,10 @@ export function choisirDuree(
  * Genere l'emploi du temps CP complet.
  *
  * Deroulement : rituel de 15 min chaque matin, bloc code garanti sur la 1re
- * plage, puis remplissage des plages restantes matiere par matiere, en servant
- * toujours celle a qui il reste le plus de quota (pour etaler sur la semaine)
- * et en respectant le plafond quotidien de chaque matiere.
+ * plage, puis priorité commune aux mathématiques, au code et à l'étude de la
+ * langue dans les créneaux du matin. Les autres matières ne prennent le matin
+ * qu'une fois les séances imposées qui peuvent y tenir placées. Le reste est
+ * réparti selon les quotas et les plafonds quotidiens.
  */
 export function genererEdtCP(codeRenforce = true): CreneauTrame[] {
   const budget = budgetHebdomadaire()
@@ -259,9 +264,16 @@ export function genererEdtCP(codeRenforce = true): CreneauTrame[] {
           .filter(c => c.duree > 0)
         if (!candidats.length) break
 
-        candidats.sort((a, b) => b.seg.minutes - a.seg.minutes
+        const candidatsPrioritaires = indexPlage < 2
+          ? candidats.filter(c => matiereImposeeLeMatin(c.seg.matiere) !== null)
+          : []
+        const choix = candidatsPrioritaires.length > 0
+          ? candidatsPrioritaires
+          : candidats
+
+        choix.sort((a, b) => b.seg.minutes - a.seg.minutes
           || a.seg.matiere.localeCompare(b.seg.matiere))
-        const { seg, duree } = candidats[0]
+        const { seg, duree } = choix[0]
 
         pousser(jour, { debut: curseur, fin: curseur + duree, matiere: seg.matiere, type: 'cours' })
         placeCeJour.set(seg.matiere, (placeCeJour.get(seg.matiere) ?? 0) + duree)
@@ -280,7 +292,11 @@ export function genererEdtCP(codeRenforce = true): CreneauTrame[] {
   out.sort((a, b) => rangJour(a.jour) - rangJour(b.jour)
     || a.heure_debut.localeCompare(b.heure_debut))
   out.forEach((c, i) => { c.ordre = i })
-  return out
+  const verification = corrigerPrioriteMatin(out)
+  if (!verification.ok) {
+    throw new Error(`L'emploi du temps généré ne respecte pas la priorité du matin : ${verification.message}`)
+  }
+  return verification.creneaux
 }
 
 /**
@@ -342,6 +358,7 @@ export function expliquerGenerationEdt(codeRenforce = true): ExplicationEdt {
       codeRenforce
         ? `Code renforcé CP : un bloc d'étude du code de ${formatDuree(CODE_QUOTIDIEN)} est garanti CHAQUE matin, juste après les rituels.`
         : 'Code renforcé désactivé : le français n\'est pas scindé en code et étude de la langue.',
+      'Les mathématiques, le code et l’étude de la langue sont servis en priorité dans tous les créneaux du matin. Les autres matières prennent ensuite les places restantes.',
       `Aucune matière ne dépasse ${formatDuree(120)} sur une même journée (${formatDuree(90)} pour l'EPS et les arts).`,
       'À chaque créneau, la matière servie est celle à qui il reste le plus d\'heures à placer : chaque matière s\'étale ainsi sur toute la semaine.',
       'Le résultat est 100 % modifiable ensuite : horaires, matières, couleurs.',

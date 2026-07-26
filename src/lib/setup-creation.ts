@@ -15,6 +15,7 @@ import {
   regrouperSources,
   type SourceProgression,
 } from '@/lib/progression-sources'
+import { corrigerPrioriteMatin } from '@/lib/edt-matin'
 
 export type CreneauCreationClasse = {
   jour: string
@@ -172,6 +173,14 @@ export async function executerCreationClasse(
     ...source,
     matiere: codeMatiereCanonique(source.matiere),
   }))
+  const baseEdt = formData.emploiDuTemps.length > 0
+    ? formData.emploiDuTemps
+    : TRAME_EDT_CP
+  const resultatMatin = corrigerPrioriteMatin(baseEdt)
+  if (!resultatMatin.ok) {
+    throw new Error(resultatMatin.message)
+  }
+  const edtValide = resultatMatin.creneaux
 
   const anciensIds = await dependances.lireAnciennesClasses(userId)
   const classeId = await dependances.insererClasse({
@@ -263,10 +272,7 @@ export async function executerCreationClasse(
       }
     }
 
-    const baseEdt = formData.emploiDuTemps.length > 0
-      ? formData.emploiDuTemps
-      : TRAME_EDT_CP
-    await dependances.insererEmploiDuTemps(baseEdt.map(creneau => ({
+    await dependances.insererEmploiDuTemps(edtValide.map(creneau => ({
       class_id: classeId,
       jour: creneau.jour,
       heure_debut: creneau.heure_debut,

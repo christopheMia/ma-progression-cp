@@ -9,6 +9,7 @@ export type Semaine = {
   numero: number
   date_debut: string
   graphemes: string[]
+  /** Colonnes historiques obligatoires en base, non utilisées pour l’affichage. */
   edm_theme: string
   edm_competences: string
   manuel_pages: string | null

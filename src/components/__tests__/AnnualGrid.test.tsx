@@ -87,6 +87,35 @@ describe('AnnualGrid', () => {
     expect(screen.getByText('Comparer')).toBeTruthy()
   })
 
+  test('n’affiche pas les anciens champs Explorer le monde des semaines', () => {
+    const semaineVide = semaine(1, 1)
+    semaineVide.edm_theme = 'Ancien thème automatique'
+    semaineVide.edm_competences = 'Ancienne compétence automatique'
+
+    const { container } = render(<AnnualGrid semaines={[semaineVide]} />)
+
+    expect(screen.queryByText('Ancien thème automatique')).toBeNull()
+    expect(screen.queryByText('Ancienne compétence automatique')).toBeNull()
+    expect(container.textContent).not.toContain('🌍')
+  })
+
+  test('affiche une progression Questionner le monde réellement enregistrée', () => {
+    const avecQuestionnerLeMonde = semaine(1, 1)
+    avecQuestionnerLeMonde.contenus = [{
+      codeMatiere: 'qlm',
+      libelleMatiere: 'Questionner le monde',
+      nomMethode: 'Ma progression QLM',
+      suiviActif: false,
+      items: ['Observer la germination'],
+    }]
+
+    render(<AnnualGrid semaines={[avecQuestionnerLeMonde]} />)
+
+    expect(screen.getByText('Questionner le monde')).toBeTruthy()
+    expect(screen.getByText('Ma progression QLM')).toBeTruthy()
+    expect(screen.getByText('Observer la germination')).toBeTruthy()
+  })
+
   test('garde le squelette et explique clairement l’absence de méthode', () => {
     const semaines = Array.from({ length: 36 }, (_, index) =>
       semaine(index + 1, index < 7 ? 1 : null)

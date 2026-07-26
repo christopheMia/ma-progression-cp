@@ -87,7 +87,7 @@ function CarteC() {
         <Plus size={24} aria-hidden="true" />
       </div>
       <div className="relative font-semibold text-slate-900 mt-3">Ajoute tes matières</div>
-      <div className="relative text-sm text-slate-500">Maths, Anglais, Questionner le monde…</div>
+      <div className="relative text-sm text-slate-500">Maths, anglais, autres matières</div>
     </div>
   )
 }

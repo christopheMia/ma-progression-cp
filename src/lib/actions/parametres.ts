@@ -11,6 +11,7 @@ import { datesSemainesCalendaires } from '@/lib/calendrier-semaines'
 import { ensureMethode } from '@/lib/methodes-db'
 import { remplacerSansPerte } from '@/lib/safe-replacement'
 import { estZoneScolaire, periodesOfficielles, type ZoneScolaire } from '@/lib/calendrier-officiel'
+import { corrigerPrioriteMatin } from '@/lib/edt-matin'
 
 type Creneau = { jour: string; heure_debut: string; heure_fin: string; matiere: string; ordre: number; couleur: string | null; couleur_texte: string | null; texte_gras: boolean; texte_italique: boolean; texte_souligne: boolean; type: 'cours' | 'routine'; visible_journal: boolean }
 type NouveauCreneau = Omit<Creneau, 'ordre'> & { ordre?: number }
@@ -26,6 +27,12 @@ async function remplacerEmploiDuTempsSansPerte(
   classId: string,
   creneaux: NouveauCreneau[],
 ) {
+  const resultatMatin = corrigerPrioriteMatin(creneaux)
+  if (!resultatMatin.ok) {
+    throw new Error(resultatMatin.message)
+  }
+  const creneauxValides = resultatMatin.creneaux
+
   const { data: anciens, error: lectureError } = await supabase
     .from('emploi_du_temps').select('id').eq('class_id', classId)
   if (lectureError) throw new Error(`Lecture de l'emploi du temps impossible : ${lectureError.message}`)
@@ -34,10 +41,10 @@ async function remplacerEmploiDuTempsSansPerte(
   await remplacerSansPerte({
     anciensIds,
     insererNouveau: async () => {
-      if (!creneaux.length) return []
+      if (!creneauxValides.length) return []
       const { data: nouveaux, error } = await supabase
         .from('emploi_du_temps')
-        .insert(creneaux.map((c, i) => ({ ...c, class_id: classId, ordre: c.ordre ?? i })))
+        .insert(creneauxValides.map((c, i) => ({ ...c, class_id: classId, ordre: c.ordre ?? i })))
         .select('id')
       if (error || !nouveaux) {
         throw new Error(`Enregistrement du nouvel emploi du temps impossible : ${error?.message ?? 'réponse vide'}`)

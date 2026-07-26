@@ -3,7 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { NotebookPen, ArrowRight, ChevronUp, ChevronDown } from 'lucide-react'
 
-export type SemaineLien = { id: string; numero: number; libelle: string }
+export type SemaineLien = { id: string; numero: number; libelle: string | null }
 
 /**
  * Carte "Cahier journal en cours" : acces direct au cahier de la semaine
@@ -40,7 +40,7 @@ export default function CahierJournalCard({ courante, suivantes }: {
           <ArrowRight size={16} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
         </div>
         <div className="text-sm text-slate-500">
-          Semaine {courante.numero} · {courante.libelle}
+          Semaine {courante.numero}{courante.libelle ? ` · ${courante.libelle}` : ''}
         </div>
       </Link>
 
@@ -56,7 +56,8 @@ export default function CahierJournalCard({ courante, suivantes }: {
                 <li key={s.id}>
                   <Link href={`/semaine/${s.id}`}
                     className="block rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-violet-50 hover:text-violet-700 transition-colors">
-                    <span className="font-medium text-slate-800">S{s.numero}</span> · {s.libelle}
+                    <span className="font-medium text-slate-800">S{s.numero}</span>
+                    {s.libelle ? ` · ${s.libelle}` : ''}
                   </Link>
                 </li>
               ))}

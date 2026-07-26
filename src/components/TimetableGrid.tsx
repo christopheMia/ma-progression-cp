@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Plus, Save, Undo2 } from 'lucide-react'
 import { couleurMatiere, couleurAffichee, COULEURS_FAMILLE } from '@/data/trame-edt'
 import { construireGrille, creneauxDeLaLigne, type LigneGrille } from '@/lib/edt-grille'
+import { corrigerPrioriteMatin } from '@/lib/edt-matin'
 import Bouton from '@/components/ui/Bouton'
 
 function addMinutes(t: string, mins: number): string {
@@ -38,6 +39,8 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
   finishLabel: string
 }) {
   const [creneaux, setCreneaux] = useState<Creneau[]>(initial)
+  const [erreurMatin, setErreurMatin] = useState<string | null>(null)
+  const [infoMatin, setInfoMatin] = useState<string | null>(null)
 
   // Remonte le brouillon au parent des qu'il change (hors premier rendu, pour
   // ne pas re-notifier la valeur initiale telle quelle).
@@ -68,8 +71,31 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
   function modifier(maj: (prev: Creneau[]) => Creneau[]) {
     const suivant = maj(creneaux)
     if (suivant === creneaux) return
+    setErreurMatin(null)
+    setInfoMatin(null)
     setHistorique(h => [...h, creneaux].slice(-PROFONDEUR_MAX))
     setCreneaux(suivant)
+  }
+
+  function enregistrer() {
+    const resultat = corrigerPrioriteMatin(creneaux)
+    if (!resultat.ok) {
+      setInfoMatin(null)
+      setErreurMatin(resultat.message)
+      return
+    }
+
+    setErreurMatin(null)
+    if (resultat.modifie) {
+      setHistorique(h => [...h, creneaux].slice(-PROFONDEUR_MAX))
+      setCreneaux(resultat.creneaux)
+      setInfoMatin(
+        `${resultat.deplacements.length} séance${resultat.deplacements.length > 1 ? 's ont' : ' a'} été remise${resultat.deplacements.length > 1 ? 's' : ''} le matin avant l'enregistrement.`,
+      )
+    } else {
+      setInfoMatin(null)
+    }
+    onSave(resultat.creneaux)
   }
 
   function annuler() {
@@ -366,9 +392,19 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
       </Bouton>
 
       <Bouton type="button" variant="principal" size="lg" icon={Save}
-        loading={saving} className="w-full" onClick={() => onSave(creneaux)}>
+        loading={saving} className="w-full" onClick={enregistrer}>
         {finishLabel}
       </Bouton>
+      {erreurMatin && (
+        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-800">
+          {erreurMatin}
+        </p>
+      )}
+      {infoMatin && (
+        <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800">
+          {infoMatin}
+        </p>
+      )}
     </div>
   )
 }

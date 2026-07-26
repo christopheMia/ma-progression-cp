@@ -8,9 +8,9 @@ import ProgressionCorrector from '@/components/ProgressionCorrector'
 import BudgetIaIndicator from '@/components/BudgetIaIndicator'
 import CahierJournalCard from '@/components/accueil/CahierJournalCard'
 import OutilsIaSection from '@/components/accueil/OutilsIaSection'
-import { semaineEnCours, getStatus } from '@/lib/semaines'
+import { semaineEnCours, getStatus, libelleContenuSemaine } from '@/lib/semaines'
 import {
-  BookOpenText, Pencil, Hand, Sparkles, Globe, ArrowRight,
+  BookOpenText, Pencil, Hand, Sparkles, ArrowRight,
   CalendarDays, Clock, Plus, Compass, BookOpen, Users,
 } from 'lucide-react'
 import Bouton from '@/components/ui/Bouton'
@@ -109,15 +109,24 @@ export default async function AccueilPage() {
 
   // Carte "Cahier journal en cours" : la semaine courante + les suivantes, pour
   // pouvoir preparer a l'avance sans repasser par le planning annuel.
-  const libelle = (s: { graphemes: string[] }) =>
-    s.graphemes.length ? s.graphemes.join(', ') : 'Révisions'
   const couranteLien = courante
-    ? { id: courante.id, numero: courante.numero, libelle: libelle(courante) }
+    ? {
+        id: courante.id,
+        numero: courante.numero,
+        libelle: libelleContenuSemaine(courante.graphemes),
+      }
     : null
   const suivantes = (semaines ?? [])
     .filter(s => courante && s.numero > courante.numero)
     .slice(0, 5)
-    .map(s => ({ id: s.id, numero: s.numero, libelle: libelle(s) }))
+    .map(s => ({
+      id: s.id,
+      numero: s.numero,
+      libelle: libelleContenuSemaine(s.graphemes),
+    }))
+  const contenuCourant = courante
+    ? libelleContenuSemaine(courante.graphemes)
+    : null
 
   const progressionActuelle = (semaines ?? []).map(s => ({
     numero: s.numero,
@@ -165,10 +174,11 @@ export default async function AccueilPage() {
             </span>
             <span className="text-slate-400 text-sm">Semaine {courante.numero}</span>
           </div>
-          <div className="mt-2 text-xl font-semibold text-slate-900">
-            {courante.graphemes.length ? courante.graphemes.join(', ') : 'Révisions'}
-          </div>
-          <div className="text-sm text-slate-500 mt-1 flex items-center gap-1.5"><Globe size={15} className="text-slate-400" aria-hidden="true" /> {courante.edm_theme}</div>
+          {contenuCourant && (
+            <div className="mt-2 text-xl font-semibold text-slate-900">
+              {contenuCourant}
+            </div>
+          )}
           <div className="text-sm text-violet-600 font-medium mt-3 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">Ouvrir la fiche <ArrowRight size={15} aria-hidden="true" /></div>
         </Link>
       )}
@@ -220,7 +230,7 @@ export default async function AccueilPage() {
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Plus size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Ajoute tes matières<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
-          <div className="text-sm text-slate-500">Maths, Anglais, Questionner le monde…</div>
+          <div className="text-sm text-slate-500">Tes matières et leurs progressions</div>
         </Link>
 
         <Link href="/setup"

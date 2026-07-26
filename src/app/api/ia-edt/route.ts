@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
 import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
-import { EDT_JSON_SCHEMA, normaliserEdtImporte } from '@/lib/ia/schema-edt'
+import {
+  EDT_JSON_SCHEMA,
+  normaliserEtCorrigerEdtImporte,
+} from '@/lib/ia/schema-edt'
 import { SYSTEM_IMPORT_EDT, userImportEdt } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
@@ -60,7 +63,14 @@ export async function POST(request: Request) {
 
     const bloc = message.content.find(b => b.type === 'text')
     const parsed = bloc && 'text' in bloc ? JSON.parse(bloc.text) : { creneaux: [] }
-    const creneaux = normaliserEdtImporte(parsed.creneaux ?? [])
+    const resultatMatin = normaliserEtCorrigerEdtImporte(parsed.creneaux ?? [])
+    if (!resultatMatin.ok) {
+      return NextResponse.json(
+        { error: resultatMatin.message },
+        { status: 422 },
+      )
+    }
+    const creneaux = resultatMatin.creneaux
 
     if (creneaux.length === 0) {
       return NextResponse.json(
@@ -68,7 +78,12 @@ export async function POST(request: Request) {
         { status: 422 }
       )
     }
-    return NextResponse.json({ creneaux })
+    return NextResponse.json({
+      creneaux,
+      correction_matin: resultatMatin.modifie
+        ? `${resultatMatin.deplacements.length} séance${resultatMatin.deplacements.length > 1 ? 's ont' : ' a'} été remise${resultatMatin.deplacements.length > 1 ? 's' : ''} le matin pour respecter les priorités.`
+        : null,
+    })
   } catch (err) {
     console.error('ia-edt error:', err)
     const { message, status } = messageErreurIA(err)

@@ -21,3 +21,9 @@ export function semaineEnCours(semaines: Semaine[]): Semaine | null {
     semaines[semaines.length - 1]
   )
 }
+
+/** Libellé d’une semaine fondé uniquement sur un contenu réellement enregistré. */
+export function libelleContenuSemaine(items: readonly string[]): string | null {
+  const contenus = items.map(item => item.trim()).filter(Boolean)
+  return contenus.length > 0 ? contenus.join(', ') : null
+}

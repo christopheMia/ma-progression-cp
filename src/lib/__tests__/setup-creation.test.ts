@@ -130,6 +130,80 @@ function creerDependances() {
 }
 
 describe('executerCreationClasse', () => {
+  test('corrige la priorité du matin avant l’insertion de l’EDT du setup', async () => {
+    const { dependances } = creerDependances()
+    const formulaire = donnees()
+    formulaire.emploiDuTemps = [
+      {
+        jour: 'lundi',
+        heure_debut: '09:00',
+        heure_fin: '10:00',
+        matiere: 'Arts visuels',
+        ordre: 0,
+        type: 'cours',
+      },
+      {
+        jour: 'mardi',
+        heure_debut: '14:00',
+        heure_fin: '15:00',
+        matiere: 'Mathématiques',
+        ordre: 1,
+        type: 'cours',
+      },
+    ]
+
+    await executerCreationClasse(formulaire, 'utilisateur-1', dependances)
+
+    const edt = jest.mocked(dependances.insererEmploiDuTemps).mock.calls[0][0]
+    expect(edt).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        matiere: 'Mathématiques',
+        jour: 'lundi',
+        heure_debut: '09:00',
+        heure_fin: '10:00',
+      }),
+      expect.objectContaining({
+        matiere: 'Arts visuels',
+        jour: 'mardi',
+        heure_debut: '14:00',
+        heure_fin: '15:00',
+      }),
+    ]))
+  })
+
+  test('bloque un EDT du setup impossible à corriger avant toute écriture', async () => {
+    const { dependances } = creerDependances()
+    const formulaire = donnees()
+    formulaire.emploiDuTemps = [
+      {
+        jour: 'lundi',
+        heure_debut: '09:00',
+        heure_fin: '09:30',
+        matiere: 'Anglais',
+        ordre: 0,
+        type: 'cours',
+      },
+      {
+        jour: 'mardi',
+        heure_debut: '14:00',
+        heure_fin: '15:00',
+        matiere: 'Étude de la langue',
+        ordre: 1,
+        type: 'cours',
+      },
+    ]
+
+    await expect(executerCreationClasse(
+      formulaire,
+      'utilisateur-1',
+      dependances,
+    )).rejects.toThrow(/Étude de la langue.*60 min.*matin/)
+
+    expect(dependances.lireAnciennesClasses).not.toHaveBeenCalled()
+    expect(dependances.insererClasse).not.toHaveBeenCalled()
+    expect(dependances.insererEmploiDuTemps).not.toHaveBeenCalled()
+  })
+
   test('crée une classe sans méthode avec un squelette officiel de 36 semaines', async () => {
     const { dependances, operations } = creerDependances()
 

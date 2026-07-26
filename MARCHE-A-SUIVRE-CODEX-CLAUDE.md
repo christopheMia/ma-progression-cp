@@ -363,6 +363,48 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-26 - Codex - priorité commune des matières imposées le matin**.
+  Décision explicite de Christophe appliquée sans remise à zéro et sans écriture
+  distante. Nouveau moteur pur `src/lib/edt-matin.ts` : mathématiques, code et étude
+  de la langue sont reconnus par des règles explicites, puis servis en priorité dans
+  les créneaux du matin. Une correction déterministe échange uniquement des séances
+  complètes de même durée, avec toutes leurs données et leur mise en forme. Si la
+  correction imposerait de découper ou de modifier la durée d'un cours, l'enregistrement
+  est bloqué avant toute écriture avec un message indiquant la matière et la durée du
+  créneau du matin nécessaire. Les routines ne sont jamais déplacées.
+  `genererEdtCP` applique désormais cette priorité aux trois matières, tout en gardant
+  les quotas et le code quotidien. La même validation couvre la création depuis le
+  setup, la génération et le rechargement depuis les paramètres, l'import IA d'EDT,
+  l'édition dans `TimetableGrid`, la Server Action de remplacement et le mode
+  démonstration. L'import et l'éditeur signalent une correction automatique ou un
+  blocage compréhensible. Tests comportementaux ajoutés pour les trois familles, le
+  débordement après-midi, la trame type, l'import, l'édition et le setup.
+  Validation finale : 54 suites et 454 tests verts, type-check propre,
+  `git diff --check` propre et aucun tiret cadratin dans les fichiers du chantier.
+  Aucune donnée de classe de Christophe n'a été lue, modifiée ou supprimée. Aucun
+  commit ni push.
+
+- **2026-07-26 - Codex - suppression complete des residus Explorer le monde**.
+  Decision explicite de Christophe appliquee. `EdmBlock` et l'ancienne constante
+  `EDM_PROGRESSION_CP` ont ete supprimes avec leurs imports. `WeekCard`, la fiche
+  semaine, l'accueil et l'aide n'affichent plus les champs historiques `edm_theme`
+  et `edm_competences`. Ces colonnes restent vides et presentes dans le type car le
+  schema actuel les impose encore. Une semaine sans contenu ne recoit plus le faux
+  libelle « Revisions » sur l'accueil ou la carte du cahier journal. Une progression
+  Questionner le monde vraiment enregistree continue de passer par le chemin
+  multi-matieres et son libelle canonique. Le mode demonstration emploie maintenant
+  le nom officiel « Questionner le monde ». Tests ajoutes sur les semaines vides, les
+  anciens champs et les vraies donnees QLM. Validation : 53 suites et 425 tests verts,
+  type-check propre, `git diff --check` propre. Aucun commit ni push.
+  Controle en lecture seule ajoute sur la regle « mathematiques, code et etude de la
+  langue uniquement le matin ». Violation confirmee, non corrigee dans ce chantier :
+  `genererEdtCP(true)` garantit seulement le code a 08:45. Son algorithme general
+  place aussi l'etude de la langue l'apres-midi lundi, jeudi et vendredi, ainsi que
+  les mathematiques lundi et jeudi. Les tests existants disent explicitement que seul
+  le code reste garanti le matin. L'import PDF, l'edition manuelle et
+  `updateEmploiDuTemps` ne valident aucune contrainte matinale, puis le cahier journal
+  recopie les horaires sans les corriger. Ce point demande un correctif separe.
+
 - **2026-07-26 - Claude Code - calage des semaines a l'import**. Un sommaire dont la
   premiere semaine de la rentree est vide decalait toute l'annee, en silence. Deux
   pertes de donnees corrigees : `normalizeProgression` ne renumerote plus par position

@@ -1,6 +1,5 @@
 import { addWeeks, format } from 'date-fns'
 import { LECTURE_PIANO } from '@/data/manuels/lecture-piano'
-import { EDM_PROGRESSION_CP } from '@/data/edm/progression-cp'
 import { ProgressionSemaine } from '@/data/manuels'
 import { Semaine } from '@/types'
 
@@ -21,10 +20,8 @@ export function genererSqueletteSemaines(rentreeDate: string): Omit<Semaine, 'id
       numero: i + 1,
       date_debut: format(dateDebut, 'yyyy-MM-dd'),
       graphemes: [],
-      // Aucun contenu impose a la creation : les semaines partent vides et se
-      // remplissent avec les documents que l'enseignante importe. Une ancienne
-      // progression d'exemple (« questionner le monde ») etait posee ici d'office
-      // sur les 36 semaines de toute nouvelle classe. Retiree le 26/07/2026.
+      // Ces deux colonnes historiques restent obligatoires en base. Elles restent
+      // vides : les contenus viennent uniquement des progressions enregistrées.
       edm_theme: '',
       edm_competences: '',
       manuel_pages: null,

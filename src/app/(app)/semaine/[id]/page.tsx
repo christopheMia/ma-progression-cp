@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import MatiereBlock from '@/components/semaine/MatiereBlock'
-import EdmBlock from '@/components/semaine/EdmBlock'
 import StudentTracking from '@/components/semaine/StudentTracking'
 import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
 import CollapsibleSection from '@/components/semaine/CollapsibleSection'
@@ -67,7 +66,6 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
               motsExemple={motsExemple} manuel={m.manuel as string | null} />
           )
         })}
-        <EdmBlock semaine={semaine} />
       </CollapsibleSection>
       <StudentTracking
         semaine={semaine}

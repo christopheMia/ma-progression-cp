@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { ensureMethode } from '@/lib/methodes-db'
 import { periodesOfficielles } from '@/lib/calendrier-officiel'
 import { datesSemainesCalendaires } from '@/lib/calendrier-semaines'
+import { corrigerPrioriteMatin } from '@/lib/edt-matin'
 
 const PRENOMS = ['Lina', 'Tom', 'Aya', 'Noah', 'Jade', 'Sacha', 'Léa', 'Gabriel', 'Manon', 'Yanis']
 
@@ -15,7 +16,7 @@ const EDT: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere
   { jour: 'lundi', heure_debut: '08:30', heure_fin: '09:15', matiere: 'Lecture' },
   { jour: 'lundi', heure_debut: '09:15', heure_fin: '10:00', matiere: 'Écriture' },
   { jour: 'lundi', heure_debut: '10:15', heure_fin: '11:15', matiere: 'Mathématiques' },
-  { jour: 'lundi', heure_debut: '13:30', heure_fin: '14:15', matiere: 'Explorer le monde' },
+  { jour: 'lundi', heure_debut: '13:30', heure_fin: '14:15', matiere: 'Questionner le monde' },
   { jour: 'lundi', heure_debut: '14:15', heure_fin: '15:00', matiere: 'EPS' },
   // Mardi
   { jour: 'mardi', heure_debut: '08:30', heure_fin: '09:15', matiere: 'Lecture' },
@@ -26,7 +27,7 @@ const EDT: Array<{ jour: string; heure_debut: string; heure_fin: string; matiere
   { jour: 'jeudi', heure_debut: '08:30', heure_fin: '09:15', matiere: 'Lecture' },
   { jour: 'jeudi', heure_debut: '09:15', heure_fin: '10:00', matiere: 'Écriture' },
   { jour: 'jeudi', heure_debut: '10:15', heure_fin: '11:15', matiere: 'Mathématiques' },
-  { jour: 'jeudi', heure_debut: '13:30', heure_fin: '14:15', matiere: 'Explorer le monde' },
+  { jour: 'jeudi', heure_debut: '13:30', heure_fin: '14:15', matiere: 'Questionner le monde' },
   { jour: 'jeudi', heure_debut: '14:15', heure_fin: '15:00', matiere: 'Éducation musicale' },
   // Vendredi
   { jour: 'vendredi', heure_debut: '08:30', heure_fin: '09:15', matiere: 'Lecture' },
@@ -45,6 +46,8 @@ export async function chargerClasseDemo() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Non connecté')
+  const resultatMatin = corrigerPrioriteMatin(EDT)
+  if (!resultatMatin.ok) throw new Error(resultatMatin.message)
 
   // Comme pour le setup, la classe actuelle reste intacte tant que la classe
   // de demonstration n'est pas completement construite.
@@ -79,7 +82,7 @@ export async function chargerClasseDemo() {
     }
 
     const { error: edtError } = await supabase.from('emploi_du_temps')
-      .insert(EDT.map((c, i) => ({ ...c, class_id: classe.id, ordre: i })))
+      .insert(resultatMatin.creneaux.map((c, i) => ({ ...c, class_id: classe.id, ordre: i })))
     if (edtError) throw new Error(`Création de l'emploi du temps de démonstration impossible : ${edtError.message}`)
 
     const progression = genererProgression('lecture-piano', rentree)

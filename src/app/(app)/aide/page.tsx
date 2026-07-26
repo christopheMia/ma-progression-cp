@@ -77,7 +77,7 @@ export default function AidePage() {
 
       <Bloc titre="📅 Lire le planning annuel">
         <p>Le planning montre les 36 semaines regroupées par période. Cliquez sur une semaine pour
-          ouvrir sa fiche détaillée (lecture, explorer le monde, suivi, cahier journal).</p>
+          ouvrir sa fiche détaillée (progressions, suivi, emploi du temps, cahier journal).</p>
       </Bloc>
 
       <Bloc titre="✅ Le suivi des élèves">
