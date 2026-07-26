@@ -80,7 +80,11 @@ export default function EdtGrilleLecture({ creneaux }: { creneaux: CreneauLectur
                   rowSpan={etat.etat === 'seance' && etat.span > 1 ? etat.span : undefined}
                   className="border border-violet-100 p-1 align-top break-words hyphens-auto"
                   style={{ backgroundColor: (c ? couleurAffichee(c) : null) ?? undefined }}>
-                  <span style={{
+                  {/* `text-slate-900` explicite : le libelle ne doit jamais
+                      dependre de la couleur heritee du <body>, sinon il vire au
+                      clair des que l'environnement change. La couleur choisie
+                      par l'enseignante passe devant, en style inline. */}
+                  <span className="text-slate-900" style={{
                     color: c?.couleur_texte ?? undefined,
                     fontWeight: c?.texte_gras ? 700 : undefined,
                     fontStyle: c?.texte_italique ? 'italic' : undefined,

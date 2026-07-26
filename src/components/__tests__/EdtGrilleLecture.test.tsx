@@ -31,6 +31,22 @@ describe('EdtGrilleLecture', () => {
     expect(cellule?.style.backgroundColor).toBe('rgb(254, 224, 196)') // orange langue vivante
   })
 
+  test('le nom de la matière porte sa propre couleur, sans dépendre de l’héritage', () => {
+    // Retour du 26/07 : la grille en lecture ne posait aucune couleur de texte,
+    // donc elle héritait de celle du <body>. Sur un poste réglé en mode sombre,
+    // le libellé passait en blanc sur fond pastel : illisible.
+    render(<EdtGrilleLecture creneaux={[c('lundi', '09:00', '10:00', 'Maths')]} />)
+    const libelle = screen.getByText('Maths')
+    expect(libelle.className).toMatch(/text-slate-900/)
+  })
+
+  test('la couleur de texte choisie par l’enseignante l’emporte', () => {
+    render(<EdtGrilleLecture creneaux={[
+      c('lundi', '09:00', '10:00', 'Maths', { couleur_texte: '#b91c1c' }),
+    ]} />)
+    expect(screen.getByText('Maths').style.color).toBe('rgb(185, 28, 28)')
+  })
+
   test('les noms de jours sont abrégés en version courte pour les petits écrans', () => {
     render(<EdtGrilleLecture creneaux={[c('lundi', '09:00', '10:00', 'Maths')]} />)
     expect(screen.getByText('Lundi')).toBeDefined()

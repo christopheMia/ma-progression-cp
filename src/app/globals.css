@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* L'application n'a qu'un theme, clair. Le declarer evite que le navigateur
+     repeigne les controles natifs (menus deroulants, champs date et heure,
+     selecteurs de couleur) en sombre sur un poste regle en sombre. */
+  color-scheme: light;
 }
 
 @theme inline {
@@ -12,12 +16,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Pas de bloc `prefers-color-scheme: dark` ici, volontairement.
+   Le gabarit Next en pose un qui repeint --foreground en #ededed. Comme toute
+   l'interface est batie sur des fonds blancs, un poste regle en mode sombre
+   affichait alors du texte quasi blanc sur du blanc : c'est ce qui rendait
+   l'emploi du temps illisible (retour de Christophe du 26/07). Tant qu'il n'y
+   a pas de vrai theme sombre, la palette reste claire pour tout le monde. */
 
 body {
   background: var(--background);
