@@ -10,6 +10,13 @@ import Bouton from '@/components/ui/Bouton'
 import { ajouterSourceProgression } from '@/lib/actions/methode-sources'
 import type { SourceProgression } from '@/lib/progression-sources'
 import type { ZoneScolaire } from '@/lib/calendrier-officiel'
+import {
+  CLE_POSITION,
+  contraindre,
+  estGlissement,
+  lirePositionMemorisee,
+  type Position,
+} from '@/lib/position-flottante'
 
 type Onglet = 'discuter' | 'document'
 
@@ -36,6 +43,95 @@ export default function AssistantFlottant({
   } | null>(null)
   const ajoutRef = useRef(false)
   const router = useRouter()
+
+  // Position libre du bouton. null = position par defaut (sous l'en-tete, a
+  // gauche). Elle n'est lue qu'apres le montage pour ne pas casser le rendu
+  // serveur, qui n'a pas acces au stockage local.
+  const [position, setPosition] = useState<Position | null>(null)
+  const boutonRef = useRef<HTMLDivElement | null>(null)
+  const glissementRef = useRef<{
+    pointerId: number
+    depart: Position
+    decalage: Position
+    aBouge: boolean
+  } | null>(null)
+  const [enDeplacement, setEnDeplacement] = useState(false)
+  // Le pointerup precede le click: sans ce temoin, relacher apres un glissement
+  // ouvrirait le panneau, et le bouton serait impossible a deplacer.
+  const vientDeGlisserRef = useRef(false)
+
+  useEffect(() => {
+    const memorisee = lirePositionMemorisee(window.localStorage.getItem(CLE_POSITION))
+    if (!memorisee) return
+    const boite = boutonRef.current?.getBoundingClientRect()
+    setPosition(contraindre(
+      memorisee,
+      { largeur: boite?.width ?? 44, hauteur: boite?.height ?? 44 },
+      { largeur: window.innerWidth, hauteur: window.innerHeight },
+    ))
+  }, [])
+
+  // La fenetre peut retrecir apres coup: on ne laisse jamais le bouton dehors.
+  useEffect(() => {
+    if (!position) return
+    function replacer() {
+      const boite = boutonRef.current?.getBoundingClientRect()
+      setPosition(actuelle => actuelle && contraindre(
+        actuelle,
+        { largeur: boite?.width ?? 44, hauteur: boite?.height ?? 44 },
+        { largeur: window.innerWidth, hauteur: window.innerHeight },
+      ))
+    }
+    window.addEventListener('resize', replacer)
+    return () => window.removeEventListener('resize', replacer)
+  }, [position])
+
+  function commencerGlissement(event: React.PointerEvent<HTMLDivElement>) {
+    // Bouton gauche / doigt / stylet seulement.
+    if (event.button !== 0) return
+    const boite = boutonRef.current?.getBoundingClientRect()
+    if (!boite) return
+    glissementRef.current = {
+      pointerId: event.pointerId,
+      depart: { x: event.clientX, y: event.clientY },
+      decalage: { x: event.clientX - boite.left, y: event.clientY - boite.top },
+      aBouge: false,
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function suivreGlissement(event: React.PointerEvent<HTMLDivElement>) {
+    const glissement = glissementRef.current
+    if (!glissement || glissement.pointerId !== event.pointerId) return
+    const courant = { x: event.clientX, y: event.clientY }
+    if (!glissement.aBouge && !estGlissement(glissement.depart, courant)) return
+
+    glissement.aBouge = true
+    setEnDeplacement(true)
+    const boite = boutonRef.current?.getBoundingClientRect()
+    setPosition(contraindre(
+      { x: courant.x - glissement.decalage.x, y: courant.y - glissement.decalage.y },
+      { largeur: boite?.width ?? 44, hauteur: boite?.height ?? 44 },
+      { largeur: window.innerWidth, hauteur: window.innerHeight },
+    ))
+  }
+
+  function terminerGlissement(event: React.PointerEvent<HTMLDivElement>) {
+    const glissement = glissementRef.current
+    if (!glissement || glissement.pointerId !== event.pointerId) return
+    glissementRef.current = null
+    setEnDeplacement(false)
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    if (!glissement.aBouge) return
+    // Un vrai deplacement : on memorise, et on empeche l'ouverture du panneau.
+    vientDeGlisserRef.current = true
+    setPosition(actuelle => {
+      if (actuelle) window.localStorage.setItem(CLE_POSITION, JSON.stringify(actuelle))
+      return actuelle
+    })
+  }
 
   useEffect(() => {
     if (!ouvert) return
@@ -73,8 +169,17 @@ export default function AssistantFlottant({
           elegant qu'un clignotement, et coupe si le systeme demande moins
           d'animations. */}
       <div
-        style={{ top: 'calc(4.5rem + env(safe-area-inset-top, 0px))' }}
-        className="fixed left-4 z-50 print:hidden sm:left-5"
+        ref={boutonRef}
+        onPointerDown={commencerGlissement}
+        onPointerMove={suivreGlissement}
+        onPointerUp={terminerGlissement}
+        onPointerCancel={terminerGlissement}
+        style={position
+          ? { top: position.y, left: position.x }
+          : { top: 'calc(4.5rem + env(safe-area-inset-top, 0px))' }}
+        className={`fixed z-50 touch-none print:hidden ${
+          position ? '' : 'left-4 sm:left-5'
+        } ${enDeplacement ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         <span
           aria-hidden="true"
@@ -87,9 +192,16 @@ export default function AssistantFlottant({
           variant="principal"
           size="md"
           icon={Sparkles}
-          onClick={() => setOuvert(true)}
+          onClick={() => {
+            if (vientDeGlisserRef.current) {
+              vientDeGlisserRef.current = false
+              return
+            }
+            setOuvert(true)
+          }}
           aria-expanded={ouvert}
           aria-label="Mon assistant"
+          title="Clique pour ouvrir, glisse pour déplacer"
           className="h-11 w-11 justify-center gap-0 p-0 shadow-lg shadow-violet-500/40 transition-[width] duration-300 ease-out [&_svg]:shrink-0 hover:w-auto hover:gap-2 hover:px-4 focus-visible:w-auto focus-visible:gap-2 focus-visible:px-4 motion-reduce:transition-none"
         >
           {/* Replie sur le seul logo ; le libelle se deroule au survol et a la
