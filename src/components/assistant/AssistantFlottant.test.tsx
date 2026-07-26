@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import AssistantFlottant from '@/components/assistant/AssistantFlottant'
 import { ajouterSourceProgression } from '@/lib/actions/methode-sources'
@@ -49,12 +49,50 @@ jest.mock('@/components/methodes/SourceImporter', () => ({
 }))
 
 describe('AssistantFlottant', () => {
+  // Sans ca, un test qui echoue avant son useRealTimers laisse les faux
+  // minuteurs actifs et fait echouer les suivants pour une mauvaise raison.
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
     jest.mocked(ajouterSourceProgression).mockResolvedValue({
       sourceId: 'source-1',
       methodeId: 'm-ma',
     })
+  })
+
+  test('un simple clic ouvre le panneau, même avec le bouton déplaçable', () => {
+    // Regression du 26/07 : capturer le pointeur des l'appui redirigeait le clic
+    // vers le conteneur, le bouton ne le recevait plus, et plus rien ne s'ouvrait.
+    render(<AssistantFlottant hasClass />)
+    const bouton = screen.getByRole('button', { name: 'Mon assistant' })
+
+    fireEvent.pointerDown(bouton, { pointerId: 1, clientX: 20, clientY: 100, button: 0 })
+    fireEvent.pointerUp(bouton, { pointerId: 1, clientX: 20, clientY: 100 })
+    fireEvent.click(bouton)
+
+    expect(screen.getByRole('dialog', { name: 'Mon assistant' })).toBeInTheDocument()
+  })
+
+  test('la bulle d’accueil se présente, puis se tait une fois l’assistant utilisé', async () => {
+    jest.useFakeTimers()
+    window.localStorage.clear()
+    const { unmount } = render(<AssistantFlottant hasClass />)
+
+    act(() => { jest.advanceTimersByTime(1500) })
+    expect(screen.getByText(/ton assistant préféré est là/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Merci, j’ai compris' }))
+    expect(screen.queryByText(/ton assistant préféré est là/)).toBeNull()
+
+    // Elle ne revient pas au chargement suivant.
+    unmount()
+    render(<AssistantFlottant hasClass />)
+    act(() => { jest.advanceTimersByTime(1500) })
+    expect(screen.queryByText(/ton assistant préféré est là/)).toBeNull()
+    jest.useRealTimers()
   })
 
   test('s’ouvre sur la conversation, pas sur le formulaire d’import', () => {

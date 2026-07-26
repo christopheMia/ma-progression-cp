@@ -20,6 +20,9 @@ import {
 
 type Onglet = 'discuter' | 'document'
 
+/** Temoin : l'assistant a deja ete ouvert au moins une fois. */
+const CLE_ASSISTANT_UTILISE = 'assistant-deja-ouvert'
+
 export default function AssistantFlottant({
   hasClass,
   prenom,
@@ -60,6 +63,23 @@ export default function AssistantFlottant({
   // ouvrirait le panneau, et le bouton serait impossible a deplacer.
   const vientDeGlisserRef = useRef(false)
 
+  // Bulle d'accueil : tant qu'on n'a jamais ouvert l'assistant, il se presente
+  // lui-meme. Une fois utilise, il se tait pour de bon.
+  const [bulleVisible, setBulleVisible] = useState(false)
+
+  useEffect(() => {
+    if (window.localStorage.getItem(CLE_ASSISTANT_UTILISE)) return
+    // Petit delai : la bulle arrive apres que la page se soit posee, sinon elle
+    // se fond dans le chargement et personne ne la voit.
+    const minuterie = window.setTimeout(() => setBulleVisible(true), 1200)
+    return () => window.clearTimeout(minuterie)
+  }, [])
+
+  function masquerBulle() {
+    setBulleVisible(false)
+    window.localStorage.setItem(CLE_ASSISTANT_UTILISE, '1')
+  }
+
   useEffect(() => {
     const memorisee = lirePositionMemorisee(window.localStorage.getItem(CLE_POSITION))
     if (!memorisee) return
@@ -97,7 +117,10 @@ export default function AssistantFlottant({
       decalage: { x: event.clientX - boite.left, y: event.clientY - boite.top },
       aBouge: false,
     }
-    event.currentTarget.setPointerCapture(event.pointerId)
+    // Pas de setPointerCapture ici : capturer des l'appui redirige l'evenement
+    // `click` vers ce conteneur, le bouton ne le recoit plus, et un simple clic
+    // n'ouvre plus rien. On ne capture qu'une fois le glissement reellement
+    // engage (voir suivreGlissement).
   }
 
   function suivreGlissement(event: React.PointerEvent<HTMLDivElement>) {
@@ -106,7 +129,11 @@ export default function AssistantFlottant({
     const courant = { x: event.clientX, y: event.clientY }
     if (!glissement.aBouge && !estGlissement(glissement.depart, courant)) return
 
-    glissement.aBouge = true
+    if (!glissement.aBouge) {
+      glissement.aBouge = true
+      // Maintenant seulement : le geste est un deplacement, pas un clic.
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
     setEnDeplacement(true)
     const boite = boutonRef.current?.getBoundingClientRect()
     setPosition(contraindre(
@@ -197,6 +224,7 @@ export default function AssistantFlottant({
               vientDeGlisserRef.current = false
               return
             }
+            masquerBulle()
             setOuvert(true)
           }}
           aria-expanded={ouvert}
@@ -210,6 +238,29 @@ export default function AssistantFlottant({
             Mon assistant
           </span>
         </Bouton>
+
+        {bulleVisible && !ouvert && (
+          <div
+            role="status"
+            className="absolute left-full top-1/2 ml-3 w-56 -translate-y-1/2 animate-pop-in rounded-2xl border border-violet-200 bg-white p-3 shadow-xl"
+          >
+            {/* Petite pointe qui rattache la bulle au bouton. */}
+            <span
+              aria-hidden="true"
+              className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-violet-200 bg-white"
+            />
+            <p className="text-sm leading-6 text-slate-800">
+              Hey ! Si tu as besoin d’aide, ton assistant préféré est là !
+            </p>
+            <button
+              type="button"
+              onClick={masquerBulle}
+              className="mt-2 text-xs font-semibold text-violet-700 underline-offset-2 hover:underline"
+            >
+              Merci, j’ai compris
+            </button>
+          </div>
+        )}
       </div>
 
       {ouvert && (
