@@ -31,9 +31,9 @@ function toStringArray(v: unknown): string[] {
   return v.map(x => (typeof x === 'string' ? x.trim() : '')).filter(Boolean)
 }
 
-export function normalizeProgression(brut: unknown[]): ProgressionSemaine[] {
+function nettoyerSemainesBrutes(brut: unknown[]): ProgressionSemaine[] {
   const items = Array.isArray(brut) ? brut : []
-  const cleaned = items.map((raw) => {
+  return items.map((raw) => {
     const o = (raw ?? {}) as Record<string, unknown>
     return {
       numero: typeof o.numero === 'number' ? o.numero : 0,
@@ -42,6 +42,33 @@ export function normalizeProgression(brut: unknown[]): ProgressionSemaine[] {
       mots_exemple: toStringArray(o.mots_exemple),
     }
   })
-  cleaned.sort((a, b) => a.numero - b.numero)
-  return cleaned.slice(0, MAX_SEMAINES).map((s, i) => ({ ...s, numero: i + 1 }))
+}
+
+/**
+ * Vrai quand TOUS les numeros rendus par l'IA sont des semaines plausibles
+ * (entiers de 1 a 36). Dans ce cas seulement ils peuvent servir au calage.
+ * Sinon le calage ne repose que sur l'ordre de la liste, ce que l'ecran doit
+ * dire franchement a l'enseignante.
+ */
+export function numerosSemainesFiables(brut: unknown[]): boolean {
+  const cleaned = nettoyerSemainesBrutes(brut)
+  if (cleaned.length === 0) return false
+  return cleaned.every(s =>
+    Number.isInteger(s.numero) && s.numero >= 1 && s.numero <= MAX_SEMAINES)
+}
+
+/**
+ * Nettoie les semaines rendues par l'IA SANS toucher a leur numero quand il est
+ * utilisable. Renumeroter detruisait l'information « ce manuel commence en
+ * semaine 2 », donc decalait toute l'annee d'un cran : un sommaire qui laisse la
+ * semaine de la rentree a l'accueil voyait son premier son remonter en semaine 1.
+ * Le placement reel dans l'annee appartient a src/lib/calage-semaines.ts.
+ */
+export function normalizeProgression(brut: unknown[]): ProgressionSemaine[] {
+  const cleaned = nettoyerSemainesBrutes(brut)
+  if (!numerosSemainesFiables(brut)) {
+    // Aucun numero exploitable : on numerote dans l'ordre recu.
+    return cleaned.slice(0, MAX_SEMAINES).map((s, i) => ({ ...s, numero: i + 1 }))
+  }
+  return [...cleaned].sort((a, b) => a.numero - b.numero).slice(0, MAX_SEMAINES)
 }

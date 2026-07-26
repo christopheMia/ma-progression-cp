@@ -57,7 +57,8 @@ describe('POST /api/ia-manuel', () => {
       confiance_detection: 1,
       avertissements: ['document partiel', ''],
       type_document: 'manuel',
-      progression: [{ numero: 1, items: ['a'], pages: 'p. 3', mots_exemple: ['ami'] }],
+      // La semaine 4 reste la semaine 4 : renumeroter decalait toute l'annee.
+      progression: [{ numero: 4, items: ['a'], pages: 'p. 3', mots_exemple: ['ami'] }],
       periodes: [],
     })
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
@@ -87,7 +88,7 @@ describe('POST /api/ia-manuel', () => {
       confiance_detection: 0,
       avertissements: ['manque une page'],
       type_document: 'periode',
-      progression: [{ numero: 1, items: ['Compter jusqu a 10'], pages: '', mots_exemple: [] }],
+      progression: [{ numero: 9, items: ['Compter jusqu a 10'], pages: '', mots_exemple: [] }],
       periodes: [],
     })
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
