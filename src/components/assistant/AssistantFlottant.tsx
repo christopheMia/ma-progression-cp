@@ -55,18 +55,32 @@ export default function AssistantFlottant({
 
   return (
     <>
-      <Bouton
-        type="button"
-        variant="principal"
-        size="lg"
-        icon={Sparkles}
-        onClick={() => setOuvert(true)}
-        aria-expanded={ouvert}
+      {/* Un trait lumineux court le long de la bordure : un degrade conique
+          tourne derriere le bouton, et seul le liseré de 2px deborde. Plus
+          elegant qu'un clignotement, et coupe si le systeme demande moins
+          d'animations. */}
+      <div
         style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
-        className="fixed right-4 z-50 shadow-lg shadow-violet-500/40 ring-4 ring-violet-300/70 animate-pulse [animation-duration:2.5s] motion-reduce:animate-none print:hidden sm:right-5"
+        className="fixed right-4 z-50 print:hidden sm:right-5"
       >
-        Mon assistant
-      </Bouton>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-[2px] overflow-hidden rounded-[14px]"
+        >
+          <span className="absolute left-1/2 top-1/2 aspect-square w-[220%] -translate-x-1/2 -translate-y-1/2 animate-[spin_2.5s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_250deg,#ddd6fe_300deg,#ffffff_330deg,#a78bfa_350deg,transparent_360deg)] motion-reduce:animate-none" />
+        </span>
+        <Bouton
+          type="button"
+          variant="principal"
+          size="lg"
+          icon={Sparkles}
+          onClick={() => setOuvert(true)}
+          aria-expanded={ouvert}
+          className="shadow-lg shadow-violet-500/40"
+        >
+          Mon assistant
+        </Bouton>
+      </div>
 
       {ouvert && (
         <div className="fixed inset-0 z-40 flex justify-end print:hidden">
