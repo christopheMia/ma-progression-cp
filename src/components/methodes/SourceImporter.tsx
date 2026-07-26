@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 import { FileCheck2, FileUp, Plus, Search } from 'lucide-react'
 import Bouton from '@/components/ui/Bouton'
 import SourceContentPreview from '@/components/methodes/SourceContentPreview'
+import BandeauCalage from '@/components/methodes/BandeauCalage'
+import {
+  calerSemaines,
+  decalagePourDemarrerEn,
+  type BaseCalage,
+} from '@/lib/calage-semaines'
+import type { ZoneScolaire } from '@/lib/calendrier-officiel'
+import { baseCalageImport } from '@/lib/ia/schema-import-auto'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
 import {
@@ -18,6 +26,9 @@ type SourceImporterProps = {
   prenom?: string
   matiereInitiale?: string
   methodeInitiale?: string
+  /** Date de rentrée de la classe. Absente = ni bandeau de calage ni dates. */
+  rentreeDate?: string
+  zone?: ZoneScolaire
   onSourceReady: (source: SourceProgression) => void | Promise<void>
   onCancel?: () => void
 }
@@ -29,6 +40,7 @@ type AnalyseSource = {
   periodeNumero: NumeroPeriode | null
   confiance: number
   avertissements: string[]
+  baseCalage: BaseCalage
   semaines: ProgressionSemaine[]
   periodes: PeriodeProgrammation[]
   nomSource: string
@@ -41,6 +53,7 @@ type ReponseImport = {
   periode_numero?: unknown
   confiance_detection?: unknown
   avertissements?: unknown
+  base_calage?: unknown
   progression?: unknown
   periodes?: unknown
   error?: unknown
@@ -183,6 +196,8 @@ export default function SourceImporter({
   prenom,
   matiereInitiale = '',
   methodeInitiale = '',
+  rentreeDate,
+  zone,
   onSourceReady,
   onCancel,
 }: SourceImporterProps) {
@@ -194,12 +209,41 @@ export default function SourceImporter({
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState<string | null>(null)
+  // Decalage a appliquer aux numeros rendus par l'IA. L'enseignante ne le voit
+  // jamais: elle repond « ma progression demarre en semaine N » et on convertit.
+  const [decalage, setDecalage] = useState(0)
   const savingRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const requeteTokenRef = useRef(0)
 
   const etapeActive = saving || ready ? 3 : analyse ? 2 : 1
   const erreursValidation = analyse ? explicationsValidation(analyse) : []
+
+  // Recalcul purement local: repondre a la question ne rappelle jamais l'IA.
+  const calage = analyse && analyse.typeDocument !== 'programmation' && rentreeDate && zone
+    ? calerSemaines({
+        semaines: analyse.semaines,
+        rentreeDate,
+        zone,
+        base: analyse.baseCalage,
+        decalage,
+      })
+    : null
+
+  // Les lignes vides sont AFFICHEES (le trou se voit) mais pas enregistrees:
+  // le trou dans la numerotation porte deja la meme information.
+  const semainesAffichees: ProgressionSemaine[] = calage
+    ? calage.lignes.map(ligne => ({
+        numero: ligne.numero,
+        items: ligne.items,
+        pages: ligne.pages,
+        mots_exemple: ligne.motsExemple,
+      }))
+    : analyse?.semaines ?? []
+
+  const datesParNumero = calage
+    ? Object.fromEntries(calage.lignes.map(ligne => [ligne.numero, ligne.dateLundi]))
+    : undefined
 
   useEffect(() => () => {
     requeteTokenRef.current += 1
@@ -216,6 +260,7 @@ export default function SourceImporter({
     setError(null)
     setConfirmation(null)
     setAnalyse(null)
+    setDecalage(0)
     setLoading(true)
     return operation
   }
@@ -237,6 +282,8 @@ export default function SourceImporter({
   ) {
     const indice = indiceMatiere.trim()
     if (indice) form.append('matiere', indice)
+    // Permet a l'IA de rattacher une date du document a l'annee reelle.
+    if (rentreeDate) form.append('rentree_date', rentreeDate)
 
     try {
       const response = await fetch('/api/ia-manuel', {
@@ -277,6 +324,7 @@ export default function SourceImporter({
         periodeNumero: estNumeroPeriode(data.periode_numero) ? data.periode_numero : null,
         confiance: Math.max(0, Math.min(1, confianceBrute)),
         avertissements,
+        baseCalage: baseCalageImport(data.base_calage),
         semaines: normaliserSemaines(data.progression),
         periodes: normaliserPeriodes(data.periodes),
         nomSource,
@@ -371,7 +419,13 @@ export default function SourceImporter({
         nomMethode: nettoyerTexte(analyse.nomMethode),
         semaines: analyse.typeDocument === 'programmation'
           ? []
-          : nettoyerSemaines(analyse.semaines),
+          // Le decalage repondu a l'ecran est celui qu'on enregistre.
+          : nettoyerSemaines(
+              analyse.semaines.map(semaine => ({
+                ...semaine,
+                numero: semaine.numero + decalage,
+              })),
+            ),
         periodes: analyse.typeDocument === 'programmation'
           ? nettoyerPeriodes(analyse.periodes)
           : [],
@@ -669,11 +723,30 @@ export default function SourceImporter({
                 Une ligne correspond à une notion complète. Tu peux tout corriger ici.
               </p>
             </div>
+            {calage && (
+              <div className="mb-4">
+                <BandeauCalage
+                  calage={calage}
+                  onSemaineDepart={semaine => setDecalage(
+                    decalagePourDemarrerEn(analyse.semaines, semaine),
+                  )}
+                />
+              </div>
+            )}
             <SourceContentPreview
               typeDocument={analyse.typeDocument}
-              semaines={analyse.semaines}
+              semaines={semainesAffichees}
               periodes={analyse.periodes}
-              onSemainesChange={semaines => setAnalyse({ ...analyse, semaines })}
+              datesParNumero={datesParNumero}
+              onSemainesChange={semaines => setAnalyse({
+                ...analyse,
+                // L'apercu montre les numeros decales ; l'analyse garde les
+                // numeros d'origine, sinon le decalage s'appliquerait deux fois.
+                semaines: semaines.map(semaine => ({
+                  ...semaine,
+                  numero: semaine.numero - decalage,
+                })),
+              })}
               onPeriodesChange={periodes => setAnalyse({ ...analyse, periodes })}
             />
           </div>

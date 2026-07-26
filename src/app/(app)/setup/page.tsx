@@ -127,6 +127,8 @@ export default function SetupPage() {
       {step === 2 && (
         <ProgressionsSetup
           initialSources={data.sourcesProgression}
+          rentreeDate={data.rentreeDate}
+          zone={data.zoneScolaire}
           onContinue={sources => {
             setData(d => ({ ...d, sourcesProgression: sources }))
             setStep(3)

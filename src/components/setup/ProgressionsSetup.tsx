@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ArrowRight, BookOpenCheck, Files, FolderOpen, Info, Trash2 } from 'lucide-react'
 import SourceImporter from '@/components/methodes/SourceImporter'
+import type { ZoneScolaire } from '@/lib/calendrier-officiel'
 import Bouton from '@/components/ui/Bouton'
 import {
   analyserAjoutSource,
@@ -13,6 +14,8 @@ import {
 
 type ProgressionsSetupProps = {
   initialSources?: SourceProgression[]
+  rentreeDate?: string
+  zone?: ZoneScolaire
   onContinue: (sources: SourceProgression[]) => void
 }
 
@@ -35,6 +38,8 @@ function nombreDocuments(nombre: number): string {
 
 export default function ProgressionsSetup({
   initialSources = [],
+  rentreeDate,
+  zone,
   onContinue,
 }: ProgressionsSetupProps) {
   const [sources, setSources] = useState<SourceProgression[]>(initialSources)
@@ -132,6 +137,8 @@ export default function ProgressionsSetup({
 
       <SourceImporter
         key={importerVersion}
+        rentreeDate={rentreeDate}
+        zone={zone}
         onSourceReady={ajouterSource}
       />
 

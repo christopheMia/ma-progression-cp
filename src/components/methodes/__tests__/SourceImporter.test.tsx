@@ -59,6 +59,24 @@ async function analyserTexte(reponse: unknown = REPONSE_MANUEL) {
   await screen.findByRole('status')
 }
 
+async function analyserAvecCalage(reponse: unknown, onSourceReady = jest.fn()) {
+  jest.mocked(fetch).mockResolvedValueOnce(reponseJson(reponse))
+  render(
+    <SourceImporter
+      prenom="Cécile"
+      rentreeDate="2026-09-01"
+      zone="A"
+      onSourceReady={onSourceReady}
+    />,
+  )
+  fireEvent.change(screen.getByLabelText('Texte du document'), {
+    target: { value: 'Un contenu de progression assez long pour être analysé.' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Analyser le document' }))
+  await screen.findByRole('status')
+  return onSourceReady
+}
+
 describe('SourceImporter', () => {
   const cryptoInitial = Object.getOwnPropertyDescriptor(globalThis, 'crypto')
 
@@ -74,6 +92,58 @@ describe('SourceImporter', () => {
 
   afterAll(() => {
     if (cryptoInitial) Object.defineProperty(globalThis, 'crypto', cryptoInitial)
+  })
+
+  test('affiche une première semaine de rentrée vide, datée, sans l’enregistrer', async () => {
+    // Le manuel commence en semaine 2 : la semaine 1 est laissée à l'accueil.
+    const onSourceReady = await analyserAvecCalage({
+      ...REPONSE_MANUEL,
+      avertissements: [],
+      base_calage: 'numeros',
+      progression: [{ numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [] }],
+    })
+
+    expect(screen.getByText('Semaine du 31 août')).toBeInTheDocument()
+    expect(screen.getByText(/La semaine 1 n’a pas encore de contenu/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
+
+    // Stockage compact, mais le numéro 2 est conservé : l'année n'est plus décalée.
+    expect(onSourceReady.mock.calls[0][0].semaines).toEqual([
+      { numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [] },
+    ])
+  })
+
+  test('répondre « démarre en semaine 2 » décale la source enregistrée, sans rappeler l’IA', async () => {
+    const onSourceReady = await analyserAvecCalage({
+      ...REPONSE_MANUEL,
+      avertissements: [],
+      base_calage: 'ordre',
+      progression: [{ numero: 1, items: ['Découvrir le son a'], pages: '', mots_exemple: [] }],
+    })
+
+    fireEvent.change(screen.getByLabelText('Ta progression démarre à quelle semaine ?'), {
+      target: { value: '2' },
+    })
+
+    // Le recalcul est local : aucun second appel réseau.
+    expect(jest.mocked(fetch)).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/La semaine 1 n’a pas encore de contenu/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
+
+    expect(onSourceReady.mock.calls[0][0].semaines).toEqual([
+      { numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [] },
+    ])
+  })
+
+  test('transmet la date de rentrée à l’API pour qu’elle situe les dates du document', async () => {
+    await analyserAvecCalage(REPONSE_MANUEL)
+
+    const form = jest.mocked(fetch).mock.calls[0][1]?.body as FormData
+    expect(form.get('rentree_date')).toBe('2026-09-01')
   })
 
   test('analyse du texte, affiche les métadonnées et crée une source corrigée après le hash', async () => {
