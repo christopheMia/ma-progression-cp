@@ -135,10 +135,12 @@ async function allerJusquaLaFinalisation(
   user: ReturnType<typeof userEvent.setup>,
   avecSources: boolean,
 ) {
+  // La date de rentrée vient AVANT l'import : sans elle, l'écran d'import ne
+  // peut pas montrer les vraies dates des semaines.
+  await user.click(screen.getByRole('button', { name: 'Valider la rentrée' }))
   await user.click(screen.getByRole('button', {
     name: avecSources ? 'Continuer avec plusieurs sources' : 'Continuer sans source',
   }))
-  await user.click(screen.getByRole('button', { name: 'Valider la rentrée' }))
   await user.click(screen.getByRole('button', { name: 'Valider les élèves' }))
   await user.click(screen.getByRole('button', { name: /^Partir d'une grille vide/ }))
 }
@@ -147,6 +149,13 @@ describe('page de setup', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.mocked(creerClasse).mockImplementation(async () => undefined as never)
+  })
+
+  test('demande la date de rentrée en toute première étape', () => {
+    render(<SetupPage />)
+
+    expect(screen.getByText('Date de la rentrée')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Valider la rentrée' })).toBeInTheDocument()
   })
 
   test('finalise réellement le parcours avec zéro source', async () => {

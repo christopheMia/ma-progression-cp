@@ -45,10 +45,10 @@ export default function SetupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const stepTitles = ['Tes progressions', 'Date de la rentrée', 'Tes élèves', 'Ton emploi du temps']
+  const stepTitles = ['Date de la rentrée', 'Tes progressions', 'Tes élèves', 'Ton emploi du temps']
   const stepHelp = [
+    'Choisis le jour de la rentrée et ta zone : l’appli place les 36 semaines en sautant les vacances, et pourra dater tes documents importés.',
     'Ajoute les documents que tu as déjà, pour toutes tes matières. Tu peux aussi continuer sans source et tout compléter plus tard.',
-    'Choisis le jour de la rentrée et ta zone : l’appli place les 36 semaines en sautant les vacances.',
     'Ajoute les prénoms de tes élèves. Tu peux aussi le faire plus tard, dans Paramètres.',
     'Indique tes horaires de la semaine : ils servent à pré-remplir ton cahier journal jour par jour.',
   ]
@@ -81,7 +81,7 @@ export default function SetupPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      {step === 1 && !loading && (
+      {step === 2 && !loading && (
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 bg-violet-50 border border-violet-200 rounded-xl p-4">
           <div className="text-sm text-violet-900">
             <strong>Juste pour découvrir l&apos;outil ?</strong> Charge une classe d&apos;exemple, déjà remplie partout.
@@ -111,13 +111,10 @@ export default function SetupPage() {
       </div>
 
       {step === 1 && (
-        <ProgressionsSetup
-          initialSources={data.sourcesProgression}
-          onContinue={sources => {
-            setData(d => ({ ...d, sourcesProgression: sources }))
-            setStep(2)
-          }}
-        />
+        <RentreeDatePicker initial={data.rentreeDate} initialZone={data.zoneScolaire ?? 'A'}
+          onSelect={(rentreeDate, zoneScolaire) => {
+            setData(d => ({ ...d, rentreeDate, zoneScolaire })); setStep(2)
+          }} />
       )}
       {error && (
         <p
@@ -128,10 +125,13 @@ export default function SetupPage() {
         </p>
       )}
       {step === 2 && (
-        <RentreeDatePicker initial={data.rentreeDate} initialZone={data.zoneScolaire ?? 'A'}
-          onSelect={(rentreeDate, zoneScolaire) => {
-            setData(d => ({ ...d, rentreeDate, zoneScolaire })); setStep(3)
-          }} />
+        <ProgressionsSetup
+          initialSources={data.sourcesProgression}
+          onContinue={sources => {
+            setData(d => ({ ...d, sourcesProgression: sources }))
+            setStep(3)
+          }}
+        />
       )}
       {step === 3 && (
         <StudentListEditor initial={data.eleves}
