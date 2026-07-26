@@ -242,6 +242,13 @@ Choisis exactement un type_document :
 
 Règles communes :
 ${REGLE_EXHAUSTIVITE}
+- La colonne de chiffres à gauche d'un tableau numérote les SEMAINES de l'année, pas
+  les jours, pas les séances, pas les leçons, sauf si le document écrit lui-même
+  « jour », « séance », « leçon » ou « J1, J2 ». Deux lignes portant des chiffres
+  différents sont donc DEUX semaines différentes.
+- N'empile jamais plusieurs lignes du tableau sur une même semaine sous prétexte
+  qu'elles se suivent. Si tu hésites sur ce que numérote une colonne, choisis la
+  semaine et signale-le dans "avertissements".
 - Recopie les libellés du document, sans les reformuler ni compléter les cases vides.
 - Pour "manuel" ou "periode", remplis "semaines" et renvoie "periodes": [].
 - Pour "programmation", remplis "periodes" et renvoie "semaines": [].
