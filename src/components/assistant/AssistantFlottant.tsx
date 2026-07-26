@@ -77,7 +77,7 @@ export default function AssistantFlottant({
           onClick={() => setOuvert(true)}
           aria-expanded={ouvert}
           aria-label="Mon assistant"
-          className="px-3 shadow-lg shadow-violet-500/40"
+          className="h-11 w-11 justify-center p-0 shadow-lg shadow-violet-500/40 transition-[width] duration-300 ease-out hover:w-auto hover:px-4 focus-visible:w-auto focus-visible:px-4 motion-reduce:transition-none"
         >
           {/* Replie sur le seul logo ; le libelle se deroule au survol et a la
               tabulation clavier. Il reste dans le DOM pour les lecteurs d'ecran. */}
