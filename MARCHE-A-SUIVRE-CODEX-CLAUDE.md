@@ -186,8 +186,16 @@ navigateur pour la voir). Caractéristiques à respecter :
 
 ### Fait le 2026-07-26, sur `main` en local, NON POUSSÉ sur GitHub
 
-Treize commits, de `c432bdf` à `34fb6f8`. Christophe n'a pas encore demandé le push.
-Suite complète : **49 suites, 405 tests, zéro échec**, types propres, build de prod OK.
+**`main` local est 36 commits devant `origin/main`.** Le dernier commit POUSSÉ est
+`31a935d`. Autrement dit, **rien de tout ce qui suit n'est en ligne** : la version
+officielle que voit Cécile contient encore le décalage silencieux des semaines.
+Christophe n'a pas encore demandé le push.
+Suite complète : **49 suites, 409 tests, zéro échec**, types propres, build de prod OK.
+
+**Une seule base pour le local ET la production** : `odwgkakeepcqbgpsfugl`. Le
+`npm run dev` de Christophe écrit dans la base que Cécile utilisera. Il n'y a pas
+d'environnement de test séparé. Au 2026-07-26 la base est **entièrement vide**
+(0 classe, 0 compte). Chantier possible, pas encore arbitré : séparer une base de test.
 
 - **Calage des semaines à l'import** (le gros morceau). Un sommaire dont la première
   semaine de rentrée est vide décalait toute l'année, en silence. Deux destructions de
@@ -210,6 +218,33 @@ Suite complète : **49 suites, 405 tests, zéro échec**, types propres, build d
 - **L'assistant est devenu un vrai chat.** « Mon assistant » n'ouvrait qu'un formulaire
   d'import : aucun moyen de parler à l'IA. Panneau à deux onglets, conversation par
   défaut. Le bouton flottant est déplaçable à la souris et sa position est mémorisée.
+  Une bulle d'accueil se présente au premier passage puis se tait pour de bon.
+- **Import débloqué sur un document multi-périodes.** Christophe avait regroupé ses 5
+  périodes dans un seul PDF : l'IA le classait « planning d'une période » sans pouvoir
+  dire laquelle, et la validation exigeait un numéro de 1 à 5. Aucune réponse n'était
+  vraie. Une option « Toutes les périodes » requalifie le document, et le prompt dit
+  maintenant que « periode » ne vaut que pour UNE période nommable.
+- **Avertissements situés.** Ils sont devenus structurés (`{ semaine, message }`) et
+  s'affichent SUR la carte de la semaine concernée, juste au-dessus du champ à
+  corriger. Le prompt exige de citer le libellé exact lu plutôt qu'un « certains mots
+  sont peu lisibles » global. Attention : l'IA situe son doute sur le numéro du
+  DOCUMENT, l'aperçu affiche les numéros décalés ; le report est fait dans
+  `SourceImporter`, ne pas l'oublier si on touche à cette zone.
+
+### Pièges rencontrés le 26/07, à ne pas refaire
+
+- **`setPointerCapture` dès l'appui casse le clic.** En rendant le bouton flottant
+  déplaçable, capturer le pointeur sur `pointerdown` redirige l'événement `click` vers
+  le conteneur : le bouton ne le reçoit plus et plus rien ne s'ouvre. Ne capturer
+  qu'une fois le glissement réellement engagé (au-delà du seuil).
+- **Apostrophes.** `&apos;` rend une apostrophe DROITE (`'`), pas la typographique
+  (`’`). Un test qui cherche `j’ai compris` ne trouve pas `j&apos;ai compris`. Le
+  projet affiche du français soigné : écrire `’` directement dans le JSX.
+- **`jest.useFakeTimers()` sans `afterEach`.** Un test qui échoue avant son
+  `useRealTimers` laisse les faux minuteurs actifs et fait échouer les suivants pour
+  une mauvaise raison. Toujours remettre les vrais minuteurs dans un `afterEach`.
+- **`scrollIntoView` n'existe pas dans jsdom.** L'appeler en optionnel
+  (`element?.scrollIntoView?.(...)`).
 
 ### Fait avant, EN LIGNE sur `main` (déployé)
 - Bug de navigation du setup corrigé (données conservées entre allers-retours).
