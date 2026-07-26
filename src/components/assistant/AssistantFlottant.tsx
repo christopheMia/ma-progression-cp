@@ -77,11 +77,11 @@ export default function AssistantFlottant({
           onClick={() => setOuvert(true)}
           aria-expanded={ouvert}
           aria-label="Mon assistant"
-          className="h-11 w-11 justify-center p-0 shadow-lg shadow-violet-500/40 transition-[width] duration-300 ease-out hover:w-auto hover:px-4 focus-visible:w-auto focus-visible:px-4 motion-reduce:transition-none"
+          className="h-11 w-11 justify-center gap-0 p-0 shadow-lg shadow-violet-500/40 transition-[width] duration-300 ease-out [&_svg]:shrink-0 hover:w-auto hover:gap-2 hover:px-4 focus-visible:w-auto focus-visible:gap-2 focus-visible:px-4 motion-reduce:transition-none"
         >
           {/* Replie sur le seul logo ; le libelle se deroule au survol et a la
               tabulation clavier. Il reste dans le DOM pour les lecteurs d'ecran. */}
-          <span className="-ml-2 max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover/btn:ml-0 group-hover/btn:max-w-40 group-hover/btn:opacity-100 group-focus-visible/btn:ml-0 group-focus-visible/btn:max-w-40 group-focus-visible/btn:opacity-100 motion-reduce:transition-none">
+          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-out group-hover/btn:max-w-40 group-hover/btn:opacity-100 group-focus-visible/btn:max-w-40 group-focus-visible/btn:opacity-100 motion-reduce:transition-none">
             Mon assistant
           </span>
         </Bouton>
