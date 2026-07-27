@@ -1,0 +1,895 @@
+<title>Suivi 4 niveaux et bilan LSU — structure proposée</title>
+<style>
+  :root {
+    --ground: #ffffff;
+    --ink: #171717;
+    --muted: #6b6880;          /* gris legerement biaise violet */
+    --line: #e7e3f0;
+    --violet: #7c3aed;
+    --violet-ink: #5b21b6;
+    --violet-tint: #f7f5ff;
+
+    /* Echelle LSU : semantique, distincte de l'accent violet */
+    --na: #dc2626;
+    --na-bg: #fef2f2;
+    --pa: #d97706;
+    --pa-bg: #fffbeb;
+    --a: #059669;
+    --a-bg: #ecfdf5;
+    --d: #2563eb;
+    --d-bg: #eff6ff;
+
+    --radius: 16px;
+    color-scheme: light;
+  }
+
+  /* Theme unique et clair, comme l'application : le bloc sombre du gabarit
+     Next a ete retire volontairement apres le bug de contraste du 26/07. */
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4 {
+    /* L'appli utilise Playfair Display ; Georgia est son propre repli. */
+    font-family: Georgia, "Times New Roman", serif;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .page { max-width: 68rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+
+  header { border-bottom: 2px solid var(--line); padding-bottom: 1.5rem; margin-bottom: 2.5rem; }
+  header h1 { font-size: clamp(1.6rem, 4vw, 2.3rem); color: var(--violet-ink); }
+  header p { color: var(--muted); max-width: 60ch; margin: .6rem 0 0; }
+
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--violet); font-weight: 700; margin: 0 0 .35rem;
+  }
+
+  section { margin-bottom: 3.5rem; }
+  .titre-ecran { display: flex; flex-wrap: wrap; align-items: baseline; gap: .75rem; margin-bottom: .5rem; }
+  .titre-ecran h2 { font-size: 1.35rem; }
+  .ou { font-size: .8rem; color: var(--muted); }
+  .intro { color: var(--muted); max-width: 65ch; margin: 0 0 1.25rem; }
+
+  /* Le cadre qui simule un ecran de l'appli */
+  .ecran {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--ground);
+    padding: 1.25rem;
+    box-shadow: 0 1px 2px rgba(23,23,23,.04);
+  }
+
+  .carte-notion {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--violet-tint);
+    padding: 1rem;
+  }
+  .carte-notion + .carte-notion { margin-top: .85rem; }
+
+  .etiquette-notion { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--violet); font-weight: 700; }
+  .nom-notion { font-size: 1.05rem; font-weight: 700; margin: .1rem 0 .9rem; font-family: Georgia, serif; }
+
+  .bloc-eleve {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: .75rem .85rem; display: flex; flex-direction: column; gap: .6rem;
+  }
+  .bloc-eleve + .bloc-eleve { margin-top: .6rem; }
+  .prenom { font-weight: 700; }
+
+  .ligne-critere { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; justify-content: space-between; }
+  .libelle-critere { flex: 1 1 14rem; min-width: 0; font-size: .92rem; }
+  /* `global` est pose sur le meme element que `libelle-critere`, donc pas d'espace
+     dans le selecteur : sinon la regle ne s'applique jamais. */
+  .libelle-critere.global { color: var(--muted); font-style: italic; }
+  .libelle-element { display: inline; }
+
+  .niveaux { display: flex; gap: .3rem; flex-wrap: wrap; }
+  .n {
+    border: 1px solid var(--line); background: #fff; color: var(--muted);
+    border-radius: 999px; padding: .28rem .6rem; font-size: .78rem; font-weight: 700;
+    font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer;
+    line-height: 1.2;
+  }
+  .n:hover { border-color: var(--violet); color: var(--violet-ink); }
+  .n:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+  .n.on-na { background: var(--na-bg); border-color: var(--na); color: var(--na); }
+  .n.on-pa { background: var(--pa-bg); border-color: var(--pa); color: var(--pa); }
+  .n.on-a  { background: var(--a-bg);  border-color: var(--a);  color: var(--a); }
+  .n.on-d  { background: var(--d-bg);  border-color: var(--d);  color: var(--d); }
+
+  /* Selecteur d'eleve : un vrai menu deroulant, plus discret qu'une grille de cartes */
+  .compteur { color: var(--muted); font-size: .78rem; }
+  select {
+    font: inherit; font-size: .88rem; font-weight: 700;
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: .3rem 1.6rem .3rem .6rem; background: #fff; color: var(--ink);
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--violet) 50%),
+                      linear-gradient(135deg, var(--violet) 50%, transparent 50%);
+    background-position: right .78rem center, right .55rem center;
+    background-size: .32rem .32rem, .32rem .32rem;
+    background-repeat: no-repeat;
+    cursor: pointer;
+  }
+  select:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+
+  .indice {
+    font-size: .78rem; color: var(--muted); margin: .35rem 0 1rem;
+    display: flex; align-items: center; gap: .35rem;
+  }
+  .indice::before {
+    content: ""; width: .4rem; height: .4rem; border-radius: 50%;
+    background: var(--violet); flex-shrink: 0;
+  }
+
+  /* Bilan de periode */
+  .barre-bilan {
+    display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center;
+    padding-bottom: .9rem; margin-bottom: 1rem; border-bottom: 1px solid var(--line);
+  }
+  .champ { display: flex; align-items: center; gap: .4rem; font-size: .88rem; }
+  .champ span { color: var(--muted); }
+  .faux-select {
+    border: 1px solid var(--line); border-radius: 8px; padding: .3rem .6rem;
+    font-weight: 700; background: #fff;
+  }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; min-width: 44rem; border-collapse: collapse; font-size: .9rem; }
+  caption { text-align: left; color: var(--muted); font-size: .82rem; padding-bottom: .5rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .domaine { font-weight: 700; color: var(--violet-ink); background: var(--violet-tint); font-family: Georgia, serif; }
+  .col-etroite { width: 1%; white-space: nowrap; }
+  .source { font-size: .74rem; color: var(--muted); display: block; margin-top: .15rem; }
+  .badge-perso {
+    font-size: .68rem; font-weight: 700; color: var(--violet);
+    border: 1px solid var(--violet); border-radius: 999px; padding: .05rem .4rem; margin-left: .35rem;
+  }
+  .coche { width: 1.05rem; height: 1.05rem; accent-color: var(--violet); }
+
+  .appreciation {
+    margin-top: 1rem; border: 1px solid var(--line); border-radius: 12px; padding: .9rem;
+    background: var(--violet-tint);
+  }
+  .appreciation h4 { font-size: .95rem; margin-bottom: .4rem; }
+  .zone-texte {
+    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    padding: .6rem .7rem; font-size: .88rem; color: var(--ink); min-height: 3.5rem;
+  }
+  .aide { font-size: .78rem; color: var(--muted); margin: .45rem 0 0; }
+
+  /* Les briques qui nourrissent l'appreciation : selectionnables et modifiables */
+  .briques { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+  .brique {
+    display: flex; align-items: flex-start; gap: .55rem;
+    background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: .45rem .6rem;
+  }
+  .brique.off { opacity: .5; }
+  .brique .coche { margin-top: .15rem; flex-shrink: 0; }
+  .brique-corps { flex: 1; min-width: 0; }
+  .brique-role {
+    font-size: .64rem; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--violet); font-weight: 700; display: block;
+  }
+  .brique-texte {
+    font-size: .87rem; outline: none; border-bottom: 1px dashed transparent; padding-bottom: 1px;
+  }
+  .brique-texte:hover { border-bottom-color: var(--line); }
+  .brique-texte:focus { border-bottom-color: var(--violet); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; align-items: center; }
+  .bouton {
+    border-radius: 10px; padding: .45rem .85rem; font: inherit;
+    font-size: .85rem; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--violet); background: var(--violet); color: #fff;
+  }
+  .bouton.secondaire { background: #fff; color: var(--violet-ink); }
+  .bouton:hover { filter: brightness(1.08); }
+  .bouton:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+  .confirmation { font-size: .8rem; color: var(--a); font-weight: 700; }
+
+  /* Notes de structure */
+  /* Note de structure : distinguee par un fond teinte et son intitule, sans
+     barre d'accent laterale (procede trop connote interface generee). */
+  .structure {
+    margin-top: 1rem; background: var(--violet-tint); border: 1px solid var(--line);
+    border-radius: 12px; padding: .85rem 1rem;
+  }
+  .structure h4 {
+    font-size: .82rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--violet); font-family: system-ui, sans-serif;
+    padding-bottom: .45rem; border-bottom: 1px solid var(--line);
+  }
+  .structure ul { margin: .5rem 0 0; padding-left: 1.1rem; font-size: .88rem; }
+  .structure li { margin-bottom: .3rem; }
+  code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: .84em; background: #fff; border: 1px solid var(--line);
+    border-radius: 5px; padding: .05rem .3rem;
+  }
+
+  .legende { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-top: .9rem; font-size: .8rem; color: var(--muted); }
+  .legende b { font-weight: 700; }
+
+  .questions { border: 2px solid var(--violet); border-radius: var(--radius); padding: 1.25rem; }
+  .questions h2 { color: var(--violet-ink); font-size: 1.2rem; margin-bottom: .6rem; }
+  .questions ol { margin: 0; padding-left: 1.2rem; }
+  .questions li { margin-bottom: .6rem; }
+
+  @media (max-width: 40rem) {
+    .ligne-critere { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">Ma Progression CP · proposition de structure</p>
+  <h1>Le suivi à quatre niveaux et le bilan de période</h1>
+  <p>
+    Trois écrans, avant que j'écrive le code. Les couleurs, les polices et les cartes
+    reprennent celles de l'application. L'échelle NA / PA / A / D est volontairement
+    d'une autre famille de couleurs que le violet, pour qu'un niveau ne se confonde
+    jamais avec un élément d'interface.
+  </p>
+</header>
+
+<section>
+  <div class="titre-ecran">
+    <h2>1. Le suivi de la semaine</h2>
+    <span class="ou">fiche d'une semaine, bloc « Suivi des élèves »</span>
+  </div>
+  <p class="intro">
+    Les deux boutons Acquis / Non acquis deviennent quatre. C'est le seul vrai
+    changement de saisie : tu coches désormais dans l'échelle du LSU, donc il n'y
+    aura plus rien à convertir au moment du bilan.
+  </p>
+
+  <div class="ecran">
+    <div class="carte-notion">
+      <p class="etiquette-notion">Notion · Français</p>
+      <p class="nom-notion">Lire a</p>
+
+      <div class="bloc-eleve">
+        <p class="prenom">Lina</p>
+        <div class="ligne-critere">
+          <span class="libelle-critere global">La notion dans son ensemble</span>
+          <span class="niveaux" role="radiogroup" aria-label="Lina, la notion dans son ensemble" data-choix="a"></span>
+        </div>
+        <div class="ligne-critere">
+          <span class="libelle-critere">Repère le son dans un mot</span>
+          <span class="niveaux" role="radiogroup" aria-label="Lina, repère le son dans un mot" data-choix="a"></span>
+        </div>
+        <div class="ligne-critere">
+          <span class="libelle-critere">Écrit la lettre sans modèle</span>
+          <span class="niveaux" role="radiogroup" aria-label="Lina, écrit la lettre sans modèle" data-choix="pa"></span>
+        </div>
+      </div>
+
+      <div class="bloc-eleve">
+        <p class="prenom">Tom</p>
+        <div class="ligne-critere">
+          <span class="libelle-critere global">La notion dans son ensemble</span>
+          <span class="niveaux" role="radiogroup" aria-label="Tom, la notion dans son ensemble" data-choix="pa"></span>
+        </div>
+        <div class="ligne-critere">
+          <span class="libelle-critere">Repère le son dans un mot</span>
+          <span class="niveaux" role="radiogroup" aria-label="Tom, repère le son dans un mot" data-choix="na"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="indice">Clique un niveau, il s'enregistre. C'est le seul geste qui change dans ta saisie de la semaine.</p>
+
+    <div class="legende">
+      <span><b style="color:var(--na)">NA</b> non atteint</span>
+      <span><b style="color:var(--pa)">PA</b> partiellement atteint</span>
+      <span><b style="color:var(--a)">A</b> atteint</span>
+      <span><b style="color:var(--d)">D</b> dépassé, jamais calculé, toujours ton choix</span>
+    </div>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li>Les quatre niveaux sont abrégés, avec la légende juste dessous. Le libellé complet reste dans l'infobulle et dans la lecture d'écran.</li>
+      <li>Un groupe de quatre boutons remplace le composant <code>BoutonsAcquisition</code> actuel. Même emplacement, même logique d'enregistrement.</li>
+      <li>Le groupe est un <code>role="radiogroup"</code> avec quatre <code>role="radio"</code> : un seul niveau à la fois, et le clavier fonctionne.</li>
+      <li>Le libellé accessible reste de la forme « Lina, Lire a, repère le son : atteint », pour que la lecture d'écran ne perde rien.</li>
+      <li>En base, la colonne <code>niveau</code> ajoutée aujourd'hui. L'ancienne colonne <code>acquis</code> reste juste, tenue à jour toute seule.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="titre-ecran">
+    <h2>2. Le bilan d'une période, élève par élève</h2>
+    <span class="ou">nouvelle page <code>/bilan</code></span>
+  </div>
+    <p class="intro">
+    Tu choisis l'élève dans un menu déroulant, qui indique au passage qui a déjà un
+    bilan commencé. L'écran reprend les trois colonnes du livret officiel : le
+    domaine, les éléments du programme travaillés, le positionnement. Une case à
+    cocher par ligne décide de ce qui part.
+  </p>
+
+  <div class="ecran">
+    <div class="barre-bilan">
+      <span class="champ">
+        <label for="sel-periode">Période</label>
+        <select id="sel-periode">
+          <option>Période 1</option>
+          <option selected>Période 2</option>
+          <option>Période 3</option>
+          <option>Période 4</option>
+          <option>Période 5</option>
+        </select>
+      </span>
+      <span class="champ">
+        <label for="sel-eleve">Élève</label>
+        <select id="sel-eleve"></select>
+        <span class="compteur" id="compteur"></span>
+      </span>
+      <span class="champ">
+        <label for="sel-position">Positionnement</label>
+        <select id="sel-position">
+          <option value="domaine" selected>par domaine</option>
+          <option value="element">par élément</option>
+        </select>
+      </span>
+    </div>
+
+    <p class="indice">Change d'élève, de période, ou clique un niveau : tout réagit.</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Les niveaux sont proposés à partir de ton suivi de la période. Chaque ligne reste modifiable.</caption>
+        <thead>
+          <tr>
+            <th class="col-etroite">Bascule</th>
+            <th>Domaine d'enseignement</th>
+            <th>Éléments du programme travaillés durant la période</th>
+            <th class="col-etroite">Positionnement</th>
+          </tr>
+        </thead>
+        <tbody id="corps-bilan"></tbody>
+      </table>
+    </div>
+
+    <div class="appreciation">
+      <h4>Acquisitions, progrès et difficultés éventuelles</h4>
+      <p class="aide" style="margin:0 0 .6rem">
+        Décoche ce que tu ne veux pas dire, corrige les formulations, puis rédige.
+        Chaque brique vient de ce que tu as observé pendant la période.
+      </p>
+      <ul class="briques" id="briques"></ul>
+      <div class="actions" style="margin-top:.75rem">
+        <button type="button" class="bouton" id="btn-rediger">Rédiger l'appréciation</button>
+        <span class="confirmation" id="etat-redaction" role="status"></span>
+      </div>
+      <div class="zone-texte" id="appreciation" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Appréciation de l'élève" style="margin-top:.75rem"></div>
+      <p class="aide">Le texte reste modifiable ici avant que tu le recopies dans le livret.</p>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="bouton" id="btn-copier">Copier le bilan</button>
+      <button type="button" class="bouton secondaire" id="btn-prec"></button>
+      <button type="button" class="bouton secondaire" id="btn-suiv"></button>
+      <span class="confirmation" id="confirmation" role="status"></span>
+    </div>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li>Un <code>&lt;select&gt;</code> natif pour l'élève, pas une grille de cartes : plus discret, et le menu du téléphone se déroule tout seul. L'état du bilan est écrit dans chaque ligne du menu, et le compteur reste visible à côté.</li>
+      <li>Les flèches « ← Tom » et « Jade → » évitent de rouvrir le menu quand on enchaîne les 23 élèves.</li>
+      <li>Un vrai <code>&lt;table&gt;</code>, pas des <code>div</code> : c'est un tableau de données, et c'est ce qui se recopie proprement dans le LSU.</li>
+      <li>Une ligne <code>colspan</code> par matière, comme dans le livret officiel. Les domaines sont les lignes, les éléments les cellules.</li>
+      <li>Le tableau est dans un conteneur <code>overflow-x: auto</code> : sur téléphone il défile seul, la page jamais.</li>
+      <li>Le sélecteur « par domaine / par élément » existe parce que le LSU propose les deux. Par domaine est le réglage courant.</li>
+      <li>Sous chaque élément, la trace de ce qui a produit le niveau proposé. Rien n'est calculé en cachette.</li>
+      <li><b>L'appréciation s'assemble à partir de briques</b> tirées de la période, chacune décochable et modifiable sur place. Tu enlèves ce que tu ne veux pas dire avant de rédiger.</li>
+      <li><b>Modèle de formulation en cinq temps</b> : posture, réussites, progrès, point de vigilance avec sa prochaine étape, encouragement. Jamais un code de niveau, jamais le libellé technique d'une compétence : un parent doit comprendre.</li>
+      <li><b>RGPD</b> (convention 5 du projet) : le prénom ne part jamais vers l'IA. Les briques lui sont envoyées avec un marqueur, et le prénom est réinséré côté navigateur.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="titre-ecran">
+    <h2>3. Ajouter une compétence à toi</h2>
+    <span class="ou">depuis le bilan, ou depuis les paramètres</span>
+  </div>
+  <p class="intro">
+    Le LSU accepte du texte libre. Tes compétences perso vivent donc à côté des 101
+    officielles, rattachées à la matière et au domaine que tu choisis, et se
+    comportent exactement pareil.
+  </p>
+
+  <div class="ecran">
+    <div class="barre-bilan" style="border-bottom:none; margin-bottom:.5rem; padding-bottom:0">
+      <span class="champ"><span>Matière</span> <span class="faux-select">Français ▾</span></span>
+      <span class="champ"><span>Domaine</span> <span class="faux-select">Langage oral ▾</span></span>
+    </div>
+    <div class="zone-texte">Participer au cercle de contes du vendredi</div>
+    <div class="actions">
+      <span class="bouton">Ajouter cette compétence</span>
+    </div>
+    <p class="aide">
+      Elle apparaîtra dans le domaine choisi, avec la mention « ajoutée par toi », et
+      tu pourras la suivre comme les autres.
+    </p>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li>Nouvelle table <code>competences_perso</code>, propre à ta classe. Le référentiel officiel reste intact et partagé.</li>
+      <li>Les deux sources sont fusionnées à la lecture par une fonction pure, testable, sur le modèle de <code>vue-classe.ts</code>.</li>
+      <li>Le rattachement matière et domaine réutilise les domaines officiels, donc une compétence perso se range au bon endroit dans le livret.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="titre-ecran">
+    <h2>4. Rattacher tes notions au programme</h2>
+    <span class="ou">une fois par méthode, puis on n'y revient plus</span>
+  </div>
+  <p class="intro">
+    C'est ce qui permet au bilan de proposer quoi que ce soit. Pas d'IA : l'appli
+    devine un domaine probable par simple comparaison de mots, tu corriges, et
+    surtout tu appliques ton choix à toutes les notions qui se ressemblent d'un coup.
+  </p>
+
+  <div class="ecran">
+    <div class="barre-bilan">
+      <span class="champ"><span>Méthode</span> <span class="faux-select">Les P'tites Poules · Français ▾</span></span>
+      <span class="champ"><b>12 notions</b> <span>pas encore rattachées sur 36</span></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Le domaine proposé vient d'une comparaison de mots, pas d'un appel à l'IA. Rien n'est enregistré tant que tu ne valides pas.</caption>
+        <thead>
+          <tr>
+            <th>Ta notion</th>
+            <th>Compétence officielle</th>
+            <th class="col-etroite">Notions semblables</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Lire a</b><span class="source">semaines 1, 4, 9…</span></td>
+            <td>
+              <span class="faux-select">Lecture · Identifier des mots ▾</span>
+              <span class="source">proposé : les deux libellés partagent « lire »</span>
+            </td>
+            <td><label style="font-size:.8rem"><input class="coche" type="checkbox" checked> les 14 « Lire … »</label></td>
+          </tr>
+          <tr>
+            <td><b>Écrire a</b><span class="source">semaines 1, 4, 9…</span></td>
+            <td>
+              <span class="faux-select">Écriture · Copier ▾</span>
+              <span class="source">proposé : les deux libellés partagent « écrire »</span>
+            </td>
+            <td><label style="font-size:.8rem"><input class="coche" type="checkbox" checked> les 14 « Écrire … »</label></td>
+          </tr>
+          <tr>
+            <td><b>Le conte du loup</b><span class="source">semaine 7</span></td>
+            <td>
+              <span class="faux-select" style="color:var(--muted)">à choisir ▾</span>
+              <span class="source">aucun mot commun, à toi de dire</span>
+            </td>
+            <td><span class="source">unique</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <span class="bouton">Enregistrer les rattachements</span>
+      <span class="bouton secondaire">Passer, je le ferai plus tard</span>
+    </div>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li>Table <code>notion_competence</code>, déjà présente en base et vide. Une ligne par notion rattachée.</li>
+      <li>Le rapprochement est une <b>fonction pure</b> qui compare les mots des libellés. Zéro appel réseau, zéro coût, et elle se teste.</li>
+      <li>La case « notions semblables » applique le même rattachement à toutes les notions du même préfixe : tes 36 semaines se règlent en quelques clics.</li>
+      <li>On peut toujours passer : une notion non rattachée reste suivie normalement, elle n'apparaît simplement pas dans le bilan.</li>
+      <li>Accessible aussi notion par notion depuis le suivi, pour les cas isolés.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="questions">
+  <h2>Décidé le 27 juillet</h2>
+  <ul>
+    <li><b>Niveaux abrégés</b> NA / PA / A / D partout, avec la légende sous le tableau.</li>
+    <li><b>Le choix de l'élève est un menu déroulant</b>, plus discret qu'une grille de cartes, avec l'état du bilan dans chaque ligne et un compteur à côté.</li>
+    <li><b>Pas de PDF</b> pour l'instant. Uniquement « Copier le bilan », pour coller dans le LSU officiel.</li>
+  </ul>
+
+    <li><b>Rattachement manuel</b>, avec une aide déterministe. Pas d'appel à l'IA : le budget de la clé Anthropic est mieux dépensé ailleurs, et un rattachement ne change pas d'une année sur l'autre.</li>
+  </ul>
+
+  <h2 style="margin-top:1.25rem">Ce que tu peux essayer sur cette page</h2>
+  <p style="margin:.3rem 0 0">
+    Les deux premiers écrans réagissent vraiment : clique un niveau dans le suivi de
+    la semaine, change d'élève ou de période dans le bilan, enchaîne avec les flèches,
+    modifie l'appréciation, clique « Copier le bilan ». C'est une maquette, rien n'est
+    enregistré, mais les gestes sont ceux de la future application.
+  </p>
+
+  <h2 style="margin-top:1.25rem">Ordre de construction</h2>
+  <ol style="margin:.3rem 0 0">
+    <li>Le suivi à quatre niveaux. La base est déjà migrée, il reste l'écran.</li>
+    <li>L'écran de rattachement, et les compétences ajoutées à la main.</li>
+    <li>Le bilan par élève et le bouton « Copier le bilan ».</li>
+  </ol>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var NIVEAUX = [
+    { code: "na", court: "NA", long: "non atteint" },
+    { code: "pa", court: "PA", long: "partiellement atteint" },
+    { code: "a",  court: "A",  long: "atteint" },
+    { code: "d",  court: "D",  long: "dépassé" }
+  ];
+
+  /* Un groupe de niveaux : quatre boutons, un seul choisi. Le meme composant
+     sert dans le suivi de la semaine et dans le tableau du bilan. */
+  function peuplerGroupe(groupe) {
+    var choix = groupe.getAttribute("data-choix") || "";
+    groupe.textContent = "";
+    NIVEAUX.forEach(function (niv) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "n" + (niv.code === choix ? " on-" + niv.code : "");
+      b.textContent = niv.court;
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", niv.code === choix ? "true" : "false");
+      b.setAttribute("data-niveau", niv.code);
+      b.title = niv.long;
+      groupe.appendChild(b);
+    });
+  }
+
+  function poserNiveau(groupe, code) {
+    groupe.setAttribute("data-choix", code);
+    Array.prototype.forEach.call(groupe.children, function (b) {
+      var sien = b.getAttribute("data-niveau") === code;
+      b.className = "n" + (sien ? " on-" + code : "");
+      b.setAttribute("aria-checked", sien ? "true" : "false");
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    var bouton = e.target.closest ? e.target.closest(".n") : null;
+    if (!bouton) return;
+    poserNiveau(bouton.parentNode, bouton.getAttribute("data-niveau"));
+  });
+
+  /* ── Les donnees du bilan, quatre eleves pour la demonstration ───────────── */
+
+  var LIGNES = [
+    { matiere: "Français",      domaine: "Lecture",            libelle: "Identifier des mots de manière de plus en plus aisée", total: 9 },
+    { matiere: "Français",      domaine: "Lecture",            libelle: "Lire à voix haute un texte court après préparation",   total: 6 },
+    { matiere: "Français",      domaine: "Écriture",           libelle: "Copier un texte court sans erreur",                    total: 4 },
+    { matiere: "Français",      domaine: "Langage oral",       libelle: "Participer au cercle de contes du vendredi",           total: 0, perso: true },
+    { matiere: "Mathématiques", domaine: "Nombres et calculs", libelle: "Nommer, lire, écrire les nombres jusqu'à 100",         total: 5 }
+  ];
+
+  var ELEVES = [
+    { nom: "Lina", etat: "commencé", observes: [7, 2, 4, null, 5], niveaux: ["a", "pa", "d", "", "a"],
+      appreciation: "",
+      briques: [
+        { role: "posture",      on: true,  texte: "se montre attentive et volontaire, elle ose demander quand elle n'a pas compris" },
+        { role: "réussite",     on: true,  texte: "lit maintenant avec assurance les mots contenant les sons étudiés" },
+        { role: "réussite",     on: true,  texte: "copie un texte court avec beaucoup de soin" },
+        { role: "réussite",     on: false, texte: "connaît les nombres jusqu'à 100" },
+        { role: "progrès",      on: true,  texte: "a bien progressé en lecture depuis la première période" },
+        { role: "vigilance",    on: true,  texte: "la lecture à voix haute demande encore de la préparation",
+          action: "nous continuerons à la travailler en petit groupe" },
+        { role: "encouragement",on: true,  texte: "Continue ainsi, c'est un très bon trimestre." },
+        { role: "ton mot du 14/11", on: false, texte: "très à l'aise à l'oral devant le groupe" }
+      ] },
+    { nom: "Tom", etat: "commencé", observes: [3, 1, 2, null, 4], niveaux: ["pa", "na", "pa", "", "a"],
+      appreciation: "",
+      briques: [
+        { role: "posture",      on: true,  texte: "s'applique et reste concentré sur les temps courts" },
+        { role: "réussite",     on: true,  texte: "reconnaît et nomme les nombres jusqu'à 100" },
+        { role: "progrès",      on: true,  texte: "commence à repérer seul les sons dans les mots" },
+        { role: "vigilance",    on: true,  texte: "la lecture à voix haute reste difficile",
+          action: "un temps de lecture quotidien à la maison l'aiderait beaucoup" },
+        { role: "vigilance",    on: false, texte: "la copie est encore lente",
+          action: "nous travaillerons le geste d'écriture" },
+        { role: "encouragement",on: true,  texte: "Les efforts commencent à porter, il faut poursuivre." }
+      ] },
+    { nom: "Jade", etat: "rien saisi", observes: [9, 6, 4, null, 5], niveaux: ["", "", "", "", ""],
+      appreciation: "", briques: [] },
+    { nom: "Hugo", etat: "rien saisi", observes: [2, 0, 1, null, 2], niveaux: ["", "", "", "", ""],
+      appreciation: "", briques: [] }
+  ];
+
+  /* Modele de formulation, en cinq temps : posture, reussites, progres,
+     point de vigilance avec sa prochaine etape, encouragement. Aucun code de
+     niveau, aucun libelle technique de competence : ce qui se lit dans le
+     livret doit se comprendre par un parent. */
+  var ORDRE_ROLES = ["posture", "réussite", "progrès", "vigilance", "encouragement"];
+
+  function rediger(el) {
+    var prises = el.briques.filter(function (b) { return b.on && b.texte.trim(); });
+    if (!prises.length) return "";
+    var pris = function (role) { return prises.filter(function (b) { return b.role === role; }); };
+    var phrases = [];
+
+    var posture = pris("posture");
+    if (posture.length) phrases.push(el.nom + " " + posture[0].texte + ".");
+
+    var reussites = pris("réussite").map(function (b) { return b.texte; });
+    if (reussites.length === 1) {
+      phrases.push(majuscule(reussites[0]) + ".");
+    } else if (reussites.length > 1) {
+      var derniere = reussites.pop();
+      phrases.push("Elle " + reussites.join(", ") + " et " + derniere + ".");
+    }
+
+    pris("progrès").forEach(function (b) { phrases.push(majuscule(b.texte) + "."); });
+
+    pris("vigilance").forEach(function (b) {
+      phrases.push(majuscule(b.texte) + (b.action ? " ; " + b.action + "." : "."));
+    });
+
+    /* Les briques libres (tes propres mots) passent avant l'encouragement. */
+    prises.filter(function (b) { return ORDRE_ROLES.indexOf(b.role) === -1; })
+      .forEach(function (b) { phrases.push(majuscule(b.texte) + "."); });
+
+    pris("encouragement").forEach(function (b) { phrases.push(b.texte); });
+
+    return phrases.join(" ");
+  }
+
+  function majuscule(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  var iEleve = 0;
+
+  var selEleve   = document.getElementById("sel-eleve");
+  var selPeriode = document.getElementById("sel-periode");
+  var selPos     = document.getElementById("sel-position");
+  var corps      = document.getElementById("corps-bilan");
+  var compteur   = document.getElementById("compteur");
+  var apprec     = document.getElementById("appreciation");
+  var btnPrec    = document.getElementById("btn-prec");
+  var btnSuiv    = document.getElementById("btn-suiv");
+  var btnCopier  = document.getElementById("btn-copier");
+  var message    = document.getElementById("confirmation");
+
+  function cellule(txt, classe) {
+    var td = document.createElement("td");
+    if (classe) td.className = classe;
+    td.textContent = txt;
+    return td;
+  }
+
+  function dessinerBilan() {
+    var el = ELEVES[iEleve];
+    var parElement = selPos.value === "element";
+    corps.textContent = "";
+    var matiereCourante = null;
+    var domainePrecedent = null;
+
+    LIGNES.forEach(function (ligne, i) {
+      if (ligne.matiere !== matiereCourante) {
+        matiereCourante = ligne.matiere;
+        domainePrecedent = null;
+        var trM = document.createElement("tr");
+        var tdM = cellule(ligne.matiere, "domaine");
+        tdM.colSpan = 4;
+        trM.appendChild(tdM);
+        corps.appendChild(trM);
+      }
+
+      var tr = document.createElement("tr");
+
+      var tdCoche = document.createElement("td");
+      var coche = document.createElement("input");
+      coche.type = "checkbox";
+      coche.className = "coche";
+      coche.checked = ligne.total > 0;
+      coche.setAttribute("aria-label", "Faire basculer " + ligne.libelle);
+      tdCoche.appendChild(coche);
+      tr.appendChild(tdCoche);
+
+      tr.appendChild(cellule(ligne.domaine === domainePrecedent ? "" : ligne.domaine));
+      domainePrecedent = ligne.domaine;
+
+      var tdEl = document.createElement("td");
+      var texte = parElement ? document.createElement("b") : document.createElement("span");
+      texte.textContent = ligne.libelle;
+      texte.className = "libelle-element";
+      tdEl.appendChild(texte);
+      if (ligne.perso) {
+        var badge = document.createElement("span");
+        badge.className = "badge-perso";
+        badge.textContent = "ajoutée par toi";
+        tdEl.appendChild(badge);
+      }
+      var src = document.createElement("span");
+      src.className = "source";
+      src.textContent = ligne.total === 0
+        ? "pas encore observée"
+        : el.observes[i] + " points observés sur " + ligne.total + " · programme officiel";
+      tdEl.appendChild(src);
+      tr.appendChild(tdEl);
+
+      var tdNiv = document.createElement("td");
+      var groupe = document.createElement("span");
+      groupe.className = "niveaux";
+      groupe.setAttribute("role", "radiogroup");
+      groupe.setAttribute("aria-label", el.nom + ", " + ligne.libelle);
+      groupe.setAttribute("data-choix", el.niveaux[i] || "");
+      peuplerGroupe(groupe);
+      tdNiv.appendChild(groupe);
+      tr.appendChild(tdNiv);
+
+      corps.appendChild(tr);
+    });
+
+    dessinerBriques(el);
+    apprec.textContent = el.appreciation;
+    var commences = ELEVES.filter(function (e) { return e.etat === "commencé"; }).length;
+    compteur.textContent = commences + " bilans commencés sur 23";
+
+    btnPrec.textContent = "← " + ELEVES[(iEleve - 1 + ELEVES.length) % ELEVES.length].nom;
+    btnSuiv.textContent = ELEVES[(iEleve + 1) % ELEVES.length].nom + " →";
+    message.textContent = "";
+  }
+
+  var briquesUl = document.getElementById("briques");
+  var btnRediger = document.getElementById("btn-rediger");
+  var etatRedaction = document.getElementById("etat-redaction");
+
+  function dessinerBriques(el) {
+    briquesUl.textContent = "";
+    if (!el.briques.length) {
+      var vide = document.createElement("li");
+      vide.className = "aide";
+      vide.textContent = "Rien d'observé pour cet élève sur la période : il n'y a pas encore de quoi rédiger.";
+      briquesUl.appendChild(vide);
+      btnRediger.disabled = true;
+      btnRediger.style.opacity = ".5";
+      return;
+    }
+    btnRediger.disabled = false;
+    btnRediger.style.opacity = "";
+
+    el.briques.forEach(function (b, i) {
+      var li = document.createElement("li");
+      li.className = "brique" + (b.on ? "" : " off");
+
+      var coche = document.createElement("input");
+      coche.type = "checkbox";
+      coche.className = "coche";
+      coche.checked = b.on;
+      coche.setAttribute("aria-label", "Utiliser : " + b.texte);
+      coche.addEventListener("change", function () {
+        b.on = coche.checked;
+        li.className = "brique" + (b.on ? "" : " off");
+      });
+      li.appendChild(coche);
+
+      var corpsB = document.createElement("div");
+      corpsB.className = "brique-corps";
+
+      var role = document.createElement("span");
+      role.className = "brique-role";
+      role.textContent = b.role;
+      corpsB.appendChild(role);
+
+      var txt = document.createElement("div");
+      txt.className = "brique-texte";
+      txt.contentEditable = "true";
+      txt.textContent = b.texte + (b.action ? " ; " + b.action : "");
+      txt.addEventListener("input", function () {
+        var v = txt.textContent;
+        var coupe = v.indexOf(" ; ");
+        if (b.action && coupe > -1) {
+          b.texte = v.slice(0, coupe);
+          b.action = v.slice(coupe + 3);
+        } else {
+          b.texte = v;
+          b.action = "";
+        }
+      });
+      corpsB.appendChild(txt);
+
+      li.appendChild(corpsB);
+      briquesUl.appendChild(li);
+    });
+  }
+
+  btnRediger.addEventListener("click", function () {
+    var el = ELEVES[iEleve];
+    el.appreciation = rediger(el);
+    apprec.textContent = el.appreciation;
+    etatRedaction.textContent = el.appreciation
+      ? "✓ rédigé, à relire et ajuster"
+      : "aucune brique cochée";
+    setTimeout(function () { etatRedaction.textContent = ""; }, 4000);
+  });
+
+  ELEVES.forEach(function (e, i) {
+    var o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = e.nom + " — " + e.etat;
+    selEleve.appendChild(o);
+  });
+
+  selEleve.addEventListener("change", function () {
+    iEleve = Number(selEleve.value);
+    dessinerBilan();
+  });
+  selPos.addEventListener("change", dessinerBilan);
+  selPeriode.addEventListener("change", function () {
+    dessinerBilan();
+    message.textContent = "période changée, les niveaux se recalculent";
+  });
+
+  function allerVers(delta) {
+    iEleve = (iEleve + delta + ELEVES.length) % ELEVES.length;
+    selEleve.value = String(iEleve);
+    dessinerBilan();
+  }
+  btnPrec.addEventListener("click", function () { allerVers(-1); });
+  btnSuiv.addEventListener("click", function () { allerVers(1); });
+
+  btnCopier.addEventListener("click", function () {
+    var lignes = [ELEVES[iEleve].nom + " · " + selPeriode.value, ""];
+    Array.prototype.forEach.call(corps.querySelectorAll("tr"), function (tr) {
+      var dom = tr.querySelector(".domaine");
+      if (dom) { lignes.push(dom.textContent.toUpperCase()); return; }
+      if (!tr.querySelector(".coche").checked) return;
+      var libelle = tr.querySelector(".libelle-element").textContent;
+      var choix = tr.querySelector(".niveaux").getAttribute("data-choix");
+      var niv = NIVEAUX.filter(function (n) { return n.code === choix; })[0];
+      lignes.push("  " + libelle + " — " + (niv ? niv.long : "non positionné"));
+    });
+    lignes.push("", "Acquisitions, progrès et difficultés :", apprec.textContent.trim());
+
+    function fini() {
+      message.textContent = "✓ copié, prêt à coller dans le LSU";
+      setTimeout(function () { message.textContent = ""; }, 3000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lignes.join("\n")).then(fini, fini);
+    } else {
+      fini();
+    }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".niveaux[data-choix]"), function (g) {
+    if (!corps.contains(g)) peuplerGroupe(g);
+  });
+  dessinerBilan();
+})();
+</script>

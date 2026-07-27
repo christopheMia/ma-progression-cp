@@ -430,9 +430,31 @@ l'historique.)
   7. **Positionnement par domaine par défaut**, par élément en option (le LSU
      propose les deux, « par domaine » est le réglage courant du métier).
 
-  **Maquette validée** (les 4 écrans) : artefact
-  `https://claude.ai/code/artifact/62dc016f-cf78-4e50-8a12-da225036699a`.
-  Source dans le scratchpad de la session, à recopier dans le dépôt si on veut la garder.
+  **Maquette validée et INTERACTIVE**, gardée dans le dépôt :
+  **`docs/maquettes/suivi-4-niveaux-et-bilan-lsu.html`** (ouvrir dans un navigateur).
+  Miroir publié : `https://claude.ai/code/artifact/62dc016f-cf78-4e50-8a12-da225036699a`.
+  Les niveaux se cliquent, l'élève et la période se changent, l'appréciation
+  s'assemble. C'est la référence visuelle du chantier, s'y tenir.
+
+  **L'APPRÉCIATION S'ASSEMBLE À PARTIR DE BRIQUES** (demande de Christophe) :
+  la période produit une liste de briques, chacune **décochable et modifiable sur
+  place**, et l'enseignant enlève ce qu'il ne veut pas dire AVANT de rédiger.
+  Chaque brique porte un rôle. **Modèle de formulation en cinq temps, dans cet
+  ordre** : `posture`, `réussite` (regroupées en une phrase), `progrès`,
+  `vigilance` (toujours suivie de sa prochaine étape, séparée par un point-virgule),
+  `encouragement`. Les briques libres (les mots de l'enseignant) passent juste avant
+  l'encouragement.
+  **Trois règles non négociables pour que ça sonne humain** :
+  1. **Jamais un code de niveau ni un libellé technique de compétence** dans le
+     texte final. « Identifier des mots · Atteint » devient « lit maintenant avec
+     assurance les mots contenant les sons étudiés ». Un parent doit comprendre.
+  2. **Une difficulté ne s'énonce jamais seule**, toujours avec ce qu'on va faire.
+  3. **Ne jamais inventer une observation** que l'enseignant n'a pas faite : l'IA
+     reformule les briques, elle n'en ajoute pas.
+  **RGPD (convention 5)** : le prénom ne part pas vers l'IA. Envoyer les briques avec
+  un marqueur et réinsérer le prénom côté navigateur, comme les autres routes.
+  La maquette fait l'assemblage avec une simple fonction, sans IA, pour juger le
+  modèle : garder cette fonction pure et testable, l'IA ne fait que fluidifier ensuite.
 
   **FAIT : migration `019_suivi_quatre_niveaux` APPLIQUÉE** sur `odwgkakeepcqbgpsfugl`.
   Colonne `niveau` sur `acquisitions` et `acquisitions_criteres`, contrainte sur les
