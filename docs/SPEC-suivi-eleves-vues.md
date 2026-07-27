@@ -1,8 +1,25 @@
 # Spec : les trois vues du suivi des élèves
 
 Rédigée le 2026-07-27 par Claude, à partir du retour de Christophe le jour même.
-**Pas encore validée, pas encore commencée.** Une question de fond reste ouverte
-(section « La décision qui manque »), et elle change le code.
+
+**ÉTAT : niveaux 1 et 2 FAITS et déployés le 2026-07-27.** Christophe a tranché les
+deux questions ouvertes le jour même :
+- **Pastille = couleur ET fraction** (« 2/4 » sur fond coloré). La couleur se lit sur
+  toute la classe, la fraction donne la précision quand on s'arrête sur une case.
+- **Clic sur un élève = dépliage sur place**, pas une page dédiée : pas d'aller-retour
+  serveur, et la vue d'ensemble reste sous les yeux.
+
+Ce que résume la fraction : les **critères d'observation** de la notion. Quand une
+notion n'a aucun critère, elle compte pour elle-même via le suivi global
+(`acquisitions`), pour que l'enseignant qui n'a créé aucun critère voie quand même sa
+classe avancer. Logique dans `src/lib/vue-classe.ts` (fonction pure `agregerClasse`,
+9 tests), rendu dans `StudentTracking`, section « 👀 Ma classe d'un coup d'œil ».
+
+**Choix d'implantation** : la vue d'ensemble a été **ajoutée au-dessus** du détail par
+notion, sans supprimer ce dernier. La spec prévoyait d'en faire la vue par défaut et de
+reléguer le détail au troisième niveau ; c'est un changement plus lourd, à faire une
+fois que Christophe aura vécu avec la nouvelle vue. Le détail reste donc l'endroit où
+l'on coche, le dépliage est en lecture seule et renvoie vers lui.
 
 ## Le problème
 

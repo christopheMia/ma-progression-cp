@@ -187,6 +187,39 @@ describe('StudentTracking', () => {
     ))
   })
 
+  // Demande de Christophe du 2026-07-27 : une vue simplifiee de toute la classe,
+  // cliquable eleve par eleve. L'ecran etant organise par notion, il fallait
+  // parcourir les 23 eleves pour savoir ou en est la classe.
+  test('affiche la vue d’ensemble de la classe avec une ligne par élève', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    expect(screen.getByRole('heading', { name: /ma classe d’un coup d’œil/i })).toBeTruthy()
+    // Lina a le critere acquis, Tom ne l'a pas : 1/1 contre 0/1.
+    expect(screen.getByRole('button', { name: /▸ Lina/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /▸ Tom/ })).toBeTruthy()
+    expect(screen.getByText(/lina, lire a : tout acquis/i)).toBeTruthy()
+    expect(screen.getByText(/tom, lire a : rien acquis/i)).toBeTruthy()
+  })
+
+  test('déplie le détail d’un élève au clic, puis le referme', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    const ligneLina = screen.getByRole('button', { name: /▸ Lina/ })
+    expect(ligneLina.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByText(/détail de lina/i)).toBeNull()
+
+    await user.click(ligneLina)
+    expect(await screen.findByText(/détail de lina/i)).toBeTruthy()
+    expect(screen.getByRole('button', { name: /▾ Lina/ }).getAttribute('aria-expanded')).toBe('true')
+
+    await user.click(screen.getByRole('button', { name: /▾ Lina/ }))
+    expect(screen.queryByText(/détail de lina/i)).toBeNull()
+  })
+
   // Retour de Christophe du 2026-07-27 : « on ne voit pas ce qui est ajouté au
   // final et à quoi ». La notion n'etait nommee que dans un label `sr-only`,
   // donc lisible par un lecteur d'ecran mais invisible a l'oeil.

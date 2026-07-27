@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react'
 import { Check, FileDown, Pencil, Plus, Printer, Sparkles, Trash2, X } from 'lucide-react'
 import type {
   Acquisition,
@@ -19,6 +19,7 @@ import {
   supprimerCritereObservation,
 } from '@/lib/actions/criteres-observation'
 import { cleObservation } from '@/lib/criteres-observation'
+import { agregerClasse, type StatutCase } from '@/lib/vue-classe'
 import { exporterSuiviWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import { celebrate } from '@/lib/confetti'
@@ -38,6 +39,22 @@ function labelMatiere(matiere: string) {
     : matiere === 'maths'
       ? 'Maths'
       : matiere.charAt(0).toUpperCase() + matiere.slice(1)
+}
+
+// Couleurs de la vue d'ensemble. Trois etats lisibles de loin, plus le gris du
+// « pas encore renseigne » qui ne doit pas ressembler a un echec.
+const COULEURS_STATUT: Record<StatutCase, { pastille: string; case_: string }> = {
+  vide: { pastille: 'bg-slate-300', case_: 'bg-slate-50 text-slate-400' },
+  aucun: { pastille: 'bg-red-500', case_: 'bg-red-50 text-red-800' },
+  partiel: { pastille: 'bg-amber-500', case_: 'bg-amber-50 text-amber-900' },
+  complet: { pastille: 'bg-emerald-500', case_: 'bg-emerald-50 text-emerald-900' },
+}
+
+const LIBELLES_STATUT: Record<StatutCase, string> = {
+  vide: 'pas encore renseigné',
+  aucun: 'rien acquis',
+  partiel: 'en cours',
+  complet: 'tout acquis',
 }
 
 const cleAppreciation = (eleveId: string, matiere: string) => `${eleveId}|${matiere}`
@@ -117,6 +134,7 @@ export default function StudentTracking({
   const [notionsDepliees, setNotionsDepliees] = useState<Record<string, boolean>>({})
   const [critereEdite, setCritereEdite] = useState<string | null>(null)
   const [libelleEdite, setLibelleEdite] = useState('')
+  const [eleveDeplie, setEleveDeplie] = useState<string | null>(null)
   const wasPending = useRef(false)
   const blocRef = useRef<HTMLDivElement>(null)
 
@@ -412,6 +430,20 @@ export default function StudentTracking({
 
   const methodesActives = methodes.filter(methode => methode.suivi_actif)
 
+  // Toutes les notions de la semaine, toutes matieres confondues, dans l'ordre
+  // d'affichage des matieres. C'est l'axe des colonnes de la vue d'ensemble.
+  const toutesLesNotions = methodesActives.flatMap(({ matiere, items }) =>
+    notionsPour(matiere, items).map(notion => ({ matiere, notion })),
+  )
+
+  const lignesClasse = agregerClasse({
+    eleves,
+    notions: toutesLesNotions,
+    criteres,
+    valeurCritere,
+    valeurNotion,
+  })
+
   return (
     <div ref={blocRef} className="bg-white border rounded-2xl p-5 shadow-sm">
       <div className="flex flex-wrap items-center gap-3 mb-2">
@@ -462,6 +494,127 @@ export default function StudentTracking({
             <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
               {erreur}
             </p>
+          )}
+
+          {toutesLesNotions.length > 0 && (
+            <section className="rounded-2xl border border-violet-100 bg-white p-4">
+              <h3 className="font-bold text-violet-800">👀 Ma classe d’un coup d’œil</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Clique sur un élève pour déplier son détail. Le chiffre indique les points
+                observés qui sont acquis.
+              </p>
+
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-max border-separate border-spacing-1 text-sm">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 bg-white px-2 py-1 text-left text-xs font-semibold text-gray-500">
+                        Élève
+                      </th>
+                      {toutesLesNotions.map(({ matiere, notion }) => (
+                        <th
+                          key={`${matiere}|${notion}`}
+                          scope="col"
+                          className="max-w-28 px-2 py-1 text-left align-bottom text-xs font-semibold text-gray-700"
+                        >
+                          <span className="line-clamp-2 break-words">
+                            {emojiMatiere(matiere)} {notion}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lignesClasse.map(ligne => {
+                      const deplie = eleveDeplie === ligne.eleveId
+                      return (
+                        <Fragment key={ligne.eleveId}>
+                          <tr>
+                            <th scope="row" className="sticky left-0 bg-white p-0 text-left font-normal">
+                              <button
+                                type="button"
+                                onClick={() => setEleveDeplie(deplie ? null : ligne.eleveId)}
+                                aria-expanded={deplie}
+                                className="w-full rounded-lg px-2 py-1 text-left font-semibold text-gray-900 hover:bg-violet-50"
+                              >
+                                {deplie ? '▾' : '▸'} {ligne.prenom}
+                              </button>
+                            </th>
+                            {ligne.cases.map(c => (
+                              <td key={`${c.matiere}|${c.notion}`} className="p-0">
+                                <span
+                                  className={`flex items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold ${COULEURS_STATUT[c.statut].case_}`}
+                                >
+                                  <span
+                                    aria-hidden="true"
+                                    className={`inline-block h-2 w-2 shrink-0 rounded-full ${COULEURS_STATUT[c.statut].pastille}`}
+                                  />
+                                  <span className="sr-only">
+                                    {ligne.prenom}, {c.notion} : {LIBELLES_STATUT[c.statut]},{' '}
+                                  </span>
+                                  {c.acquis}/{c.total}
+                                </span>
+                              </td>
+                            ))}
+                          </tr>
+                          {deplie && (
+                            <tr>
+                              <td colSpan={toutesLesNotions.length + 1} className="p-0">
+                                <div className="mb-1 rounded-xl bg-violet-50/60 p-3">
+                                  <p className="mb-2 text-sm font-bold text-violet-900">
+                                    Détail de {ligne.prenom}
+                                  </p>
+                                  <ul className="space-y-2">
+                                    {ligne.cases.map(c => {
+                                      const criteresNotion = criteresPour(c.matiere, c.notion)
+                                      return (
+                                        <li key={`${c.matiere}|${c.notion}`} className="text-sm">
+                                          <span className="font-semibold text-gray-900">
+                                            {emojiMatiere(c.matiere)} {c.notion}
+                                          </span>{' '}
+                                          <span className="text-gray-600">
+                                            {c.acquis}/{c.total} ({LIBELLES_STATUT[c.statut]})
+                                          </span>
+                                          {criteresNotion.length > 0 && (
+                                            <ul className="ml-4 mt-1 space-y-0.5 text-xs text-gray-700">
+                                              {criteresNotion.map(critere => {
+                                                const v = valeurCritere(ligne.eleveId, critere.id)
+                                                return (
+                                                  <li key={critere.id}>
+                                                    {v === true ? '✓' : v === false ? '✗' : '–'}{' '}
+                                                    {critere.libelle}
+                                                  </li>
+                                                )
+                                              })}
+                                            </ul>
+                                          )}
+                                        </li>
+                                      )
+                                    })}
+                                  </ul>
+                                  <p className="mt-2 text-xs text-gray-500">
+                                    Pour modifier, va dans le détail de la notion plus bas.
+                                  </p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                {(['aucun', 'partiel', 'complet', 'vide'] as StatutCase[]).map(statut => (
+                  <span key={statut} className="flex items-center gap-1">
+                    <span className={`inline-block h-2 w-2 rounded-full ${COULEURS_STATUT[statut].pastille}`} />
+                    {LIBELLES_STATUT[statut]}
+                  </span>
+                ))}
+              </p>
+            </section>
           )}
 
           {methodesActives.map(({ matiere, items }) => {

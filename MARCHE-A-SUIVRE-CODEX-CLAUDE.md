@@ -407,6 +407,26 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-27 - Claude - vue d'ensemble de la classe, cliquable élève par élève**.
+  Demande de Christophe : « on n'a pas la vue simplifiée cliquable de tous les élèves ».
+  Elle avait été spécifiée le matin mais pas codée, faute d'une décision de sa part.
+  Décisions prises : pastille **couleur ET fraction**, et **dépliage sur place** plutôt
+  qu'une page par élève.
+  Nouvelle section « 👀 Ma classe d'un coup d'œil » en haut du suivi : les élèves en
+  lignes, les notions en colonnes, une case colorée par croisement avec le compte des
+  points acquis. Le clic sur un élève déplie son détail sous sa ligne, en lecture seule,
+  et renvoie vers le détail par notion pour modifier.
+  Le calcul est une **fonction pure** `agregerClasse` dans `src/lib/vue-classe.ts`
+  (9 tests), sur le modèle de `vue-periode.ts`. Aucune migration : tout est déjà stocké
+  par élève et par critère. Une notion sans critère compte pour elle-même via le suivi
+  global, sinon l'enseignant qui n'a créé aucun critère verrait un tableau tout gris.
+  Piège respecté : **aucun attribut `title` ajouté sur une notion**, le test des notions
+  longues utilise `getByTitle` et casserait avec deux éléments. Les en-têtes de colonnes
+  sont donc tronqués en CSS, et le titre complet reste lisible dans le dépliage.
+  Validation : 60 suites, 493 tests, tsc propre, build de prod réussi.
+  Suite possible, pas faite : faire de cette vue la vue par défaut et reléguer le détail
+  par notion au troisième niveau. Voir `docs/SPEC-suivi-eleves-vues.md`.
+
 - **2026-07-27 - Claude - la notion est nommée à l'écran dans le bloc des critères**.
   Retour de Christophe en voyant la page : « on ne voit pas ce qui est ajouté au final
   et à quoi ». Cause : la notion n'était nommée que dans un `<label className="sr-only">`
