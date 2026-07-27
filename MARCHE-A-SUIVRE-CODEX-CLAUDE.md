@@ -407,6 +407,103 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-27 - Claude - CHANTIER LSU cadré et démarré. Lire cette entrée avant de coder.**
+  Longue session de conception avec Christophe. Tout est décidé, la base est migrée,
+  il reste les écrans.
+
+  **Décisions de Christophe, définitives** :
+  1. **Le suivi passe à QUATRE niveaux** (NA / PA / A / D), au lieu du binaire
+     acquis / non acquis. Plus aucune règle de conversion à inventer pour le livret.
+  2. **Niveaux abrégés** NA / PA / A / D partout, avec une légende sous le tableau.
+  3. **Le choix de l'élève est un menu déroulant** (`<select>` natif), pas une grille
+     de cartes : plus discret, et le sélecteur plein écran du téléphone est gratuit.
+     L'état du bilan est écrit dans chaque ligne du menu, avec un compteur à côté
+     (« 8 bilans commencés sur 23 ») et des flèches élève précédent / suivant.
+  4. **Pas de PDF** pour l'instant. Uniquement « Copier le bilan », Cécile colle
+     dans le LSU officiel.
+  5. **Rattachement notion vers compétence : MANUEL**, avec une aide déterministe
+     (comparaison de mots), **pas d'IA**. Raison donnée par Christophe : économiser
+     le budget de la clé Anthropic, et un rattachement ne change pas d'une année sur
+     l'autre.
+  6. **Base = programme officiel**, plus la possibilité d'ajouter ses propres
+     compétences, rattachées à la matière et au domaine voulus.
+  7. **Positionnement par domaine par défaut**, par élément en option (le LSU
+     propose les deux, « par domaine » est le réglage courant du métier).
+
+  **Maquette validée** (les 4 écrans) : artefact
+  `https://claude.ai/code/artifact/62dc016f-cf78-4e50-8a12-da225036699a`.
+  Source dans le scratchpad de la session, à recopier dans le dépôt si on veut la garder.
+
+  **FAIT : migration `019_suivi_quatre_niveaux` APPLIQUÉE** sur `odwgkakeepcqbgpsfugl`.
+  Colonne `niveau` sur `acquisitions` et `acquisitions_criteres`, contrainte sur les
+  4 valeurs, et un **trigger** qui garde l'ancienne colonne `acquis` juste
+  (`acquis = niveau in ('atteint','depasse')`). Donc tout le code qui lit encore
+  `acquis` (export Word, bilan IA, confettis) continue de marcher sans modification.
+  Les tables étaient quasi vides (1 ligne), la migration était sans risque.
+
+  **DÉCOUVERTES IMPORTANTES, à ne pas re-chercher** :
+  - **L'écran de rattachement EXISTE DÉJÀ** : page `/programme`
+    (`src/app/(app)/programme/page.tsx` + `components/programme/NotionLigne.tsx` +
+    `lib/actions/mapping.ts`). Menu déroulant des 101 compétences par notion,
+    `rattacherNotionManuel` pour le manuel, `proposerRattachements` pour l'IA.
+    Elle n'a jamais servi : `notion_competence` est **vide**. **Ne pas la recoder.**
+    Deux défauts à corriger : elle fait `window.location.reload()` à chaque
+    rattachement (insupportable sur 36 semaines), et il manque un « appliquer aux
+    notions semblables » (les 14 « Lire … » se rattachent une par une).
+  - **`src/lib/lsu-bareme.ts` existe** (barème note vers niveau, règle de Christophe,
+    /3 ou /4, « dépassé » à 100 %). Il n'a **aucun test** et n'est **importé nulle
+    part**. Seul fichier de logique métier du projet sans test.
+  - Il existe aussi une page `/competences`.
+
+  **Le modèle LSU, vérifié sur `partage/exemple lsu.pdf`** (4 pages, scan sans texte ;
+  le convertir en images avec PyMuPDF pour le relire) : trois colonnes, **Domaines
+  d'enseignement | Principaux éléments du programme travaillés durant la période |
+  Positionnement** (Non atteints / Partiellement atteints / Atteints / Dépassés).
+  **Le positionnement porte sur l'ÉLÉMENT, pas sur le domaine.** L'élément est une
+  **phrase libre** écrite par l'enseignant, pas une compétence officielle imposée :
+  c'est ce qui rend l'ajout manuel de compétences natif et non exceptionnel.
+  Attention, cet exemple vient d'une classe de cycle 3, seule la structure vaut.
+
+  **Comment les concurrents font (recherche du 27/07)** :
+  - L'intégration LSU n'est **pas une API**, c'est un **fichier XML** que l'enseignant
+    dépose à la main (menu « Échanges de données » puis « Import », réglage
+    « Import(s) Éditeur(s) »). Les bilans importés sont **verrouillés**, réimport
+    possible tant qu'un parent n'a pas signé.
+  - Trois identifiants obligatoires : **code UAI** de l'école, **identifiant technique
+    ONDE de la classe** (chaque rentrée), **INE de chaque élève**. Extraits d'ONDE :
+    Listes & Documents, Extractions, Ensemble des élèves de l'école, CSV avec les
+    colonnes « INE » et « Identifiant classe ». LivrEval a **essayé** d'automatiser
+    l'import de ce CSV et **a renoncé** (homonymes, orthographes, structures).
+  - **Edumoov suit directement en NA/PA/A/D** et calcule automatiquement le
+    positionnement depuis les évaluations, avec surcharge manuelle. LivrEval calcule
+    « en fonction du système de notation et du **seuil de validation** paramétré », et
+    **« Dépassés » s'attribue toujours à la main**.
+  - LivrEval propose une **« programmation simplifiée »**, réécriture lisible des
+    libellés officiels « souvent très techniques » pour les parents. Bonne idée à
+    reprendre.
+  - **Ce qu'ils ne font pas : les appréciations sont tapées à la main.** C'est l'angle
+    différenciant, cohérent avec l'IA qui lit déjà le manuel.
+  - **Le schéma XML lui-même n'a PAS été trouvé** (ni XSD ni noms de balises).
+    Probablement dans l'espace éditeurs du ministère. **Ne pas bricoler un XML au
+    jugé** : un fichier accepté avec de mauvaises données atterrit dans le livret
+    officiel d'un enfant. Deux pistes : demander la doc éditeur, ou obtenir un vrai
+    fichier produit par un autre outil pour en déduire la structure.
+
+  **ORDRE DE CONSTRUCTION** :
+  1. **Le suivi à 4 niveaux** : base déjà migrée, il reste l'écran. Remplacer
+     `BoutonsAcquisition` dans `StudentTracking.tsx` par un `role="radiogroup"` de
+     4 boutons abrégés, adapter `toggleAcquisition` / `definirAcquisitionCritere`
+     pour écrire `niveau`, et `vue-classe.ts` pour agréger sur 4 niveaux.
+  2. **Les deux corrections de `/programme`** (pas de rechargement, et appliquer aux
+     notions semblables), plus les compétences ajoutées à la main
+     (table `competences_perso`, par classe, fusionnée à la lecture).
+  3. **Le bilan par élève et par période** (nouvelle page) et « Copier le bilan ».
+
+  **Autre chose vue au passage** : la jauge IA n'a pas disparu, elle est dans le
+  panneau « Mes outils » de l'accueil. Les 5 routes IA enregistrent bien leur usage,
+  donc elle ne rate rien ; ce qui la rend approximative, c'est le tarif Sonnet écrit
+  en dur, le taux de change fixé à 0,92, et le mot « mots » employé pour des tokens.
+
 - **2026-07-27 - Claude - vue d'ensemble de la classe, cliquable élève par élève**.
   Demande de Christophe : « on n'a pas la vue simplifiée cliquable de tous les élèves ».
   Elle avait été spécifiée le matin mais pas codée, faute d'une décision de sa part.
