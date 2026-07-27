@@ -29,7 +29,7 @@ traité le jour même (voir plus bas).
 | 2.1 | **Bouton « Valider » après chaque saisie de progression**, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter`. |
 | 2.2 | **Importer un emploi du temps existant** (PDF ou DOC) avant la génération automatique. | Une route d'import EDT existe déjà côté prompt (`SYSTEM_IMPORT_EDT`, `userImportEdt`) : vérifier ce qui est déjà branché avant de recoder. |
 | 2.3 | **Barre d'outils de mise en forme** (couleurs, soulignement) : ajouter une validation explicite pour fermer la fenêtre. | Touche `TimetableGrid`. |
-| 2.4 | **Refonte du suivi des élèves** : alléger visuellement, corriger le cadrage, raccourcir les intitulés trop longs. | |
+| 2.4 | **Refonte du suivi des élèves** : alléger visuellement, corriger le cadrage, raccourcir les intitulés trop longs. | **TRAITÉ localement le 26/07**, en attente de validation et de publication. Suivi par notion, critères personnalisables et états Acquis ou Non acquis par élève. |
 
 ## 3. Bugs identifiés
 
@@ -39,11 +39,12 @@ traité le jour même (voir plus bas).
 | 3.2 | **Résidus « Explorer le monde »** à supprimer. | **FAIT le 26/07** : c'était `EDM_PROGRESSION_CP` posé d'office sur les 36 semaines par `genererSqueletteSemaines` (commit `632302d`), plus les 36 lignes nettoyées en base. À faire confirmer par Christophe. |
 | 3.3 | **Lisibilité de l'EDT généré** : contraste majeur, le texte s'affiche en blanc ou très clair alors que les paramètres enregistrés disent noir. Lecture impossible. | **CORRIGÉ le 26/07 (`6661eda`)**, pas encore validé par Christophe. Ce n'était pas `couleur_texte` : `globals.css` gardait le bloc `prefers-color-scheme: dark` du gabarit Next, qui repeint le texte en clair sur une interface entièrement blanche. Détail dans `MARCHE-A-SUIVRE-CODEX-CLAUDE.md`. |
 
-## 4. Question en suspens
+## 4. Décision sur le cahier journal
 
-- **À quoi sert exactement le bouton « générer la journée »** dans le cahier journal ?
-  Christophe attend une réponse, pas forcément une modification. Regarder
-  `src/lib/cahier-journal.ts` et `src/lib/actions/journal.ts` avant de répondre.
+- Christophe a demandé le retrait du bouton « Générer la journée ». Le bouton, sa
+  route IA, son prompt et son test ont été supprimés localement le 26/07.
+- Les entrées du cahier journal sont désormais modifiables et supprimables une par
+  une. Les autres entrées restent conservées.
 
 ---
 
@@ -53,7 +54,7 @@ Les bugs d'abord, parce qu'ils rendent l'outil inutilisable ou faux :
 
 1. **3.3 contraste de l'EDT** : un emploi du temps illisible ne sert à rien.
 2. **3.1 maths en triple** : fausse la progression, donc le cahier journal.
-3. **4 la question** : coûte une lecture de code, pas un chantier.
-4. Puis l'UI/UX (2.1 à 2.4), et enfin les règles métier du point 1, qui demandent
+3. **4 le cahier journal** : décision prise et traitée localement.
+4. Puis l'UI/UX (2.1 à 2.3), et enfin les règles métier du point 1, qui demandent
    un vrai cadrage avec lui (notamment « maths, code et étude de la langue le matin »,
    qui touche au générateur d'emploi du temps).

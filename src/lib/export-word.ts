@@ -13,6 +13,7 @@ import {
 } from 'docx'
 import { saveAs } from 'file-saver'
 import { JourJournal } from '@/types'
+import { heureSansSecondes } from '@/lib/horaires'
 
 function makeBorder() {
   return { style: BorderStyle.SINGLE, size: 1, color: '999999' }
@@ -63,7 +64,9 @@ export async function genererBlobWord(journal: JourJournal[], numeroSemaine: num
       seance =>
         new TableRow({
           children: [
-            makeCell(`${seance.heure_debut}–${seance.heure_fin}`),
+            makeCell(
+              `${heureSansSecondes(seance.heure_debut)} à ${heureSansSecondes(seance.heure_fin)}`,
+            ),
             makeCell(seance.matiere),
             makeCell(seance.type === 'routine' ? '' : seance.deroulement),
           ],
@@ -90,19 +93,25 @@ export async function exporterJournalWord(journal: JourJournal[], numeroSemaine:
   saveAs(blob, `cahier-journal-semaine-${numeroSemaine}.docx`)
 }
 
-/** Export Word du suivi des élèves (graphèmes acquis + bilan + commentaire). */
+/** Export Word du suivi des élèves, avec les observations et le bilan. */
 export async function exporterSuiviWord(opts: {
   numeroSemaine: number
-  graphemes: string[]
-  lignes: Array<{ prenom: string; acquis: boolean[]; progres: string; bilan: string; commentaire: string }>
+  observations: string[]
+  lignes: Array<{
+    prenom: string
+    acquis: Array<boolean | null>
+    progres: string
+    bilan: string
+    commentaire: string
+  }>
 }): Promise<void> {
-  const { numeroSemaine, graphemes, lignes } = opts
+  const { numeroSemaine, observations, lignes } = opts
 
   const headerRow = new TableRow({
     tableHeader: true,
     children: [
       makeCell('Élève', true),
-      ...graphemes.map(g => makeCell(`"${g}"`, true)),
+      ...observations.map(observation => makeCell(observation, true)),
       makeCell('Progrès', true),
       makeCell('Bilan', true),
       makeCell('Commentaire', true),
@@ -113,7 +122,7 @@ export async function exporterSuiviWord(opts: {
     new TableRow({
       children: [
         makeCell(l.prenom, true),
-        ...l.acquis.map(a => makeCell(a ? '✓' : '–')),
+        ...l.acquis.map(a => makeCell(a === true ? '✓' : a === false ? 'Non acquis' : '')),
         makeCell(l.progres),
         makeCell(l.bilan),
         makeCell(l.commentaire),

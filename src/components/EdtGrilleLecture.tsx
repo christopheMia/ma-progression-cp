@@ -13,6 +13,7 @@
 
 import { couleurAffichee } from '@/data/trame-edt'
 import { construireGrille } from '@/lib/edt-grille'
+import { heureSansSecondes } from '@/lib/horaires'
 
 export type CreneauLecture = {
   jour: string
@@ -66,8 +67,8 @@ export default function EdtGrilleLecture({ creneaux }: { creneaux: CreneauLectur
         {lignes.map((ligne, iLigne) => (
           <tr key={`${ligne.debut}-${ligne.fin}`}>
             <td className="border border-violet-100 bg-violet-50 p-1 text-center tabular-nums text-slate-700">
-              <span className="block font-medium">{ligne.debut}</span>
-              <span className="block text-slate-500">{ligne.fin}</span>
+              <span className="block font-medium">{heureSansSecondes(ligne.debut)}</span>
+              <span className="block text-slate-500">{heureSansSecondes(ligne.fin)}</span>
             </td>
             {cols.map((jour, iJour) => {
               const etat = cases[iLigne][iJour]

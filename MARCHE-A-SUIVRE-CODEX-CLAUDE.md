@@ -29,7 +29,7 @@ explicite.
   React 19, TypeScript, Tailwind. Turbopack.
 - **Supabase** (Postgres + Auth + Edge Functions). Projet `odwgkakeepcqbgpsfugl`.
 - **Anthropic API** (`@anthropic-ai/sdk`) pour les fonctions IA de l'app (import de
-  manuel, chat de correction, bilan élève, génération de journée). Clé
+  manuel, chat de correction, bilan élève). Clé
   `ANTHROPIC_API_KEY` en variable d'environnement (serveur, jamais `NEXT_PUBLIC_`).
   Modèle d'import = Sonnet (Opus dépasse le timeout serverless Vercel).
   Note : ceci est l'architecture de L'APP. À ne pas confondre avec l'assistant qui
@@ -318,9 +318,10 @@ manuelle finale dans une session authentifiée de production. État exact :
   complètes de même durée. Si cela n'est pas possible sans altérer une séance,
   l'enregistrement est bloqué avec un message compréhensible.
 
-Reste donc, dans l'ordre : la **question 4** sur « générer la journée », puis
-l'**UI/UX 2.1 à 2.4**. La règle métier du matin et le retrait des résidus
-« Explorer le monde » ne sont plus des chantiers ouverts.
+La question 4 est tranchée : la génération IA d'une journée est retirée du cahier
+journal. L'UI/UX 2.1 à 2.3 reste ouverte. Le point 2.4 est traité par le suivi
+par notion et critères d'observation. La règle métier du matin et le retrait des
+résidus « Explorer le monde » ne sont plus des chantiers ouverts.
 
 0. **Validation sur les vrais documents.** Le PDF de maths a été analysé réellement
    par Anthropic et confirme une programmation annuelle à cinq périodes sans doublon.
@@ -386,6 +387,40 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 (Traits d'union simples : la convention 1 bannit le tiret cadratin, et cette ligne
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
+
+- **2026-07-26 - Codex - cahier journal modifiable et suivi par critères, local uniquement**.
+  Le cahier journal permet maintenant de modifier les horaires, la matière et le
+  déroulement d'une entrée, ou de supprimer uniquement cette entrée après confirmation.
+  Le contenu complet est validé côté serveur avant enregistrement. Le bouton
+  « Générer la journée », la route `api/ia-journal`, son prompt, son texte d'aide et
+  son test orphelin ont été retirés. Les horaires sont affichés sans secondes dans
+  le cahier journal, son export Word, l'EDT en lecture et la grille EDT modifiable.
+  Le suivi des élèves est désormais présenté par notion dans des cartes pleine largeur.
+  Un titre long occupe au plus deux lignes par défaut et reste dépliable. L'enseignant
+  peut ajouter, renommer et supprimer ses critères d'observation, puis choisir Acquis
+  ou Non acquis pour chaque élève et chaque critère. Les acquisitions historiques
+  restent intactes et visibles comme suivi de la notion dans son ensemble. La migration
+  additive `018_criteres_observation.sql` crée `criteres_observation` et
+  `acquisitions_criteres` avec RLS, sans modifier `acquisitions`; elle est aussi
+  reproduite dans la source de vérité 006. Les policies ciblent explicitement
+  `authenticated`, les grants Data API sont explicites et les colonnes de rattachement
+  ont leurs index. Elle n'a été appliquée à aucune base distante.
+  Validation : 58 suites, 474 tests, typage TypeScript, `git diff --check`, contrôle des
+  ajouts U+2014 et build Next.js 16 avec webpack, tous réussis. Le contrôle navigateur
+  a atteint la page de connexion locale, mais pas la fiche d'une semaine faute de
+  session authentifiée dans ce navigateur. Aucun fichier source n'a été committé ni
+  poussé et aucune publication n'a été faite. La production affiche donc encore
+  l'ancienne interface et les horaires avec secondes tant qu'une publication séparée
+  n'est pas autorisée.
+  **Reprise publication** : Christophe a ensuite autorisé explicitement la migration,
+  le commit et la publication. Codex s'est arrêté avant le commit car son connecteur
+  Supabase retourne zéro projet, et le poste ne fournit ni `SUPABASE_ACCESS_TOKEN` ni
+  mot de passe de base. Aucun SQL distant, commit, push ou déploiement supplémentaire
+  n'a donc été effectué. Pour reprendre sans casser la production : appliquer d'abord
+  `018_criteres_observation.sql` au projet `odwgkakeepcqbgpsfugl`, vérifier les deux
+  tables, leurs RLS, policies, grants et index, puis seulement créer le commit, intégrer
+  `main`, pousser et contrôler le déploiement Vercel. Le dépôt principal est propre à
+  l'exception de `partage/`, local et hors Git, qui ne doit jamais être ajouté.
 
 - **2026-07-26 - Codex - publication des corrections sur `main` et en production**.
   Le commit fonctionnel `7a389f6`

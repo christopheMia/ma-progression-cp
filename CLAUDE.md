@@ -29,8 +29,8 @@
 ## État actuel (session 2026-06-18) — multi-méthodes, journal, crédit IA, réparation prod
 - **Multi-méthodes (Français + Maths sans écrasement)** déployé : nouvelle table **`progression`** (`class_id, matiere, numero, items[], pages, mots_exemple`) ; colonne `matiere` sur `acquisitions`/`appreciations`. Import IA **par matière** (action `enregistrerProgressionMatiere`, non destructive entre matières), affichage/suivi/bilan **par matière**, section « 📚 Mes méthodes » dans Paramètres. Couche IA généralisée `graphemes` → **`items`**. Constante `src/lib/matieres.ts` (`francais`,`maths`). Plan/état : `docs/superpowers/ETAT-multi-methodes-execution.md`.
   - ⚠️ **Déviation Task 9** : colonnes méthode de `semaines` (`graphemes`/`manuel_pages`/`mots_exemple`) **PAS supprimées** (encore `NOT NULL`, lues par accueil/planning/WeekCard/cahier-journal/export-word). Migration `004` non écrite. `progression` est peuplée EN PLUS ; source de vérité fiche semaine = `progression` (repli `semaine.graphemes`). `corrigerProgression` et `updateManuel` synchronisent aussi `progression(francais)`.
-- **Cahier journal 3 colonnes** (Horaires / Matière / Déroulement) généré depuis l'EDT + `progression` ; lignes routine non remplissables ; bouton **« ✨ Générer la journée »** → route `api/ia-journal` (Sonnet) amorce chaque créneau ; export Word adapté. Format `SeanceJournal{ matiere, heure_debut, heure_fin, type:'cours'|'routine', deroulement }`.
-- **Garde-fou crédit IA** : `messageErreurIA` (`src/lib/ia/erreurs.ts`) dans les 4 routes IA (détecte « credit balance too low » → 402) ; **jauge de budget estimée** sur l'accueil (`BudgetIaIndicator`, `src/lib/ia/cout.ts`, table `ia_usage`).
+- **Cahier journal 3 colonnes** (Horaires / Matière / Déroulement) généré depuis l'EDT + `progression`. Chaque entrée peut être modifiée ou supprimée séparément, avec validation du contenu côté serveur. Les lignes de routine restent sans déroulement. La génération IA d'une journée et sa route ont été retirées. Format `SeanceJournal{ matiere, heure_debut, heure_fin, type:'cours'|'routine', deroulement }`.
+- **Garde-fou crédit IA** : `messageErreurIA` (`src/lib/ia/erreurs.ts`) dans les 5 routes IA restantes (assistant, bilan, chat, EDT et manuel). Il détecte « credit balance too low » avec une réponse 402. **Jauge de budget estimée** sur l'accueil (`BudgetIaIndicator`, `src/lib/ia/cout.ts`, table `ia_usage`).
 - **Menu d'import simplifié** : **IA uniquement** (onglets PDF-regex + CSV supprimés ; l'IA lit déjà les PDF). Route morte `api/parse-manuel-pdf` supprimée.
 - **Thème** : fond de l'appli aligné sur le **dégradé du login** (`bg-gradient-to-br from-violet-300 via-purple-200 to-fuchsia-200`, dans `(app)/layout.tsx`). **Page login : animation CSS de bulles de peinture montantes** (keyframe `bubble-rise` + `.login-bubble` dans `globals.css`, tableau `BUBBLES` dans `(auth)/layout.tsx`, sans dépendance ; réglées rapides avec quelques grosses bulles). *(Idée d'image de fond du login mise de côté ; le code image + un fix proxy assets seront à re-brancher si on la reprend.)*
 - **Icône de marque** : 🍎 remplacée par **📖✏️** (livre + crayon, plus scolaire) dans la carte login, l'en-tête `(app)/layout.tsx` et le bandeau d'accueil.
@@ -65,7 +65,7 @@
 - Connexion : fond `from-violet-300 via-purple-200 to-fuchsia-200` + cercles décoratifs
 - Accent unique **violet-600** ; swap global historique des accents : `blue-*` → `indigo-*` → `rose-*` → `violet-*` dans tout `src`
 - **Illustrations** : bandeau d'accueil dégradé violet avec formes SVG + motif 📚✏️ ; cercles déco + bulles montantes sur la connexion
-- **Bulles d'aide au survol** (`title`) + ligne d'aide sur les tableaux à remplir : suivi des élèves (étoiles) et cahier journal (champs)
+- **Bulles d'aide au survol** (`title`) + lignes d'aide sur le suivi des élèves et le cahier journal
 - **Panneau « Mes outils »** sur /accueil : boutons **Gemini** + **NotebookLM** (ouverture nouvel onglet), carte violette délimitée avec pastilles dégradées
 - **Emploi du temps amélioré** (setup + paramètres) : bouton « + Ajouter ce créneau » bien visible (rose plein), **enchaînement auto des horaires** (le créneau suivant démarre à la fin du précédent), suppression par créneau, génération bloquée tant qu'aucun créneau (helpers `addMinutes`/`diffMinutes` locaux)
 - **Menu adaptatif** `src/components/HeaderNav.tsx` (client, `usePathname` pour lien actif) : si pas de classe, n'affiche que « Configurer ma classe » + Aide + Déconnexion → corrige le bug « Accueil/Paramètres ne s'ouvrent pas » (en réalité : redirigeaient vers /setup faute de classe après reset)
@@ -74,7 +74,7 @@
 ### Fonctionnalités UX (actuelles)
 - **Tableau de bord** : `src/app/(app)/accueil/page.tsx` — landing page (Bonjour + date, semaine en cours, stats : semaine X/36, % graphèmes acquis, nb élèves, raccourcis, panneau « Mes outils »)
 - **Planning vivant** : barre de progression annuelle, `WeekCard` recolorée par statut, pastille couleur par période, mini-barre d'avancement par semaine, 🏆 si semaine complète, hover -translate-y
-- **Progression motivante** : `src/components/ProgressBar.tsx`, suivi élèves avec **étoiles ★/☆**, progression par élève (x/total + barre), 🏆 si complet
+- **Progression motivante** : `src/components/ProgressBar.tsx` et suivi explicite Acquis ou Non acquis par notion et critère d'observation
 - **Confettis** : `src/lib/confetti.ts` (sans dépendance, keyframe `confetti-fall` dans globals.css) — quand un élève valide le dernier graphème de la semaine
 - Helper partagé `src/lib/semaines.ts` (`getStatus`, `semaineEnCours`)
 - *(historique couleurs : thème chaleureux dégradé ambre/indigo → rose → violet)*
@@ -82,8 +82,9 @@
 ## Suivi des élèves — bilan + commentaire (par élève/semaine)
 - Table Supabase **`appreciations`** (semaine_id, eleve_id, statut, commentaire, unique(semaine_id,eleve_id), RLS identique à acquisitions, FK on delete cascade)
 - Action : `src/lib/actions/appreciation.ts` → `upsertAppreciation(semaineId, eleveId, statut, commentaire)` (envoie toujours les 2 champs pour ne pas en écraser un)
-- `StudentTracking` : par ligne d'élève → étoiles par graphème (table `acquisitions`) + **Bilan** (boutons « ✓ Acquis » / « Pas encore ») + **Commentaire** libre (save au blur)
-- En-têtes clarifiés : graphèmes en badges violets (label « son »), titres en gras
+- `StudentTracking` : cartes par notion et par élève. Le suivi global historique reste dans `acquisitions`. Les critères personnalisés sont dans `criteres_observation` et leurs résultats dans `acquisitions_criteres`.
+- Chaque critère peut être ajouté, renommé ou supprimé. Chaque élève reçoit un état explicite Acquis ou Non acquis pour la notion globale et chacun des critères.
+- Le **Bilan** et le **Commentaire** libre restent enregistrés dans `appreciations`.
 - Rappel : graphème « d » (ex. semaine 13 Lecture Piano) = colonne normale, pas un bug
 
 ## Mode d'emploi / Aide (ajouté session 2026-06-14)

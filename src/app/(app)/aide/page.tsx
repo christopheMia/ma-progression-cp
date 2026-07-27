@@ -81,16 +81,19 @@ export default function AidePage() {
       </Bloc>
 
       <Bloc titre="✅ Le suivi des élèves">
-        <p>Dans une semaine, clique sur l&apos;<strong>étoile</strong> quand un élève a
-          <strong> acquis</strong> le graphème correspondant (★ = acquis, ☆ = pas encore).
-          La sauvegarde est automatique. Quand un élève a tout acquis, une petite animation 🎉 apparaît !</p>
+        <p>Dans une semaine, ouvre une notion puis ajoute, si tu le souhaites, les critères
+          précis que tu veux observer. Pour chaque élève, choisis ensuite
+          <strong> Acquis</strong> ou <strong>Non acquis</strong> pour la notion globale
+          et pour chacun de tes critères.</p>
+        <p>Tu peux modifier ou supprimer un critère sans toucher aux autres notions,
+          aux commentaires ni aux suivis déjà enregistrés.</p>
       </Bloc>
 
       <Bloc titre="📋 Le cahier journal">
         <p>Clique sur <strong>Générer le cahier journal</strong> : il se remplit à partir de ton
-          emploi du temps. Tu peux ensuite modifier chaque ligne
-          (<strong>objectif</strong>, <strong>activité</strong>, <strong>matériel</strong>). Tout se sauvegarde
-          automatiquement.</p>
+          emploi du temps et de tes progressions. Tu peux ensuite modifier les horaires,
+          la matière et le déroulement d&apos;une entrée, ou supprimer cette entrée après confirmation.
+          Les autres contenus restent conservés.</p>
         <p>Boutons disponibles : <strong>📄 Word</strong> (télécharger un document modifiable) et
           <strong> 🖨️ PDF</strong> (imprimer le journal).</p>
       </Bloc>

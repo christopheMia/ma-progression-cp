@@ -1,93 +1,346 @@
 'use client'
-import { FileDown, Printer, Sparkles } from 'lucide-react'
-import { Eleve, Acquisition, Semaine, Appreciation } from '@/types'
+
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { Check, FileDown, Pencil, Plus, Printer, Sparkles, Trash2, X } from 'lucide-react'
+import type {
+  Acquisition,
+  AcquisitionCritere,
+  Appreciation,
+  CritereObservation,
+  Eleve,
+  Semaine,
+} from '@/types'
 import { toggleAcquisition } from '@/lib/actions/semaine'
 import { upsertAppreciation } from '@/lib/actions/appreciation'
+import {
+  ajouterCritereObservation,
+  definirAcquisitionCritere,
+  modifierCritereObservation,
+  supprimerCritereObservation,
+} from '@/lib/actions/criteres-observation'
+import { cleObservation } from '@/lib/criteres-observation'
 import { exporterSuiviWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
 import { celebrate } from '@/lib/confetti'
-import { useTransition, useState, useEffect, useRef } from 'react'
 import Bouton from '@/components/ui/Bouton'
 
 type ApprState = { statut: string | null; commentaire: string }
 type Methode = { methode_id: string; matiere: string; items: string[]; suivi_actif: boolean }
+type ValeurObservation = boolean | null
 
-function emojiMatiere(m: string) { return m === 'francais' ? '📖' : m === 'maths' ? '🔢' : '📋' }
-function labelMatiere(m: string) { return m === 'francais' ? 'Français' : m === 'maths' ? 'Maths' : m.charAt(0).toUpperCase() + m.slice(1) }
+function emojiMatiere(matiere: string) {
+  return matiere === 'francais' ? '📖' : matiere === 'maths' ? '🔢' : '📋'
+}
 
-const k = (eleveId: string, matiere: string) => `${eleveId}|${matiere}`
+function labelMatiere(matiere: string) {
+  return matiere === 'francais'
+    ? 'Français'
+    : matiere === 'maths'
+      ? 'Maths'
+      : matiere.charAt(0).toUpperCase() + matiere.slice(1)
+}
 
-export default function StudentTracking({ semaine, eleves, acquisitions, appreciations, methodes }: {
+const cleAppreciation = (eleveId: string, matiere: string) => `${eleveId}|${matiere}`
+const cleNotion = (eleveId: string, matiere: string, notion: string) =>
+  `${eleveId}|${matiere}|${notion}`
+const cleFormulaire = (matiere: string, notion: string) => `${matiere}|${notion}`
+
+function BoutonsAcquisition({
+  valeur,
+  onChange,
+  disabled,
+  libelle,
+}: {
+  valeur: ValeurObservation
+  onChange: (valeur: boolean) => void
+  disabled: boolean
+  libelle: string
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        aria-label={`${libelle} : acquis`}
+        aria-pressed={valeur === true}
+        disabled={disabled}
+        onClick={() => onChange(true)}
+        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+          valeur === true
+            ? 'border-emerald-600 bg-emerald-600 text-white'
+            : 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50'
+        }`}
+      >
+        Acquis
+      </button>
+      <button
+        type="button"
+        aria-label={`${libelle} : non acquis`}
+        aria-pressed={valeur === false}
+        disabled={disabled}
+        onClick={() => onChange(false)}
+        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+          valeur === false
+            ? 'border-amber-600 bg-amber-600 text-white'
+            : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'
+        }`}
+      >
+        Non acquis
+      </button>
+    </div>
+  )
+}
+
+export default function StudentTracking({
+  semaine,
+  eleves,
+  acquisitions,
+  appreciations,
+  methodes,
+  criteresObservation,
+  acquisitionsCriteres,
+}: {
   semaine: Semaine
   eleves: Eleve[]
   acquisitions: Acquisition[]
   appreciations: Appreciation[]
   methodes: Methode[]
+  criteresObservation: CritereObservation[]
+  acquisitionsCriteres: AcquisitionCritere[]
 }) {
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [bilanLoading, setBilanLoading] = useState<string | null>(null)
-  // Replié par défaut : la liste élèves x matières est longue ; on la déplie au besoin.
   const [open, setOpen] = useState(false)
+  const [erreur, setErreur] = useState('')
+  const [criteres, setCriteres] = useState(criteresObservation)
+  const [nouveauxCriteres, setNouveauxCriteres] = useState<Record<string, string>>({})
+  const [notionsDepliees, setNotionsDepliees] = useState<Record<string, boolean>>({})
+  const [critereEdite, setCritereEdite] = useState<string | null>(null)
+  const [libelleEdite, setLibelleEdite] = useState('')
   const wasPending = useRef(false)
   const blocRef = useRef<HTMLDivElement>(null)
 
+  const [acquisNotions, setAcquisNotions] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    for (const acquisition of acquisitions) {
+      init[cleNotion(acquisition.eleve_id, acquisition.matiere, acquisition.grapheme)] = acquisition.acquis
+    }
+    return init
+  })
+
+  const [acquisCriteres, setAcquisCriteres] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    for (const acquisition of acquisitionsCriteres) {
+      init[cleObservation(acquisition.eleve_id, acquisition.critere_id)] = acquisition.acquis
+    }
+    return init
+  })
+
   const [appr, setAppr] = useState<Record<string, ApprState>>(() => {
     const init: Record<string, ApprState> = {}
-    for (const a of appreciations) init[k(a.eleve_id, a.matiere)] = { statut: a.statut, commentaire: a.commentaire ?? '' }
+    for (const appreciation of appreciations) {
+      init[cleAppreciation(appreciation.eleve_id, appreciation.matiere)] = {
+        statut: appreciation.statut,
+        commentaire: appreciation.commentaire ?? '',
+      }
+    }
     return init
   })
 
   useEffect(() => {
     if (wasPending.current && !isPending) {
       setSaved(true)
-      const t = setTimeout(() => setSaved(false), 2000)
-      return () => clearTimeout(t)
+      const timer = setTimeout(() => setSaved(false), 2000)
+      return () => clearTimeout(timer)
     }
     wasPending.current = isPending
   }, [isPending])
 
-  function isAcquis(eleveId: string, matiere: string, grapheme: string) {
-    return acquisitions.some(a => a.eleve_id === eleveId && a.matiere === matiere && a.grapheme === grapheme && a.acquis)
-  }
-  function nbAcquis(eleveId: string, matiere: string, items: string[]) {
-    return items.filter(g => isAcquis(eleveId, matiere, g)).length
-  }
   function getAppr(eleveId: string, matiere: string): ApprState {
-    return appr[k(eleveId, matiere)] ?? { statut: null, commentaire: '' }
+    return appr[cleAppreciation(eleveId, matiere)] ?? { statut: null, commentaire: '' }
   }
 
-  function handleToggle(eleveId: string, matiere: string, grapheme: string, current: boolean, items: string[]) {
-    if (!current && nbAcquis(eleveId, matiere, items) === items.length - 1 && items.length > 0) {
-      celebrate()
+  function valeurNotion(eleveId: string, matiere: string, notion: string): ValeurObservation {
+    const cle = cleNotion(eleveId, matiere, notion)
+    return Object.hasOwn(acquisNotions, cle) ? acquisNotions[cle] : null
+  }
+
+  function valeurCritere(eleveId: string, critereId: string): ValeurObservation {
+    const cle = cleObservation(eleveId, critereId)
+    return Object.hasOwn(acquisCriteres, cle) ? acquisCriteres[cle] : null
+  }
+
+  function criteresPour(matiere: string, notion: string) {
+    return criteres
+      .filter(critere => critere.matiere === matiere && critere.notion === notion)
+      .sort((a, b) => a.ordre - b.ordre)
+  }
+
+  function notionsPour(matiere: string, items: string[]) {
+    const notions = new Set(items)
+    for (const critere of criteres) {
+      if (critere.matiere === matiere) notions.add(critere.notion)
     }
-    startTransition(() => toggleAcquisition(semaine.id, eleveId, matiere, grapheme, !current))
+    for (const acquisition of acquisitions) {
+      if (acquisition.matiere === matiere) notions.add(acquisition.grapheme)
+    }
+    return Array.from(notions)
+  }
+
+  function definirNotion(eleveId: string, matiere: string, notion: string, acquis: boolean) {
+    const cle = cleNotion(eleveId, matiere, notion)
+    const precedente = valeurNotion(eleveId, matiere, notion)
+    setErreur('')
+    setAcquisNotions(etat => ({ ...etat, [cle]: acquis }))
+
+    startTransition(async () => {
+      try {
+        await toggleAcquisition(semaine.id, eleveId, matiere, notion, acquis)
+        if (acquis && precedente !== true) celebrate()
+      } catch (error) {
+        setAcquisNotions(etat => {
+          const suivant = { ...etat }
+          if (precedente === null) delete suivant[cle]
+          else suivant[cle] = precedente
+          return suivant
+        })
+        setErreur(error instanceof Error ? error.message : 'Le suivi n’a pas pu être enregistré.')
+      }
+    })
+  }
+
+  function definirCritere(eleveId: string, critereId: string, acquis: boolean) {
+    const cle = cleObservation(eleveId, critereId)
+    const precedente = valeurCritere(eleveId, critereId)
+    setErreur('')
+    setAcquisCriteres(etat => ({ ...etat, [cle]: acquis }))
+
+    startTransition(async () => {
+      try {
+        await definirAcquisitionCritere(critereId, eleveId, acquis)
+      } catch (error) {
+        setAcquisCriteres(etat => {
+          const suivant = { ...etat }
+          if (precedente === null) delete suivant[cle]
+          else suivant[cle] = precedente
+          return suivant
+        })
+        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être coché.')
+      }
+    })
+  }
+
+  function ajouterCritere(matiere: string, notion: string) {
+    const cle = cleFormulaire(matiere, notion)
+    const libelle = nouveauxCriteres[cle] ?? ''
+    setErreur('')
+    startTransition(async () => {
+      try {
+        const ajoute = await ajouterCritereObservation(semaine.id, matiere, notion, libelle)
+        setCriteres(etat => [...etat, ajoute])
+        setNouveauxCriteres(etat => ({ ...etat, [cle]: '' }))
+      } catch (error) {
+        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être ajouté.')
+      }
+    })
+  }
+
+  function commencerEditionCritere(critere: CritereObservation) {
+    setCritereEdite(critere.id)
+    setLibelleEdite(critere.libelle)
+    setErreur('')
+  }
+
+  function enregistrerCritere() {
+    if (!critereEdite) return
+    setErreur('')
+    startTransition(async () => {
+      try {
+        const modifie = await modifierCritereObservation(critereEdite, libelleEdite)
+        setCriteres(etat => etat.map(critere => critere.id === modifie.id ? modifie : critere))
+        setCritereEdite(null)
+        setLibelleEdite('')
+      } catch (error) {
+        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être modifié.')
+      }
+    })
+  }
+
+  function supprimerCritere(critere: CritereObservation) {
+    if (!confirm(
+      `Supprimer le critère « ${critere.libelle} » ? `
+      + 'Ses coches seront supprimées, mais les autres critères et suivis seront conservés.',
+    )) return
+
+    setErreur('')
+    startTransition(async () => {
+      try {
+        await supprimerCritereObservation(critere.id)
+        setCriteres(etat => etat.filter(item => item.id !== critere.id))
+        setAcquisCriteres(etat => Object.fromEntries(
+          Object.entries(etat).filter(([cle]) => !cle.endsWith(`|${critere.id}`)),
+        ))
+      } catch (error) {
+        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être supprimé.')
+      }
+    })
   }
 
   function handleStatut(eleveId: string, matiere: string, value: string) {
     const current = getAppr(eleveId, matiere)
     const statut = current.statut === value ? null : value
     const next = { ...current, statut }
-    setAppr(p => ({ ...p, [k(eleveId, matiere)]: next }))
-    startTransition(() => upsertAppreciation(semaine.id, eleveId, matiere, statut, next.commentaire))
+    setAppr(etat => ({ ...etat, [cleAppreciation(eleveId, matiere)]: next }))
+    startTransition(() =>
+      upsertAppreciation(semaine.id, eleveId, matiere, statut, next.commentaire),
+    )
   }
 
   function handleComment(eleveId: string, matiere: string, commentaire: string) {
-    setAppr(p => ({ ...p, [k(eleveId, matiere)]: { ...getAppr(eleveId, matiere), commentaire } }))
+    setAppr(etat => ({
+      ...etat,
+      [cleAppreciation(eleveId, matiere)]: { ...getAppr(eleveId, matiere), commentaire },
+    }))
   }
 
   function saveComment(eleveId: string, matiere: string) {
-    const a = getAppr(eleveId, matiere)
-    startTransition(() => upsertAppreciation(semaine.id, eleveId, matiere, a.statut, a.commentaire))
+    const appreciation = getAppr(eleveId, matiere)
+    startTransition(() =>
+      upsertAppreciation(
+        semaine.id,
+        eleveId,
+        matiere,
+        appreciation.statut,
+        appreciation.commentaire,
+      ),
+    )
+  }
+
+  function observationsEleve(eleveId: string, matiere: string, items: string[]) {
+    const observations: Array<{ libelle: string; valeur: ValeurObservation }> = []
+    for (const notion of notionsPour(matiere, items)) {
+      observations.push({
+        libelle: notion,
+        valeur: valeurNotion(eleveId, matiere, notion),
+      })
+      for (const critere of criteresPour(matiere, notion)) {
+        observations.push({
+          libelle: `${notion} : ${critere.libelle}`,
+          valeur: valeurCritere(eleveId, critere.id),
+        })
+      }
+    }
+    return observations
   }
 
   async function generateBilan(eleve: Eleve, matiere: string, items: string[]) {
     const current = getAppr(eleve.id, matiere)
-    const itemsAcquis = items.filter(g => isAcquis(eleve.id, matiere, g))
-    const itemsNonAcquis = items.filter(g => !isAcquis(eleve.id, matiere, g))
-    setBilanLoading(k(eleve.id, matiere))
+    const observations = observationsEleve(eleve.id, matiere, items)
+    const itemsAcquis = observations.filter(item => item.valeur === true).map(item => item.libelle)
+    const itemsNonAcquis = observations.filter(item => item.valeur === false).map(item => item.libelle)
+    setBilanLoading(cleAppreciation(eleve.id, matiere))
     try {
-      const res = await fetch('/api/ia-bilan', {
+      const response = await fetch('/api/ia-bilan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,12 +351,16 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
           statut: current.statut,
         }),
       })
-      const data = await res.json()
-      if (res.ok && typeof data.bilan === 'string') {
-        // Le prénom ne quitte jamais le navigateur : remplacement local du placeholder.
+      const data = await response.json()
+      if (response.ok && typeof data.bilan === 'string') {
         const texte = data.bilan.replaceAll('[ELEVE]', eleve.prenom)
-        setAppr(p => ({ ...p, [k(eleve.id, matiere)]: { ...current, commentaire: texte } }))
-        startTransition(() => upsertAppreciation(semaine.id, eleve.id, matiere, current.statut, texte))
+        setAppr(etat => ({
+          ...etat,
+          [cleAppreciation(eleve.id, matiere)]: { ...current, commentaire: texte },
+        }))
+        startTransition(() =>
+          upsertAppreciation(semaine.id, eleve.id, matiere, current.statut, texte),
+        )
       } else {
         alert(data.error ?? 'Erreur lors de la génération du bilan.')
       }
@@ -115,190 +372,362 @@ export default function StudentTracking({ semaine, eleves, acquisitions, appreci
   }
 
   function statutLabel(statut: string | null) {
-    return statut === 'acquis' ? 'Acquis' : statut === 'pas_acquis' ? 'Pas encore' : '—'
+    return statut === 'acquis' ? 'Acquis' : statut === 'pas_acquis' ? 'Pas encore' : ''
   }
 
   function exportWord(matiere: string, items: string[]) {
+    const premiereLigne = eleves[0]
+      ? observationsEleve(eleves[0].id, matiere, items).map(item => item.libelle)
+      : notionsPour(matiere, items).flatMap(notion => [
+        notion,
+        ...criteresPour(matiere, notion).map(critere => `${notion} : ${critere.libelle}`),
+      ])
+
     exporterSuiviWord({
       numeroSemaine: semaine.numero,
-      graphemes: items,
-      lignes: eleves.map(e => ({
-        prenom: e.prenom,
-        acquis: items.map(g => isAcquis(e.id, matiere, g)),
-        progres: `${nbAcquis(e.id, matiere, items)}/${items.length}`,
-        bilan: getAppr(e.id, matiere).statut ? statutLabel(getAppr(e.id, matiere).statut) : '',
-        commentaire: getAppr(e.id, matiere).commentaire,
-      })),
+      observations: premiereLigne,
+      lignes: eleves.map(eleve => {
+        const observations = observationsEleve(eleve.id, matiere, items)
+        const acquis = observations.filter(item => item.valeur === true).length
+        return {
+          prenom: eleve.prenom,
+          acquis: observations.map(item => item.valeur),
+          progres: `${acquis}/${observations.length}`,
+          bilan: statutLabel(getAppr(eleve.id, matiere).statut),
+          commentaire: getAppr(eleve.id, matiere).commentaire,
+        }
+      }),
     })
   }
 
+  const methodesActives = methodes.filter(methode => methode.suivi_actif)
+
   return (
     <div ref={blocRef} className="bg-white border rounded-2xl p-5 shadow-sm">
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex flex-wrap items-center gap-3 mb-2">
         <button
           type="button"
-          onClick={() => setOpen(o => !o)}
+          onClick={() => setOpen(etat => !etat)}
           aria-expanded={open}
-          className="flex items-center gap-2 group">
-          <h2 className="font-bold text-gray-700 group-hover:text-violet-700">✅ Suivi des élèves</h2>
+          className="flex items-center gap-2 group"
+        >
+          <h2 className="font-bold text-gray-700 group-hover:text-violet-700">
+            Suivi des élèves
+          </h2>
           <span className="flex items-center gap-1 text-xs font-semibold text-violet-700 bg-violet-100 rounded-full px-3 py-1">
             <span aria-hidden>{open ? '▾' : '▸'}</span>
             {open ? 'Replier' : 'Déplier'}
           </span>
         </button>
-        {isPending && <span className="text-xs text-gray-400">Enregistrement...</span>}
-        {saved && !isPending && <span className="text-xs text-green-600">✓ Sauvegardé</span>}
+        {isPending && <span className="text-xs text-gray-500">Enregistrement...</span>}
+        {saved && !isPending && <span className="text-xs text-green-700">Enregistré</span>}
         {open && (
-          <div className="no-print ml-auto flex gap-2">
-            <Bouton type="button" variant="neutre" size="sm" icon={Printer}
-              onClick={() => imprimerElement(blocRef.current)}
-              className="text-sm">
-              Imprimer
-            </Bouton>
-          </div>
+          <Bouton
+            type="button"
+            variant="neutre"
+            size="sm"
+            icon={Printer}
+            onClick={() => imprimerElement(blocRef.current)}
+            className="no-print ml-auto"
+          >
+            Imprimer
+          </Bouton>
         )}
       </div>
+
       {!open && (
-        <p className="text-xs text-gray-400">Clique pour ouvrir le suivi des élèves (étoiles, bilans, commentaires).</p>
+        <p className="text-xs text-gray-500">
+          Ouvre le suivi pour définir tes critères et cocher chaque élève.
+        </p>
       )}
+
       {open && (
-      <>
-      <p className="text-xs text-gray-400 mb-4">
-        Pour chaque élève et chaque <strong>matière</strong> : cliquez l&apos;<strong>étoile</strong> de la
-        notion acquise (★), donnez un <strong>bilan</strong> de la semaine, et ajoutez un
-        <strong> commentaire</strong> si besoin.
-      </p>
+        <div className="space-y-7">
+          <p className="text-sm text-gray-600">
+            Chaque notion conserve son suivi global. Tu peux ajouter les points précis que tu veux observer,
+            puis choisir Acquis ou Non acquis pour chaque élève.
+          </p>
 
-      {methodes.filter(m => m.suivi_actif).length > 1 && (
-        <div className="sticky top-16 z-10 -mx-5 mb-4 px-5 py-2 flex flex-wrap items-center gap-2 bg-white/95 backdrop-blur border-b border-slate-100 no-print">
-          <span className="text-xs text-gray-400">Aller à :</span>
-          {methodes.filter(m => m.suivi_actif).map(({ matiere }) => (
-            <a key={matiere} href={`#suivi-${matiere}`}
-              className="text-xs rounded-full border border-violet-200 text-violet-700 px-3 py-1 hover:bg-violet-50 transition-colors">
-              {emojiMatiere(matiere)} {labelMatiere(matiere)}
-            </a>
-          ))}
-          <button type="button" onClick={() => setOpen(false)}
-            className="ml-auto text-xs font-semibold text-gray-500 border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-50">
-            ▴ Replier le suivi
-          </button>
-        </div>
-      )}
+          {erreur && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {erreur}
+            </p>
+          )}
 
-      {methodes.filter(m => m.suivi_actif).map(({ matiere, items }) => (
-        <section key={matiere} id={`suivi-${matiere}`} className="mb-8 last:mb-0 scroll-mt-24">
-          <div className="flex items-center gap-3 mb-3">
-            <h3 className="font-bold text-violet-700">{emojiMatiere(matiere)} {labelMatiere(matiere)}</h3>
-            <Bouton type="button" variant="contour" size="sm" icon={FileDown}
-              onClick={() => exportWord(matiere, items)}
-              className="no-print text-sm">
-              Word
-            </Bouton>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b-2 border-gray-100">
-                  <th className="text-left text-sm font-bold text-gray-700 pb-2 pr-4">Élève</th>
-                  {items.map(g => (
-                    <th key={g} className="pb-2 px-2 align-bottom">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] uppercase tracking-wide text-gray-400">notion</span>
-                        <span className="inline-block px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 font-bold"
-                          title={`« ${g} » — étoile si l'élève le maîtrise`}>{g}</span>
-                      </div>
-                    </th>
-                  ))}
-                  <th className="text-center text-sm font-bold text-gray-700 pb-2 px-3">Progrès</th>
-                  <th className="text-center text-sm font-bold text-gray-700 pb-2 px-3">Bilan de la semaine</th>
-                  <th className="text-left text-sm font-bold text-gray-700 pb-2 pl-3">Commentaire</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {eleves.map(eleve => {
-                  const acquisEleve = nbAcquis(eleve.id, matiere, items)
-                  const totalG = items.length
-                  const complet = totalG > 0 && acquisEleve === totalG
-                  const a = getAppr(eleve.id, matiere)
+          {methodesActives.map(({ matiere, items }) => {
+            const notions = notionsPour(matiere, items)
+            return (
+              <section
+                key={matiere}
+                id={`suivi-${matiere}`}
+                className="space-y-5 scroll-mt-24"
+              >
+                <div className="flex flex-wrap items-center gap-3 border-b pb-3">
+                  <h3 className="font-bold text-violet-800">
+                    {emojiMatiere(matiere)} {labelMatiere(matiere)}
+                  </h3>
+                  <Bouton
+                    type="button"
+                    variant="contour"
+                    size="sm"
+                    icon={FileDown}
+                    onClick={() => exportWord(matiere, items)}
+                    className="no-print"
+                  >
+                    Word
+                  </Bouton>
+                </div>
+
+                {notions.length === 0 ? (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-gray-600">
+                    Aucune notion n’est renseignée pour cette semaine.
+                  </p>
+                ) : notions.map(notion => {
+                  const criteresNotion = criteresPour(matiere, notion)
+                  const cleForm = cleFormulaire(matiere, notion)
+                  const titreDeplie = notionsDepliees[cleForm] ?? false
                   return (
-                    <tr key={eleve.id} className={complet ? 'bg-amber-50/60' : undefined}>
-                      <td className="py-2 pr-4 font-medium text-gray-700 whitespace-nowrap">
-                        {complet && '🏆 '}{eleve.prenom}
-                      </td>
-                      {items.map(grapheme => {
-                        const acquis = isAcquis(eleve.id, matiere, grapheme)
-                        return (
-                          <td key={grapheme} className="text-center py-2 px-2">
-                            <button
-                              type="button"
-                              onClick={() => handleToggle(eleve.id, matiere, grapheme, acquis, items)}
-                              disabled={isPending}
-                              title={`${eleve.prenom} · « ${grapheme} » — ${acquis ? 'acquis ✓ (cliquer pour annuler)' : 'cliquer pour marquer comme acquis'}`}
-                              className={`text-xl leading-none transition-transform hover:scale-125 disabled:opacity-50 ${acquis ? 'text-amber-400' : 'text-gray-300'}`}>
-                              {acquis ? '★' : '☆'}
-                            </button>
-                          </td>
-                        )
-                      })}
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2 justify-center">
-                          <span className="text-xs text-gray-400 tabular-nums">{acquisEleve}/{totalG}</span>
-                          <div className="w-10 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${complet ? 'bg-amber-400' : 'bg-emerald-400'}`}
-                              style={{ width: `${totalG > 0 ? (acquisEleve / totalG) * 100 : 0}%` }} />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="no-print flex gap-1 justify-center">
-                          <button type="button" onClick={() => handleStatut(eleve.id, matiere, 'acquis')} disabled={isPending}
-                            className={`text-xs rounded-full px-2.5 py-1 border transition-colors disabled:opacity-50 ${
-                              a.statut === 'acquis'
-                                ? 'bg-emerald-500 text-white border-emerald-500'
-                                : 'text-gray-500 border-gray-300 hover:bg-emerald-50'
-                            }`}>
-                            ✓ Acquis
+                    <article key={notion} className="rounded-2xl border border-violet-100 bg-violet-50/30 p-4">
+                      <div className="mb-4 min-w-0 rounded-xl bg-white px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">Notion</p>
+                        <h4
+                          title={notion}
+                          className={`max-w-full break-words text-base font-bold leading-6 text-gray-900 ${
+                            titreDeplie ? '' : 'line-clamp-2'
+                          }`}
+                        >
+                          {notion}
+                        </h4>
+                        {notion.length > 80 && (
+                          <button
+                            type="button"
+                            onClick={() => setNotionsDepliees(etat => ({
+                              ...etat,
+                              [cleForm]: !titreDeplie,
+                            }))}
+                            aria-expanded={titreDeplie}
+                            className="no-print mt-1 text-xs font-semibold text-violet-700 hover:underline"
+                          >
+                            {titreDeplie ? 'Réduire le titre' : 'Voir le titre complet'}
                           </button>
-                          <button type="button" onClick={() => handleStatut(eleve.id, matiere, 'pas_acquis')} disabled={isPending}
-                            className={`text-xs rounded-full px-2.5 py-1 border transition-colors disabled:opacity-50 ${
-                              a.statut === 'pas_acquis'
-                                ? 'bg-amber-500 text-white border-amber-500'
-                                : 'text-gray-500 border-gray-300 hover:bg-amber-50'
-                            }`}>
-                            Pas encore
-                          </button>
+                        )}
+                      </div>
+
+                      <div className="no-print mb-4 rounded-xl border bg-white p-3">
+                        <p className="mb-2 text-sm font-semibold text-gray-800">Mes critères d’observation</p>
+                        {criteresNotion.length === 0 && (
+                          <p className="mb-3 text-xs text-gray-500">
+                            Aucun critère personnalisé pour le moment.
+                          </p>
+                        )}
+                        <div className="space-y-2">
+                          {criteresNotion.map(critere => (
+                            <div key={critere.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                              {critereEdite === critere.id ? (
+                                <>
+                                  <label className="sr-only" htmlFor={`critere-${critere.id}`}>
+                                    Modifier le critère
+                                  </label>
+                                  <input
+                                    id={`critere-${critere.id}`}
+                                    value={libelleEdite}
+                                    onChange={event => setLibelleEdite(event.target.value)}
+                                    className="min-w-52 flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-gray-900"
+                                  />
+                                  <Bouton
+                                    type="button"
+                                    variant="secondaire"
+                                    size="sm"
+                                    icon={Check}
+                                    onClick={enregistrerCritere}
+                                    loading={isPending}
+                                    aria-label={`Enregistrer le critère ${critere.libelle}`}
+                                  >
+                                    Enregistrer
+                                  </Bouton>
+                                  <Bouton
+                                    type="button"
+                                    variant="neutre"
+                                    size="sm"
+                                    icon={X}
+                                    onClick={() => setCritereEdite(null)}
+                                    disabled={isPending}
+                                    aria-label={`Annuler la modification de ${critere.libelle}`}
+                                  >
+                                    Annuler
+                                  </Bouton>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="min-w-52 flex-1 text-sm text-gray-800">{critere.libelle}</span>
+                                  <Bouton
+                                    type="button"
+                                    variant="contour"
+                                    size="sm"
+                                    icon={Pencil}
+                                    onClick={() => commencerEditionCritere(critere)}
+                                    disabled={isPending}
+                                    aria-label={`Modifier le critère ${critere.libelle}`}
+                                  >
+                                    Modifier
+                                  </Bouton>
+                                  <Bouton
+                                    type="button"
+                                    variant="danger"
+                                    size="sm"
+                                    icon={Trash2}
+                                    onClick={() => supprimerCritere(critere)}
+                                    disabled={isPending}
+                                    aria-label={`Supprimer le critère ${critere.libelle}`}
+                                  >
+                                    Supprimer
+                                  </Bouton>
+                                </>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                        <span className="print-only text-sm text-gray-800">{statutLabel(a.statut)}</span>
-                      </td>
-                      <td className="pl-3 py-2">
-                        <div className="no-print flex flex-col gap-1 w-48">
-                          <textarea
-                            value={a.commentaire}
-                            onChange={e => handleComment(eleve.id, matiere, e.target.value)}
-                            onBlur={() => saveComment(eleve.id, matiere)}
-                            placeholder="Remarque libre…"
-                            rows={2}
-                            className="w-full border border-gray-200 rounded-lg p-1.5 text-sm text-gray-900 bg-white focus:ring-1 focus:ring-violet-400 outline-none resize-y" />
-                          <Bouton type="button" variant="contour" size="sm" icon={Sparkles}
-                            onClick={() => generateBilan(eleve, matiere, items)}
-                            loading={bilanLoading === k(eleve.id, matiere)}
-                            disabled={isPending}
-                            title="Rédige un bilan automatiquement (le prénom n'est jamais envoyé à l'IA)"
-                            className="self-start px-2 py-0.5 text-[11px]">
-                            Bilan IA
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <label className="sr-only" htmlFor={`nouveau-${cleForm}`}>
+                            Nouveau critère pour {notion}
+                          </label>
+                          <input
+                            id={`nouveau-${cleForm}`}
+                            aria-label={`Nouveau critère pour ${notion}`}
+                            value={nouveauxCriteres[cleForm] ?? ''}
+                            onChange={event => setNouveauxCriteres(etat => ({
+                              ...etat,
+                              [cleForm]: event.target.value,
+                            }))}
+                            onKeyDown={event => {
+                              if (event.key === 'Enter') ajouterCritere(matiere, notion)
+                            }}
+                            placeholder="Exemple : explique sa démarche"
+                            className="min-w-60 flex-1 rounded-lg border px-3 py-2 text-sm text-gray-900"
+                          />
+                          <Bouton
+                            type="button"
+                            variant="secondaire"
+                            size="sm"
+                            icon={Plus}
+                            onClick={() => ajouterCritere(matiere, notion)}
+                            loading={isPending}
+                          >
+                            Ajouter ce critère
                           </Bouton>
                         </div>
-                        <span className="print-only text-sm text-gray-800">{a.commentaire || '—'}</span>
-                      </td>
-                    </tr>
+                      </div>
+
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {eleves.map(eleve => (
+                          <div key={eleve.id} className="rounded-xl border bg-white p-3">
+                            <p className="mb-3 font-semibold text-gray-900">{eleve.prenom}</p>
+                            <div className="space-y-3">
+                              <div className="grid gap-2 border-b pb-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-800">Notion dans son ensemble</p>
+                                  <p className="text-xs text-gray-500">Suivi historique conservé</p>
+                                </div>
+                                <BoutonsAcquisition
+                                  valeur={valeurNotion(eleve.id, matiere, notion)}
+                                  onChange={valeur => definirNotion(eleve.id, matiere, notion, valeur)}
+                                  disabled={isPending}
+                                  libelle={`${eleve.prenom}, ${notion}, notion dans son ensemble`}
+                                />
+                              </div>
+                              {criteresNotion.map(critere => (
+                                <div key={critere.id} className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+                                  <p className="text-sm text-gray-700">{critere.libelle}</p>
+                                  <BoutonsAcquisition
+                                    valeur={valeurCritere(eleve.id, critere.id)}
+                                    onChange={valeur => definirCritere(eleve.id, critere.id, valeur)}
+                                    disabled={isPending}
+                                    libelle={`${eleve.prenom}, ${notion}, ${critere.libelle}`}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ))}
-      </>
+
+                <div className="rounded-2xl border bg-slate-50 p-4">
+                  <h4 className="mb-3 font-bold text-gray-800">Bilan et commentaire de la semaine</h4>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {eleves.map(eleve => {
+                      const appreciation = getAppr(eleve.id, matiere)
+                      return (
+                        <div key={eleve.id} className="rounded-xl border bg-white p-3">
+                          <p className="mb-2 font-semibold text-gray-900">{eleve.prenom}</p>
+                          <div className="no-print mb-2 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleStatut(eleve.id, matiere, 'acquis')}
+                              disabled={isPending}
+                              aria-pressed={appreciation.statut === 'acquis'}
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                                appreciation.statut === 'acquis'
+                                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                                  : 'border-gray-300 text-gray-600'
+                              }`}
+                            >
+                              Acquis
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleStatut(eleve.id, matiere, 'pas_acquis')}
+                              disabled={isPending}
+                              aria-pressed={appreciation.statut === 'pas_acquis'}
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                                appreciation.statut === 'pas_acquis'
+                                  ? 'border-amber-600 bg-amber-600 text-white'
+                                  : 'border-gray-300 text-gray-600'
+                              }`}
+                            >
+                              Pas encore
+                            </button>
+                          </div>
+                          <span className="print-only text-sm text-gray-800">
+                            {statutLabel(appreciation.statut)}
+                          </span>
+                          <div className="no-print space-y-2">
+                            <textarea
+                              value={appreciation.commentaire}
+                              onChange={event =>
+                                handleComment(eleve.id, matiere, event.target.value)}
+                              onBlur={() => saveComment(eleve.id, matiere)}
+                              placeholder="Remarque libre"
+                              rows={3}
+                              className="w-full rounded-lg border p-2 text-sm text-gray-900"
+                            />
+                            <Bouton
+                              type="button"
+                              variant="contour"
+                              size="sm"
+                              icon={Sparkles}
+                              onClick={() => generateBilan(eleve, matiere, items)}
+                              loading={bilanLoading === cleAppreciation(eleve.id, matiere)}
+                              disabled={isPending}
+                              title="Le prénom reste dans le navigateur et n’est pas envoyé à l’IA."
+                            >
+                              Bilan IA
+                            </Bouton>
+                          </div>
+                          <span className="print-only text-sm text-gray-800">
+                            {appreciation.commentaire}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </section>
+            )
+          })}
+        </div>
       )}
     </div>
   )

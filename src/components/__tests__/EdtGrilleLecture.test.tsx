@@ -53,6 +53,15 @@ describe('EdtGrilleLecture', () => {
     expect(screen.getByText('Lun')).toBeDefined()
   })
 
+  test('n’affiche jamais les secondes des horaires venant de la base', () => {
+    render(<EdtGrilleLecture creneaux={[
+      c('lundi', '09:00:00', '10:15:00', 'Maths'),
+    ]} />)
+    expect(screen.getByText('09:00')).toBeTruthy()
+    expect(screen.getByText('10:15')).toBeTruthy()
+    expect(screen.queryByText('09:00:00')).toBeNull()
+  })
+
   test('sans créneau, la grille ne rend rien plutôt qu\'un tableau vide', () => {
     const { container } = render(<EdtGrilleLecture creneaux={[]} />)
     expect(container.querySelector('table')).toBeNull()

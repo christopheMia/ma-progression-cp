@@ -4,6 +4,7 @@ import { Plus, Save, Undo2 } from 'lucide-react'
 import { couleurMatiere, couleurAffichee, COULEURS_FAMILLE } from '@/data/trame-edt'
 import { construireGrille, creneauxDeLaLigne, type LigneGrille } from '@/lib/edt-grille'
 import { corrigerPrioriteMatin } from '@/lib/edt-matin'
+import { heureSansSecondes } from '@/lib/horaires'
 import Bouton from '@/components/ui/Bouton'
 
 function addMinutes(t: string, mins: number): string {
@@ -267,8 +268,8 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
               return (
                 <tr key={`${debut}-${fin}`}>
                   <td className="relative border border-violet-100 bg-violet-50/70 p-1 text-center text-[0.56rem] text-slate-500 sm:text-[0.68rem]">
-                    <div className="font-medium tabular-nums text-slate-700">{debut}</div>
-                    <div className="tabular-nums text-slate-400">{fin}</div>
+                    <div className="font-medium tabular-nums text-slate-700">{heureSansSecondes(debut)}</div>
+                    <div className="tabular-nums text-slate-400">{heureSansSecondes(fin)}</div>
                     <details className="group/options no-print relative mt-0.5">
                       <summary className="mx-auto flex h-5 w-5 cursor-pointer list-none items-center justify-center rounded text-violet-500 hover:bg-violet-100 focus-visible:outline-2 focus-visible:outline-violet-500"
                         aria-label={`Options de la tranche ${debut} à ${fin}`} title="Options de la tranche">
@@ -317,7 +318,7 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                           </span>
                           {c && span > 1 && (
                             <span className="pointer-events-none mt-0.5 block text-[0.52rem] leading-tight text-slate-600/70 sm:text-[0.62rem]">
-                              {cDebut} - {cFin}
+                              {heureSansSecondes(cDebut)} - {heureSansSecondes(cFin)}
                             </span>
                           )}
                           <select
@@ -347,11 +348,11 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                         {c && ouvert && (
                           <div className="absolute right-1 top-full z-40 mt-1 w-44 space-y-1 rounded-lg border border-violet-200 bg-white p-2 shadow-lg">
                             <div className="flex items-center gap-1">
-                              <input type="time" value={c.heure_debut}
+                              <input type="time" value={heureSansSecondes(c.heure_debut)}
                                 title="Début de la séance" aria-label={`Début ${LABELS[jour]} ${cDebut}`}
                                 onChange={e => setHoraireSeance(c, 'heure_debut', e.target.value)}
                                 className="w-[4.5rem] border rounded p-0.5 text-[11px] text-gray-900 bg-white" />
-                              <input type="time" value={c.heure_fin}
+                              <input type="time" value={heureSansSecondes(c.heure_fin)}
                                 title="Fin de la séance" aria-label={`Fin ${LABELS[jour]} ${cDebut}`}
                                 onChange={e => setHoraireSeance(c, 'heure_fin', e.target.value)}
                                 className="w-[4.5rem] border rounded p-0.5 text-[11px] text-gray-900 bg-white" />

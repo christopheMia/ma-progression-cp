@@ -9,7 +9,6 @@ import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
 import CollapsibleSection from '@/components/semaine/CollapsibleSection'
 import EdtApercu from '@/components/semaine/EdtApercu'
 import PrintButton from '@/components/PrintButton'
-import { trouverProgressionMatiere } from '@/lib/matieres'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,16 +19,33 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const { data: semaine } = await supabase.from('semaines').select('*').eq('id', id).single()
   if (!semaine) redirect('/planning')
 
-  const [{ data: eleves }, { data: acquisitions }, { data: appreciations }, { data: progression }, { data: methodesList }, { data: edt }] = await Promise.all([
+  const [
+    { data: eleves },
+    { data: acquisitions },
+    { data: appreciations },
+    { data: progression },
+    { data: methodesList },
+    { data: edt },
+    { data: criteresObservation },
+  ] = await Promise.all([
     supabase.from('eleves').select('*').eq('class_id', semaine.class_id).order('ordre'),
     supabase.from('acquisitions').select('*').eq('semaine_id', id),
     supabase.from('appreciations').select('*').eq('semaine_id', id),
     supabase.from('progression').select('*').eq('class_id', semaine.class_id).eq('numero', semaine.numero),
     supabase.from('methodes').select('id, matiere, suivi_actif, manuel').eq('class_id', semaine.class_id).order('created_at'),
     supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id).order('ordre'),
+    supabase.from('criteres_observation').select('*').eq('semaine_id', id).order('ordre'),
   ])
 
-  // Construit la liste des méthodes pour StudentTracking (uniquement suivi_actif)
+  const idsCriteres = (criteresObservation ?? []).map(critere => critere.id)
+  const { data: acquisitionsCriteres } = idsCriteres.length > 0
+    ? await supabase
+      .from('acquisitions_criteres')
+      .select('critere_id, eleve_id, acquis')
+      .in('critere_id', idsCriteres)
+    : { data: [] }
+
+  // Construit la liste des méthodes pour StudentTracking, uniquement si le suivi est actif.
   const methodesPourSuivi = (methodesList ?? []).map(m => {
     const prog = progression?.find(p => p.methode_id === m.id)
     return {
@@ -41,8 +57,6 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   })
 
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
-  const progressionFrancais = trouverProgressionMatiere(progression ?? [], 'francais')
-  const progressionMaths = trouverProgressionMatiere(progression ?? [], 'maths')
 
   return (
     <div className="space-y-4">
@@ -73,6 +87,8 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
         acquisitions={acquisitions ?? []}
         appreciations={appreciations ?? []}
         methodes={methodesPourSuivi}
+        criteresObservation={criteresObservation ?? []}
+        acquisitionsCriteres={acquisitionsCriteres ?? []}
       />
       {/* Verification de l'emploi du temps AVANT de generer le cahier journal
           (retour du 20/07). Replie par defaut pour ne pas alourdir la page. */}
@@ -90,8 +106,6 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       <CahierJournalEditor
         semaineId={semaine.id}
         numeroSemaine={semaine.numero}
-        francais={(progressionFrancais?.items as string[]) ?? []}
-        maths={(progressionMaths?.items as string[]) ?? []}
       />
     </div>
   )

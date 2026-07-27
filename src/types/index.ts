@@ -84,6 +84,21 @@ export type Acquisition = {
   acquis: boolean
 }
 
+export type CritereObservation = {
+  id: string
+  semaine_id: string
+  matiere: string
+  notion: string
+  libelle: string
+  ordre: number
+}
+
+export type AcquisitionCritere = {
+  critere_id: string
+  eleve_id: string
+  acquis: boolean
+}
+
 export type Appreciation = {
   id: string
   semaine_id: string
