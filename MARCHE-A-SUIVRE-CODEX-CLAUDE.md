@@ -388,6 +388,29 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-27 - Claude - reprise du relais Codex : migration 018 appliquée et travail publié**.
+  Codex avait été coupé une deuxième fois, exactement comme le 22/07 : tout son travail
+  du 26/07 (cahier journal modifiable, suivi par critères d'observation, horaires sans
+  secondes) était **non committé**, dans son worktree `.codex/worktrees/74eb/ma-progression-cp`.
+  Récupéré intégralement, committé sur la branche `codex/criteres-observation`
+  (commit `43ef0ec`), puis rapatrié dans le dépôt principal.
+  Vérifié chez Christophe avant publication : **58 suites, 474 tests, zéro échec**,
+  `./node_modules/.bin/tsc --noEmit` propre et **build de prod Next.js 16 réussi**
+  (20 routes, `api/ia-journal` bien absente). Piège rencontré : le premier type-check
+  échouait sur `.next/dev/types/validator.ts`, un fichier **généré** par un ancien
+  `npm run dev` qui référençait encore la route supprimée. Ce n'est pas une erreur de
+  code ; il faut vider `.next` après avoir supprimé une route, sinon le build de prod
+  s'arrête sur un fantôme.
+  **Migration `018_criteres_observation` APPLIQUÉE** sur `odwgkakeepcqbgpsfugl` via le
+  connecteur Supabase de Claude. Vérifié en base après coup : 2 tables créées, RLS
+  active sur les 2, 2 policies, les 2 index de rattachement, grants présents pour
+  `authenticated` et **zéro grant pour `anon`**. Aucune donnée existante touchée
+  (1 classe, 23 élèves, 36 semaines, 154 lignes de progression, 90 créneaux d'EDT
+  intacts). Christophe a donné son accord explicite avant l'application, en sachant
+  que local et production partagent la même base.
+  Fusionné dans `main` en avance rapide, poussé, déploiement Vercel contrôlé.
+  `partage/` est resté hors Git.
+
 - **2026-07-26 - Codex - cahier journal modifiable et suivi par critères, local uniquement**.
   Le cahier journal permet maintenant de modifier les horaires, la matière et le
   déroulement d'une entrée, ou de supprimer uniquement cette entrée après confirmation.

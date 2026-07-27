@@ -29,7 +29,7 @@ traité le jour même (voir plus bas).
 | 2.1 | **Bouton « Valider » après chaque saisie de progression**, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter`. |
 | 2.2 | **Importer un emploi du temps existant** (PDF ou DOC) avant la génération automatique. | Une route d'import EDT existe déjà côté prompt (`SYSTEM_IMPORT_EDT`, `userImportEdt`) : vérifier ce qui est déjà branché avant de recoder. |
 | 2.3 | **Barre d'outils de mise en forme** (couleurs, soulignement) : ajouter une validation explicite pour fermer la fenêtre. | Touche `TimetableGrid`. |
-| 2.4 | **Refonte du suivi des élèves** : alléger visuellement, corriger le cadrage, raccourcir les intitulés trop longs. | **TRAITÉ localement le 26/07**, en attente de validation et de publication. Suivi par notion, critères personnalisables et états Acquis ou Non acquis par élève. |
+| 2.4 | **Refonte du suivi des élèves** : alléger visuellement, corriger le cadrage, raccourcir les intitulés trop longs. | **PUBLIÉ le 27/07**, migration 018 appliquée en base. Suivi par notion, critères personnalisables, états Acquis ou Non acquis par élève. Reste la validation de Christophe dans l'appli. |
 
 ## 3. Bugs identifiés
 
