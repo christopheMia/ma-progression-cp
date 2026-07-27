@@ -592,7 +592,10 @@ export default function StudentTracking({
                                       )
                                     })}
                                   </ul>
-                                  <p className="mt-2 text-xs text-gray-500">
+                                  {/* gray-600 et pas gray-500 : sur le fond violet
+                                      teinte, gray-500 tombe a 4,56:1, soit tout juste
+                                      le minimum pour un texte de cette taille. */}
+                                  <p className="mt-2 text-xs text-gray-600">
                                     Pour modifier, va dans le détail de la notion plus bas.
                                   </p>
                                 </div>
