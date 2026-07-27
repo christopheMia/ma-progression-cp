@@ -115,8 +115,10 @@ describe('StudentTracking', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     ;(toggleAcquisition as jest.Mock).mockResolvedValue(undefined)
-    ;(definirAcquisitionCritere as jest.Mock).mockResolvedValue(undefined)
-    ;(supprimerCritereObservation as jest.Mock).mockResolvedValue(undefined)
+    // Les actions de critères renvoient un resultat, elles ne levent plus : en
+    // production Next.js efface le texte d'une erreur levee dans une action.
+    ;(definirAcquisitionCritere as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    ;(supprimerCritereObservation as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
   })
 
   test('rend lisibles le suivi historique et les deux états du critère', async () => {
@@ -152,10 +154,10 @@ describe('StudentTracking', () => {
       libelle: 'Explique sa démarche',
       ordre: 1,
     }
-    ;(ajouterCritereObservation as jest.Mock).mockResolvedValue(ajoute)
+    ;(ajouterCritereObservation as jest.Mock).mockResolvedValue({ ok: true, valeur: ajoute })
     ;(modifierCritereObservation as jest.Mock).mockResolvedValue({
-      ...critere,
-      libelle: 'Identifie le son entendu',
+      ok: true,
+      valeur: { ...critere, libelle: 'Identifie le son entendu' },
     })
     afficherSuivi()
     await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
@@ -183,6 +185,37 @@ describe('StudentTracking', () => {
       'critere-1',
       'Identifie le son entendu',
     ))
+  })
+
+  // Incident du 2026-07-27, vu en production : cliquer « Ajouter ce critère »
+  // avec le champ vide partait au serveur, qui LEVAIT « Écris le critère que tu
+  // veux observer. ». Next.js efface le texte des erreurs levees en production,
+  // donc Christophe lisait le pave « An error occurred in the Server Components
+  // render... » a la place du message.
+  test('refuse un critère vide sur place, sans appeler le serveur', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    await user.click(screen.getByRole('button', { name: /ajouter ce critère/i }))
+
+    expect(await screen.findByText(/écris le critère que tu veux observer/i)).toBeTruthy()
+    expect(ajouterCritereObservation).not.toHaveBeenCalled()
+  })
+
+  test('affiche le message renvoyé par le serveur quand l’ajout échoue', async () => {
+    const user = userEvent.setup()
+    ;(ajouterCritereObservation as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: 'Ce critère existe déjà pour cette notion.',
+    })
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    await user.type(screen.getByLabelText(/nouveau critère pour lire a/i), 'Repère le son dans un mot')
+    await user.click(screen.getByRole('button', { name: /ajouter ce critère/i }))
+
+    expect(await screen.findByText(/ce critère existe déjà pour cette notion/i)).toBeTruthy()
   })
 
   test('confirme la suppression d’un seul critère', async () => {

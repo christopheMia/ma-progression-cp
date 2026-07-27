@@ -70,12 +70,12 @@ export default function CahierJournalEditor({
   function generer() {
     setErreur('')
     startTransition(async () => {
-      try {
-        const data = await genererOuChargerJournal(semaineId)
-        setJournal(data)
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'Le cahier journal n’a pas pu être ouvert.')
+      const r = await genererOuChargerJournal(semaineId)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      setJournal(r.valeur)
     })
   }
 
@@ -89,13 +89,13 @@ export default function CahierJournalEditor({
     setEdition(null)
     setBrouillon(null)
     startTransition(async () => {
-      try {
-        const data = await regenererJournal(semaineId)
-        setJournal(data)
-        afficherSauvegarde()
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'Le cahier journal n’a pas pu être régénéré.')
+      const r = await regenererJournal(semaineId)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      setJournal(r.valeur)
+      afficherSauvegarde()
     })
   }
 
@@ -130,15 +130,15 @@ export default function CahierJournalEditor({
     }
 
     startTransition(async () => {
-      try {
-        await sauvegarderJournal(semaineId, suivant)
-        setJournal(suivant)
-        setEdition(null)
-        setBrouillon(null)
-        afficherSauvegarde()
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'Les modifications n’ont pas été enregistrées.')
+      const r = await sauvegarderJournal(semaineId, suivant)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      setJournal(suivant)
+      setEdition(null)
+      setBrouillon(null)
+      afficherSauvegarde()
     })
   }
 
@@ -153,17 +153,17 @@ export default function CahierJournalEditor({
     const suivant = supprimerSeanceJournal(journal, jourIndex, seanceIndex)
     setErreur('')
     startTransition(async () => {
-      try {
-        await sauvegarderJournal(semaineId, suivant)
-        setJournal(suivant)
-        if (edition?.jourIndex === jourIndex && edition.seanceIndex === seanceIndex) {
-          setEdition(null)
-          setBrouillon(null)
-        }
-        afficherSauvegarde()
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'L’entrée n’a pas pu être supprimée.')
+      const r = await sauvegarderJournal(semaineId, suivant)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      setJournal(suivant)
+      if (edition?.jourIndex === jourIndex && edition.seanceIndex === seanceIndex) {
+        setEdition(null)
+        setBrouillon(null)
+      }
+      afficherSauvegarde()
     })
   }
 

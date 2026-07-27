@@ -216,16 +216,15 @@ export default function StudentTracking({
     setAcquisCriteres(etat => ({ ...etat, [cle]: acquis }))
 
     startTransition(async () => {
-      try {
-        await definirAcquisitionCritere(critereId, eleveId, acquis)
-      } catch (error) {
+      const r = await definirAcquisitionCritere(critereId, eleveId, acquis)
+      if (!r.ok) {
         setAcquisCriteres(etat => {
           const suivant = { ...etat }
           if (precedente === null) delete suivant[cle]
           else suivant[cle] = precedente
           return suivant
         })
-        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être coché.')
+        setErreur(r.message)
       }
     })
   }
@@ -234,14 +233,20 @@ export default function StudentTracking({
     const cle = cleFormulaire(matiere, notion)
     const libelle = nouveauxCriteres[cle] ?? ''
     setErreur('')
+    // Garde-fou avant l'aller-retour serveur : un champ vide se dit tout de
+    // suite, sur place, plutot que de partir chercher une erreur au serveur.
+    if (!libelle.trim()) {
+      setErreur('Écris le critère que tu veux observer.')
+      return
+    }
     startTransition(async () => {
-      try {
-        const ajoute = await ajouterCritereObservation(semaine.id, matiere, notion, libelle)
-        setCriteres(etat => [...etat, ajoute])
-        setNouveauxCriteres(etat => ({ ...etat, [cle]: '' }))
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être ajouté.')
+      const r = await ajouterCritereObservation(semaine.id, matiere, notion, libelle)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      setCriteres(etat => [...etat, r.valeur])
+      setNouveauxCriteres(etat => ({ ...etat, [cle]: '' }))
     })
   }
 
@@ -254,15 +259,20 @@ export default function StudentTracking({
   function enregistrerCritere() {
     if (!critereEdite) return
     setErreur('')
+    if (!libelleEdite.trim()) {
+      setErreur('Écris le critère que tu veux observer.')
+      return
+    }
     startTransition(async () => {
-      try {
-        const modifie = await modifierCritereObservation(critereEdite, libelleEdite)
-        setCriteres(etat => etat.map(critere => critere.id === modifie.id ? modifie : critere))
-        setCritereEdite(null)
-        setLibelleEdite('')
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être modifié.')
+      const r = await modifierCritereObservation(critereEdite, libelleEdite)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      const modifie = r.valeur
+      setCriteres(etat => etat.map(critere => critere.id === modifie.id ? modifie : critere))
+      setCritereEdite(null)
+      setLibelleEdite('')
     })
   }
 
@@ -274,15 +284,15 @@ export default function StudentTracking({
 
     setErreur('')
     startTransition(async () => {
-      try {
-        await supprimerCritereObservation(critere.id)
-        setCriteres(etat => etat.filter(item => item.id !== critere.id))
-        setAcquisCriteres(etat => Object.fromEntries(
-          Object.entries(etat).filter(([cle]) => !cle.endsWith(`|${critere.id}`)),
-        ))
-      } catch (error) {
-        setErreur(error instanceof Error ? error.message : 'Le critère n’a pas pu être supprimé.')
+      const r = await supprimerCritereObservation(critere.id)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
       }
+      setCriteres(etat => etat.filter(item => item.id !== critere.id))
+      setAcquisCriteres(etat => Object.fromEntries(
+        Object.entries(etat).filter(([cle]) => !cle.endsWith(`|${critere.id}`)),
+      ))
     })
   }
 

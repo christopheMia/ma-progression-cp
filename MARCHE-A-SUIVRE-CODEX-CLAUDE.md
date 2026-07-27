@@ -238,6 +238,25 @@ saisies par Christophe. Chantier possible, pas encore arbitré : séparer une ba
   DOCUMENT, l'aperçu affiche les numéros décalés ; le report est fait dans
   `SourceImporter`, ne pas l'oublier si on touche à cette zone.
 
+### Piège du 27/07, le plus coûteux à ce jour
+
+- **Ne JAMAIS lever une erreur destinée à l'enseignant depuis une action serveur.**
+  En production, Next.js **efface le texte** des erreurs levées dans une action
+  serveur et ne renvoie qu'un `digest`. Le message soigné en français est perdu et
+  l'utilisateur lit « An error occurred in the Server Components render. The specific
+  message is omitted in production builds... ». En local le message passe, donc le
+  bug est **invisible au développement** et **invisible aux tests unitaires** : il ne
+  se voit qu'une fois déployé. Christophe s'est pris ce pavé en cliquant simplement
+  « Ajouter ce critère » avec le champ vide.
+  Règle : une action serveur **renvoie** son message, elle ne le lève pas. Utiliser
+  `resultat()` et le type `Resultat<T>` de `src/lib/resultat.ts` :
+  `{ ok: true, valeur }` ou `{ ok: false, message }`. Le composant lit `message`,
+  il n'attrape plus d'exception. En plus, valider côté client ce qui peut l'être
+  (un champ vide se dit sur place, sans aller-retour serveur).
+  Vérification utile après un déploiement : `npx vercel logs <url-du-deploiement>`
+  montre les erreurs d'exécution réelles, avec leur vrai message. C'est ce qui a
+  permis de trouver la cause en une minute.
+
 ### Pièges rencontrés le 26/07, à ne pas refaire
 
 - **`setPointerCapture` dès l'appui casse le clic.** En rendant le bouton flottant
@@ -387,6 +406,23 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 (Traits d'union simples : la convention 1 bannit le tiret cadratin, et cette ligne
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
+
+- **2026-07-27 - Claude - correction du piège des erreurs d'action serveur**.
+  Christophe a ouvert la fiche de semaine juste après la publication et a cliqué
+  « Ajouter ce critère » avec le champ vide. Il a reçu le pavé « An error occurred in
+  the Server Components render... » au lieu de « Écris le critère que tu veux
+  observer. ». Cause trouvée dans `npx vercel logs` en une minute : Next.js efface le
+  texte des erreurs levées dans une action serveur, en production seulement.
+  Portée réelle : la quinzaine de messages en français des critères d'observation ET
+  de l'édition du cahier journal étaient tous invisibles pour l'enseignant.
+  Correctif : nouveau module `src/lib/resultat.ts` (type `Resultat<T>` et helper
+  `resultat()`), toutes les actions de `criteres-observation.ts` et `journal.ts`
+  renvoient désormais `{ ok, valeur }` ou `{ ok, message }`, et les deux composants
+  lisent `message` au lieu d'attraper une exception. Garde-fou client en plus : un
+  libellé vide est refusé sur place, sans aller-retour serveur, à l'ajout comme à la
+  modification. Détail complet dans la section « Piège du 27/07 » plus haut.
+  Validation : **59 suites, 481 tests** (dont 2 tests de non-régression sur ce bug
+  précis et 5 sur `resultat`), tsc propre, build de prod réussi.
 
 - **2026-07-27 - Claude - reprise du relais Codex : migration 018 appliquée et travail publié**.
   Codex avait été coupé une deuxième fois, exactement comme le 22/07 : tout son travail

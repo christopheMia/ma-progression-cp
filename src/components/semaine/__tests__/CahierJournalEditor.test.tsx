@@ -56,8 +56,10 @@ async function ouvrirJournal() {
 describe('CahierJournalEditor', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(genererOuChargerJournal as jest.Mock).mockResolvedValue(journal)
-    ;(sauvegarderJournal as jest.Mock).mockResolvedValue(undefined)
+    // Les actions serveur renvoient un resultat, elles ne levent plus : en
+    // production Next.js efface le texte d'une erreur levee dans une action.
+    ;(genererOuChargerJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: journal })
+    ;(sauvegarderJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
   })
 
   test('ne propose plus de générer une journée avec l’IA', async () => {
