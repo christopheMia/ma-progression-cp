@@ -524,10 +524,26 @@ export default function StudentTracking({
                       </div>
 
                       <div className="no-print mb-4 rounded-xl border bg-white p-3">
-                        <p className="mb-2 text-sm font-semibold text-gray-800">Mes critères d’observation</p>
-                        {criteresNotion.length === 0 && (
+                        {/* La notion est nommee A L ECRAN, pas seulement pour les
+                            lecteurs d ecran : sans elle on ne sait pas a quoi se
+                            rattache le critere qu on ecrit (retour du 27/07).
+                            Pas d attribut `title` ici, le titre complet est deja
+                            accessible par le bouton « Voir le titre complet ». */}
+                        <p className="text-sm font-semibold text-gray-800">
+                          Mes critères d’observation pour :
+                        </p>
+                        <p className="mb-2 line-clamp-1 text-sm font-bold text-violet-700">
+                          {notion}
+                        </p>
+                        {criteresNotion.length === 0 ? (
                           <p className="mb-3 text-xs text-gray-500">
                             Aucun critère personnalisé pour le moment.
+                          </p>
+                        ) : (
+                          <p className="mb-3 text-xs text-gray-500">
+                            {criteresNotion.length === 1
+                              ? '1 critère pour cette notion'
+                              : `${criteresNotion.length} critères pour cette notion`}
                           </p>
                         )}
                         <div className="space-y-2">
@@ -598,12 +614,15 @@ export default function StudentTracking({
                           ))}
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <label className="sr-only" htmlFor={`nouveau-${cleForm}`}>
-                            Nouveau critère pour {notion}
+                          <label
+                            className="line-clamp-2 w-full text-xs font-semibold text-gray-700"
+                            htmlFor={`nouveau-${cleForm}`}
+                          >
+                            Nouveau critère pour{' '}
+                            <span className="text-violet-700">{notion}</span>
                           </label>
                           <input
                             id={`nouveau-${cleForm}`}
-                            aria-label={`Nouveau critère pour ${notion}`}
                             value={nouveauxCriteres[cleForm] ?? ''}
                             onChange={event => setNouveauxCriteres(etat => ({
                               ...etat,

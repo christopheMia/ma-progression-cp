@@ -187,6 +187,22 @@ describe('StudentTracking', () => {
     ))
   })
 
+  // Retour de Christophe du 2026-07-27 : « on ne voit pas ce qui est ajouté au
+  // final et à quoi ». La notion n'etait nommee que dans un label `sr-only`,
+  // donc lisible par un lecteur d'ecran mais invisible a l'oeil.
+  test('nomme la notion a l’ecran au-dessus du champ d’ajout', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    expect(screen.getByText(/mes critères d’observation pour/i)).toBeTruthy()
+
+    const etiquette = screen.getByText(/nouveau critère pour/i)
+    expect(etiquette.className).not.toContain('sr-only')
+    expect(etiquette.textContent).toContain('Lire a')
+    expect(screen.getByText(/1 critère pour cette notion/i)).toBeTruthy()
+  })
+
   // Incident du 2026-07-27, vu en production : cliquer « Ajouter ce critère »
   // avec le champ vide partait au serveur, qui LEVAIT « Écris le critère que tu
   // veux observer. ». Next.js efface le texte des erreurs levees en production,

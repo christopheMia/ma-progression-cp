@@ -407,6 +407,21 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-27 - Claude - la notion est nommée à l'écran dans le bloc des critères**.
+  Retour de Christophe en voyant la page : « on ne voit pas ce qui est ajouté au final
+  et à quoi ». Cause : la notion n'était nommée que dans un `<label className="sr-only">`
+  et dans un `aria-label`. Accessible à un lecteur d'écran, invisible à l'oeil. On
+  tapait un critère sans savoir à quelle notion il se rattachait.
+  Correctif, validé par Christophe avant d'être codé (convention 3) : le bloc s'intitule
+  « Mes critères d'observation pour : » suivi de la notion en violet, le nombre de
+  critères déjà posés est affiché, et l'étiquette du champ de saisie devient visible.
+  Détail à ne pas casser : **ne pas ajouter d'attribut `title` sur la notion dans ce
+  bloc**. Le test des notions longues utilise `getByTitle`, qui échoue s'il trouve deux
+  éléments. Le titre complet reste accessible par le bouton « Voir le titre complet ».
+  L'`aria-label` du champ a été retiré, devenu redondant avec le vrai `<label>`.
+  Validation : 59 suites, 482 tests, tsc propre, build de prod réussi.
+  **Chantier ouvert derrière ce retour** : voir `docs/SPEC-suivi-eleves-vues.md`.
+
 - **2026-07-27 - Claude - correction du piège des erreurs d'action serveur**.
   Christophe a ouvert la fiche de semaine juste après la publication et a cliqué
   « Ajouter ce critère » avec le champ vide. Il a reçu le pavé « An error occurred in
