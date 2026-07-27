@@ -81,6 +81,9 @@ export type Acquisition = {
   eleve_id: string
   matiere: string
   grapheme: string
+  /** Le niveau du livret : source de vérité depuis la migration 019. */
+  niveau?: string | null
+  /** Dérivée du niveau par un trigger. Gardée pour le code qui la lit encore. */
   acquis: boolean
 }
 
@@ -96,6 +99,7 @@ export type CritereObservation = {
 export type AcquisitionCritere = {
   critere_id: string
   eleve_id: string
+  niveau?: string | null
   acquis: boolean
 }
 

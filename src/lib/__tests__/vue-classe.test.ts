@@ -29,10 +29,14 @@ describe('agregerClasse', () => {
     expect(lignes[0].cases[0].notion).toBe('Lire a')
   })
 
-  it('compte les critères acquis sur le total des critères', () => {
+  it('compte les critères atteints sur le total des critères', () => {
     const lignes = agregerClasse(entree({
       valeurCritere: (eleveId, critereId) =>
-        eleveId === 'e1' && critereId === 'c1' ? true : critereId === 'c2' ? false : null,
+        eleveId === 'e1' && critereId === 'c1'
+          ? 'atteint'
+          : critereId === 'c2'
+            ? 'non_atteint'
+            : null,
     }))
     const lina = lignes[0].cases[0]
     expect(lina.acquis).toBe(1)
@@ -40,16 +44,40 @@ describe('agregerClasse', () => {
     expect(lina.statut).toBe('partiel')
   })
 
-  it('marque complet quand tous les critères sont acquis', () => {
-    const lignes = agregerClasse(entree({ valeurCritere: () => true }))
+  it('marque complet quand tous les critères sont atteints', () => {
+    const lignes = agregerClasse(entree({ valeurCritere: () => 'atteint' }))
     expect(lignes[0].cases[0].statut).toBe('complet')
     expect(lignes[0].cases[0].acquis).toBe(2)
   })
 
-  it('marque aucun quand tout est explicitement non acquis', () => {
-    const lignes = agregerClasse(entree({ valeurCritere: () => false }))
+  // « Depasse » vaut acquis, exactement comme le trigger de la migration 019.
+  it('compte « dépassé » comme acquis', () => {
+    const lignes = agregerClasse(entree({ valeurCritere: () => 'depasse' }))
+    expect(lignes[0].cases[0]).toMatchObject({ acquis: 2, statut: 'complet' })
+  })
+
+  it('marque aucun quand tout est explicitement non atteint', () => {
+    const lignes = agregerClasse(entree({ valeurCritere: () => 'non_atteint' }))
     expect(lignes[0].cases[0].statut).toBe('aucun')
     expect(lignes[0].cases[0].acquis).toBe(0)
+  })
+
+  // Le vrai apport des quatre niveaux : un enfant en chemin ne se lit plus
+  // comme un enfant en echec. En binaire, ces deux cas rendaient « aucun ».
+  it('marque en cours quand tout est partiellement atteint', () => {
+    const lignes = agregerClasse(entree({ valeurCritere: () => 'partiellement' }))
+    const lina = lignes[0].cases[0]
+    expect(lina.statut).toBe('partiel')
+    expect(lina.acquis).toBe(0)
+    expect(lina.enCours).toBe(2)
+  })
+
+  it('compte à part les critères partiellement atteints', () => {
+    const lignes = agregerClasse(entree({
+      valeurCritere: (_eleveId, critereId) =>
+        critereId === 'c1' ? 'atteint' : 'partiellement',
+    }))
+    expect(lignes[0].cases[0]).toMatchObject({ acquis: 1, enCours: 1, total: 2 })
   })
 
   it('marque vide tant que rien n’est renseigné', () => {
@@ -62,16 +90,24 @@ describe('agregerClasse', () => {
   it('retombe sur le suivi global de la notion quand il n’y a aucun critère', () => {
     const sansCriteres = entree({
       criteres: [],
-      valeurNotion: eleveId => (eleveId === 'e1' ? true : null),
+      valeurNotion: eleveId => (eleveId === 'e1' ? 'atteint' : null),
     })
     const lignes = agregerClasse(sansCriteres)
     expect(lignes[0].cases[0]).toMatchObject({ acquis: 1, total: 1, statut: 'complet' })
     expect(lignes[1].cases[0]).toMatchObject({ acquis: 0, total: 1, statut: 'vide' })
   })
 
+  it('lit aussi le niveau intermédiaire du suivi global', () => {
+    const lignes = agregerClasse(entree({
+      criteres: [],
+      valeurNotion: () => 'partiellement',
+    }))
+    expect(lignes[0].cases[0]).toMatchObject({ acquis: 0, enCours: 1, statut: 'partiel' })
+  })
+
   it('donne le total de la classe par notion', () => {
     const lignes = agregerClasse(entree({
-      valeurCritere: eleveId => eleveId === 'e1',
+      valeurCritere: eleveId => (eleveId === 'e1' ? 'atteint' : 'non_atteint'),
     }))
     expect(lignes[0].cases[0].statut).toBe('complet')
     expect(lignes[1].cases[0].statut).toBe('aucun')

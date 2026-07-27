@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { normaliserLibelleCritere } from '@/lib/criteres-observation'
+import { estAcquis, estNiveau, type Niveau } from '@/lib/niveaux'
 import { resultat, type Resultat } from '@/lib/resultat'
 import type { CritereObservation } from '@/types'
 
@@ -120,12 +121,17 @@ export async function supprimerCritereObservation(critereId: string): Promise<Re
   }, 'Le critère n’a pas pu être supprimé.')
 }
 
-export async function definirAcquisitionCritere(
+/**
+ * Le suivi d'un critère d'observation, sur les quatre niveaux du livret.
+ * S'appelait `definirAcquisitionCritere` tant que le suivi était binaire.
+ */
+export async function definirNiveauCritere(
   critereId: string,
   eleveId: string,
-  acquis: boolean,
+  niveau: Niveau,
 ): Promise<Resultat<void>> {
   return resultat(async () => {
+    if (!estNiveau(niveau)) throw new Error('Ce niveau n’existe pas.')
     const supabase = await utilisateurConnecte()
     const { data: critere, error: critereError } = await supabase
       .from('criteres_observation')
@@ -147,7 +153,8 @@ export async function definirAcquisitionCritere(
       {
         critere_id: critereId,
         eleve_id: eleveId,
-        acquis,
+        niveau,
+        acquis: estAcquis(niveau),
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'critere_id,eleve_id' },

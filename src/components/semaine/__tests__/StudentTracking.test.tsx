@@ -1,16 +1,16 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import StudentTracking from '../StudentTracking'
 import {
   ajouterCritereObservation,
-  definirAcquisitionCritere,
+  definirNiveauCritere,
   modifierCritereObservation,
   supprimerCritereObservation,
 } from '@/lib/actions/criteres-observation'
-import { toggleAcquisition } from '@/lib/actions/semaine'
+import { definirNiveauNotion } from '@/lib/actions/semaine'
 import type {
   Acquisition,
   AcquisitionCritere,
@@ -21,12 +21,12 @@ import type {
 
 jest.mock('@/lib/actions/criteres-observation', () => ({
   ajouterCritereObservation: jest.fn(),
-  definirAcquisitionCritere: jest.fn(),
+  definirNiveauCritere: jest.fn(),
   modifierCritereObservation: jest.fn(),
   supprimerCritereObservation: jest.fn(),
 }))
 jest.mock('@/lib/actions/semaine', () => ({
-  toggleAcquisition: jest.fn(),
+  definirNiveauNotion: jest.fn(),
 }))
 jest.mock('@/lib/actions/appreciation', () => ({
   upsertAppreciation: jest.fn(),
@@ -66,8 +66,11 @@ const acquisitions: Acquisition[] = [
     eleve_id: 'eleve-1',
     matiere: 'francais',
     grapheme: 'Lire a',
+    niveau: 'atteint',
     acquis: true,
   },
+  // Sans `niveau` : une ligne ecrite avant la migration 019. L'ecran doit la
+  // relire par l'ancien booleen plutot que de l'afficher vierge.
   {
     id: 'acquisition-2',
     semaine_id: 'semaine-1',
@@ -88,8 +91,8 @@ const critere: CritereObservation = {
 }
 
 const acquisitionsCriteres: AcquisitionCritere[] = [
-  { critere_id: 'critere-1', eleve_id: 'eleve-1', acquis: true },
-  { critere_id: 'critere-1', eleve_id: 'eleve-2', acquis: false },
+  { critere_id: 'critere-1', eleve_id: 'eleve-1', niveau: 'atteint', acquis: true },
+  { critere_id: 'critere-1', eleve_id: 'eleve-2', niveau: 'partiellement', acquis: false },
 ]
 
 function afficherSuivi() {
@@ -114,35 +117,114 @@ function afficherSuivi() {
 describe('StudentTracking', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(toggleAcquisition as jest.Mock).mockResolvedValue(undefined)
-    // Les actions de critères renvoient un resultat, elles ne levent plus : en
-    // production Next.js efface le texte d'une erreur levee dans une action.
-    ;(definirAcquisitionCritere as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    // Les actions renvoient un resultat, elles ne levent plus : en production
+    // Next.js efface le texte d'une erreur levee dans une action serveur.
+    ;(definirNiveauNotion as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    ;(definirNiveauCritere as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
     ;(supprimerCritereObservation as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
   })
 
-  test('rend lisibles le suivi historique et les deux états du critère', async () => {
+  test('rend lisibles le suivi historique et le niveau de chaque critère', async () => {
     const user = userEvent.setup()
     afficherSuivi()
     await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
 
-    expect(screen.getByRole('button', {
-      name: /lina, lire a, notion dans son ensemble : acquis/i,
-    }).getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByRole('button', {
-      name: /tom, lire a, notion dans son ensemble : non acquis/i,
-    }).getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByRole('button', {
-      name: /lina, lire a, repère le son dans un mot : acquis/i,
-    }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('radio', {
+      name: /lina, lire a, notion dans son ensemble : atteint/i,
+    }).getAttribute('aria-checked')).toBe('true')
+    // Ligne sans `niveau`, relue par l'ancien booleen `acquis: false`.
+    expect(screen.getByRole('radio', {
+      name: /tom, lire a, notion dans son ensemble : non atteint/i,
+    }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', {
+      name: /lina, lire a, repère le son dans un mot : atteint/i,
+    }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', {
+      name: /tom, lire a, repère le son dans un mot : partiellement atteint/i,
+    }).getAttribute('aria-checked')).toBe('true')
 
-    await user.click(screen.getByRole('button', {
-      name: /tom, lire a, repère le son dans un mot : acquis/i,
+    await user.click(screen.getByRole('radio', {
+      name: /tom, lire a, repère le son dans un mot : dépassé/i,
     }))
-    await waitFor(() => expect(definirAcquisitionCritere).toHaveBeenCalledWith(
+    await waitFor(() => expect(definirNiveauCritere).toHaveBeenCalledWith(
       'critere-1',
       'eleve-2',
-      true,
+      'depasse',
+    ))
+  })
+
+  // Decision de Christophe du 2026-07-27 : le suivi quitte le binaire pour
+  // l'echelle du livret, pour n'avoir aucune conversion a inventer au bilan.
+  test('propose les quatre niveaux du livret, abrégés, avec leur légende', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    const groupe = screen.getByRole('radiogroup', {
+      name: /lina, lire a, notion dans son ensemble/i,
+    })
+    expect(within(groupe).getAllByRole('radio')).toHaveLength(4)
+    expect(within(groupe).getAllByRole('radio').map(b => b.textContent))
+      .toEqual(['NA', 'PA', 'A', 'D'])
+
+    // La legende dit ce que valent les abreviations, une fois pour l'ecran.
+    expect(screen.getByText(/partiellement atteint/i)).toBeTruthy()
+    expect(screen.getByText(/dépassé/i)).toBeTruthy()
+  })
+
+  test('enregistre le niveau choisi sur la notion', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    await user.click(screen.getByRole('radio', {
+      name: /tom, lire a, notion dans son ensemble : partiellement atteint/i,
+    }))
+    await waitFor(() => expect(definirNiveauNotion).toHaveBeenCalledWith(
+      'semaine-1',
+      'eleve-2',
+      'francais',
+      'Lire a',
+      'partiellement',
+    ))
+  })
+
+  test('remet le niveau précédent quand le serveur refuse', async () => {
+    const user = userEvent.setup()
+    ;(definirNiveauCritere as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: 'Le suivi de ce critère n’a pas pu être enregistré.',
+    })
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    await user.click(screen.getByRole('radio', {
+      name: /lina, lire a, repère le son dans un mot : non atteint/i,
+    }))
+
+    expect(await screen.findByText(/n’a pas pu être enregistré/i)).toBeTruthy()
+    await waitFor(() => expect(screen.getByRole('radio', {
+      name: /lina, lire a, repère le son dans un mot : atteint/i,
+    }).getAttribute('aria-checked')).toBe('true'))
+  })
+
+  // L'echelle se parcourt aussi au clavier : c'est ce qu'un `radiogroup`
+  // promet, et 23 eleves fois plusieurs criteres se saisissent plus vite ainsi.
+  test('déplace le niveau avec les flèches du clavier', async () => {
+    const user = userEvent.setup()
+    afficherSuivi()
+    await user.click(screen.getByRole('button', { name: /suivi des élèves/i }))
+
+    const choisi = screen.getByRole('radio', {
+      name: /lina, lire a, repère le son dans un mot : atteint/i,
+    })
+    choisi.focus()
+    await user.keyboard('{ArrowRight}')
+
+    await waitFor(() => expect(definirNiveauCritere).toHaveBeenCalledWith(
+      'critere-1',
+      'eleve-1',
+      'depasse',
     ))
   })
 
@@ -199,8 +281,10 @@ describe('StudentTracking', () => {
     // Lina a le critere acquis, Tom ne l'a pas : 1/1 contre 0/1.
     expect(screen.getByRole('button', { name: /▸ Lina/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /▸ Tom/ })).toBeTruthy()
-    expect(screen.getByText(/lina, lire a : tout acquis/i)).toBeTruthy()
-    expect(screen.getByText(/tom, lire a : rien acquis/i)).toBeTruthy()
+    expect(screen.getByText(/lina, lire a : tout atteint/i)).toBeTruthy()
+    // Tom est partiellement atteint : en chemin, pas en echec. C'est tout
+    // l'apport des quatre niveaux, le binaire le rangeait avec « rien atteint ».
+    expect(screen.getByText(/tom, lire a : en cours/i)).toBeTruthy()
   })
 
   test('déplie le détail d’un élève au clic, puis le referme', async () => {

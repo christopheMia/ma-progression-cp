@@ -92,12 +92,15 @@
   .libelle-critere.global { color: var(--muted); font-style: italic; }
   .libelle-element { display: inline; }
 
-  .niveaux { display: flex; gap: .3rem; flex-wrap: wrap; }
+  /* Les quatre abreviations restent sur UNE ligne : elles se lisent comme une
+     echelle, de NA a D. Repliees sur deux lignes, l'echelle ne se lit plus.
+     Pas de `flex-wrap`, et la colonne ne se laisse pas comprimer. */
+  .niveaux { display: flex; gap: .3rem; flex-wrap: nowrap; white-space: nowrap; }
   .n {
     border: 1px solid var(--line); background: #fff; color: var(--muted);
     border-radius: 999px; padding: .28rem .6rem; font-size: .78rem; font-weight: 700;
     font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer;
-    line-height: 1.2;
+    line-height: 1.2; flex: 0 0 auto;
   }
   .n:hover { border-color: var(--violet); color: var(--violet-ink); }
   .n:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
@@ -162,6 +165,18 @@
     background: var(--violet-tint);
   }
   .appreciation h4 { font-size: .95rem; margin-bottom: .4rem; }
+  /* Le titre d'un bloc porte sa case de selection : cocher la matiere, c'est
+     decider qu'elle part dans la copie groupee. Un seul geste, un seul endroit. */
+  .titre-matiere { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .titre-matiere h4 { margin: 0; }
+  .titre-matiere .bouton { margin-left: auto; padding: .25rem .6rem; font-size: .78rem; }
+  .appreciation.hors-selection { opacity: .62; }
+  .barre-copie {
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    margin-top: 1rem; padding: .6rem .8rem;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff;
+  }
+  .barre-copie label { font-size: .85rem; font-weight: 700; }
   .zone-texte {
     background: #fff; border: 1px solid var(--line); border-radius: 8px;
     padding: .6rem .7rem; font-size: .88rem; color: var(--ink); min-height: 3.5rem;
@@ -366,26 +381,26 @@
       </table>
     </div>
 
-    <div class="appreciation">
-      <h4>Acquisitions, progrès et difficultés éventuelles</h4>
-      <p class="aide" style="margin:0 0 .6rem">
-        Décoche ce que tu ne veux pas dire, corrige les formulations, puis rédige.
-        Chaque brique vient de ce que tu as observé pendant la période.
-      </p>
-      <ul class="briques" id="briques"></ul>
-      <div class="actions" style="margin-top:.75rem">
-        <button type="button" class="bouton" id="btn-rediger">Rédiger l'appréciation</button>
-        <span class="confirmation" id="etat-redaction" role="status"></span>
-      </div>
-      <div class="zone-texte" id="appreciation" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Appréciation de l'élève" style="margin-top:.75rem"></div>
-      <p class="aide">Le texte reste modifiable ici avant que tu le recopies dans le livret.</p>
+    <p class="indice" style="margin-top:1rem">
+      Le livret officiel demande un commentaire <b>par matière</b>. Chaque bloc se
+      rédige, se corrige, et se copie tout seul. La case de son titre décide en plus
+      de ce qui part quand tu copies plusieurs matières d'un coup.
+    </p>
+
+    <div id="appreciations"></div>
+
+    <div class="barre-copie">
+      <span class="champ">
+        <input type="checkbox" class="coche" id="tout-cocher" checked />
+        <label for="tout-cocher">Toutes les matières</label>
+      </span>
+      <button type="button" class="bouton" id="btn-copier"></button>
+      <span class="confirmation" id="confirmation" role="status"></span>
     </div>
 
     <div class="actions">
-      <button type="button" class="bouton" id="btn-copier">Copier le bilan</button>
       <button type="button" class="bouton secondaire" id="btn-prec"></button>
       <button type="button" class="bouton secondaire" id="btn-suiv"></button>
-      <span class="confirmation" id="confirmation" role="status"></span>
     </div>
   </div>
 
@@ -399,6 +414,8 @@
       <li>Le tableau est dans un conteneur <code>overflow-x: auto</code> : sur téléphone il défile seul, la page jamais.</li>
       <li>Le sélecteur « par domaine / par élément » existe parce que le LSU propose les deux. Par domaine est le réglage courant.</li>
       <li>Sous chaque élément, la trace de ce qui a produit le niveau proposé. Rien n'est calculé en cachette.</li>
+      <li><b>Un commentaire par matière</b>, parce que le livret officiel en demande un par matière. Chaque bloc a ses briques, son bouton « Rédiger », son texte modifiable et son bouton « Copier ». Rien n'oblige à tout faire d'un coup.</li>
+      <li><b>La sélection est la case du titre.</b> Elle sert à la copie groupée : le bouton du bas dit ce qu'il va copier (« Copier les 2 matières cochées »), et « Toutes les matières » coche tout d'un geste. Une matière décochée s'estompe, elle reste lisible et modifiable.</li>
       <li><b>L'appréciation s'assemble à partir de briques</b> tirées de la période, chacune décochable et modifiable sur place. Tu enlèves ce que tu ne veux pas dire avant de rédiger.</li>
       <li><b>Modèle de formulation en cinq temps</b> : posture, réussites, progrès, point de vigilance avec sa prochaine étape, encouragement. Jamais un code de niveau, jamais le libellé technique d'une compétence : un parent doit comprendre.</li>
       <li><b>RGPD</b> (convention 5 du projet) : le prénom ne part jamais vers l'IA. Les briques lui sont envoyées avec un marqueur, et le prénom est réinséré côté navigateur.</li>
@@ -521,9 +538,8 @@
   <ul>
     <li><b>Niveaux abrégés</b> NA / PA / A / D partout, avec la légende sous le tableau.</li>
     <li><b>Le choix de l'élève est un menu déroulant</b>, plus discret qu'une grille de cartes, avec l'état du bilan dans chaque ligne et un compteur à côté.</li>
-    <li><b>Pas de PDF</b> pour l'instant. Uniquement « Copier le bilan », pour coller dans le LSU officiel.</li>
-  </ul>
-
+    <li><b>Pas de PDF</b> pour l'instant. On copie, on colle dans le LSU officiel.</li>
+    <li><b>La copie se fait par matière</b>, à l'unité ou par paquet : le livret officiel demande un commentaire par matière, et une case par bloc décide de ce qui part quand on copie plusieurs matières d'un coup.</li>
     <li><b>Rattachement manuel</b>, avec une aide déterministe. Pas d'appel à l'IA : le budget de la clé Anthropic est mieux dépensé ailleurs, et un rattachement ne change pas d'une année sur l'autre.</li>
   </ul>
 
@@ -531,15 +547,16 @@
   <p style="margin:.3rem 0 0">
     Les deux premiers écrans réagissent vraiment : clique un niveau dans le suivi de
     la semaine, change d'élève ou de période dans le bilan, enchaîne avec les flèches,
-    modifie l'appréciation, clique « Copier le bilan ». C'est une maquette, rien n'est
-    enregistré, mais les gestes sont ceux de la future application.
+    rédige un commentaire, corrige-le à la main, décoche une matière et regarde le
+    bouton du bas changer de texte. C'est une maquette, rien n'est enregistré, mais
+    les gestes sont ceux de la future application.
   </p>
 
   <h2 style="margin-top:1.25rem">Ordre de construction</h2>
   <ol style="margin:.3rem 0 0">
     <li>Le suivi à quatre niveaux. La base est déjà migrée, il reste l'écran.</li>
     <li>L'écran de rattachement, et les compétences ajoutées à la main.</li>
-    <li>Le bilan par élève et le bouton « Copier le bilan ».</li>
+    <li>Le bilan par élève, ses commentaires par matière et leurs boutons de copie.</li>
   </ol>
 </section>
 
@@ -599,37 +616,53 @@
     { matiere: "Mathématiques", domaine: "Nombres et calculs", libelle: "Nommer, lire, écrire les nombres jusqu'à 100",         total: 5 }
   ];
 
+  /* Chaque brique appartient a UNE matiere : le livret officiel demande un
+     commentaire par matiere, donc les briques se rangent la ou elles seront lues.
+     `textes` garde l'appreciation redigee de chaque matiere, `copier` dit si elle
+     part dans la copie groupee. */
   var ELEVES = [
-    { nom: "Lina", etat: "commencé", observes: [7, 2, 4, null, 5], niveaux: ["a", "pa", "d", "", "a"],
-      appreciation: "",
+    { nom: "Lina", genre: "f", etat: "commencé", observes: [7, 2, 4, null, 5], niveaux: ["a", "pa", "d", "", "a"],
+      textes: {},
       briques: [
-        { role: "posture",      on: true,  texte: "se montre attentive et volontaire, elle ose demander quand elle n'a pas compris" },
-        { role: "réussite",     on: true,  texte: "lit maintenant avec assurance les mots contenant les sons étudiés" },
-        { role: "réussite",     on: true,  texte: "copie un texte court avec beaucoup de soin" },
-        { role: "réussite",     on: false, texte: "connaît les nombres jusqu'à 100" },
-        { role: "progrès",      on: true,  texte: "a bien progressé en lecture depuis la première période" },
-        { role: "vigilance",    on: true,  texte: "la lecture à voix haute demande encore de la préparation",
+        { matiere: "Français", role: "posture",      on: true,  texte: "se montre attentive et volontaire, elle ose demander quand elle n'a pas compris" },
+        { matiere: "Français", role: "réussite",     on: true,  texte: "lit maintenant avec assurance les mots contenant les sons étudiés" },
+        { matiere: "Français", role: "réussite",     on: true,  texte: "copie un texte court avec beaucoup de soin" },
+        { matiere: "Français", role: "progrès",      on: true,  texte: "a bien progressé en lecture depuis la première période" },
+        { matiere: "Français", role: "vigilance",    on: true,  texte: "la lecture à voix haute demande encore de la préparation",
           action: "nous continuerons à la travailler en petit groupe" },
-        { role: "encouragement",on: true,  texte: "Continue ainsi, c'est un très bon trimestre." },
-        { role: "ton mot du 14/11", on: false, texte: "très à l'aise à l'oral devant le groupe" }
+        { matiere: "Français", role: "encouragement",on: true,  texte: "Continue ainsi, c'est un très bon trimestre." },
+        { matiere: "Français", role: "ton mot du 14/11", on: false, texte: "très à l'aise à l'oral devant le groupe" },
+        { matiere: "Mathématiques", role: "réussite", on: true, texte: "nomme, lit et écrit les nombres jusqu'à 100" },
+        { matiere: "Mathématiques", role: "progrès",  on: true, texte: "calcule de plus en plus vite les petites additions" },
+        { matiere: "Mathématiques", role: "encouragement", on: true, texte: "Un domaine où elle avance avec plaisir." }
       ] },
-    { nom: "Tom", etat: "commencé", observes: [3, 1, 2, null, 4], niveaux: ["pa", "na", "pa", "", "a"],
-      appreciation: "",
+    { nom: "Tom", genre: "m", etat: "commencé", observes: [3, 1, 2, null, 4], niveaux: ["pa", "na", "pa", "", "a"],
+      textes: {},
       briques: [
-        { role: "posture",      on: true,  texte: "s'applique et reste concentré sur les temps courts" },
-        { role: "réussite",     on: true,  texte: "reconnaît et nomme les nombres jusqu'à 100" },
-        { role: "progrès",      on: true,  texte: "commence à repérer seul les sons dans les mots" },
-        { role: "vigilance",    on: true,  texte: "la lecture à voix haute reste difficile",
+        { matiere: "Français", role: "posture",      on: true,  texte: "s'applique et reste concentré sur les temps courts" },
+        { matiere: "Français", role: "progrès",      on: true,  texte: "commence à repérer seul les sons dans les mots" },
+        { matiere: "Français", role: "vigilance",    on: true,  texte: "la lecture à voix haute reste difficile",
           action: "un temps de lecture quotidien à la maison l'aiderait beaucoup" },
-        { role: "vigilance",    on: false, texte: "la copie est encore lente",
+        { matiere: "Français", role: "vigilance",    on: false, texte: "la copie est encore lente",
           action: "nous travaillerons le geste d'écriture" },
-        { role: "encouragement",on: true,  texte: "Les efforts commencent à porter, il faut poursuivre." }
+        { matiere: "Français", role: "encouragement",on: true,  texte: "Les efforts commencent à porter, il faut poursuivre." },
+        { matiere: "Mathématiques", role: "réussite", on: true, texte: "reconnaît et nomme les nombres jusqu'à 100" },
+        { matiere: "Mathématiques", role: "vigilance", on: true, texte: "la soustraction demande encore du matériel",
+          action: "nous garderons les jetons le temps qu'il faudra" }
       ] },
-    { nom: "Jade", etat: "rien saisi", observes: [9, 6, 4, null, 5], niveaux: ["", "", "", "", ""],
-      appreciation: "", briques: [] },
-    { nom: "Hugo", etat: "rien saisi", observes: [2, 0, 1, null, 2], niveaux: ["", "", "", "", ""],
-      appreciation: "", briques: [] }
+    { nom: "Jade", genre: "f", etat: "rien saisi", observes: [9, 6, 4, null, 5], niveaux: ["", "", "", "", ""],
+      textes: {}, briques: [] },
+    { nom: "Hugo", genre: "m", etat: "rien saisi", observes: [2, 0, 1, null, 2], niveaux: ["", "", "", "", ""],
+      textes: {}, briques: [] }
   ];
+
+  /* Les matieres du bilan, dans l'ordre du tableau. */
+  var MATIERES = [];
+  LIGNES.forEach(function (l) { if (MATIERES.indexOf(l.matiere) === -1) MATIERES.push(l.matiere); });
+
+  /* Ce qui part dans la copie groupee. Tout coche au depart. */
+  var selection = {};
+  MATIERES.forEach(function (m) { selection[m] = true; });
 
   /* Modele de formulation, en cinq temps : posture, reussites, progres,
      point de vigilance avec sa prochaine etape, encouragement. Aucun code de
@@ -637,32 +670,52 @@
      livret doit se comprendre par un parent. */
   var ORDRE_ROLES = ["posture", "réussite", "progrès", "vigilance", "encouragement"];
 
-  function rediger(el) {
-    var prises = el.briques.filter(function (b) { return b.on && b.texte.trim(); });
+  function pronom(el) { return el.genre === "m" ? "Il" : "Elle"; }
+
+  function rediger(el, matiere) {
+    var prises = el.briques.filter(function (b) {
+      return b.matiere === matiere && b.on && b.texte.trim();
+    });
     if (!prises.length) return "";
     var pris = function (role) { return prises.filter(function (b) { return b.role === role; }); };
     var phrases = [];
 
+    /* Le prenom ouvre le commentaire une seule fois ; ensuite on reprend au
+       pronom. Sans brique de posture, c'est la premiere reussite qui porte le
+       prenom, sinon le commentaire commencerait par un verbe sans sujet. */
     var posture = pris("posture");
-    if (posture.length) phrases.push(el.nom + " " + posture[0].texte + ".");
+    var nomme = false;
+    if (posture.length) { phrases.push(el.nom + " " + posture[0].texte + "."); nomme = true; }
 
     var reussites = pris("réussite").map(function (b) { return b.texte; });
     if (reussites.length === 1) {
-      phrases.push(majuscule(reussites[0]) + ".");
+      phrases.push(nomme ? majuscule(reussites[0]) + "." : el.nom + " " + reussites[0] + ".");
     } else if (reussites.length > 1) {
       var derniere = reussites.pop();
-      phrases.push("Elle " + reussites.join(", ") + " et " + derniere + ".");
+      phrases.push((nomme ? pronom(el) + " " : el.nom + " ") + reussites.join(", ") + " et " + derniere + ".");
+    }
+    if (reussites.length || posture.length) nomme = true;
+
+    /* Une brique decrit ce que fait l'enfant : il lui faut un sujet, sinon on
+       ecrit « A bien progresse », qui sonne telegraphique. Le prenom la premiere
+       fois, le pronom ensuite. */
+    function avecSujet(texte) {
+      phrases.push((nomme ? pronom(el) : el.nom) + " " + texte);
+      nomme = true;
     }
 
-    pris("progrès").forEach(function (b) { phrases.push(majuscule(b.texte) + "."); });
+    pris("progrès").forEach(function (b) { avecSujet(b.texte + "."); });
 
+    /* La vigilance, elle, parle de la difficulte et pas de l'enfant : « la
+       lecture a voix haute demande encore de la preparation ». Elle garde donc
+       sa tournure impersonnelle, et sa prochaine etape la suit toujours. */
     pris("vigilance").forEach(function (b) {
       phrases.push(majuscule(b.texte) + (b.action ? " ; " + b.action + "." : "."));
     });
 
     /* Les briques libres (tes propres mots) passent avant l'encouragement. */
     prises.filter(function (b) { return ORDRE_ROLES.indexOf(b.role) === -1; })
-      .forEach(function (b) { phrases.push(majuscule(b.texte) + "."); });
+      .forEach(function (b) { avecSujet(b.texte + "."); });
 
     pris("encouragement").forEach(function (b) { phrases.push(b.texte); });
 
@@ -678,10 +731,11 @@
   var selPos     = document.getElementById("sel-position");
   var corps      = document.getElementById("corps-bilan");
   var compteur   = document.getElementById("compteur");
-  var apprec     = document.getElementById("appreciation");
+  var zoneAppr   = document.getElementById("appreciations");
   var btnPrec    = document.getElementById("btn-prec");
   var btnSuiv    = document.getElementById("btn-suiv");
   var btnCopier  = document.getElementById("btn-copier");
+  var toutCocher = document.getElementById("tout-cocher");
   var message    = document.getElementById("confirmation");
 
   function cellule(txt, classe) {
@@ -710,6 +764,7 @@
       }
 
       var tr = document.createElement("tr");
+      tr.setAttribute("data-matiere", ligne.matiere);
 
       var tdCoche = document.createElement("td");
       var coche = document.createElement("input");
@@ -755,8 +810,7 @@
       corps.appendChild(tr);
     });
 
-    dessinerBriques(el);
-    apprec.textContent = el.appreciation;
+    dessinerAppreciations(el);
     var commences = ELEVES.filter(function (e) { return e.etat === "commencé"; }).length;
     compteur.textContent = commences + " bilans commencés sur 23";
 
@@ -765,16 +819,111 @@
     message.textContent = "";
   }
 
-  var briquesUl = document.getElementById("briques");
-  var btnRediger = document.getElementById("btn-rediger");
-  var etatRedaction = document.getElementById("etat-redaction");
+  /* Un bloc par matiere : ses briques, son bouton de redaction, son texte
+     modifiable, son bouton de copie, et la case qui decide s'il part dans la
+     copie groupee. Le livret officiel demande un commentaire par matiere, donc
+     l'ecran a la meme forme que le document a remplir. */
+  function dessinerAppreciations(el) {
+    zoneAppr.textContent = "";
+    MATIERES.forEach(function (matiere) {
+      zoneAppr.appendChild(blocMatiere(el, matiere));
+    });
+    majBoutonGroupe();
+  }
 
-  function dessinerBriques(el) {
+  function blocMatiere(el, matiere) {
+    var bloc = document.createElement("div");
+    bloc.className = "appreciation" + (selection[matiere] ? "" : " hors-selection");
+
+    var titre = document.createElement("div");
+    titre.className = "titre-matiere";
+
+    var coche = document.createElement("input");
+    coche.type = "checkbox";
+    coche.className = "coche";
+    coche.checked = !!selection[matiere];
+    coche.setAttribute("aria-label", "Inclure " + matiere + " dans la copie groupée");
+    titre.appendChild(coche);
+
+    var h = document.createElement("h4");
+    h.textContent = matiere + " : acquisitions, progrès et difficultés éventuelles";
+    titre.appendChild(h);
+
+    var btnCopieUne = document.createElement("button");
+    btnCopieUne.type = "button";
+    btnCopieUne.className = "bouton secondaire";
+    btnCopieUne.textContent = "Copier " + matiere;
+    titre.appendChild(btnCopieUne);
+    bloc.appendChild(titre);
+
+    var aide = document.createElement("p");
+    aide.className = "aide";
+    aide.style.margin = "0 0 .6rem";
+    aide.textContent = "Décoche ce que tu ne veux pas dire, corrige les formulations, puis rédige.";
+    bloc.appendChild(aide);
+
+    var ul = document.createElement("ul");
+    ul.className = "briques";
+    bloc.appendChild(ul);
+
+    var actions = document.createElement("div");
+    actions.className = "actions";
+    actions.style.marginTop = ".75rem";
+    var btnRediger = document.createElement("button");
+    btnRediger.type = "button";
+    btnRediger.className = "bouton";
+    btnRediger.textContent = "Rédiger";
+    actions.appendChild(btnRediger);
+    var etat = document.createElement("span");
+    etat.className = "confirmation";
+    etat.setAttribute("role", "status");
+    actions.appendChild(etat);
+    bloc.appendChild(actions);
+
+    var zone = document.createElement("div");
+    zone.className = "zone-texte";
+    zone.contentEditable = "true";
+    zone.setAttribute("role", "textbox");
+    zone.setAttribute("aria-multiline", "true");
+    zone.setAttribute("aria-label", "Commentaire de " + matiere);
+    zone.style.marginTop = ".75rem";
+    zone.textContent = el.textes[matiere] || "";
+    zone.addEventListener("input", function () { el.textes[matiere] = zone.textContent; });
+    bloc.appendChild(zone);
+
+    var mot = document.createElement("p");
+    mot.className = "aide";
+    mot.textContent = "Le texte reste modifiable ici avant que tu le recopies dans le livret.";
+    bloc.appendChild(mot);
+
+    dessinerBriques(ul, el.briques.filter(function (b) { return b.matiere === matiere; }), btnRediger);
+
+    btnRediger.addEventListener("click", function () {
+      el.textes[matiere] = rediger(el, matiere);
+      zone.textContent = el.textes[matiere];
+      etat.textContent = el.textes[matiere] ? "✓ rédigé, à relire" : "aucune brique cochée";
+      setTimeout(function () { etat.textContent = ""; }, 4000);
+    });
+
+    btnCopieUne.addEventListener("click", function () {
+      copier(texteMatiere(el, matiere), etat, "✓ " + matiere + " copié");
+    });
+
+    coche.addEventListener("change", function () {
+      selection[matiere] = coche.checked;
+      bloc.className = "appreciation" + (coche.checked ? "" : " hors-selection");
+      majBoutonGroupe();
+    });
+
+    return bloc;
+  }
+
+  function dessinerBriques(briquesUl, briques, btnRediger) {
     briquesUl.textContent = "";
-    if (!el.briques.length) {
+    if (!briques.length) {
       var vide = document.createElement("li");
       vide.className = "aide";
-      vide.textContent = "Rien d'observé pour cet élève sur la période : il n'y a pas encore de quoi rédiger.";
+      vide.textContent = "Rien d'observé dans cette matière sur la période : il n'y a pas encore de quoi rédiger.";
       briquesUl.appendChild(vide);
       btnRediger.disabled = true;
       btnRediger.style.opacity = ".5";
@@ -783,7 +932,7 @@
     btnRediger.disabled = false;
     btnRediger.style.opacity = "";
 
-    el.briques.forEach(function (b, i) {
+    briques.forEach(function (b, i) {
       var li = document.createElement("li");
       li.className = "brique" + (b.on ? "" : " off");
 
@@ -828,14 +977,56 @@
     });
   }
 
-  btnRediger.addEventListener("click", function () {
-    var el = ELEVES[iEleve];
-    el.appreciation = rediger(el);
-    apprec.textContent = el.appreciation;
-    etatRedaction.textContent = el.appreciation
-      ? "✓ rédigé, à relire et ajuster"
-      : "aucune brique cochée";
-    setTimeout(function () { etatRedaction.textContent = ""; }, 4000);
+  /* ── Ce qui se copie ─────────────────────────────────────────────────────── */
+
+  /* Le texte d'UNE matiere : ses elements coches avec leur positionnement, puis
+     le commentaire. De quoi remplir les deux cases du livret pour cette matiere. */
+  function texteMatiere(el, matiere) {
+    var lignes = [matiere.toUpperCase(), "Éléments travaillés :"];
+    Array.prototype.forEach.call(corps.querySelectorAll("tr[data-matiere]"), function (tr) {
+      if (tr.getAttribute("data-matiere") !== matiere) return;
+      if (!tr.querySelector(".coche").checked) return;
+      var libelle = tr.querySelector(".libelle-element").textContent;
+      var choix = tr.querySelector(".niveaux").getAttribute("data-choix");
+      var niv = NIVEAUX.filter(function (n) { return n.code === choix; })[0];
+      lignes.push("  " + libelle + " : " + (niv ? niv.long : "non positionné"));
+    });
+    lignes.push("", "Acquisitions, progrès et difficultés :");
+    lignes.push((el.textes[matiere] || "").trim() || "(rien de rédigé)");
+    return lignes.join("\n");
+  }
+
+  function matieresChoisies() {
+    return MATIERES.filter(function (m) { return selection[m]; });
+  }
+
+  function majBoutonGroupe() {
+    var choisies = matieresChoisies();
+    toutCocher.checked = choisies.length === MATIERES.length;
+    btnCopier.disabled = choisies.length === 0;
+    btnCopier.style.opacity = choisies.length === 0 ? ".5" : "";
+    btnCopier.textContent = choisies.length === 0
+      ? "Rien à copier"
+      : choisies.length === 1
+        ? "Copier " + choisies[0]
+        : "Copier les " + choisies.length + " matières cochées";
+  }
+
+  function copier(texte, ou, motDeFin) {
+    function fini() {
+      ou.textContent = motDeFin;
+      setTimeout(function () { ou.textContent = ""; }, 3000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texte).then(fini, fini);
+    } else {
+      fini();
+    }
+  }
+
+  toutCocher.addEventListener("change", function () {
+    MATIERES.forEach(function (m) { selection[m] = toutCocher.checked; });
+    dessinerAppreciations(ELEVES[iEleve]);
   });
 
   ELEVES.forEach(function (e, i) {
@@ -864,27 +1055,14 @@
   btnSuiv.addEventListener("click", function () { allerVers(1); });
 
   btnCopier.addEventListener("click", function () {
-    var lignes = [ELEVES[iEleve].nom + " · " + selPeriode.value, ""];
-    Array.prototype.forEach.call(corps.querySelectorAll("tr"), function (tr) {
-      var dom = tr.querySelector(".domaine");
-      if (dom) { lignes.push(dom.textContent.toUpperCase()); return; }
-      if (!tr.querySelector(".coche").checked) return;
-      var libelle = tr.querySelector(".libelle-element").textContent;
-      var choix = tr.querySelector(".niveaux").getAttribute("data-choix");
-      var niv = NIVEAUX.filter(function (n) { return n.code === choix; })[0];
-      lignes.push("  " + libelle + " — " + (niv ? niv.long : "non positionné"));
-    });
-    lignes.push("", "Acquisitions, progrès et difficultés :", apprec.textContent.trim());
-
-    function fini() {
-      message.textContent = "✓ copié, prêt à coller dans le LSU";
-      setTimeout(function () { message.textContent = ""; }, 3000);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(lignes.join("\n")).then(fini, fini);
-    } else {
-      fini();
-    }
+    var el = ELEVES[iEleve];
+    var choisies = matieresChoisies();
+    if (!choisies.length) return;
+    var blocs = choisies.map(function (m) { return texteMatiere(el, m); });
+    var texte = [el.nom + " · " + selPeriode.value, ""].concat(blocs.join("\n\n")).join("\n");
+    copier(texte, message, choisies.length === MATIERES.length
+      ? "✓ tout le bilan copié"
+      : "✓ " + choisies.length + " matière" + (choisies.length > 1 ? "s copiées" : " copiée"));
   });
 
   Array.prototype.forEach.call(document.querySelectorAll(".niveaux[data-choix]"), function (g) {

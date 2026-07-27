@@ -407,6 +407,101 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-27 (soir) - Claude - ÉTAPE 1 FAITE : l'écran du suivi est passé à quatre niveaux.**
+  Codé, testé, pas encore publié (en attente du feu vert de Christophe).
+  **61 suites, 507 tests, zéro échec. Types propres. Build de production réussi.**
+
+  **Nouveau module `src/lib/niveaux.ts`** (6 tests) : l'échelle du LSU, une seule fois
+  pour toute l'application. `NIVEAUX` (dans l'ordre), `ABREVIATION_NIVEAU`
+  (NA / PA / A / D), `LIBELLE_NIVEAU`, `estAcquis`, `niveauDepuisAcquis`, `estNiveau`.
+  `estAcquis` dit exactement la même chose que le trigger SQL de la migration 019
+  (`niveau in ('atteint','depasse')`) : si les deux divergeaient, l'écran et le livret
+  ne compteraient pas pareil.
+
+  **Les deux actions serveur sont renommées et écrivent le niveau** :
+  `toggleAcquisition` devient **`definirNiveauNotion`**, `definirAcquisitionCritere`
+  devient **`definirNiveauCritere`**. « Toggle » ne voulait plus rien dire sur quatre
+  valeurs. Au passage, `definirNiveauNotion` **renvoie** son message d'erreur au lieu de
+  le lever : c'était la dernière action du suivi à encore lever, donc le dernier endroit
+  où l'enseignant aurait pu relire le pavé « An error occurred in the Server Components
+  render ». Les deux écrivent `niveau` ET `acquis` : le trigger recalculerait `acquis`
+  de toute façon, l'écrire garde la ligne juste si le trigger disparaissait un jour.
+
+  **`BoutonsAcquisition` devient `BoutonsNiveau`** : un vrai `role="radiogroup"` de
+  quatre `role="radio"`, avec les flèches du clavier (test à l'appui) et un seul bouton
+  atteignable à la tabulation. Une famille de couleurs à part du violet de
+  l'application : rouge, ambre, émeraude, bleu. Un composant `LegendeNiveaux` pose la
+  légende une fois en haut du bloc.
+
+  **`vue-classe.ts` agrège sur quatre niveaux** : `CaseSuivi` gagne un compteur
+  `enCours` (les partiellement atteints), et « aucun » exige maintenant que **rien** ne
+  soit engagé. Un enfant partiellement atteint partout se lit en orange (« en cours »)
+  et plus en rouge. C'est le vrai gain du passage à quatre niveaux, et le binaire le
+  rangeait avec les échecs.
+
+  **Deux endroits lisaient encore `valeur === true`**, ils comptaient donc zéro sur des
+  niveaux : la préparation du bilan IA et l'export Word. Corrigés. L'export Word rend
+  désormais l'abréviation (NA / PA / A / D) au lieu de « ✓ / Non acquis » ; son option
+  s'appelle `niveaux` et plus `acquis`. Pour la route IA, « partiellement atteint » part
+  avec ce qui reste à travailler : la route ne connaît que deux paquets, et c'est ce
+  qu'un enseignant veut lire.
+
+  **Relecture de l'ancien format** : une ligne écrite avant la migration 019 n'a pas de
+  `niveau`. L'écran la relit par l'ancien booléen (`niveauDepuisAcquis`) au lieu de
+  l'afficher vierge. Un test le vérifie avec une ligne sans `niveau`.
+
+  **À faire quand Christophe donnera le feu vert** : rien de plus côté code, mais la
+  publication change ce que Cécile voit. Ne pas pousser sans son accord (convention 7).
+
+- **2026-07-27 (soir) - Claude - le bilan se copie PAR MATIÈRE, à l'unité ou par paquet.**
+  Demande de Christophe en reprenant le chantier : « le bilan de commentaires doit être
+  copiable par matière avec un bouton », puis « on doit pouvoir éditer les bilans
+  copiables avec toutes les matières d'un coup ou à l'unité, il faut trouver un système
+  de sélection ».
+
+  **Pourquoi c'est structurant** : le livret officiel demande un commentaire
+  « Acquisitions, progrès et difficultés éventuelles » **par matière**, pas un seul pour
+  l'élève. La maquette n'avait qu'une appréciation globale : c'était faux par rapport au
+  document à remplir. Le bilan est maintenant **un bloc par matière**.
+
+  **Ce qui est décidé et déjà dans la maquette**
+  (`docs/maquettes/suivi-4-niveaux-et-bilan-lsu.html`, écran 2) :
+  - Un bloc par matière, chacun avec **ses** briques, **son** bouton « Rédiger »,
+    **son** texte modifiable et **son** bouton « Copier <matière> ». Rien n'oblige à
+    tout traiter d'un coup : Cécile peut faire le français, coller, revenir plus tard.
+  - **Le système de sélection est la case du titre du bloc.** Elle ne sert qu'à la
+    copie groupée. Le bouton du bas énonce ce qu'il va faire (« Copier les 2 matières
+    cochées », « Copier Français », « Rien à copier » quand tout est décoché), et une
+    case « Toutes les matières » coche ou décoche tout. Une matière décochée s'estompe
+    mais reste lisible et modifiable : décocher, c'est exclure de la copie, jamais
+    désactiver la saisie.
+  - Le texte copié d'une matière contient ses **éléments cochés avec leur
+    positionnement**, puis le commentaire : de quoi remplir les deux cases du livret
+    pour cette matière.
+  - **Les briques portent donc une matière.** Chaque brique est rangée dans la matière
+    où elle sera lue. Conséquence pour le code : la clé de stockage d'une appréciation
+    est `(eleve, periode, matiere)`, pas `(eleve, periode)`.
+
+  **Deux corrections du modèle de formulation**, trouvées en le faisant tourner sur les
+  quatre élèves de démonstration :
+  1. **Le pronom était figé sur « Elle »**, donc faux pour un garçon. L'élève porte un
+     genre et le pronom en découle. À prévoir en base pour de vrai.
+  2. **Un progrès sans sujet** rendait « A bien progressé en lecture », télégraphique.
+     Règle retenue : la posture, les réussites, les progrès et les briques libres
+     parlent de l'enfant et prennent un sujet (le prénom la première fois, le pronom
+     ensuite) ; **la vigilance garde sa tournure impersonnelle** parce qu'elle parle de
+     la difficulté et pas de l'enfant (« la lecture à voix haute reste difficile ;
+     un temps de lecture quotidien à la maison l'aiderait beaucoup »).
+
+  **Autre retour du même moment** : dans la colonne Positionnement, les quatre
+  abréviations doivent tenir **sur une seule ligne**. Repliées sur deux lignes,
+  l'échelle NA vers D ne se lit plus comme une échelle. `flex-wrap: nowrap` sur le
+  groupe et `flex: 0 0 auto` sur les boutons.
+
+  La maquette se vérifie sans navigateur : `jsdom` est déjà dans le repo, un petit
+  script Node charge le fichier avec `runScripts: 'dangerously'` et lit le DOM produit.
+  C'est ce qui a permis de voir les deux fautes de formulation ci-dessus.
+
 - **2026-07-27 - Claude - CHANTIER LSU cadré et démarré. Lire cette entrée avant de coder.**
   Longue session de conception avec Christophe. Tout est décidé, la base est migrée,
   il reste les écrans.

@@ -11,6 +11,8 @@
  * et rend le tableau. Elle se teste donc sans monter le composant.
  */
 
+import { estAcquis, type Niveau } from '@/lib/niveaux'
+
 export type StatutCase = 'vide' | 'aucun' | 'partiel' | 'complet'
 
 export type NotionSuivie = { matiere: string; notion: string }
@@ -27,16 +29,19 @@ export type EntreeSuivi = {
   eleves: { id: string; prenom: string }[]
   notions: NotionSuivie[]
   criteres: CritereSuivi[]
-  /** Rend true, false, ou null si l'enseignant n'a pas encore tranché. */
-  valeurCritere: (eleveId: string, critereId: string) => boolean | null
+  /** Rend un niveau, ou null si l'enseignant n'a pas encore tranché. */
+  valeurCritere: (eleveId: string, critereId: string) => Niveau | null
   /** Suivi global de la notion, utilisé quand elle n'a aucun critère. */
-  valeurNotion: (eleveId: string, matiere: string, notion: string) => boolean | null
+  valeurNotion: (eleveId: string, matiere: string, notion: string) => Niveau | null
 }
 
 export type CaseSuivi = {
   matiere: string
   notion: string
+  /** Atteints ou dépassés, comme la colonne `acquis` de la base. */
   acquis: number
+  /** Partiellement atteints : l'enfant est en chemin, ce n'est pas un échec. */
+  enCours: number
   total: number
   statut: StatutCase
 }
@@ -47,10 +52,17 @@ export type LigneSuivi = {
   cases: CaseSuivi[]
 }
 
-function statutPour(acquis: number, total: number, renseignes: number): StatutCase {
+/**
+ * Le statut d'une case, sur les quatre niveaux.
+ *
+ * « aucun » demande maintenant que rien ne soit engagé : avec l'échelle du
+ * livret, un enfant partiellement atteint partout est en chemin, pas en échec,
+ * et il doit se lire en orange et non en rouge.
+ */
+function statutPour(acquis: number, enCours: number, total: number, renseignes: number): StatutCase {
   if (renseignes === 0) return 'vide'
-  if (acquis === 0) return 'aucun'
   if (acquis >= total) return 'complet'
+  if (acquis === 0 && enCours === 0) return 'aucun'
   return 'partiel'
 }
 
@@ -66,31 +78,36 @@ export function agregerClasse(entree: EntreeSuivi): LigneSuivi[] {
       // Sans critère personnalisé, la notion compte pour elle-même.
       if (criteresNotion.length === 0) {
         const globale = valeurNotion(eleve.id, matiere, notion)
-        const acquis = globale === true ? 1 : 0
+        const acquis = globale !== null && estAcquis(globale) ? 1 : 0
+        const enCours = globale === 'partiellement' ? 1 : 0
         return {
           matiere,
           notion,
           acquis,
+          enCours,
           total: 1,
-          statut: statutPour(acquis, 1, globale === null ? 0 : 1),
+          statut: statutPour(acquis, enCours, 1, globale === null ? 0 : 1),
         }
       }
 
       let acquis = 0
+      let enCours = 0
       let renseignes = 0
       for (const critere of criteresNotion) {
         const valeur = valeurCritere(eleve.id, critere.id)
         if (valeur === null) continue
         renseignes++
-        if (valeur) acquis++
+        if (estAcquis(valeur)) acquis++
+        else if (valeur === 'partiellement') enCours++
       }
 
       return {
         matiere,
         notion,
         acquis,
+        enCours,
         total: criteresNotion.length,
-        statut: statutPour(acquis, criteresNotion.length, renseignes),
+        statut: statutPour(acquis, enCours, criteresNotion.length, renseignes),
       }
     }),
   }))

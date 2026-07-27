@@ -10,15 +10,24 @@ import type {
   Eleve,
   Semaine,
 } from '@/types'
-import { toggleAcquisition } from '@/lib/actions/semaine'
+import { definirNiveauNotion } from '@/lib/actions/semaine'
 import { upsertAppreciation } from '@/lib/actions/appreciation'
 import {
   ajouterCritereObservation,
-  definirAcquisitionCritere,
+  definirNiveauCritere,
   modifierCritereObservation,
   supprimerCritereObservation,
 } from '@/lib/actions/criteres-observation'
 import { cleObservation } from '@/lib/criteres-observation'
+import {
+  ABREVIATION_NIVEAU,
+  LIBELLE_NIVEAU,
+  NIVEAUX,
+  estAcquis,
+  estNiveau,
+  niveauDepuisAcquis,
+  type Niveau,
+} from '@/lib/niveaux'
 import { agregerClasse, type StatutCase } from '@/lib/vue-classe'
 import { exporterSuiviWord } from '@/lib/export-word'
 import { imprimerElement } from '@/lib/print'
@@ -27,7 +36,7 @@ import Bouton from '@/components/ui/Bouton'
 
 type ApprState = { statut: string | null; commentaire: string }
 type Methode = { methode_id: string; matiere: string; items: string[]; suivi_actif: boolean }
-type ValeurObservation = boolean | null
+type ValeurObservation = Niveau | null
 
 function emojiMatiere(matiere: string) {
   return matiere === 'francais' ? '📖' : matiere === 'maths' ? '🔢' : '📋'
@@ -52,9 +61,9 @@ const COULEURS_STATUT: Record<StatutCase, { pastille: string; case_: string }> =
 
 const LIBELLES_STATUT: Record<StatutCase, string> = {
   vide: 'pas encore renseigné',
-  aucun: 'rien acquis',
+  aucun: 'rien atteint',
   partiel: 'en cours',
-  complet: 'tout acquis',
+  complet: 'tout atteint',
 }
 
 const cleAppreciation = (eleveId: string, matiere: string) => `${eleveId}|${matiere}`
@@ -62,48 +71,106 @@ const cleNotion = (eleveId: string, matiere: string, notion: string) =>
   `${eleveId}|${matiere}|${notion}`
 const cleFormulaire = (matiere: string, notion: string) => `${matiere}|${notion}`
 
-function BoutonsAcquisition({
+// Une famille de couleurs a part, volontairement differente du violet de
+// l'application : un niveau ne doit jamais se confondre avec un element
+// d'interface.
+const COULEURS_NIVEAU: Record<Niveau, { choisi: string; libre: string }> = {
+  non_atteint: {
+    choisi: 'border-red-600 bg-red-50 text-red-700',
+    libre: 'border-gray-200 bg-white text-gray-500 hover:border-red-300 hover:text-red-700',
+  },
+  partiellement: {
+    choisi: 'border-amber-600 bg-amber-50 text-amber-700',
+    libre: 'border-gray-200 bg-white text-gray-500 hover:border-amber-300 hover:text-amber-700',
+  },
+  atteint: {
+    choisi: 'border-emerald-600 bg-emerald-50 text-emerald-700',
+    libre: 'border-gray-200 bg-white text-gray-500 hover:border-emerald-300 hover:text-emerald-700',
+  },
+  depasse: {
+    choisi: 'border-blue-600 bg-blue-50 text-blue-700',
+    libre: 'border-gray-200 bg-white text-gray-500 hover:border-blue-300 hover:text-blue-700',
+  },
+}
+
+/**
+ * Les quatre niveaux du livret, en abrege.
+ *
+ * Un vrai `radiogroup` : un seul niveau a la fois, les fleches du clavier
+ * circulent dans le groupe, et un seul bouton est atteignable a la tabulation
+ * (le niveau choisi, ou le premier tant que rien n'est choisi). C'est ce que
+ * les lecteurs d'ecran attendent d'une echelle.
+ *
+ * Les quatre boutons restent sur UNE ligne : replies sur deux, l'echelle ne se
+ * lit plus comme une echelle.
+ */
+function BoutonsNiveau({
   valeur,
   onChange,
   disabled,
   libelle,
 }: {
   valeur: ValeurObservation
-  onChange: (valeur: boolean) => void
+  onChange: (valeur: Niveau) => void
   disabled: boolean
   libelle: string
 }) {
+  const index = valeur === null ? -1 : NIVEAUX.indexOf(valeur)
+
+  function auClavier(event: React.KeyboardEvent<HTMLDivElement>) {
+    const pas = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+      ? 1
+      : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        ? -1
+        : 0
+    if (pas === 0 || disabled) return
+    event.preventDefault()
+    const depart = index === -1 ? (pas === 1 ? -1 : 0) : index
+    onChange(NIVEAUX[(depart + pas + NIVEAUX.length) % NIVEAUX.length])
+  }
+
   return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        aria-label={`${libelle} : acquis`}
-        aria-pressed={valeur === true}
-        disabled={disabled}
-        onClick={() => onChange(true)}
-        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-          valeur === true
-            ? 'border-emerald-600 bg-emerald-600 text-white'
-            : 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50'
-        }`}
-      >
-        Acquis
-      </button>
-      <button
-        type="button"
-        aria-label={`${libelle} : non acquis`}
-        aria-pressed={valeur === false}
-        disabled={disabled}
-        onClick={() => onChange(false)}
-        className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-          valeur === false
-            ? 'border-amber-600 bg-amber-600 text-white'
-            : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'
-        }`}
-      >
-        Non acquis
-      </button>
+    <div
+      role="radiogroup"
+      aria-label={libelle}
+      onKeyDown={auClavier}
+      className="flex flex-nowrap gap-1"
+    >
+      {NIVEAUX.map((niveau, i) => {
+        const choisi = valeur === niveau
+        return (
+          <button
+            key={niveau}
+            type="button"
+            role="radio"
+            aria-checked={choisi}
+            aria-label={`${libelle} : ${LIBELLE_NIVEAU[niveau]}`}
+            tabIndex={choisi || (index === -1 && i === 0) ? 0 : -1}
+            disabled={disabled}
+            onClick={() => onChange(niveau)}
+            className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-50 ${
+              choisi ? COULEURS_NIVEAU[niveau].choisi : COULEURS_NIVEAU[niveau].libre
+            }`}
+          >
+            {ABREVIATION_NIVEAU[niveau]}
+          </button>
+        )
+      })}
     </div>
+  )
+}
+
+/** La legende des abreviations, a poser une fois par bloc. */
+function LegendeNiveaux() {
+  return (
+    <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600">
+      {NIVEAUX.map(niveau => (
+        <span key={niveau}>
+          <span className="font-bold text-gray-800">{ABREVIATION_NIVEAU[niveau]}</span>{' '}
+          {LIBELLE_NIVEAU[niveau]}
+        </span>
+      ))}
+    </p>
   )
 }
 
@@ -138,18 +205,26 @@ export default function StudentTracking({
   const wasPending = useRef(false)
   const blocRef = useRef<HTMLDivElement>(null)
 
-  const [acquisNotions, setAcquisNotions] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {}
+  // Le niveau fait foi, mais une ligne ecrite avant la migration 019 peut
+  // n'avoir que l'ancien booleen : on la relit sans rien perdre.
+  const [niveauxNotions, setNiveauxNotions] = useState<Record<string, Niveau>>(() => {
+    const init: Record<string, Niveau> = {}
     for (const acquisition of acquisitions) {
-      init[cleNotion(acquisition.eleve_id, acquisition.matiere, acquisition.grapheme)] = acquisition.acquis
+      const niveau = estNiveau(acquisition.niveau)
+        ? acquisition.niveau
+        : niveauDepuisAcquis(acquisition.acquis)
+      if (niveau) init[cleNotion(acquisition.eleve_id, acquisition.matiere, acquisition.grapheme)] = niveau
     }
     return init
   })
 
-  const [acquisCriteres, setAcquisCriteres] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {}
+  const [niveauxCriteres, setNiveauxCriteres] = useState<Record<string, Niveau>>(() => {
+    const init: Record<string, Niveau> = {}
     for (const acquisition of acquisitionsCriteres) {
-      init[cleObservation(acquisition.eleve_id, acquisition.critere_id)] = acquisition.acquis
+      const niveau = estNiveau(acquisition.niveau)
+        ? acquisition.niveau
+        : niveauDepuisAcquis(acquisition.acquis)
+      if (niveau) init[cleObservation(acquisition.eleve_id, acquisition.critere_id)] = niveau
     }
     return init
   })
@@ -180,12 +255,12 @@ export default function StudentTracking({
 
   function valeurNotion(eleveId: string, matiere: string, notion: string): ValeurObservation {
     const cle = cleNotion(eleveId, matiere, notion)
-    return Object.hasOwn(acquisNotions, cle) ? acquisNotions[cle] : null
+    return Object.hasOwn(niveauxNotions, cle) ? niveauxNotions[cle] : null
   }
 
   function valeurCritere(eleveId: string, critereId: string): ValeurObservation {
     const cle = cleObservation(eleveId, critereId)
-    return Object.hasOwn(acquisCriteres, cle) ? acquisCriteres[cle] : null
+    return Object.hasOwn(niveauxCriteres, cle) ? niveauxCriteres[cle] : null
   }
 
   function criteresPour(matiere: string, notion: string) {
@@ -205,38 +280,39 @@ export default function StudentTracking({
     return Array.from(notions)
   }
 
-  function definirNotion(eleveId: string, matiere: string, notion: string, acquis: boolean) {
+  function definirNotion(eleveId: string, matiere: string, notion: string, niveau: Niveau) {
     const cle = cleNotion(eleveId, matiere, notion)
     const precedente = valeurNotion(eleveId, matiere, notion)
     setErreur('')
-    setAcquisNotions(etat => ({ ...etat, [cle]: acquis }))
+    setNiveauxNotions(etat => ({ ...etat, [cle]: niveau }))
 
     startTransition(async () => {
-      try {
-        await toggleAcquisition(semaine.id, eleveId, matiere, notion, acquis)
-        if (acquis && precedente !== true) celebrate()
-      } catch (error) {
-        setAcquisNotions(etat => {
-          const suivant = { ...etat }
-          if (precedente === null) delete suivant[cle]
-          else suivant[cle] = precedente
-          return suivant
-        })
-        setErreur(error instanceof Error ? error.message : 'Le suivi n’a pas pu être enregistré.')
+      const r = await definirNiveauNotion(semaine.id, eleveId, matiere, notion, niveau)
+      if (r.ok) {
+        // On fete le passage a acquis, pas un simple reclic sur le meme niveau.
+        if (estAcquis(niveau) && !(precedente !== null && estAcquis(precedente))) celebrate()
+        return
       }
+      setNiveauxNotions(etat => {
+        const suivant = { ...etat }
+        if (precedente === null) delete suivant[cle]
+        else suivant[cle] = precedente
+        return suivant
+      })
+      setErreur(r.message)
     })
   }
 
-  function definirCritere(eleveId: string, critereId: string, acquis: boolean) {
+  function definirCritere(eleveId: string, critereId: string, niveau: Niveau) {
     const cle = cleObservation(eleveId, critereId)
     const precedente = valeurCritere(eleveId, critereId)
     setErreur('')
-    setAcquisCriteres(etat => ({ ...etat, [cle]: acquis }))
+    setNiveauxCriteres(etat => ({ ...etat, [cle]: niveau }))
 
     startTransition(async () => {
-      const r = await definirAcquisitionCritere(critereId, eleveId, acquis)
+      const r = await definirNiveauCritere(critereId, eleveId, niveau)
       if (!r.ok) {
-        setAcquisCriteres(etat => {
+        setNiveauxCriteres(etat => {
           const suivant = { ...etat }
           if (precedente === null) delete suivant[cle]
           else suivant[cle] = precedente
@@ -308,7 +384,7 @@ export default function StudentTracking({
         return
       }
       setCriteres(etat => etat.filter(item => item.id !== critere.id))
-      setAcquisCriteres(etat => Object.fromEntries(
+      setNiveauxCriteres(etat => Object.fromEntries(
         Object.entries(etat).filter(([cle]) => !cle.endsWith(`|${critere.id}`)),
       ))
     })
@@ -364,8 +440,15 @@ export default function StudentTracking({
   async function generateBilan(eleve: Eleve, matiere: string, items: string[]) {
     const current = getAppr(eleve.id, matiere)
     const observations = observationsEleve(eleve.id, matiere, items)
-    const itemsAcquis = observations.filter(item => item.valeur === true).map(item => item.libelle)
-    const itemsNonAcquis = observations.filter(item => item.valeur === false).map(item => item.libelle)
+    // La route IA ne connaît que deux paquets. « Partiellement atteint » va
+    // avec ce qui reste à travailler : c'est ce que l'enseignant veut lire dans
+    // le bilan, et le prénom ne part toujours pas (convention RGPD).
+    const itemsAcquis = observations
+      .filter(item => item.valeur !== null && estAcquis(item.valeur))
+      .map(item => item.libelle)
+    const itemsNonAcquis = observations
+      .filter(item => item.valeur !== null && !estAcquis(item.valeur))
+      .map(item => item.libelle)
     setBilanLoading(cleAppreciation(eleve.id, matiere))
     try {
       const response = await fetch('/api/ia-bilan', {
@@ -416,10 +499,12 @@ export default function StudentTracking({
       observations: premiereLigne,
       lignes: eleves.map(eleve => {
         const observations = observationsEleve(eleve.id, matiere, items)
-        const acquis = observations.filter(item => item.valeur === true).length
+        const acquis = observations.filter(
+          item => item.valeur !== null && estAcquis(item.valeur),
+        ).length
         return {
           prenom: eleve.prenom,
-          acquis: observations.map(item => item.valeur),
+          niveaux: observations.map(item => (item.valeur ? ABREVIATION_NIVEAU[item.valeur] : null)),
           progres: `${acquis}/${observations.length}`,
           bilan: statutLabel(getAppr(eleve.id, matiere).statut),
           commentaire: getAppr(eleve.id, matiere).commentaire,
@@ -485,10 +570,13 @@ export default function StudentTracking({
 
       {open && (
         <div className="space-y-7">
-          <p className="text-sm text-gray-600">
-            Chaque notion conserve son suivi global. Tu peux ajouter les points précis que tu veux observer,
-            puis choisir Acquis ou Non acquis pour chaque élève.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">
+              Chaque notion conserve son suivi global. Tu peux ajouter les points précis que tu
+              veux observer, puis situer chaque élève sur les quatre niveaux du livret.
+            </p>
+            <LegendeNiveaux />
+          </div>
 
           {erreur && (
             <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -501,7 +589,7 @@ export default function StudentTracking({
               <h3 className="font-bold text-violet-800">👀 Ma classe d’un coup d’œil</h3>
               <p className="mt-1 text-sm text-gray-600">
                 Clique sur un élève pour déplier son détail. Le chiffre indique les points
-                observés qui sont acquis.
+                observés qui sont atteints.
               </p>
 
               <div className="mt-3 overflow-x-auto">
@@ -581,7 +669,9 @@ export default function StudentTracking({
                                                 const v = valeurCritere(ligne.eleveId, critere.id)
                                                 return (
                                                   <li key={critere.id}>
-                                                    {v === true ? '✓' : v === false ? '✗' : '–'}{' '}
+                                                    <span className="font-bold">
+                                                      {v ? ABREVIATION_NIVEAU[v] : '–'}
+                                                    </span>{' '}
                                                     {critere.libelle}
                                                   </li>
                                                 )
@@ -813,7 +903,7 @@ export default function StudentTracking({
                                   <p className="text-sm font-medium text-gray-800">Notion dans son ensemble</p>
                                   <p className="text-xs text-gray-500">Suivi historique conservé</p>
                                 </div>
-                                <BoutonsAcquisition
+                                <BoutonsNiveau
                                   valeur={valeurNotion(eleve.id, matiere, notion)}
                                   onChange={valeur => definirNotion(eleve.id, matiere, notion, valeur)}
                                   disabled={isPending}
@@ -823,7 +913,7 @@ export default function StudentTracking({
                               {criteresNotion.map(critere => (
                                 <div key={critere.id} className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
                                   <p className="text-sm text-gray-700">{critere.libelle}</p>
-                                  <BoutonsAcquisition
+                                  <BoutonsNiveau
                                     valeur={valeurCritere(eleve.id, critere.id)}
                                     onChange={valeur => definirCritere(eleve.id, critere.id, valeur)}
                                     disabled={isPending}

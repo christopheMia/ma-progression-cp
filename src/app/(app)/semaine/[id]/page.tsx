@@ -41,7 +41,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const { data: acquisitionsCriteres } = idsCriteres.length > 0
     ? await supabase
       .from('acquisitions_criteres')
-      .select('critere_id, eleve_id, acquis')
+      .select('critere_id, eleve_id, niveau, acquis')
       .in('critere_id', idsCriteres)
     : { data: [] }
 

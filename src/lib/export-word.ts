@@ -99,7 +99,8 @@ export async function exporterSuiviWord(opts: {
   observations: string[]
   lignes: Array<{
     prenom: string
-    acquis: Array<boolean | null>
+    /** Le niveau abrégé (NA, PA, A, D), ou null quand rien n'est renseigné. */
+    niveaux: Array<string | null>
     progres: string
     bilan: string
     commentaire: string
@@ -122,7 +123,7 @@ export async function exporterSuiviWord(opts: {
     new TableRow({
       children: [
         makeCell(l.prenom, true),
-        ...l.acquis.map(a => makeCell(a === true ? '✓' : a === false ? 'Non acquis' : '')),
+        ...l.niveaux.map(niveau => makeCell(niveau ?? '')),
         makeCell(l.progres),
         makeCell(l.bilan),
         makeCell(l.commentaire),
