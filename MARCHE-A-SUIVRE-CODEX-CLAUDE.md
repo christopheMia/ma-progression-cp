@@ -407,8 +407,10 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
-- **2026-07-27 (soir) - Claude - ÉTAPE 1 FAITE : l'écran du suivi est passé à quatre niveaux.**
-  Codé, testé, pas encore publié (en attente du feu vert de Christophe).
+- **2026-07-27 (soir) - Claude - ÉTAPE 1 FAITE ET EN LIGNE : le suivi est passé à quatre niveaux.**
+  Commit **`b88b3da`**, poussé sur `origin/main`, déploiement Vercel de production prêt
+  et vérifié (le domaine répond et redirige vers `/connexion`). Christophe a donné son
+  feu vert après avoir précisé que les données de suivi actuelles sont des tests.
   **61 suites, 507 tests, zéro échec. Types propres. Build de production réussi.**
 
   **Nouveau module `src/lib/niveaux.ts`** (6 tests) : l'échelle du LSU, une seule fois
@@ -450,8 +452,14 @@ l'historique.)
   `niveau`. L'écran la relit par l'ancien booléen (`niveauDepuisAcquis`) au lieu de
   l'afficher vierge. Un test le vérifie avec une ligne sans `niveau`.
 
-  **À faire quand Christophe donnera le feu vert** : rien de plus côté code, mais la
-  publication change ce que Cécile voit. Ne pas pousser sans son accord (convention 7).
+  **Reste à valider à l'oeil par Christophe** (il regarde demain) : les quatre pastilles
+  tiennent-elles sur une ligne sur son téléphone, les couleurs se lisent-elles, et
+  « Ma classe d'un coup d'oeil » raconte-t-elle la bonne chose sur quatre niveaux.
+
+  **La suite, dans l'ordre** : 2) les deux corrections de `/programme` (pas de
+  rechargement complet, et « appliquer aux notions semblables ») plus la table
+  `competences_perso` ; 3) le bilan par élève et par période, avec les commentaires par
+  matière et leurs boutons de copie.
 
 - **2026-07-27 (soir) - Claude - le bilan se copie PAR MATIÈRE, à l'unité ou par paquet.**
   Demande de Christophe en reprenant le chantier : « le bilan de commentaires doit être
