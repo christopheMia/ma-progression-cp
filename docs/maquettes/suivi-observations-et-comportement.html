@@ -1,0 +1,429 @@
+<title>Le suivi des élèves : observations libres et comportement</title>
+<style>
+  :root {
+    --ground: #fbfaff;
+    --ink: #171717;
+    --muted: #6b6880;
+    --line: #e7e3f0;
+    --violet-ligne: #c3b5ea;
+    --violet: #7c3aed;
+    --violet-ink: #5b21b6;
+    --violet-tint: #f7f5ff;
+
+    /* Le comportement : trois etats, jamais la couleur seule */
+    --pluie: #dc2626;   --pluie-bg: #fef2f2;
+    --nuage: #d97706;   --nuage-bg: #fffbeb;
+    --soleil: #059669;  --soleil-bg: #ecfdf5;
+
+    --radius: 16px;
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--ground); color: var(--ink);
+    font: 16px/1.55 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 1.5rem 1rem 4rem;
+  }
+  .page { max-width: 56rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.75rem; }
+
+  header h1 { font-size: 1.5rem; margin: .2rem 0 .5rem; }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--violet); font-weight: 700; margin: 0;
+  }
+  header p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  section > .titre-ecran { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; margin-bottom: .35rem; }
+  section h2 { font-size: 1.15rem; margin: 0; }
+  .ou { font-size: .8rem; color: var(--muted); }
+  .intro { margin: 0 0 .9rem; font-size: .92rem; color: var(--muted); }
+
+  .ecran { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem; }
+
+  .barre { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-bottom: 1rem; }
+  .barre label { font-size: .85rem; font-weight: 700; }
+  select, input[type="date"] {
+    font: inherit; font-size: .88rem; font-weight: 700;
+    border: 1px solid var(--violet-ligne); border-radius: 8px;
+    padding: .3rem .6rem; background: #fff; color: var(--ink);
+  }
+  .compteur { color: var(--muted); font-size: .8rem; }
+
+  .sous-titre {
+    font-size: .74rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; margin: 0 0 .45rem;
+  }
+
+  /* Les trois etats du comportement */
+  .meteo { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .m {
+    display: flex; align-items: center; gap: .45rem;
+    border: 2px solid var(--line); background: #fff; color: var(--muted);
+    border-radius: 12px; padding: .5rem .8rem; font: inherit; font-size: .88rem;
+    font-weight: 700; cursor: pointer;
+  }
+  .m .icone { font-size: 1.15rem; line-height: 1; }
+  .m:hover { border-color: var(--violet-ligne); }
+  .m.on-pluie  { background: var(--pluie-bg);  border-color: var(--pluie);  color: var(--pluie); }
+  .m.on-nuage  { background: var(--nuage-bg);  border-color: var(--nuage);  color: var(--nuage); }
+  .m.on-soleil { background: var(--soleil-bg); border-color: var(--soleil); color: var(--soleil); }
+
+  /* La frise de la periode */
+  .frise { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; margin-top: .5rem; }
+  .sem {
+    width: 2.4rem; height: 2.4rem; border-radius: 9px; border: 2px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: .62rem; font-weight: 700; color: var(--muted); background: #fff;
+  }
+  .sem .p { font-size: .9rem; line-height: 1; }
+  .sem.pluie  { background: var(--pluie-bg);  border-color: var(--pluie);  color: var(--pluie); }
+  .sem.nuage  { background: var(--nuage-bg);  border-color: var(--nuage);  color: var(--nuage); }
+  .sem.soleil { background: var(--soleil-bg); border-color: var(--soleil); color: var(--soleil); }
+  .sem.actuelle { outline: 2px solid var(--violet); outline-offset: 2px; }
+
+  /* Les observations */
+  .obs { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+  .obs li {
+    border: 1px solid var(--line); border-radius: 11px; padding: .55rem .7rem; background: #fff;
+  }
+  .obs .date {
+    font-size: .74rem; font-weight: 700; color: var(--violet-ink);
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .obs .texte {
+    margin-top: .3rem; font-size: .9rem;
+    border: 1px solid var(--violet-ligne); border-radius: 7px; padding: .35rem .5rem;
+    outline: none; background: #fff;
+  }
+  .obs .texte:focus { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
+  .retirer {
+    float: right; border: none; background: none; color: var(--muted);
+    font: inherit; font-size: .78rem; cursor: pointer; text-decoration: underline;
+  }
+
+  .ajout { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .6rem; }
+  .bouton {
+    border-radius: 10px; padding: .45rem .85rem; font: inherit; font-size: .85rem;
+    font-weight: 700; cursor: pointer;
+    border: 1px solid var(--violet); background: var(--violet); color: #fff;
+  }
+  .bouton.secondaire { background: #fff; color: var(--violet-ink); }
+  .bouton:hover { filter: brightness(1.08); }
+
+  .bloc { border-top: 1px solid var(--line); margin-top: 1.1rem; padding-top: .9rem; }
+
+  .zone-texte {
+    background: #fff; border: 2px solid var(--violet-ligne); border-radius: 8px;
+    padding: .6rem .7rem; font-size: .88rem; min-height: 4rem; margin-top: .5rem;
+  }
+  .zone-texte:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
+
+  .legende { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; margin-top: .7rem; font-size: .8rem; color: var(--muted); }
+  .aide { font-size: .78rem; color: var(--muted); margin: .45rem 0 0; }
+  .indice { font-size: .8rem; color: var(--violet-ink); background: var(--violet-tint); border-radius: 8px; padding: .35rem .6rem; display: inline-block; margin: 0 0 .8rem; }
+
+  .structure {
+    margin-top: 1rem; background: var(--violet-tint); border: 1px solid var(--line);
+    border-radius: 12px; padding: .85rem 1rem;
+  }
+  .structure h4 {
+    font-size: .82rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--violet-ink); margin: 0 0 .5rem;
+  }
+  .structure ul { margin: 0; padding-left: 1.1rem; font-size: .87rem; }
+  .structure li { margin-bottom: .4rem; }
+  code { font-size: .84rem; background: var(--violet-tint); padding: .05rem .3rem; border-radius: 4px; }
+  .question { border: 2px solid var(--violet); border-radius: var(--radius); padding: 1.1rem; }
+  .question h2 { color: var(--violet-ink); font-size: 1.05rem; margin: 0 0 .5rem; }
+</style>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">Ma Progression CP · proposition du 28 juillet</p>
+  <h1>Le suivi des élèves, en texte libre</h1>
+  <p>
+    Fini les cases par notion et par critère. Un élève, une pastille de comportement
+    pour la semaine, et des observations écrites quand tu les fais. Tout réagit,
+    essaie.
+  </p>
+</header>
+
+<section>
+  <div class="titre-ecran">
+    <h2>Le suivi de la semaine</h2>
+    <span class="ou">fiche d'une semaine, bloc « Suivi des élèves »</span>
+  </div>
+
+  <div class="ecran">
+    <div class="barre">
+      <label for="sel-eleve">Élève</label>
+      <select id="sel-eleve"></select>
+      <span class="compteur" id="compteur"></span>
+      <span style="margin-left:auto" class="compteur">Semaine 12 · du 24 au 28 novembre</span>
+    </div>
+
+    <p class="indice">Clique une météo, écris une observation, change d'élève.</p>
+
+    <p class="sous-titre">Comment s'est passée la semaine</p>
+    <div class="meteo" id="meteo" role="radiogroup" aria-label="Comportement de la semaine"></div>
+
+    <div class="bloc">
+      <p class="sous-titre">La période d'un coup d'œil</p>
+      <div class="frise" id="frise"></div>
+      <p class="legende" id="legende"></p>
+    </div>
+
+    <div class="bloc">
+      <p class="sous-titre">Mes observations</p>
+      <ul class="obs" id="observations"></ul>
+      <div class="ajout">
+        <label for="date-obs" style="font-size:.85rem;font-weight:700">Le</label>
+        <input type="date" id="date-obs" value="2026-11-26" />
+        <button type="button" class="bouton" id="btn-ajouter">Ajouter une observation</button>
+      </div>
+      <p class="aide">
+        Une observation par moment, pas une par semaine : ce que tu vois le lundi et ce
+        que tu vois le jeudi ne se mélangent pas.
+      </p>
+    </div>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li><b>Une seule pastille, pour le comportement.</b> Trois états, jamais la couleur seule : une icône différente et un mot écrit, sinon un daltonien ou une impression en noir et blanc perd toute l'information.</li>
+      <li><b>La météo plutôt que des visages.</b> Un enfant en difficulté n'est pas un enfant triste, et une famille lit mieux « semaine pluvieuse » qu'un smiley qui boude.</li>
+      <li>La frise montre la période entière : c'est elle qui devient le bilan de comportement du livret.</li>
+      <li>Les observations sont <b>datées au calendrier</b> et modifiables sur place. Elles ne portent pas de matière.</li>
+      <li>Plus de <code>criteres_observation</code>, plus d'<code>acquisitions</code> : le suivi ne coche plus rien, il raconte.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="question">
+  <h2>Le point que ça soulève, et ce que je propose</h2>
+  <p style="font-size:.92rem;margin:0 0 .6rem">
+    Les observations ne portent plus de matière. Elles ne peuvent donc plus alimenter
+    les blocs de commentaire par matière du livret, qui attendaient « ton mot de la
+    semaine 9 » rangé en français ou en maths.
+  </p>
+  <p style="font-size:.92rem;margin:0 0 .6rem">
+    <b>Ma proposition</b> : le livret officiel a justement deux niveaux de commentaire.
+    Un par discipline, et une <b>appréciation générale</b> sur l'élève. On les sépare
+    proprement :
+  </p>
+  <ul style="font-size:.92rem;margin:0 0 .6rem;padding-left:1.2rem">
+    <li>les <b>commentaires par matière</b> se construisent depuis les compétences positionnées, comme aujourd'hui ;</li>
+    <li>l'<b>appréciation générale</b> se construit depuis tes observations datées et la frise de comportement de la période, avec son propre bouton de copie.</li>
+  </ul>
+  <p style="font-size:.92rem;margin:0">
+    Chaque chose retombe là où elle a du sens, et rien ne se perd. Si tu préfères que
+    les observations portent quand même une matière, dis-le : c'est un menu déroulant
+    de plus au moment d'écrire.
+  </p>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var METEO = [
+    { code: "pluie",  icone: "🌧", mot: "Difficile" },
+    { code: "nuage",  icone: "🌤", mot: "À surveiller" },
+    { code: "soleil", icone: "☀️", mot: "Ça va bien" }
+  ];
+
+  var SEMAINE_COURANTE = 12;
+  var SEMAINES_PERIODE = [9, 10, 11, 12, 13, 14, 15];
+
+  var ELEVES = [
+    { nom: "Lina",
+      comportement: { 9: "soleil", 10: "soleil", 11: "nuage", 12: "soleil" },
+      observations: [
+        { date: "2026-11-24", texte: "Très concentrée en lecture, a lu son texte devant le groupe." },
+        { date: "2026-11-26", texte: "A demandé de l'aide d'elle-même pour la copie. C'est nouveau." }
+      ] },
+    { nom: "Tom",
+      comportement: { 9: "nuage", 10: "pluie", 11: "nuage", 12: "nuage" },
+      observations: [
+        { date: "2026-11-25", texte: "Difficile de rester assis l'après-midi. Mieux le matin." }
+      ] },
+    { nom: "Jade", comportement: {}, observations: [] },
+    { nom: "Hugo", comportement: { 9: "soleil", 10: "soleil" }, observations: [] }
+  ];
+
+  var i = 0;
+  var eleve = function () { return ELEVES[i]; };
+
+  var selEleve = document.getElementById("sel-eleve");
+  var compteur = document.getElementById("compteur");
+  var meteo = document.getElementById("meteo");
+  var frise = document.getElementById("frise");
+  var listeObs = document.getElementById("observations");
+  var dateObs = document.getElementById("date-obs");
+
+  ELEVES.forEach(function (e, n) {
+    var o = document.createElement("option");
+    o.value = String(n);
+    o.textContent = e.nom;
+    selEleve.appendChild(o);
+  });
+  selEleve.addEventListener("change", function () {
+    i = Number(selEleve.value);
+    tout();
+  });
+
+  function dessinerMeteo() {
+    meteo.textContent = "";
+    var choix = eleve().comportement[SEMAINE_COURANTE] || "";
+    METEO.forEach(function (m) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "m" + (m.code === choix ? " on-" + m.code : "");
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", m.code === choix ? "true" : "false");
+      b.setAttribute("aria-label", eleve().nom + ", semaine " + SEMAINE_COURANTE + " : " + m.mot);
+
+      var icone = document.createElement("span");
+      icone.className = "icone";
+      icone.setAttribute("aria-hidden", "true");
+      icone.textContent = m.icone;
+      b.appendChild(icone);
+      b.appendChild(document.createTextNode(m.mot));
+
+      b.addEventListener("click", function () {
+        /* Recliquer le meme etat l'enleve : on peut se tromper. */
+        if (eleve().comportement[SEMAINE_COURANTE] === m.code) {
+          delete eleve().comportement[SEMAINE_COURANTE];
+        } else {
+          eleve().comportement[SEMAINE_COURANTE] = m.code;
+        }
+        dessinerMeteo();
+        dessinerFrise();
+        majCompteur();
+      });
+      meteo.appendChild(b);
+    });
+  }
+
+  function dessinerFrise() {
+    frise.textContent = "";
+    SEMAINES_PERIODE.forEach(function (s) {
+      var code = eleve().comportement[s];
+      var m = METEO.filter(function (x) { return x.code === code; })[0];
+      var d = document.createElement("div");
+      d.className = "sem" + (code ? " " + code : "") + (s === SEMAINE_COURANTE ? " actuelle" : "");
+      d.setAttribute("title", "Semaine " + s + (m ? " : " + m.mot : " : rien de noté"));
+
+      var p = document.createElement("span");
+      p.className = "p";
+      p.setAttribute("aria-hidden", "true");
+      p.textContent = m ? m.icone : "·";
+      d.appendChild(p);
+
+      var n = document.createElement("span");
+      n.textContent = "S" + s;
+      d.appendChild(n);
+
+      var lu = document.createElement("span");
+      lu.style.position = "absolute";
+      lu.style.width = "1px";
+      lu.style.height = "1px";
+      lu.style.overflow = "hidden";
+      lu.style.clip = "rect(0 0 0 0)";
+      lu.textContent = "Semaine " + s + (m ? " : " + m.mot : " : rien de noté");
+      d.appendChild(lu);
+
+      frise.appendChild(d);
+    });
+  }
+
+  function majCompteur() {
+    var c = eleve().comportement;
+    var n = { pluie: 0, nuage: 0, soleil: 0 };
+    SEMAINES_PERIODE.forEach(function (s) { if (c[s]) n[c[s]]++; });
+    var bouts = [];
+    if (n.soleil) bouts.push(n.soleil + (n.soleil > 1 ? " semaines qui vont bien" : " semaine qui va bien"));
+    if (n.nuage) bouts.push(n.nuage + " à surveiller");
+    if (n.pluie) bouts.push(n.pluie + " difficile" + (n.pluie > 1 ? "s" : ""));
+    compteur.textContent = bouts.length ? bouts.join(", ") : "rien de noté sur la période";
+  }
+
+  function dessinerObservations() {
+    listeObs.textContent = "";
+    var liste = eleve().observations.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+
+    if (!liste.length) {
+      var vide = document.createElement("li");
+      vide.className = "aide";
+      vide.style.border = "none";
+      vide.textContent = "Rien d'écrit pour l'instant sur cette période.";
+      listeObs.appendChild(vide);
+      return;
+    }
+
+    liste.forEach(function (o) {
+      var li = document.createElement("li");
+
+      var retirer = document.createElement("button");
+      retirer.type = "button";
+      retirer.className = "retirer";
+      retirer.textContent = "retirer";
+      retirer.setAttribute("aria-label", "Retirer l'observation du " + enFrancais(o.date));
+      retirer.addEventListener("click", function () {
+        eleve().observations = eleve().observations.filter(function (x) { return x !== o; });
+        dessinerObservations();
+      });
+      li.appendChild(retirer);
+
+      var date = document.createElement("span");
+      date.className = "date";
+      date.textContent = "📅 " + enFrancais(o.date);
+      li.appendChild(date);
+
+      var txt = document.createElement("div");
+      txt.className = "texte";
+      txt.contentEditable = "true";
+      txt.setAttribute("role", "textbox");
+      txt.setAttribute("aria-label", "Observation du " + enFrancais(o.date));
+      txt.textContent = o.texte;
+      txt.addEventListener("input", function () { o.texte = txt.textContent; });
+      li.appendChild(txt);
+
+      listeObs.appendChild(li);
+    });
+  }
+
+  function enFrancais(iso) {
+    var p = iso.split("-");
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  document.getElementById("btn-ajouter").addEventListener("click", function () {
+    eleve().observations.push({ date: dateObs.value || "2026-11-26", texte: "" });
+    dessinerObservations();
+    var champs = listeObs.querySelectorAll(".texte");
+    if (champs.length) champs[champs.length - 1].focus();
+  });
+
+  var legende = document.getElementById("legende");
+  METEO.forEach(function (m) {
+    var s = document.createElement("span");
+    s.textContent = m.icone + " " + m.mot;
+    legende.appendChild(s);
+  });
+
+  function tout() {
+    dessinerMeteo();
+    dessinerFrise();
+    dessinerObservations();
+    majCompteur();
+  }
+  tout();
+})();
+</script>
