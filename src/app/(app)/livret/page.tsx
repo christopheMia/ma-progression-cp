@@ -1,20 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import Livret from '@/components/livret/Livret'
-import type { ObservationPeriode, Rattachement } from '@/lib/bilan-periode'
+import Livret, { type CompetenceBilan } from '@/components/livret/Livret'
 import type { Formulation, MotDeLaSemaine } from '@/lib/briques-bilan'
-import { estNiveau, niveauDepuisAcquis } from '@/lib/niveaux'
 
 /**
  * Le livret d'une période, élève par élève.
  *
- * Le socle des commentaires : tout ce qui a été observé pendant la période
- * converge ici, et c'est d'ici que l'enseignante copie, matière par matière,
- * vers le LSU officiel.
+ * Depuis le virage du 28/07/2026, il se remplit depuis le PROGRAMME OFFICIEL :
+ * les compétences cochées dans « Programme couvert » arrivent telles quelles,
+ * avec leur domaine. Plus rien n'est déduit du manuel, plus rien n'est calculé.
  *
- * Cette page LIT et compose ; tous les calculs sont dans des fonctions pures
- * (`bilan-periode.ts`, `briques-bilan.ts`), testées à part.
+ * Cette page LIT et compose ; l'assemblage des briques et la rédaction sont
+ * dans `briques-bilan.ts`, testés à part.
  */
 export default async function LivretPage() {
   const supabase = await createClient()
@@ -29,7 +27,7 @@ export default async function LivretPage() {
     { data: eleves },
     { data: semaines },
     { data: competences },
-    { data: liens },
+    { data: travaillees },
     { data: positions },
     { data: appreciationsPeriode },
     { data: formulations },
@@ -38,7 +36,7 @@ export default async function LivretPage() {
     supabase.from('semaines').select('id, numero, periode_numero').eq('class_id', classe.id).order('numero'),
     supabase.from('competences_officielles').select('id, matiere, domaine, libelle')
       .eq('niveau', 'CP').order('matiere').order('ordre'),
-    supabase.from('notion_competence').select('matiere, semaine_numero, notion, competence_id')
+    supabase.from('competences_travaillees').select('periode_numero, competence_id')
       .eq('class_id', classe.id),
     supabase.from('positionnements_periode').select('eleve_id, periode_numero, competence_id, niveau')
       .eq('class_id', classe.id),
@@ -51,79 +49,15 @@ export default async function LivretPage() {
   ])
 
   const idsSemaines = (semaines ?? []).map(s => s.id as string)
-  const [{ data: acquisitions }, { data: criteres }, { data: motsHebdo }] = idsSemaines.length > 0
-    ? await Promise.all([
-      supabase.from('acquisitions').select('semaine_id, eleve_id, matiere, grapheme, niveau, acquis')
-        .in('semaine_id', idsSemaines),
-      supabase.from('criteres_observation').select('id, semaine_id, matiere, notion')
-        .in('semaine_id', idsSemaines),
-      supabase.from('appreciations').select('semaine_id, eleve_id, matiere, commentaire')
-        .in('semaine_id', idsSemaines),
-    ])
-    : [{ data: [] }, { data: [] }, { data: [] }]
-
-  const idsCriteres = (criteres ?? []).map(c => c.id as string)
-  const { data: acquisitionsCriteres } = idsCriteres.length > 0
-    ? await supabase.from('acquisitions_criteres')
-      .select('critere_id, eleve_id, niveau, acquis').in('critere_id', idsCriteres)
+  const { data: motsHebdo } = idsSemaines.length > 0
+    ? await supabase.from('appreciations').select('semaine_id, eleve_id, matiere, commentaire')
+      .in('semaine_id', idsSemaines)
     : { data: [] }
-
-  // ── Mise en forme pour les fonctions pures ────────────────────────────────
 
   const semaineParId = new Map((semaines ?? []).map(s => [s.id as string, s]))
   const periodes = [...new Set(
     (semaines ?? []).map(s => s.periode_numero as number | null).filter((p): p is number => p != null),
   )].sort((a, b) => a - b)
-
-  const semainesParPeriode: Record<number, number[]> = {}
-  for (const periode of periodes) {
-    semainesParPeriode[periode] = (semaines ?? [])
-      .filter(s => s.periode_numero === periode)
-      .map(s => s.numero as number)
-  }
-
-  const rattachements: Rattachement[] = (liens ?? []).map(l => ({
-    matiere: l.matiere as string,
-    semaine: l.semaine_numero as number,
-    notion: l.notion as string,
-    competenceId: l.competence_id as string,
-  }))
-
-  // Le suivi d'une notion, et celui de ses critères, comptent tous les deux :
-  // une enseignante peut ne renseigner que l'un des deux.
-  const observations: Record<string, ObservationPeriode[]> = {}
-  const ajouter = (eleveId: string, observation: ObservationPeriode) => {
-    (observations[eleveId] ??= []).push(observation)
-  }
-
-  for (const a of acquisitions ?? []) {
-    const semaine = semaineParId.get(a.semaine_id as string)
-    if (!semaine) continue
-    const niveau = estNiveau(a.niveau) ? a.niveau : niveauDepuisAcquis(a.acquis as boolean)
-    if (!niveau) continue
-    ajouter(a.eleve_id as string, {
-      semaine: semaine.numero as number,
-      matiere: a.matiere as string,
-      notion: a.grapheme as string,
-      niveau,
-    })
-  }
-
-  const critereParId = new Map((criteres ?? []).map(c => [c.id as string, c]))
-  for (const ac of acquisitionsCriteres ?? []) {
-    const critere = critereParId.get(ac.critere_id as string)
-    if (!critere) continue
-    const semaine = semaineParId.get(critere.semaine_id as string)
-    if (!semaine) continue
-    const niveau = estNiveau(ac.niveau) ? ac.niveau : niveauDepuisAcquis(ac.acquis as boolean)
-    if (!niveau) continue
-    ajouter(ac.eleve_id as string, {
-      semaine: semaine.numero as number,
-      matiere: critere.matiere as string,
-      notion: critere.notion as string,
-      niveau,
-    })
-  }
 
   // Les commentaires écrits chaque semaine remontent dans le bilan, rangés par
   // élève et par période, étiquetés de leur semaine.
@@ -176,15 +110,16 @@ export default async function LivretPage() {
           genre: (e.genre as 'f' | 'm' | null) ?? null,
         }))}
         periodes={periodes}
-        semainesParPeriode={semainesParPeriode}
         competences={(competences ?? []).map(c => ({
           id: c.id as string,
           matiere: c.matiere as string,
           domaine: c.domaine as string,
           libelle: c.libelle as string,
+        })) satisfies CompetenceBilan[]}
+        travaillees={(travaillees ?? []).map(t => ({
+          periode: t.periode_numero as number,
+          competenceId: t.competence_id as string,
         }))}
-        rattachements={rattachements}
-        observations={observations}
         motsDeLaSemaine={mots}
         formulations={formulationsParCompetence}
         positions={(positions ?? []).map(p => ({

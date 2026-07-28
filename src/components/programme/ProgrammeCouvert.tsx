@@ -2,15 +2,17 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { Undo2 } from 'lucide-react'
-import NotionLigne, { type CompChoix } from '@/components/programme/NotionLigne'
-import ProposerRattachementsButton from '@/components/programme/ProposerRattachementsButton'
 import {
-  detacherNotions,
-  restaurerRattachements,
-  type CibleDetachement,
-  type LienSupprime,
-} from '@/lib/actions/mapping'
-import type { NotionGroupee } from '@/lib/programme-couvert'
+  definirCompetenceTravaillee,
+  definirDomaineTravaille,
+} from '@/lib/actions/competences-travaillees'
+
+export type Competence = {
+  id: string
+  matiere: string
+  domaine: string
+  libelle: string
+}
 
 const LIBELLE_MATIERE: Record<string, string> = {
   francais: '📖 Français',
@@ -27,184 +29,144 @@ function nommer(matiere: string) {
 }
 
 /**
- * L'écran « Programme couvert », navigable.
+ * « Programme couvert » : cocher les compétences officielles travaillées.
  *
- * Refait le 28/07/2026. Christophe : « il faut défiler pendant une heure pour
- * accéder à chaque matière, c'est horrible. » La page rendait toutes les
- * matières, toutes les périodes et toutes les semaines d'un coup, soit plus de
- * six mille lignes. Quatre changements :
+ * Virage du 28/07/2026. L'écran partait des notions du manuel, qu'il fallait
+ * rattacher une par une aux compétences. Christophe : « c'est encore trop
+ * détaillé, la base doit être les compétences officielles uniquement, pas
+ * besoin de jour 1, jour 2 ». Le manuel sert à préparer la classe, le programme
+ * à remplir le livret.
  *
- *   - une LIGNE PAR NOTION et non par semaine (le gros du problème) ;
- *   - une MATIÈRE À LA FOIS, choisie par des onglets qui portent l'avancement ;
- *   - les PÉRIODES REPLIÉES, seule la première inachevée ouverte ;
- *   - un filtre « ne montrer que ce qui reste », allumé par défaut, parce
- *     qu'on vient ici pour rattacher et pas pour relire ce qui est fait.
+ * Une seule saisie : la case « travaillé pendant cette période ». Elle vaut
+ * pour la classe entière ; le positionnement, lui, reste par élève.
  */
 export default function ProgrammeCouvert({
-  notions,
-  competencesParMatiere,
-  nbCompetences,
-  couvertesParMatiere,
+  competences,
+  periodes,
+  travaillees,
 }: {
-  notions: NotionGroupee[]
-  competencesParMatiere: Record<string, CompChoix[]>
-  nbCompetences: Record<string, number>
-  couvertesParMatiere: Record<string, number>
+  competences: Competence[]
+  periodes: number[]
+  travaillees: { periode: number; competenceId: string }[]
 }) {
-  const matieres = useMemo(() => [...new Set(notions.map(n => n.matiere))], [notions])
+  const matieres = useMemo(() => [...new Set(competences.map(c => c.matiere))], [competences])
   const [matiere, setMatiere] = useState(matieres[0] ?? '')
-  const [resteSeulement, setResteSeulement] = useState(true)
+  const [periode, setPeriode] = useState(periodes[0] ?? 1)
   const [isPending, startTransition] = useTransition()
   const [erreur, setErreur] = useState('')
 
-  // Le rattachement de chaque notion vit ici : c'est aussi d'ici que partent
-  // les detachements en masse, et deux sources de verite divergeraient.
-  const cle = (m: string, notion: string) => `${m}|${notion}`
-  const [rattachees, setRattachees] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {}
-    for (const n of notions) if (n.competenceId && !n.melange) init[cle(n.matiere, n.notion)] = n.competenceId
-    return init
-  })
-  const [melanges, setMelanges] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {}
-    for (const n of notions) if (n.melange) init[cle(n.matiere, n.notion)] = true
-    return init
-  })
+  const cle = (p: number, id: string) => `${p}|${id}`
+  const [prises, setPrises] = useState<Set<string>>(
+    () => new Set(travaillees.map(t => cle(t.periode, t.competenceId))),
+  )
+  /** Ce qu'on vient de cocher ou décocher en masse, tant qu'on peut l'annuler. */
+  const [annulable, setAnnulable] = useState<
+    { ids: string[]; etaient: boolean; quoi: string } | null
+  >(null)
 
-  /** Ce qu'on vient de retirer, tant qu'on peut encore l'annuler. */
-  const [annulable, setAnnulable] = useState<{ liens: LienSupprime[]; quoi: string } | null>(null)
+  const estPrise = (id: string) => prises.has(cle(periode, id))
 
-  const compte = useMemo(() => {
-    const total: Record<string, { faites: number; total: number }> = {}
-    for (const n of notions) {
-      const c = total[n.matiere] ?? { faites: 0, total: 0 }
-      c.total++
-      if (rattachees[cle(n.matiere, n.notion)]) c.faites++
-      total[n.matiere] = c
+  const deLaMatiere = useMemo(
+    () => competences.filter(c => c.matiere === matiere),
+    [competences, matiere],
+  )
+
+  const parDomaine = useMemo(() => {
+    const groupes: { domaine: string; liste: Competence[] }[] = []
+    for (const c of deLaMatiere) {
+      const dernier = groupes[groupes.length - 1]
+      if (dernier && dernier.domaine === c.domaine) dernier.liste.push(c)
+      else groupes.push({ domaine: c.domaine, liste: [c] })
     }
-    return total
-  }, [notions, rattachees])
+    return groupes
+  }, [deLaMatiere])
 
-  const deLaMatiere = notions.filter(n => n.matiere === matiere)
-  const estRattachee = (n: NotionGroupee) =>
-    Boolean(rattachees[cle(n.matiere, n.notion)]) || melanges[cle(n.matiere, n.notion)]
+  function poser(ids: string[], valeur: boolean) {
+    setPrises(etat => {
+      const suivant = new Set(etat)
+      for (const id of ids) {
+        if (valeur) suivant.add(cle(periode, id))
+        else suivant.delete(cle(periode, id))
+      }
+      return suivant
+    })
+  }
 
-  function rattacher(notionTexte: string, competenceId: string) {
+  function basculer(competence: Competence) {
+    const valeur = !estPrise(competence.id)
     setErreur('')
     setAnnulable(null)
-    setRattachees(etat => ({ ...etat, [cle(matiere, notionTexte)]: competenceId }))
-    setMelanges(etat => ({ ...etat, [cle(matiere, notionTexte)]: false }))
-  }
-
-  /** Le serveur a refusé : on remet l'affichage d'avant, sans rien lui redemander. */
-  function remettre(notionTexte: string, precedente?: string) {
-    setRattachees(etat => {
-      const suivant = { ...etat }
-      if (precedente === undefined) delete suivant[cle(matiere, notionTexte)]
-      else suivant[cle(matiere, notionTexte)] = precedente
-      return suivant
-    })
-  }
-
-  /** Retire des rattachements, à n'importe quelle échelle, et garde de quoi annuler. */
-  function detacher(cibles: CibleDetachement[], quoi: string) {
-    setErreur('')
-    setRattachees(etat => {
-      const suivant = { ...etat }
-      for (const c of cibles) for (const n of c.notions) delete suivant[cle(c.matiere, n)]
-      return suivant
-    })
-    setMelanges(etat => {
-      const suivant = { ...etat }
-      for (const c of cibles) for (const n of c.notions) suivant[cle(c.matiere, n)] = false
-      return suivant
-    })
+    poser([competence.id], valeur)
 
     startTransition(async () => {
-      const r = await detacherNotions(cibles)
+      const r = await definirCompetenceTravaillee(periode, competence.id, valeur)
       if (!r.ok) {
+        poser([competence.id], !valeur)
+        setErreur(r.message)
+      }
+    })
+  }
+
+  function basculerDomaine(domaine: string, liste: Competence[], valeur: boolean) {
+    const ids = liste.map(c => c.id)
+    setErreur('')
+    poser(ids, valeur)
+
+    startTransition(async () => {
+      const r = await definirDomaineTravaille(periode, ids, valeur)
+      if (!r.ok) {
+        poser(ids, !valeur)
         setErreur(r.message)
         return
       }
-      if (r.valeur.length > 0) setAnnulable({ liens: r.valeur, quoi })
+      if (r.valeur.length > 0) {
+        setAnnulable({ ids: r.valeur, etaient: !valeur, quoi: domaine })
+      }
     })
   }
 
   function annuler() {
-    const aRemettre = annulable
-    if (!aRemettre) return
+    const retour = annulable
+    if (!retour) return
     setAnnulable(null)
-    setRattachees(etat => {
-      const suivant = { ...etat }
-      for (const lien of aRemettre.liens) suivant[cle(lien.matiere, lien.notion)] = lien.competence_id
-      return suivant
-    })
+    poser(retour.ids, retour.etaient)
 
     startTransition(async () => {
-      const r = await restaurerRattachements(aRemettre.liens)
+      const r = await definirDomaineTravaille(periode, retour.ids, retour.etaient)
       if (!r.ok) {
+        poser(retour.ids, !retour.etaient)
         setErreur(r.message)
-        setAnnulable(aRemettre)
+        setAnnulable(retour)
       }
     })
   }
 
-  function ciblesPour(liste: NotionGroupee[]): CibleDetachement[] {
-    const parMatiere = new Map<string, string[]>()
-    for (const n of liste.filter(estRattachee)) {
-      const notionsM = parMatiere.get(n.matiere) ?? []
-      notionsM.push(n.notion)
-      parMatiere.set(n.matiere, notionsM)
-    }
-    return [...parMatiere.entries()].map(([m, notionsM]) => ({ matiere: m, notions: notionsM }))
+  const compteMatiere = (m: string) => {
+    const liste = competences.filter(c => c.matiere === m)
+    return { faites: liste.filter(c => estPrise(c.id)).length, total: liste.length }
   }
 
-  function detacherEnMasse(liste: NotionGroupee[], quoi: string) {
-    const cibles = ciblesPour(liste)
-    const combien = cibles.reduce((n, c) => n + c.notions.length, 0)
-    if (combien === 0) return
-    if (!window.confirm(
-      `Retirer le rattachement de ${combien} notion${combien > 1 ? 's' : ''} (${quoi}) ? `
-      + 'Tu pourras annuler juste après.',
-    )) return
-    detacher(cibles, quoi)
-  }
+  const retenues = deLaMatiere.filter(c => estPrise(c.id)).length
 
-  const parPeriode = useMemo(() => {
-    const groupes = new Map<number | null, NotionGroupee[]>()
-    for (const n of deLaMatiere) {
-      const liste = groupes.get(n.periode) ?? []
-      liste.push(n)
-      groupes.set(n.periode, liste)
-    }
-    return [...groupes.entries()].sort((a, b) => (a[0] ?? 99) - (b[0] ?? 99))
-  }, [deLaMatiere])
-
-  // La première période inachevée s'ouvre : on arrive sur du travail à faire.
-  const premiereInachevee = parPeriode.find(([, liste]) =>
-    liste.some(n => !estRattachee(n)))?.[0] ?? null
-
-  if (matieres.length === 0) {
+  if (competences.length === 0) {
     return (
       <p className="rounded-2xl border bg-white p-5 text-sm text-gray-600">
-        Aucune progression saisie pour l’instant, donc rien à rattacher.
+        Le programme officiel n’est pas chargé, il n’y a rien à cocher.
       </p>
     )
   }
 
-  const rattacheesEnTout = notions.filter(estRattachee).length
-
   return (
     <div className="space-y-3">
-      {/* Le rattrapage : tant qu'il est la, rien n'est vraiment perdu. */}
       {annulable && (
         <div
           role="status"
           className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2"
         >
           <span className="text-sm text-violet-950">
-            {annulable.liens.length} rattachement{annulable.liens.length > 1 ? 's' : ''} retiré
-            {annulable.liens.length > 1 ? 's' : ''} ({annulable.quoi}).
+            {annulable.ids.length} compétence{annulable.ids.length > 1 ? 's' : ''}{' '}
+            {annulable.etaient ? 'décochée' : 'cochée'}{annulable.ids.length > 1 ? 's' : ''}{' '}
+            ({annulable.quoi}).
           </span>
           <button
             type="button"
@@ -233,7 +195,7 @@ export default function ProgrammeCouvert({
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Matière">
         {matieres.map(m => {
-          const c = compte[m] ?? { faites: 0, total: 0 }
+          const c = compteMatiere(m)
           const actif = m === matiere
           return (
             <button
@@ -257,117 +219,64 @@ export default function ProgrammeCouvert({
         })}
       </div>
 
-      <section className="space-y-3 rounded-2xl border bg-white p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-bold text-gray-700">
-            {nommer(matiere)}
-            <span className="ml-2 text-xs font-normal text-gray-500">
-              {couvertesParMatiere[matiere] ?? 0}/{nbCompetences[matiere] ?? 0} compétences officielles couvertes
-            </span>
-          </h2>
-          <ProposerRattachementsButton matiere={matiere} label={nommer(matiere)} />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={resteSeulement}
-              onChange={e => setResteSeulement(e.target.checked)}
-              className="h-4 w-4 accent-violet-600"
-            />
-            Ne montrer que ce qui reste à rattacher
+      <section className="space-y-2 rounded-2xl border bg-white p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm font-semibold text-gray-800">
+            Période{' '}
+            <select
+              value={periode}
+              onChange={e => { setPeriode(Number(e.target.value)); setAnnulable(null) }}
+              className="rounded-lg border px-2 py-1 font-semibold text-gray-900"
+            >
+              {periodes.map(p => <option key={p} value={p}>Période {p}</option>)}
+            </select>
           </label>
-
-          <div className="ml-auto flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => detacherEnMasse(deLaMatiere, nommer(matiere))}
-              disabled={isPending || deLaMatiere.filter(estRattachee).length === 0}
-              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-800 disabled:opacity-40"
-            >
-              Tout détacher dans {nommer(matiere)}
-            </button>
-            <button
-              type="button"
-              onClick={() => detacherEnMasse(notions, 'toutes les matières')}
-              disabled={isPending || rattacheesEnTout === 0}
-              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-800 disabled:opacity-40"
-            >
-              Tout détacher, toutes matières
-            </button>
-          </div>
+          <span className="text-sm text-gray-600">
+            {retenues === 0
+              ? 'aucune compétence retenue pour l’instant'
+              : `${retenues} compétence${retenues > 1 ? 's' : ''} retenue${retenues > 1 ? 's' : ''} en ${nommer(matiere).replace(/^\S+\s/, '')}`}
+          </span>
+          {isPending && <span className="text-xs text-gray-500">Enregistrement...</span>}
         </div>
 
-        {parPeriode.map(([periode, liste]) => {
-          const restantes = liste.filter(n => !estRattachee(n))
-          const faites = liste.length - restantes.length
-          const visibles = resteSeulement ? restantes : liste
-          const nomPeriode = periode ? `période ${periode}` : 'hors période'
+        {parDomaine.map(({ domaine, liste }) => {
+          const toutes = liste.every(c => estPrise(c.id))
           return (
-            <details
-              key={String(periode)}
-              open={periode === premiereInachevee}
-              className="rounded-xl border border-violet-100"
-            >
-              <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-violet-800">
-                {periode ? `Période ${periode}` : 'Hors période'}
-                <span className="ml-2 text-xs font-normal text-gray-600">
-                  {liste.length} notion{liste.length > 1 ? 's' : ''}
-                  {restantes.length === 0
-                    ? ' · toutes rattachées'
-                    : ` · ${restantes.length} à rattacher`}
-                </span>
-              </summary>
-
-              <div className="px-3 pb-2">
-                {faites > 0 && (
-                  <div className="flex justify-end pb-1">
-                    <button
-                      type="button"
-                      onClick={() => detacherEnMasse(liste, nomPeriode)}
-                      disabled={isPending}
-                      className="rounded-lg border border-gray-300 px-2 py-0.5 text-xs font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-800 disabled:opacity-40"
-                    >
-                      Détacher les {faites} de cette période
-                    </button>
-                  </div>
-                )}
-                {visibles.length === 0 ? (
-                  <p className="py-2 text-sm text-gray-500">
-                    Tout est rattaché ici. Décoche le filtre pour revoir ces notions.
-                  </p>
-                ) : (
-                  <ul>
-                    {visibles.map(n => (
-                      <NotionLigne
-                        key={n.notion}
-                        matiere={n.matiere}
-                        notion={n.notion}
-                        semaines={n.semaines}
-                        competenceId={rattachees[cle(n.matiere, n.notion)]}
-                        melange={melanges[cle(n.matiere, n.notion)]}
-                        competences={competencesParMatiere[matiere] ?? []}
-                        onRattachee={rattacher}
-                        onDetachee={notionTexte =>
-                          detacher([{ matiere: n.matiere, notions: [notionTexte] }], notionTexte)}
-                        onEchec={remettre}
-                      />
-                    ))}
-                  </ul>
-                )}
+            <div key={domaine}>
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-violet-50 px-2.5 py-1.5">
+                <h3 className="font-serif text-sm font-bold text-violet-900">{domaine}</h3>
+                <button
+                  type="button"
+                  onClick={() => basculerDomaine(domaine, liste, !toutes)}
+                  disabled={isPending}
+                  className="ml-auto rounded-lg border border-violet-300 bg-white px-2 py-0.5 text-xs font-semibold text-violet-800 hover:border-violet-600 disabled:opacity-50"
+                >
+                  {toutes ? 'Tout décocher' : 'Tout cocher'}
+                </button>
               </div>
-            </details>
+              <ul>
+                {liste.map(c => (
+                  <li key={c.id} className="flex items-start gap-2 border-b py-1.5 text-sm last:border-b-0">
+                    <input
+                      id={`comp-${c.id}`}
+                      type="checkbox"
+                      checked={estPrise(c.id)}
+                      onChange={() => basculer(c)}
+                      disabled={isPending}
+                      className="mt-1 h-4 w-4 shrink-0 accent-violet-600"
+                    />
+                    <label
+                      htmlFor={`comp-${c.id}`}
+                      className={`cursor-pointer ${estPrise(c.id) ? 'font-semibold text-gray-900' : 'text-gray-700'}`}
+                    >
+                      {c.libelle}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )
         })}
-
-        {(competencesParMatiere[matiere] ?? []).length === 0 && (
-          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Le programme officiel ne connaît aucune compétence pour cette matière, il n’y
-            a donc rien à quoi rattacher. Ces notions n’iront pas dans le livret tant que
-            le référentiel n’est pas complété.
-          </p>
-        )}
       </section>
     </div>
   )

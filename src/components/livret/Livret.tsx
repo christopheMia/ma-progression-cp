@@ -5,12 +5,18 @@ import { Copy } from 'lucide-react'
 import BoutonsNiveau, { LegendeNiveaux } from '@/components/ui/BoutonsNiveau'
 import BlocMatiere from '@/components/livret/BlocMatiere'
 import {
-  construireBilanPeriode,
-  type CompetenceBilan,
-  type ObservationPeriode,
-  type Rattachement,
-} from '@/lib/bilan-periode'
-import { construireBriques, type Formulation, type MotDeLaSemaine } from '@/lib/briques-bilan'
+  construireBriques,
+  type ElementLivret,
+  type Formulation,
+  type MotDeLaSemaine,
+} from '@/lib/briques-bilan'
+
+export type CompetenceBilan = {
+  id: string
+  matiere: string
+  domaine: string
+  libelle: string
+}
 import { LIBELLE_NIVEAU, estNiveau, type Niveau } from '@/lib/niveaux'
 import {
   definirPositionnement,
@@ -44,10 +50,8 @@ const cleAppreciation = (eleveId: string, periode: number, matiere: string) =>
 export default function Livret({
   eleves,
   periodes,
-  semainesParPeriode,
   competences,
-  rattachements,
-  observations,
+  travaillees,
   motsDeLaSemaine,
   formulations,
   positions,
@@ -55,10 +59,9 @@ export default function Livret({
 }: {
   eleves: Eleve[]
   periodes: number[]
-  semainesParPeriode: Record<number, number[]>
   competences: CompetenceBilan[]
-  rattachements: Rattachement[]
-  observations: Record<string, ObservationPeriode[]>
+  /** Ce que l'enseignante a coché dans « Programme couvert », par période. */
+  travaillees: { periode: number; competenceId: string }[]
   motsDeLaSemaine: Record<string, Record<number, MotDeLaSemaine[]>>
   formulations: Record<string, Formulation>
   positions: { eleveId: string; periode: number; competenceId: string; niveau: string }[]
@@ -98,19 +101,24 @@ export default function Livret({
 
   const eleve = eleves[iEleve]
 
-  // Le bilan proposé, puis ce que l'enseignante a corrigé par-dessus.
-  const elements = useMemo(() => {
+  // Les compétences cochées dans « Programme couvert » pour cette période, dans
+  // l'ordre du référentiel, avec le niveau posé pour cet élève. Rien n'est
+  // calculé : c'est l'enseignante qui coche, et c'est elle qui positionne.
+  const elements: ElementLivret[] = useMemo(() => {
     if (!eleve) return []
-    return construireBilanPeriode({
-      semaines: semainesParPeriode[periode] ?? [],
-      competences,
-      rattachements,
-      observations: observations[eleve.id] ?? [],
-    }).map(element => {
-      const corrige = niveaux[clePosition(eleve.id, periode, element.competenceId)]
-      return corrige ? { ...element, niveau: corrige, corrige: true } : { ...element, corrige: false }
-    })
-  }, [eleve, periode, semainesParPeriode, competences, rattachements, observations, niveaux])
+    const prises = new Set(
+      travaillees.filter(t => t.periode === periode).map(t => t.competenceId),
+    )
+    return competences
+      .filter(c => prises.has(c.id))
+      .map(c => ({
+        competenceId: c.id,
+        matiere: c.matiere,
+        domaine: c.domaine,
+        libelle: c.libelle,
+        niveau: niveaux[clePosition(eleve.id, periode, c.id)] ?? null,
+      }))
+  }, [eleve, periode, competences, travaillees, niveaux])
 
   const matieres = useMemo(
     () => [...new Set(elements.map(e => e.matiere))],
@@ -309,9 +317,8 @@ export default function Livret({
 
       {elements.length === 0 ? (
         <p className="rounded-2xl border bg-white p-5 text-sm text-gray-600">
-          Rien n’est encore rattaché au programme pour cette période, donc il n’y a pas
-          d’élément à positionner. Passe par « Programme couvert » pour rattacher tes
-          notions aux compétences officielles.
+          Aucune compétence cochée pour cette période, donc rien à positionner. Passe
+          par « Programme couvert » pour cocher ce que la classe a travaillé.
         </p>
       ) : (
         <>
@@ -320,8 +327,8 @@ export default function Livret({
               Ce qui a été travaillé, et où en est {eleve.prenom}
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Le niveau est proposé à partir de ton suivi de la période. Chaque ligne
-              reste modifiable, et dit d’où elle sort.
+              Les compétences cochées dans « Programme couvert », dans l’ordre du
+              livret. Pose le niveau de chaque ligne.
             </p>
 
             <div className="mt-3 overflow-x-auto">
@@ -420,7 +427,7 @@ function MatiereLignes({
   onNiveau,
 }: {
   matiere: string
-  elements: (ReturnType<typeof construireBilanPeriode>[number] & { corrige: boolean })[]
+  elements: ElementLivret[]
   prenom: string
   disabled: boolean
   onNiveau: (competenceId: string, niveau: Niveau) => void
@@ -442,18 +449,14 @@ function MatiereLignes({
         domainePrecedent = element.domaine
         return (
           <tr key={element.competenceId} className="border-b align-top">
-            <td className="py-2 pr-3 text-gray-700">{memeDomaine ? '' : element.domaine}</td>
-            <td className="py-2 pr-3">
-              <span className="text-gray-900">{element.libelle}</span>
-              <span className="mt-0.5 block text-xs text-gray-500">
-                {element.observations === 0
-                  ? 'pas encore observé'
-                  : `${element.observations} observation${element.observations > 1 ? 's' : ''}`
-                    + (element.derniereSemaine ? `, la dernière en semaine ${element.derniereSemaine}` : '')}
-                {element.corrige && ' · corrigé à la main'}
-                {element.notions.length > 0 && ` · ${element.notions.slice(0, 3).join(', ')}`}
-              </span>
+            {/* Le domaine ne se repete pas d'une ligne a l'autre, comme dans le
+                document officiel. */}
+            <td className="py-2 pr-3 font-serif text-violet-900">
+              {memeDomaine ? '' : element.domaine}
             </td>
+            {/* La competence EN GRAS, et rien en dessous : c'est exactement ce
+                qui se recopie dans le livret (demande de Christophe du 28/07). */}
+            <td className="py-2 pr-3 font-semibold text-gray-900">{element.libelle}</td>
             <td className="py-2">
               <BoutonsNiveau
                 valeur={element.niveau}

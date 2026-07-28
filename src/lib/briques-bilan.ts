@@ -16,8 +16,23 @@
  * Fonctions pures, sans React ni Supabase.
  */
 
-import type { ElementBilan } from '@/lib/bilan-periode'
 import type { Niveau } from '@/lib/niveaux'
+
+/**
+ * Une ligne du livret : une compétence officielle travaillée pendant la
+ * période, avec le niveau posé pour cet élève.
+ *
+ * Depuis le virage du 28/07/2026, elle vient directement de ce que
+ * l'enseignante a coché dans « Programme couvert ». Plus rien n'est déduit du
+ * manuel, donc la ligne ne porte plus ni compte d'observations ni notions.
+ */
+export type ElementLivret = {
+  competenceId: string
+  matiere: string
+  domaine: string
+  libelle: string
+  niveau: Niveau | null
+}
 
 export type Formulation = {
   eclat: string
@@ -42,7 +57,7 @@ export type Brique = {
 }
 
 export type EntreeBriques = {
-  elements: ElementBilan[]
+  elements: ElementLivret[]
   /** Les phrases de l'enseignante, par identifiant de compétence. */
   formulations: Record<string, Formulation>
   motsDeLaSemaine: MotDeLaSemaine[]

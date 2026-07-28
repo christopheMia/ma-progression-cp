@@ -1,20 +1,17 @@
 import {
   construireBriques,
   redigerAppreciation,
+  type ElementLivret,
   type EntreeBriques,
 } from '@/lib/briques-bilan'
-import type { ElementBilan } from '@/lib/bilan-periode'
 
-function element(p: Partial<ElementBilan> = {}): ElementBilan {
+function element(p: Partial<ElementLivret> = {}): ElementLivret {
   return {
     competenceId: 'k1',
     matiere: 'francais',
     domaine: 'Lecture',
     libelle: 'Identifier des mots',
     niveau: 'atteint',
-    observations: 3,
-    derniereSemaine: 9,
-    notions: ['Lire a'],
     ...p,
   }
 }

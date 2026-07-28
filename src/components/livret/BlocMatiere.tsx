@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Copy, Sparkles } from 'lucide-react'
 import { redigerAppreciation, type Brique, type Formulation } from '@/lib/briques-bilan'
-import type { ElementBilan } from '@/lib/bilan-periode'
+import type { ElementLivret } from '@/lib/briques-bilan'
 import { LIBELLE_NIVEAU } from '@/lib/niveaux'
 import type { Eleve, EtatAppreciation } from '@/components/livret/Livret'
 
@@ -36,7 +36,7 @@ export default function BlocMatiere({
   titre: string
   eleve: Eleve
   briques: Brique[]
-  aFormuler: ElementBilan[]
+  aFormuler: ElementLivret[]
   formulations: Record<string, Formulation>
   etat: EtatAppreciation
   choisie: boolean
@@ -205,7 +205,7 @@ function ChampFormulation({
   disabled,
   onEnregistrer,
 }: {
-  element: ElementBilan
+  element: ElementLivret
   formulation: Formulation
   disabled: boolean
   onEnregistrer: (competenceId: string, formulation: Formulation) => void

@@ -26,11 +26,6 @@ const competences = [
   { id: 'k2', matiere: 'maths', domaine: 'Nombres', libelle: 'Nommer les nombres' },
 ]
 
-const rattachements = [
-  { matiere: 'francais', semaine: 8, notion: 'Lire a', competenceId: 'k1' },
-  { matiere: 'maths', semaine: 8, notion: 'Les nombres', competenceId: 'k2' },
-]
-
 const formulations = {
   k1: {
     eclat: '', reussite: 'lit avec assurance les mots étudiés',
@@ -49,15 +44,8 @@ function afficher(surcharges: Record<string, unknown> = {}) {
     <Livret
       eleves={eleves}
       periodes={[1, 2]}
-      semainesParPeriode={{ 1: [8, 9], 2: [15] }}
       competences={competences}
-      rattachements={rattachements}
-      observations={{
-        e1: [
-          { semaine: 8, matiere: 'francais', notion: 'Lire a', niveau: 'atteint' },
-          { semaine: 8, matiere: 'maths', notion: 'Les nombres', niveau: 'partiellement' },
-        ],
-      }}
+      travaillees={[{ periode: 1, competenceId: 'k1' }, { periode: 1, competenceId: 'k2' }]}
       motsDeLaSemaine={{}}
       formulations={formulations}
       positions={[]}
@@ -75,17 +63,31 @@ describe('Livret', () => {
     ;(enregistrerFormulation as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
   })
 
-  test('propose un niveau tiré du suivi, et dit d’où il sort', async () => {
+  // Virage du 28/07 : plus rien n'est calcule. Les competences viennent de ce
+  // qui a ete coche dans « Programme couvert », et l'enseignante positionne.
+  test('affiche les compétences cochées, sans niveau tant que rien n’est posé', () => {
     afficher()
+    expect(screen.getByText('Identifier des mots')).toBeTruthy()
+    expect(screen.getByText('Nommer les nombres')).toBeTruthy()
+    expect(screen.getByRole('radio', {
+      name: /lina, identifier des mots : atteint/i,
+    }).getAttribute('aria-checked')).toBe('false')
+  })
+
+  test('reprend le niveau déjà posé pour cet élève', () => {
+    afficher({ positions: [{ eleveId: 'e1', periode: 1, competenceId: 'k1', niveau: 'atteint' }] })
     expect(screen.getByRole('radio', {
       name: /lina, identifier des mots : atteint/i,
     }).getAttribute('aria-checked')).toBe('true')
-    // Maths est proposé partiellement atteint, sur la même observation unique.
-    expect(screen.getByRole('radio', {
-      name: /lina, nommer les nombres : partiellement atteint/i,
-    }).getAttribute('aria-checked')).toBe('true')
-    // Chaque ligne dit d'ou sort son niveau : rien n'est calcule en cachette.
-    expect(screen.getAllByText(/1 observation, la dernière en semaine 8/i)).toHaveLength(2)
+  })
+
+  test('n’affiche pas une compétence cochée sur une autre période', async () => {
+    const user = userEvent.setup()
+    afficher({ travaillees: [{ periode: 2, competenceId: 'k1' }] })
+    expect(screen.queryByText('Identifier des mots')).toBeNull()
+
+    await user.selectOptions(screen.getByLabelText(/période/i), '2')
+    expect(screen.getByText('Identifier des mots')).toBeTruthy()
   })
 
   test('enregistre le positionnement corrigé à la main', async () => {
@@ -110,7 +112,7 @@ describe('Livret', () => {
 
   test('rédige le commentaire d’une matière à partir des briques', async () => {
     const user = userEvent.setup()
-    afficher()
+    afficher({ positions: [{ eleveId: 'e1', periode: 1, competenceId: 'k1', niveau: 'atteint' }] })
 
     const bloc = screen.getByRole('heading', { name: /français : acquisitions/i }).closest('section')!
     await user.click(within(bloc).getByRole('button', { name: /rédiger/i }))
@@ -139,7 +141,13 @@ describe('Livret', () => {
   // le lui demande au lieu de recopier le libelle officiel.
   test('demande ses mots quand une compétence n’a pas de formulation', async () => {
     const user = userEvent.setup()
-    afficher({ formulations: {} })
+    afficher({
+      formulations: {},
+      positions: [
+        { eleveId: 'e1', periode: 1, competenceId: 'k1', niveau: 'atteint' },
+        { eleveId: 'e1', periode: 1, competenceId: 'k2', niveau: 'atteint' },
+      ],
+    })
 
     // Une par matière : les deux compétences positionnées attendent leur phrase.
     expect(screen.getAllByText(/une compétence attend tes mots/i)).toHaveLength(2)
@@ -158,9 +166,7 @@ describe('Livret', () => {
     const user = userEvent.setup()
     afficher({
       formulations: {},
-      observations: {
-        e1: [{ semaine: 8, matiere: 'francais', notion: 'Lire a', niveau: 'non_atteint' }],
-      },
+      positions: [{ eleveId: 'e1', periode: 1, competenceId: 'k1', niveau: 'non_atteint' }],
     })
 
     const champ = screen.getByLabelText(/comment dire « identifier des mots » quand c’est non atteint/i)
@@ -190,11 +196,11 @@ describe('Livret', () => {
     expect(screen.getByRole('heading', { name: /où en est tom/i })).toBeTruthy()
   })
 
-  test('le dit quand rien n’est rattaché au programme sur la période', async () => {
+  test('le dit quand aucune compétence n’est cochée sur la période', async () => {
     const user = userEvent.setup()
     afficher()
 
     await user.selectOptions(screen.getByLabelText(/période/i), '2')
-    expect(screen.getByText(/rien n’est encore rattaché au programme/i)).toBeTruthy()
+    expect(screen.getByText(/aucune compétence cochée pour cette période/i)).toBeTruthy()
   })
 })
