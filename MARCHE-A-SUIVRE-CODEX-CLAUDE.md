@@ -461,6 +461,61 @@ l'historique.)
   `competences_perso` ; 3) le bilan par élève et par période, avec les commentaires par
   matière et leurs boutons de copie.
 
+- **2026-07-28 (soir) - Claude - VIRAGE : la base du livret devient le PROGRAMME OFFICIEL.**
+  Décision de Christophe, à lire avant de reprendre quoi que ce soit sur le livret.
+  **Maquette interactive** : `docs/maquettes/livret-depuis-le-programme.html`
+  (miroir : `https://claude.ai/code/artifact/5533324a-8893-45fe-9486-4d385ce23f08`).
+
+  **Ce qui change** : « c'est encore trop détaillé, la base doit être les compétences
+  officielles uniquement, pas besoin de jour 1, jour 2 ; c'est l'utilisateur qui gère au
+  fur et à mesure grâce au programme. » On **inverse la source** : le manuel sert à
+  préparer la classe, plus à remplir le livret.
+  - `/programme` devient un écran de **sélection** : les 101 compétences officielles,
+    groupées par domaine, avec une case « travaillé pendant cette période ». Plus de
+    rattachement notion vers compétence, plus de « jour 1 / jour 2 ».
+  - Dans le livret, la colonne « Principaux éléments du programme travaillés » porte
+    **le domaine à gauche et la compétence EN GRAS**, et **rien d'autre** : pas de
+    ligne d'explication en clair dessous (ni observations, ni notions du manuel).
+    Le domaine ne se répète pas d'une ligne à l'autre, comme dans le document officiel.
+  - Le positionnement se pose **élève par élève, à la main**. Plus rien n'est calculé.
+
+  **Le suivi des élèves change aussi** (cadré, pas encore maquetté) : plus de cases par
+  notion et par critère. À la place, un élève en menu déroulant, des **observations en
+  texte libre datées** (calendrier), et **une couleur par semaine pour le comportement**
+  (rouge / orange / vert) avec une icône. Proposition faite : la météo plutôt que des
+  smileys, et jamais la couleur seule (forme + icône + mot, sinon daltonisme et
+  impression noir et blanc perdent l'information). **Trois points restaient ouverts** :
+  positionnement par élève ou pour la classe, une pastille ou deux (comportement et
+  travail), et le sort des données. Le troisième est tranché (voir plus bas).
+
+  **CE QUI DEVIENT CADUC** : `notions-semblables.ts`, `programme-couvert.ts`, le
+  rattachement (`rattacherNotionPartout`, `rattacherNotionsSemblables`,
+  `detacherNotions`), `bilan-periode.ts` (le calcul du niveau proposé n'a plus
+  d'entrée), les critères d'observation et le suivi à 4 niveaux par notion.
+  **CE QUI SURVIT** : la page `/livret` et ses blocs par matière, les copies à l'unité
+  et groupées, `briques-bilan.ts` et le modèle en cinq temps, les formulations, l'échelle
+  NA/PA/A/D, `BoutonsNiveau`, les migrations 020 et 021.
+
+  **DONNÉES EFFACÉES le 28/07 avec l'accord explicite de Christophe.** Sauvegarde
+  complète dans le schéma **`sauvegarde_20260728`** (8 tables) avant suppression.
+  Vidées : `acquisitions`, `acquisitions_criteres`, `criteres_observation`,
+  `appreciations`, `notion_competence` (247 lignes), `positionnements_periode`,
+  `appreciations_periode`, `formulations_competence`.
+  **Gardés** : la classe, les **23 élèves**, les 36 semaines, les 154 lignes de
+  progression, les 5 méthodes, les 101 compétences officielles.
+
+  **ERREUR DE MESURE À NE PAS REPRODUIRE.** L'entrée « Programme couvert » ci-dessous
+  annonce « 5 340 lignes pour 314 notions, 94 % de répétitions ». **C'est faux.** La
+  requête joignait `progression` avec un `unnest` latéral tout en sommant
+  `array_length(items)`, ce qui multipliait chaque total par le nombre d'items. Les
+  vrais chiffres : **422 occurrences pour 314 notions distinctes en français**, soit
+  26 % de répétitions, et **715 lignes toutes matières confondues** sur une seule page.
+  Le vrai coupable du défilement n'était pas la répétition mais le rendu à plat de
+  toutes les matières et de toutes les périodes. Les correctifs restent valables, la
+  justification écrite était exagérée. Règle : pour compter des éléments d'un tableau,
+  `sum(array_length(...))` **sans** jointure latérale, ou `count(*)` **avec**, jamais
+  les deux ensemble.
+
 - **2026-07-28 - Claude - ÉTAPE 3 : la page `/livret` existe. Commit `3ee6333`, pas encore poussée.**
   **66 suites, 573 tests, zéro échec. Types propres. Build de production réussi.**
 

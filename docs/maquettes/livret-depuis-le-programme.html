@@ -1,0 +1,484 @@
+<title>Le livret depuis le programme officiel : structure proposée</title>
+<style>
+  :root {
+    --ground: #fbfaff;
+    --ink: #171717;
+    --muted: #6b6880;
+    --line: #e7e3f0;
+    --violet-ligne: #c3b5ea;
+    --violet: #7c3aed;
+    --violet-ink: #5b21b6;
+    --violet-tint: #f7f5ff;
+
+    --na: #dc2626; --na-bg: #fef2f2;
+    --pa: #d97706; --pa-bg: #fffbeb;
+    --a:  #059669; --a-bg:  #ecfdf5;
+    --d:  #2563eb; --d-bg:  #eff6ff;
+
+    --radius: 16px;
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 16px/1.55 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 1.5rem 1rem 4rem;
+  }
+  .page { max-width: 60rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.75rem; }
+
+  header h1 { font-size: 1.5rem; margin: .2rem 0 .5rem; }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--violet); font-weight: 700; margin: 0;
+  }
+  header p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  section > .titre-ecran { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; margin-bottom: .35rem; }
+  section h2 { font-size: 1.15rem; margin: 0; }
+  .ou { font-size: .8rem; color: var(--muted); }
+  .intro { margin: 0 0 .9rem; font-size: .92rem; color: var(--muted); }
+
+  .ecran { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem; }
+
+  /* Onglets de matiere */
+  .onglets { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .9rem; }
+  .onglet {
+    border: 1px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 11px; padding: .35rem .7rem; font: inherit; font-size: .85rem;
+    font-weight: 700; cursor: pointer;
+  }
+  .onglet .compte { font-weight: 400; font-size: .76rem; color: var(--muted); margin-left: .35rem; }
+  .onglet[aria-selected="true"] { background: var(--violet); border-color: var(--violet); color: #fff; }
+  .onglet[aria-selected="true"] .compte { color: #ded4ff; }
+
+  .barre { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-bottom: .8rem; }
+  .barre label { font-size: .85rem; font-weight: 700; }
+  select {
+    font: inherit; font-size: .88rem; font-weight: 700;
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: .3rem 1.6rem .3rem .6rem; background: #fff; color: var(--ink);
+  }
+  .compteur { color: var(--muted); font-size: .8rem; }
+
+  /* La liste des competences officielles, a cocher */
+  .domaine-titre {
+    font-family: Georgia, serif; font-weight: 700; color: var(--violet-ink);
+    background: var(--violet-tint); border-radius: 8px;
+    padding: .3rem .6rem; margin: .8rem 0 .35rem; font-size: .88rem;
+  }
+  .choix { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .choix li {
+    display: flex; align-items: flex-start; gap: .55rem;
+    padding: .3rem .2rem; border-bottom: 1px solid var(--line); font-size: .9rem;
+  }
+  .choix li:last-child { border-bottom: none; }
+  .coche { width: 1.05rem; height: 1.05rem; margin-top: .18rem; flex-shrink: 0; accent-color: var(--violet); }
+  .choix li.prise { font-weight: 700; }
+
+  /* Le tableau du livret */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; min-width: 42rem; border-collapse: collapse; font-size: .9rem; }
+  caption { text-align: left; color: var(--muted); font-size: .82rem; padding-bottom: .5rem; }
+  th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .col-etroite { width: 1%; white-space: nowrap; }
+  .cel-domaine { color: var(--violet-ink); font-family: Georgia, serif; }
+  .cel-element { font-weight: 700; }
+  .tr-matiere td {
+    font-weight: 700; color: var(--violet-ink); background: var(--violet-tint);
+    font-family: Georgia, serif;
+  }
+
+  /* L'echelle */
+  .niveaux { display: flex; flex-wrap: nowrap; white-space: nowrap; gap: .3rem; }
+  .n {
+    border: 1px solid var(--line); background: #fff; color: var(--muted);
+    border-radius: 999px; padding: .28rem .6rem; font: inherit; font-size: .78rem;
+    font-weight: 700; cursor: pointer; line-height: 1.2; flex: 0 0 auto;
+  }
+  .n:hover { border-color: var(--violet); color: var(--violet-ink); }
+  .n.on-na { background: var(--na-bg); border-color: var(--na); color: var(--na); }
+  .n.on-pa { background: var(--pa-bg); border-color: var(--pa); color: var(--pa); }
+  .n.on-a  { background: var(--a-bg);  border-color: var(--a);  color: var(--a); }
+  .n.on-d  { background: var(--d-bg);  border-color: var(--d);  color: var(--d); }
+  .legende { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-top: .8rem; font-size: .8rem; color: var(--muted); }
+
+  .structure {
+    margin-top: 1rem; background: var(--violet-tint); border: 1px solid var(--line);
+    border-radius: 12px; padding: .85rem 1rem;
+  }
+  .structure h4 {
+    font-size: .82rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--violet-ink); margin: 0 0 .5rem;
+  }
+  .structure ul { margin: 0; padding-left: 1.1rem; font-size: .87rem; }
+  .structure li { margin-bottom: .4rem; }
+  .aide { font-size: .78rem; color: var(--muted); margin: .45rem 0 0; }
+  .indice { font-size: .8rem; color: var(--violet-ink); background: var(--violet-tint); border-radius: 8px; padding: .35rem .6rem; display: inline-block; margin: 0 0 .7rem; }
+  code { font-size: .84rem; background: var(--violet-tint); padding: .05rem .3rem; border-radius: 4px; }
+</style>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">Ma Progression CP · proposition du 28 juillet</p>
+  <h1>Le livret construit depuis le programme officiel</h1>
+  <p>
+    La base n'est plus le manuel mais le programme. Il n'y a plus rien à rattacher :
+    tu coches les compétences travaillées, elles arrivent dans le livret avec leur
+    domaine, et tu positionnes. Les deux écrans réagissent, essaie-les.
+  </p>
+</header>
+
+<section>
+  <div class="titre-ecran">
+    <h2>1. Choisir les compétences travaillées</h2>
+    <span class="ou">page <code>/programme</code></span>
+  </div>
+  <p class="intro">
+    Le programme officiel, matière par matière. Tu coches ce que la classe a travaillé
+    pendant la période. Rien d'autre à faire.
+  </p>
+
+  <div class="ecran">
+    <div class="onglets" id="onglets" role="tablist" aria-label="Matière"></div>
+
+    <div class="barre">
+      <label for="sel-periode-prog">Période</label>
+      <select id="sel-periode-prog">
+        <option>Période 1</option>
+        <option selected>Période 2</option>
+        <option>Période 3</option>
+        <option>Période 4</option>
+        <option>Période 5</option>
+      </select>
+      <span class="compteur" id="compteur-choix"></span>
+    </div>
+
+    <p class="indice">Coche et décoche : le livret plus bas suit.</p>
+
+    <div id="liste-choix"></div>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li>La liste vient de <code>competences_officielles</code>, les 101 compétences de CP déjà en base. Elles sont groupées par domaine, dans l'ordre du programme.</li>
+      <li>Une case cochée dit « travaillé pendant cette période ». C'est la seule saisie, et elle vaut pour la classe entière.</li>
+      <li>Plus de rattachement notion vers compétence, plus de « jour 1, jour 2 » : le manuel sert à préparer la classe, pas à remplir le livret.</li>
+      <li>Les compétences que tu ajoutes toi-même se glissent dans le domaine de ton choix et se cochent pareil.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="titre-ecran">
+    <h2>2. Le livret de l'élève</h2>
+    <span class="ou">page <code>/livret</code></span>
+  </div>
+  <p class="intro">
+    Les trois colonnes du document officiel, et rien de plus : le domaine, la compétence
+    en gras, le positionnement. Pas de ligne d'explication en dessous.
+  </p>
+
+  <div class="ecran">
+    <div class="barre">
+      <label for="sel-eleve">Élève</label>
+      <select id="sel-eleve"></select>
+      <span class="compteur" id="compteur-eleve"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Clique un niveau. Le domaine ne se répète pas d'une ligne à l'autre, comme dans le livret officiel.</caption>
+        <thead>
+          <tr>
+            <th>Domaines d'enseignement</th>
+            <th>Principaux éléments du programme travaillés durant la période</th>
+            <th class="col-etroite">Positionnement</th>
+          </tr>
+        </thead>
+        <tbody id="corps-livret"></tbody>
+      </table>
+    </div>
+
+    <p class="legende" id="legende"></p>
+  </div>
+
+  <div class="structure">
+    <h4>Structure</h4>
+    <ul>
+      <li><b>Le domaine à gauche, la compétence en gras au milieu.</b> Rien en dessous : ni le nombre d'observations, ni les notions du manuel. C'est ce qui se recopie dans le livret.</li>
+      <li>Le domaine n'est écrit qu'une fois par groupe de compétences, comme dans le document officiel.</li>
+      <li>Une ligne par matière sépare les blocs, avec le nom de la matière.</li>
+      <li>Le positionnement se pose élève par élève. Rien n'est calculé : c'est toi qui dis.</li>
+      <li>Sous le tableau, les blocs de commentaire par matière et leurs boutons de copie ne changent pas : ils sont déjà faits.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var NIVEAUX = [
+    { code: "na", court: "NA", long: "non atteint" },
+    { code: "pa", court: "PA", long: "partiellement atteint" },
+    { code: "a",  court: "A",  long: "atteint" },
+    { code: "d",  court: "D",  long: "dépassé" }
+  ];
+
+  /* De vraies competences de la base, pour que l'exemple ne mente pas. */
+  var PROGRAMME = [
+    { matiere: "Français", domaine: "Langage oral · Écouter pour comprendre",
+      libelle: "Maintenir une attention orientée en fonction d'un but", pris: true },
+    { matiere: "Français", domaine: "Langage oral · Écouter pour comprendre",
+      libelle: "Repérer et mémoriser des informations importantes et les relier entre elles", pris: false },
+    { matiere: "Français", domaine: "Langage oral · Écouter pour comprendre",
+      libelle: "Mémoriser le vocabulaire entendu dans les textes", pris: true },
+    { matiere: "Français", domaine: "Langage oral · Dire pour être entendu et compris",
+      libelle: "Organiser son discours, mémoriser des textes et lire à voix haute", pris: true },
+    { matiere: "Français", domaine: "Lecture · Identifier des mots",
+      libelle: "Discriminer les phonèmes et manipuler syllabes et phonèmes", pris: true },
+    { matiere: "Français", domaine: "Lecture · Identifier des mots",
+      libelle: "Établir les correspondances graphophonologiques et la combinatoire", pris: true },
+    { matiere: "Français", domaine: "Lecture · Identifier des mots",
+      libelle: "Mémoriser l'ensemble des correspondances graphèmes-phonèmes", pris: false },
+    { matiere: "Mathématiques", domaine: "Nombres et calculs",
+      libelle: "Nommer, lire, écrire, représenter des nombres entiers", pris: true },
+    { matiere: "Mathématiques", domaine: "Nombres et calculs",
+      libelle: "Calculer avec des nombres entiers", pris: true },
+    { matiere: "Mathématiques", domaine: "Grandeurs et mesures",
+      libelle: "Comparer, estimer, mesurer des longueurs", pris: false },
+    { matiere: "EMC", domaine: "La sensibilité",
+      libelle: "Identifier et exprimer ses émotions et ses sentiments", pris: true },
+    { matiere: "EMC", domaine: "Le droit et la règle",
+      libelle: "Respecter les règles de la vie collective", pris: true }
+  ];
+
+  var MATIERES = [];
+  PROGRAMME.forEach(function (c) {
+    if (MATIERES.indexOf(c.matiere) === -1) MATIERES.push(c.matiere);
+  });
+
+  var ELEVES = ["Lina", "Tom", "Jade", "Hugo"];
+  /* Le positionnement, par eleve puis par libelle de competence. */
+  var POSITIONS = {
+    Lina: {
+      "Maintenir une attention orientée en fonction d'un but": "a",
+      "Mémoriser le vocabulaire entendu dans les textes": "pa",
+      "Discriminer les phonèmes et manipuler syllabes et phonèmes": "d"
+    },
+    Tom: {
+      "Maintenir une attention orientée en fonction d'un but": "pa",
+      "Discriminer les phonèmes et manipuler syllabes et phonèmes": "na"
+    },
+    Jade: {}, Hugo: {}
+  };
+
+  var matiereActive = MATIERES[0];
+  var eleveActif = ELEVES[0];
+
+  var onglets = document.getElementById("onglets");
+  var listeChoix = document.getElementById("liste-choix");
+  var compteurChoix = document.getElementById("compteur-choix");
+  var selEleve = document.getElementById("sel-eleve");
+  var compteurEleve = document.getElementById("compteur-eleve");
+  var corps = document.getElementById("corps-livret");
+
+  function prisesDe(matiere) {
+    return PROGRAMME.filter(function (c) { return c.matiere === matiere && c.pris; });
+  }
+
+  /* ── Ecran 1 : le choix des competences ──────────────────────────────────── */
+
+  function dessinerOnglets() {
+    onglets.textContent = "";
+    MATIERES.forEach(function (m) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "onglet";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", m === matiereActive ? "true" : "false");
+      b.textContent = m;
+      var compte = document.createElement("span");
+      compte.className = "compte";
+      compte.textContent = prisesDe(m).length + "/"
+        + PROGRAMME.filter(function (c) { return c.matiere === m; }).length;
+      b.appendChild(compte);
+      b.addEventListener("click", function () {
+        matiereActive = m;
+        dessinerOnglets();
+        dessinerChoix();
+      });
+      onglets.appendChild(b);
+    });
+  }
+
+  function dessinerChoix() {
+    listeChoix.textContent = "";
+    var domaineCourant = null;
+    var ul = null;
+
+    PROGRAMME.forEach(function (c) {
+      if (c.matiere !== matiereActive) return;
+
+      if (c.domaine !== domaineCourant) {
+        domaineCourant = c.domaine;
+        var titre = document.createElement("p");
+        titre.className = "domaine-titre";
+        titre.textContent = c.domaine;
+        listeChoix.appendChild(titre);
+        ul = document.createElement("ul");
+        ul.className = "choix";
+        listeChoix.appendChild(ul);
+      }
+
+      var li = document.createElement("li");
+      if (c.pris) li.className = "prise";
+
+      var coche = document.createElement("input");
+      coche.type = "checkbox";
+      coche.className = "coche";
+      coche.checked = c.pris;
+      coche.setAttribute("aria-label", "Travaillé : " + c.libelle);
+      coche.addEventListener("change", function () {
+        c.pris = coche.checked;
+        li.className = c.pris ? "prise" : "";
+        dessinerOnglets();
+        majCompteurChoix();
+        dessinerLivret();
+      });
+      li.appendChild(coche);
+
+      var texte = document.createElement("span");
+      texte.textContent = c.libelle;
+      li.appendChild(texte);
+
+      ul.appendChild(li);
+    });
+
+    majCompteurChoix();
+  }
+
+  function majCompteurChoix() {
+    var n = prisesDe(matiereActive).length;
+    compteurChoix.textContent = n === 0
+      ? "aucune compétence retenue pour l'instant"
+      : n + (n > 1 ? " compétences retenues" : " compétence retenue");
+  }
+
+  /* ── Ecran 2 : le livret ─────────────────────────────────────────────────── */
+
+  function groupeNiveaux(libelle) {
+    var groupe = document.createElement("span");
+    groupe.className = "niveaux";
+    groupe.setAttribute("role", "radiogroup");
+    groupe.setAttribute("aria-label", eleveActif + ", " + libelle);
+    var choix = POSITIONS[eleveActif][libelle] || "";
+
+    NIVEAUX.forEach(function (niv) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "n" + (niv.code === choix ? " on-" + niv.code : "");
+      b.textContent = niv.court;
+      b.title = niv.long;
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", niv.code === choix ? "true" : "false");
+      b.setAttribute("aria-label", eleveActif + ", " + libelle + " : " + niv.long);
+      b.addEventListener("click", function () {
+        POSITIONS[eleveActif][libelle] = niv.code;
+        dessinerLivret();
+      });
+      groupe.appendChild(b);
+    });
+    return groupe;
+  }
+
+  function dessinerLivret() {
+    corps.textContent = "";
+    var matiereCourante = null;
+    var domainePrecedent = null;
+    var posees = 0, total = 0;
+
+    PROGRAMME.forEach(function (c) {
+      if (!c.pris) return;
+      total++;
+
+      if (c.matiere !== matiereCourante) {
+        matiereCourante = c.matiere;
+        domainePrecedent = null;
+        var trM = document.createElement("tr");
+        trM.className = "tr-matiere";
+        var tdM = document.createElement("td");
+        tdM.colSpan = 3;
+        tdM.textContent = c.matiere;
+        trM.appendChild(tdM);
+        corps.appendChild(trM);
+      }
+
+      var tr = document.createElement("tr");
+
+      var tdDom = document.createElement("td");
+      tdDom.className = "cel-domaine";
+      /* Le domaine ne se repete pas : c'est ainsi dans le livret officiel. */
+      tdDom.textContent = c.domaine === domainePrecedent ? "" : c.domaine;
+      domainePrecedent = c.domaine;
+      tr.appendChild(tdDom);
+
+      var tdEl = document.createElement("td");
+      tdEl.className = "cel-element";
+      tdEl.textContent = c.libelle;
+      tr.appendChild(tdEl);
+
+      var tdNiv = document.createElement("td");
+      tdNiv.appendChild(groupeNiveaux(c.libelle));
+      tr.appendChild(tdNiv);
+
+      corps.appendChild(tr);
+      if (POSITIONS[eleveActif][c.libelle]) posees++;
+    });
+
+    if (total === 0) {
+      var vide = document.createElement("tr");
+      var tdV = document.createElement("td");
+      tdV.colSpan = 3;
+      tdV.style.color = "var(--muted)";
+      tdV.textContent = "Aucune compétence cochée pour l'instant : le livret est vide.";
+      vide.appendChild(tdV);
+      corps.appendChild(vide);
+    }
+
+    compteurEleve.textContent = posees + " sur " + total + " positionnées";
+  }
+
+  ELEVES.forEach(function (nom) {
+    var o = document.createElement("option");
+    o.value = nom;
+    o.textContent = nom;
+    selEleve.appendChild(o);
+  });
+  selEleve.addEventListener("change", function () {
+    eleveActif = selEleve.value;
+    dessinerLivret();
+  });
+
+  var legende = document.getElementById("legende");
+  NIVEAUX.forEach(function (niv) {
+    var s = document.createElement("span");
+    var b = document.createElement("b");
+    b.textContent = niv.court;
+    s.appendChild(b);
+    s.appendChild(document.createTextNode(" " + niv.long));
+    legende.appendChild(s);
+  });
+
+  dessinerOnglets();
+  dessinerChoix();
+  dessinerLivret();
+})();
+</script>
