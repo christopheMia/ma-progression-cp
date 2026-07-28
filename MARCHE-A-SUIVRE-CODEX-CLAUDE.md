@@ -461,6 +461,47 @@ l'historique.)
   `competences_perso` ; 3) le bilan par élève et par période, avec les commentaires par
   matière et leurs boutons de copie.
 
+- **2026-07-28 - Claude - ÉTAPE 3 : la page `/livret` existe. Commit `3ee6333`, pas encore poussée.**
+  **66 suites, 573 tests, zéro échec. Types propres. Build de production réussi.**
+
+  **La chaîne complète, de bout en bout** : notion suivie chaque semaine ->
+  rattachement (`/programme`) -> compétence officielle -> niveau proposé
+  (`bilan-periode.ts`) -> brique (`briques-bilan.ts`) -> phrase -> copie par matière.
+
+  **L'écran** : onglet « Livret » dans `HeaderNav` ; période et élève en menus
+  déroulants avec l'état du bilan dans chaque ligne, un compteur et les flèches ;
+  le tableau des éléments travaillés avec leur niveau proposé et **la trace de ce
+  qui l'a produit** ; un bloc de commentaire par matière avec ses briques, sa
+  rédaction, son texte modifiable et son bouton de copie ; la barre de copie
+  groupée pilotée par les cases de titre.
+
+  **Le point vraiment important : la capture progressive des formulations.**
+  Quand une compétence n'a pas encore de phrase pour son niveau, l'écran **demande
+  ses mots** à l'enseignante au lieu de recopier le libellé officiel. La phrase est
+  gardée sur la classe (`formulations_competence`) et ressert les années suivantes.
+  C'est ce qui évite d'avoir à écrire 400 phrases avant de pouvoir se servir de la
+  page. **Une difficulté ne peut pas être enregistrée sans sa prochaine étape** :
+  le bouton reste désactivé et l'écran dit pourquoi.
+
+  **`BoutonsNiveau` a quitté `StudentTracking`** pour `components/ui/BoutonsNiveau.tsx`
+  (avec `LegendeNiveaux`) : c'est le même geste dans le suivi et dans le livret.
+
+  **Migrations 020 et 021 APPLIQUÉES** sur `odwgkakeepcqbgpsfugl`, RLS vérifiée
+  (une politique par table).
+
+  **Ce qui manque encore, dans l'ordre** :
+  1. **Choisir fille ou garçon** quelque part dans la liste d'élèves. L'action
+     `definirGenreEleve` existe déjà dans `lib/actions/livret.ts`, il manque
+     l'écran (Christophe a validé le principe : une passe sur la classe, deux
+     boutons par prénom, **pas de devinette à partir du prénom**). Sans genre, la
+     rédaction répète le prénom : le texte est plus lourd mais jamais faux.
+  2. Les **deux autres portes** vers `/livret` : le bouton depuis `/periodes` et la
+     ligne en dernière semaine de période. Seul l'onglet existe.
+  3. Les **compétences perso** (`competences_perso`), maintenant qu'il y a un écran
+     pour les accueillir. Prévoir les cinq colonnes de texte dès la migration.
+  4. À l'ouverture, choisir la **période en cours** et le **premier élève sans
+     bilan**. Aujourd'hui c'est la première période et le premier élève.
+
 - **2026-07-28 - Claude - ÉTAPE 2, première moitié : les deux défauts de `/programme` corrigés.**
   Commit **`1726b9b`**, en local, **pas encore poussé** (attente du feu vert).
   **63 suites, 530 tests, zéro échec. Types propres. Build de production réussi.**
