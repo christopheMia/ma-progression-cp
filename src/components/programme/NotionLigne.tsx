@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react'
 import {
   compterNotionsSemblables,
-  rattacherNotionManuel,
+  rattacherNotionPartout,
   rattacherNotionsSemblables,
 } from '@/lib/actions/mapping'
 
@@ -11,21 +11,22 @@ export type CompChoix = { id: string; domaine: string; libelle: string }
 type Proposition = { notions: string[]; tete: string; competenceId: string }
 
 /**
- * Une notion avec le menu pour choisir la compétence officielle rattachée.
+ * Une notion de la méthode, avec le menu pour choisir sa compétence officielle.
  *
- * Deux choses ont changé le 28/07/2026 :
- * - la page **ne se recharge plus** à chaque choix. Elle le faisait par
- *   `window.location.reload()`, ce qui, sur 36 semaines de notions, renvoyait
- *   en haut de page après chaque rattachement.
- * - quand d'autres notions se ressemblent, l'écran **propose de les rattacher
- *   d'un coup**. Les quatorze « Lire ... » d'une méthode de lecture vont sur la
- *   même compétence, et se rattachaient une par une.
+ * Une LIGNE PAR NOTION, pas par semaine : « Lire a » revient dix-sept fois dans
+ * l'année et c'est la même compétence les dix-sept fois. Le choix vaut donc
+ * pour toutes ses semaines (mesure du 28/07 : 5 340 lignes affichées pour 314
+ * notions réellement différentes).
+ *
+ * La page ne se recharge pas : elle le faisait par `window.location.reload()`,
+ * ce qui renvoyait en haut à chaque choix.
  */
-export default function NotionLigne({ matiere, semaine, notion, competenceId, competences }: {
+export default function NotionLigne({ matiere, notion, semaines, competenceId, melange, competences }: {
   matiere: string
-  semaine: number
   notion: string
+  semaines: number[]
   competenceId?: string
+  melange?: boolean
   competences: CompChoix[]
 }) {
   const [isPending, startTransition] = useTransition()
@@ -45,13 +46,13 @@ export default function NotionLigne({ matiere, semaine, notion, competenceId, co
     setChoisie(id)
 
     startTransition(async () => {
-      const r = await rattacherNotionManuel(matiere, semaine, notion, id)
+      const r = await rattacherNotionPartout(matiere, notion, id)
       if (!r.ok) {
         setChoisie(precedente)
         setErreur(r.message)
         return
       }
-      // Le rattachement est enregistre : on peut proposer la suite.
+      if (r.valeur > 1) setFait(`posé sur ses ${r.valeur} semaines`)
       const semblables = await compterNotionsSemblables(matiere, notion)
       if (semblables.ok && semblables.valeur.notions.length > 0) {
         setProposition({ ...semblables.valeur, competenceId: id })
@@ -79,16 +80,24 @@ export default function NotionLigne({ matiere, semaine, notion, competenceId, co
   }
 
   return (
-    <li className="text-sm">
+    <li className="border-b py-1.5 text-sm last:border-b-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="text-gray-800">{notion}</span>
-        {!choisie && <span className="text-xs text-amber-600">à rattacher</span>}
+        <span className="text-gray-900">{notion}</span>
+        <span className="text-xs text-gray-500">
+          {semaines.length === 1 ? '1 semaine' : `${semaines.length} semaines`}
+        </span>
+        {!choisie && <span className="text-xs font-semibold text-amber-700">à rattacher</span>}
+        {melange && (
+          <span className="text-xs font-semibold text-amber-700">
+            deux semaines ne disent pas la même chose
+          </span>
+        )}
         <select
           value={choisie}
           disabled={isPending}
           onChange={e => onChange(e.target.value)}
           aria-label={`Compétence pour ${notion}`}
-          className="text-xs border border-violet-200 rounded px-1.5 py-0.5 bg-white text-violet-800 max-w-full disabled:opacity-50">
+          className="ml-auto max-w-full rounded border border-violet-200 bg-white px-1.5 py-0.5 text-xs text-violet-800 disabled:opacity-50">
           <option value="">— choisir une compétence —</option>
           {competences.map(c => (
             <option key={c.id} value={c.id}>{c.domaine} : {c.libelle}</option>
@@ -97,9 +106,7 @@ export default function NotionLigne({ matiere, semaine, notion, competenceId, co
         {fait && <span className="text-xs font-semibold text-emerald-700">✓ {fait}</span>}
       </div>
 
-      {erreur && (
-        <p role="alert" className="mt-1 text-xs text-red-700">{erreur}</p>
-      )}
+      {erreur && <p role="alert" className="mt-1 text-xs text-red-700">{erreur}</p>}
 
       {proposition && (
         <div className="mt-1 flex flex-wrap items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-2 py-1.5">

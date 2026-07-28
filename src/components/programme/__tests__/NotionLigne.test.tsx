@@ -6,13 +6,13 @@ import userEvent from '@testing-library/user-event'
 import NotionLigne from '../NotionLigne'
 import {
   compterNotionsSemblables,
-  rattacherNotionManuel,
+  rattacherNotionPartout,
   rattacherNotionsSemblables,
 } from '@/lib/actions/mapping'
 
 jest.mock('@/lib/actions/mapping', () => ({
   compterNotionsSemblables: jest.fn(),
-  rattacherNotionManuel: jest.fn(),
+  rattacherNotionPartout: jest.fn(),
   rattacherNotionsSemblables: jest.fn(),
 }))
 
@@ -25,7 +25,7 @@ function afficher(competenceId?: string) {
   render(
     <NotionLigne
       matiere="francais"
-      semaine={3}
+      semaines={[3, 12, 20]}
       notion="Lire a"
       competenceId={competenceId}
       competences={competences}
@@ -36,7 +36,7 @@ function afficher(competenceId?: string) {
 describe('NotionLigne', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(rattacherNotionManuel as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    ;(rattacherNotionPartout as jest.Mock).mockResolvedValue({ ok: true, valeur: 3 })
     ;(compterNotionsSemblables as jest.Mock).mockResolvedValue({
       ok: true,
       valeur: { notions: [], tete: 'lire' },
@@ -44,15 +44,23 @@ describe('NotionLigne', () => {
     ;(rattacherNotionsSemblables as jest.Mock).mockResolvedValue({ ok: true, valeur: 0 })
   })
 
-  test('enregistre le choix et garde la notion à l’écran', async () => {
+  // Une ligne par NOTION et non par semaine : « Lire a » revient trois fois et
+  // c'est la meme competence les trois fois.
+  test('dit combien de semaines la notion couvre', () => {
+    afficher()
+    expect(screen.getByText('3 semaines')).toBeTruthy()
+  })
+
+  test('enregistre le choix pour toutes les semaines de la notion', async () => {
     const user = userEvent.setup()
     afficher()
 
     await user.selectOptions(screen.getByLabelText(/compétence pour lire a/i), 'c1')
 
-    await waitFor(() => expect(rattacherNotionManuel).toHaveBeenCalledWith(
-      'francais', 3, 'Lire a', 'c1',
+    await waitFor(() => expect(rattacherNotionPartout).toHaveBeenCalledWith(
+      'francais', 'Lire a', 'c1',
     ))
+    expect(await screen.findByText(/posé sur ses 3 semaines/i)).toBeTruthy()
     // Le menu garde le choix sans attendre le serveur : avant, la page se
     // rechargeait entierement, ce qui renvoyait en haut des 36 semaines.
     expect((screen.getByLabelText(/compétence pour lire a/i) as HTMLSelectElement).value).toBe('c1')
@@ -113,7 +121,7 @@ describe('NotionLigne', () => {
   // pas, sinon Next.js l'efface en production.
   test('remet le choix précédent quand le serveur refuse', async () => {
     const user = userEvent.setup()
-    ;(rattacherNotionManuel as jest.Mock).mockResolvedValue({
+    ;(rattacherNotionPartout as jest.Mock).mockResolvedValue({
       ok: false,
       message: 'Le rattachement n’a pas pu être enregistré.',
     })

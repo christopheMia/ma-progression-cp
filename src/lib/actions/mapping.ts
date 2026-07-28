@@ -129,6 +129,51 @@ export async function rattacherNotionManuel(
 }
 
 /**
+ * Rattache une notion sur TOUTES les semaines où elle revient.
+ *
+ * L'écran affiche désormais une ligne par notion et non plus une par semaine :
+ * « Lire a » revient dix-sept fois dans l'année, et c'est la même compétence
+ * les dix-sept fois. Un choix vaut donc pour toutes ses occurrences.
+ *
+ * Rend le nombre de semaines traitées, pour que l'écran puisse le dire.
+ */
+export async function rattacherNotionPartout(
+  matiere: string, notion: string, competenceId: string,
+): Promise<Resultat<number>> {
+  return resultat(async () => {
+    const { supabase, classId } = await getClasseId()
+
+    const { data: prog } = await supabase
+      .from('progression').select('numero, items').eq('class_id', classId).eq('matiere', matiere)
+
+    const semaines = (prog ?? [])
+      .filter(p => ((p.items as string[] | null) ?? []).some(i => (i ?? '').trim() === notion))
+      .map(p => p.numero as number)
+    if (semaines.length === 0) throw new Error('Cette notion n’est plus dans la progression.')
+
+    // On remplace : une notion ne porte qu'une compétence principale, et deux
+    // semaines ne doivent jamais dire deux choses différentes.
+    await supabase.from('notion_competence').delete()
+      .eq('class_id', classId).eq('matiere', matiere).eq('notion', notion)
+
+    const { error } = await supabase.from('notion_competence').insert(
+      semaines.map(semaine => ({
+        class_id: classId,
+        matiere,
+        semaine_numero: semaine,
+        notion,
+        competence_id: competenceId,
+        source: 'manuel',
+      })),
+    )
+    if (error) throw new Error('Le rattachement n’a pas pu être enregistré.')
+
+    revalidatePath('/programme')
+    return semaines.length
+  }, 'Le rattachement n’a pas pu être enregistré.')
+}
+
+/**
  * Les notions de la matière qui ressemblent à celle-ci et ne sont pas encore
  * rattachées. Sert à annoncer honnêtement ce que fera « appliquer aux notions
  * semblables » AVANT de le faire.
