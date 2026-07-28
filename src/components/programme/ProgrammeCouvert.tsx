@@ -1,8 +1,15 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
+import { Undo2 } from 'lucide-react'
 import NotionLigne, { type CompChoix } from '@/components/programme/NotionLigne'
 import ProposerRattachementsButton from '@/components/programme/ProposerRattachementsButton'
+import {
+  detacherNotions,
+  restaurerRattachements,
+  type CibleDetachement,
+  type LienSupprime,
+} from '@/lib/actions/mapping'
 import type { NotionGroupee } from '@/lib/programme-couvert'
 
 const LIBELLE_MATIERE: Record<string, string> = {
@@ -47,19 +54,121 @@ export default function ProgrammeCouvert({
   const matieres = useMemo(() => [...new Set(notions.map(n => n.matiere))], [notions])
   const [matiere, setMatiere] = useState(matieres[0] ?? '')
   const [resteSeulement, setResteSeulement] = useState(true)
+  const [isPending, startTransition] = useTransition()
+  const [erreur, setErreur] = useState('')
+
+  // Le rattachement de chaque notion vit ici : c'est aussi d'ici que partent
+  // les detachements en masse, et deux sources de verite divergeraient.
+  const cle = (m: string, notion: string) => `${m}|${notion}`
+  const [rattachees, setRattachees] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {}
+    for (const n of notions) if (n.competenceId && !n.melange) init[cle(n.matiere, n.notion)] = n.competenceId
+    return init
+  })
+  const [melanges, setMelanges] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    for (const n of notions) if (n.melange) init[cle(n.matiere, n.notion)] = true
+    return init
+  })
+
+  /** Ce qu'on vient de retirer, tant qu'on peut encore l'annuler. */
+  const [annulable, setAnnulable] = useState<{ liens: LienSupprime[]; quoi: string } | null>(null)
 
   const compte = useMemo(() => {
     const total: Record<string, { faites: number; total: number }> = {}
     for (const n of notions) {
       const c = total[n.matiere] ?? { faites: 0, total: 0 }
       c.total++
-      if (n.competenceId && !n.melange) c.faites++
+      if (rattachees[cle(n.matiere, n.notion)]) c.faites++
       total[n.matiere] = c
     }
     return total
-  }, [notions])
+  }, [notions, rattachees])
 
   const deLaMatiere = notions.filter(n => n.matiere === matiere)
+  const estRattachee = (n: NotionGroupee) =>
+    Boolean(rattachees[cle(n.matiere, n.notion)]) || melanges[cle(n.matiere, n.notion)]
+
+  function rattacher(notionTexte: string, competenceId: string) {
+    setErreur('')
+    setAnnulable(null)
+    setRattachees(etat => ({ ...etat, [cle(matiere, notionTexte)]: competenceId }))
+    setMelanges(etat => ({ ...etat, [cle(matiere, notionTexte)]: false }))
+  }
+
+  /** Le serveur a refusé : on remet l'affichage d'avant, sans rien lui redemander. */
+  function remettre(notionTexte: string, precedente?: string) {
+    setRattachees(etat => {
+      const suivant = { ...etat }
+      if (precedente === undefined) delete suivant[cle(matiere, notionTexte)]
+      else suivant[cle(matiere, notionTexte)] = precedente
+      return suivant
+    })
+  }
+
+  /** Retire des rattachements, à n'importe quelle échelle, et garde de quoi annuler. */
+  function detacher(cibles: CibleDetachement[], quoi: string) {
+    setErreur('')
+    setRattachees(etat => {
+      const suivant = { ...etat }
+      for (const c of cibles) for (const n of c.notions) delete suivant[cle(c.matiere, n)]
+      return suivant
+    })
+    setMelanges(etat => {
+      const suivant = { ...etat }
+      for (const c of cibles) for (const n of c.notions) suivant[cle(c.matiere, n)] = false
+      return suivant
+    })
+
+    startTransition(async () => {
+      const r = await detacherNotions(cibles)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
+      }
+      if (r.valeur.length > 0) setAnnulable({ liens: r.valeur, quoi })
+    })
+  }
+
+  function annuler() {
+    const aRemettre = annulable
+    if (!aRemettre) return
+    setAnnulable(null)
+    setRattachees(etat => {
+      const suivant = { ...etat }
+      for (const lien of aRemettre.liens) suivant[cle(lien.matiere, lien.notion)] = lien.competence_id
+      return suivant
+    })
+
+    startTransition(async () => {
+      const r = await restaurerRattachements(aRemettre.liens)
+      if (!r.ok) {
+        setErreur(r.message)
+        setAnnulable(aRemettre)
+      }
+    })
+  }
+
+  function ciblesPour(liste: NotionGroupee[]): CibleDetachement[] {
+    const parMatiere = new Map<string, string[]>()
+    for (const n of liste.filter(estRattachee)) {
+      const notionsM = parMatiere.get(n.matiere) ?? []
+      notionsM.push(n.notion)
+      parMatiere.set(n.matiere, notionsM)
+    }
+    return [...parMatiere.entries()].map(([m, notionsM]) => ({ matiere: m, notions: notionsM }))
+  }
+
+  function detacherEnMasse(liste: NotionGroupee[], quoi: string) {
+    const cibles = ciblesPour(liste)
+    const combien = cibles.reduce((n, c) => n + c.notions.length, 0)
+    if (combien === 0) return
+    if (!window.confirm(
+      `Retirer le rattachement de ${combien} notion${combien > 1 ? 's' : ''} (${quoi}) ? `
+      + 'Tu pourras annuler juste après.',
+    )) return
+    detacher(cibles, quoi)
+  }
 
   const parPeriode = useMemo(() => {
     const groupes = new Map<number | null, NotionGroupee[]>()
@@ -73,7 +182,7 @@ export default function ProgrammeCouvert({
 
   // La première période inachevée s'ouvre : on arrive sur du travail à faire.
   const premiereInachevee = parPeriode.find(([, liste]) =>
-    liste.some(n => !n.competenceId || n.melange))?.[0] ?? null
+    liste.some(n => !estRattachee(n)))?.[0] ?? null
 
   if (matieres.length === 0) {
     return (
@@ -83,8 +192,45 @@ export default function ProgrammeCouvert({
     )
   }
 
+  const rattacheesEnTout = notions.filter(estRattachee).length
+
   return (
     <div className="space-y-3">
+      {/* Le rattrapage : tant qu'il est la, rien n'est vraiment perdu. */}
+      {annulable && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2"
+        >
+          <span className="text-sm text-violet-950">
+            {annulable.liens.length} rattachement{annulable.liens.length > 1 ? 's' : ''} retiré
+            {annulable.liens.length > 1 ? 's' : ''} ({annulable.quoi}).
+          </span>
+          <button
+            type="button"
+            onClick={annuler}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-600 bg-violet-600 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
+          >
+            <Undo2 className="h-3.5 w-3.5" aria-hidden />
+            Revenir en arrière
+          </button>
+          <button
+            type="button"
+            onClick={() => setAnnulable(null)}
+            className="text-xs text-violet-800 underline"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
+
+      {erreur && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {erreur}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Matière">
         {matieres.map(m => {
           const c = compte[m] ?? { faites: 0, total: 0 }
@@ -122,19 +268,42 @@ export default function ProgrammeCouvert({
           <ProposerRattachementsButton matiere={matiere} label={nommer(matiere)} />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={resteSeulement}
-            onChange={e => setResteSeulement(e.target.checked)}
-            className="h-4 w-4 accent-violet-600"
-          />
-          Ne montrer que ce qui reste à rattacher
-        </label>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={resteSeulement}
+              onChange={e => setResteSeulement(e.target.checked)}
+              className="h-4 w-4 accent-violet-600"
+            />
+            Ne montrer que ce qui reste à rattacher
+          </label>
+
+          <div className="ml-auto flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => detacherEnMasse(deLaMatiere, nommer(matiere))}
+              disabled={isPending || deLaMatiere.filter(estRattachee).length === 0}
+              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-800 disabled:opacity-40"
+            >
+              Tout détacher dans {nommer(matiere)}
+            </button>
+            <button
+              type="button"
+              onClick={() => detacherEnMasse(notions, 'toutes les matières')}
+              disabled={isPending || rattacheesEnTout === 0}
+              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-800 disabled:opacity-40"
+            >
+              Tout détacher, toutes matières
+            </button>
+          </div>
+        </div>
 
         {parPeriode.map(([periode, liste]) => {
-          const restantes = liste.filter(n => !n.competenceId || n.melange)
+          const restantes = liste.filter(n => !estRattachee(n))
+          const faites = liste.length - restantes.length
           const visibles = resteSeulement ? restantes : liste
+          const nomPeriode = periode ? `période ${periode}` : 'hors période'
           return (
             <details
               key={String(periode)}
@@ -152,6 +321,18 @@ export default function ProgrammeCouvert({
               </summary>
 
               <div className="px-3 pb-2">
+                {faites > 0 && (
+                  <div className="flex justify-end pb-1">
+                    <button
+                      type="button"
+                      onClick={() => detacherEnMasse(liste, nomPeriode)}
+                      disabled={isPending}
+                      className="rounded-lg border border-gray-300 px-2 py-0.5 text-xs font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-800 disabled:opacity-40"
+                    >
+                      Détacher les {faites} de cette période
+                    </button>
+                  </div>
+                )}
                 {visibles.length === 0 ? (
                   <p className="py-2 text-sm text-gray-500">
                     Tout est rattaché ici. Décoche le filtre pour revoir ces notions.
@@ -164,9 +345,13 @@ export default function ProgrammeCouvert({
                         matiere={n.matiere}
                         notion={n.notion}
                         semaines={n.semaines}
-                        competenceId={n.competenceId}
-                        melange={n.melange}
+                        competenceId={rattachees[cle(n.matiere, n.notion)]}
+                        melange={melanges[cle(n.matiere, n.notion)]}
                         competences={competencesParMatiere[matiere] ?? []}
+                        onRattachee={rattacher}
+                        onDetachee={notionTexte =>
+                          detacher([{ matiere: n.matiere, notions: [notionTexte] }], notionTexte)}
+                        onEchec={remettre}
                       />
                     ))}
                   </ul>

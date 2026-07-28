@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { Undo2 } from 'lucide-react'
 import {
   compterNotionsSemblables,
   rattacherNotionPartout,
@@ -18,37 +19,50 @@ type Proposition = { notions: string[]; tete: string; competenceId: string }
  * pour toutes ses semaines (mesure du 28/07 : 5 340 lignes affichées pour 314
  * notions réellement différentes).
  *
- * La page ne se recharge pas : elle le faisait par `window.location.reload()`,
- * ce qui renvoyait en haut à chaque choix.
+ * Le rattachement est tenu par le parent : c'est lui qui gère aussi les
+ * détachements en masse et le « revenir en arrière », et deux sources de vérité
+ * finiraient par diverger.
  */
-export default function NotionLigne({ matiere, notion, semaines, competenceId, melange, competences }: {
+export default function NotionLigne({
+  matiere,
+  notion,
+  semaines,
+  competenceId,
+  melange,
+  competences,
+  onRattachee,
+  onDetachee,
+  onEchec,
+}: {
   matiere: string
   notion: string
   semaines: number[]
   competenceId?: string
   melange?: boolean
   competences: CompChoix[]
+  onRattachee: (notion: string, competenceId: string) => void
+  onDetachee: (notion: string) => void
+  /** Remet l'affichage d'avant quand le serveur refuse. N'appelle pas le serveur. */
+  onEchec: (notion: string, precedente?: string) => void
 }) {
   const [isPending, startTransition] = useTransition()
-  // Le choix est tenu ici, pas seulement dans la propriete : sans ca le menu
-  // reviendrait a sa valeur d'avant en attendant la reponse du serveur.
-  const [choisie, setChoisie] = useState(competenceId ?? '')
   const [erreur, setErreur] = useState('')
   const [proposition, setProposition] = useState<Proposition | null>(null)
   const [fait, setFait] = useState('')
 
   function onChange(id: string) {
     if (!id) return
-    const precedente = choisie
+    const precedente = competenceId
     setErreur('')
     setFait('')
     setProposition(null)
-    setChoisie(id)
+    onRattachee(notion, id)
 
     startTransition(async () => {
       const r = await rattacherNotionPartout(matiere, notion, id)
       if (!r.ok) {
-        setChoisie(precedente)
+        // Rien n'a ete ecrit : on remet l'affichage d'avant, on ne detache pas.
+        onEchec(notion, precedente)
         setErreur(r.message)
         return
       }
@@ -86,14 +100,16 @@ export default function NotionLigne({ matiere, notion, semaines, competenceId, m
         <span className="text-xs text-gray-500">
           {semaines.length === 1 ? '1 semaine' : `${semaines.length} semaines`}
         </span>
-        {!choisie && <span className="text-xs font-semibold text-amber-700">à rattacher</span>}
+        {!competenceId && !melange && (
+          <span className="text-xs font-semibold text-amber-700">à rattacher</span>
+        )}
         {melange && (
           <span className="text-xs font-semibold text-amber-700">
             deux semaines ne disent pas la même chose
           </span>
         )}
         <select
-          value={choisie}
+          value={competenceId ?? ''}
           disabled={isPending}
           onChange={e => onChange(e.target.value)}
           aria-label={`Compétence pour ${notion}`}
@@ -103,6 +119,18 @@ export default function NotionLigne({ matiere, notion, semaines, competenceId, m
             <option key={c.id} value={c.id}>{c.domaine} : {c.libelle}</option>
           ))}
         </select>
+        {(competenceId || melange) && (
+          <button
+            type="button"
+            onClick={() => { setFait(''); setErreur(''); setProposition(null); onDetachee(notion) }}
+            disabled={isPending}
+            title={`Détacher « ${notion} »`}
+            aria-label={`Détacher ${notion}`}
+            className="rounded border border-gray-200 p-1 text-gray-500 hover:border-violet-300 hover:text-violet-700 disabled:opacity-50"
+          >
+            <Undo2 className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
         {fait && <span className="text-xs font-semibold text-emerald-700">✓ {fait}</span>}
       </div>
 

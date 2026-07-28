@@ -227,6 +227,78 @@ export async function rattacherNotionsSemblables(
   }, 'Les rattachements n’ont pas pu être enregistrés.')
 }
 
+export type LienSupprime = {
+  matiere: string
+  semaine_numero: number
+  notion: string
+  competence_id: string
+  source: string
+}
+
+/** Une matière et les notions à détacher dedans. */
+export type CibleDetachement = { matiere: string; notions: string[] }
+
+/**
+ * Retire des rattachements, à n'importe quelle échelle : une notion, une
+ * période, une matière, ou tout.
+ *
+ * RENVOIE les liens supprimés, pour que l'écran puisse proposer d'annuler. Se
+ * tromper de compétence sur une matière entière doit rester rattrapable en un
+ * clic, sinon personne n'ose toucher au bouton.
+ */
+export async function detacherNotions(
+  cibles: CibleDetachement[],
+): Promise<Resultat<LienSupprime[]>> {
+  return resultat(async () => {
+    const { supabase, classId } = await getClasseId()
+    const supprimes: LienSupprime[] = []
+
+    for (const cible of cibles) {
+      if (cible.notions.length === 0) continue
+
+      const { data } = await supabase.from('notion_competence')
+        .select('matiere, semaine_numero, notion, competence_id, source')
+        .eq('class_id', classId).eq('matiere', cible.matiere).in('notion', cible.notions)
+
+      for (const lien of data ?? []) {
+        supprimes.push({
+          matiere: lien.matiere as string,
+          semaine_numero: lien.semaine_numero as number,
+          notion: lien.notion as string,
+          competence_id: lien.competence_id as string,
+          source: (lien.source as string) ?? 'manuel',
+        })
+      }
+
+      const { error } = await supabase.from('notion_competence').delete()
+        .eq('class_id', classId).eq('matiere', cible.matiere).in('notion', cible.notions)
+      if (error) throw new Error('Le détachement n’a pas pu être enregistré.')
+    }
+
+    revalidatePath('/programme')
+    return supprimes
+  }, 'Le détachement n’a pas pu être enregistré.')
+}
+
+/** Remet des rattachements que l'on vient de retirer. C'est le « revenir en arrière ». */
+export async function restaurerRattachements(
+  liens: LienSupprime[],
+): Promise<Resultat<number>> {
+  return resultat(async () => {
+    if (liens.length === 0) return 0
+    const { supabase, classId } = await getClasseId()
+
+    const { error } = await supabase.from('notion_competence').upsert(
+      liens.map(l => ({ ...l, class_id: classId })),
+      { onConflict: 'class_id,matiere,semaine_numero,notion,competence_id', ignoreDuplicates: true },
+    )
+    if (error) throw new Error('Les rattachements n’ont pas pu être remis.')
+
+    revalidatePath('/programme')
+    return liens.length
+  }, 'Les rattachements n’ont pas pu être remis.')
+}
+
 /** Les notions de la progression d'une matière qui n'ont encore aucun lien. */
 async function notionsNonRattachees(
   supabase: Awaited<ReturnType<typeof createClient>>,

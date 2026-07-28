@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import { useState } from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import NotionLigne from '../NotionLigne'
@@ -21,16 +22,25 @@ const competences = [
   { id: 'c2', domaine: 'Écriture', libelle: 'Copier un texte court' },
 ]
 
+// Le rattachement est tenu par le parent : le test joue ce role, comme
+// `ProgrammeCouvert` le fait en vrai.
 function afficher(competenceId?: string) {
-  render(
-    <NotionLigne
-      matiere="francais"
-      semaines={[3, 12, 20]}
-      notion="Lire a"
-      competenceId={competenceId}
-      competences={competences}
-    />,
-  )
+  function Parent() {
+    const [choisie, setChoisie] = useState(competenceId)
+    return (
+      <NotionLigne
+        matiere="francais"
+        semaines={[3, 12, 20]}
+        notion="Lire a"
+        competenceId={choisie}
+        competences={competences}
+        onRattachee={(_notion, id) => setChoisie(id)}
+        onDetachee={() => setChoisie(undefined)}
+        onEchec={(_notion, precedente) => setChoisie(precedente)}
+      />
+    )
+  }
+  render(<Parent />)
 }
 
 describe('NotionLigne', () => {
@@ -134,5 +144,44 @@ describe('NotionLigne', () => {
     await waitFor(() => expect(
       (screen.getByLabelText(/compétence pour lire a/i) as HTMLSelectElement).value,
     ).toBe('c2'))
+  })
+})
+
+// Demande de Christophe du 28/07 : « il faut pouvoir reset si on se trompe ».
+describe('NotionLigne, revenir en arrière', () => {
+  test('offre la flèche seulement quand la notion est rattachée', () => {
+    const detachee = jest.fn()
+    const { rerender } = render(
+      <NotionLigne
+        matiere="francais" notion="Lire a" semaines={[3]}
+        competences={competences}
+        onRattachee={jest.fn()} onDetachee={detachee} onEchec={jest.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /détacher lire a/i })).toBeNull()
+
+    rerender(
+      <NotionLigne
+        matiere="francais" notion="Lire a" semaines={[3]} competenceId="c1"
+        competences={competences}
+        onRattachee={jest.fn()} onDetachee={detachee} onEchec={jest.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /détacher lire a/i })).toBeTruthy()
+  })
+
+  test('la flèche demande le détachement au parent', async () => {
+    const user = userEvent.setup()
+    const detachee = jest.fn()
+    render(
+      <NotionLigne
+        matiere="francais" notion="Lire a" semaines={[3]} competenceId="c1"
+        competences={competences}
+        onRattachee={jest.fn()} onDetachee={detachee} onEchec={jest.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /détacher lire a/i }))
+    expect(detachee).toHaveBeenCalledWith('Lire a')
   })
 })
