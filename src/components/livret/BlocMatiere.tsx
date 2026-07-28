@@ -24,6 +24,7 @@ export default function BlocMatiere({
   eleve,
   briques,
   aFormuler,
+  aCorriger = [],
   formulations,
   etat,
   choisie,
@@ -37,6 +38,8 @@ export default function BlocMatiere({
   eleve: Eleve
   briques: Brique[]
   aFormuler: ElementLivret[]
+  /** Celles dont la phrase existe déjà, et qui restent corrigeables. */
+  aCorriger?: ElementLivret[]
   formulations: Record<string, Formulation>
   etat: EtatAppreciation
   choisie: boolean
@@ -114,6 +117,30 @@ export default function BlocMatiere({
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Une phrase gardee d'une annee sur l'autre peut ne plus convenir : elle
+          reste accessible, repliee pour ne pas encombrer. */}
+      {aCorriger.length > 0 && (
+        <details className="mt-3 rounded-xl border bg-white p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-violet-800">
+            Corriger mes phrases déjà écrites ({aCorriger.length})
+          </summary>
+          <p className="mt-1 text-xs text-gray-600">
+            La phrase corrigée remplace l’ancienne pour toutes les années suivantes.
+          </p>
+          <ul className="mt-2 space-y-2">
+            {aCorriger.map(element => (
+              <ChampFormulation
+                key={element.competenceId}
+                element={element}
+                formulation={formulations[element.competenceId] ?? FORMULATION_VIDE}
+                disabled={disabled}
+                onEnregistrer={onFormulation}
+              />
+            ))}
+          </ul>
+        </details>
       )}
 
       <p className="mt-3 text-xs text-gray-600">

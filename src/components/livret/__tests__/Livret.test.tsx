@@ -126,9 +126,9 @@ describe('Livret', () => {
     const user = userEvent.setup()
     afficher()
     // La barre du bas, distincte des boutons « Copier <matière> » des blocs.
-    const barre = screen.getByLabelText(/toutes les matières/i).closest('div')!
+    const barre = screen.getByLabelText(/tout le bilan/i).closest('div')!
 
-    expect(within(barre).getByRole('button', { name: /copier les 2 matières cochées/i })).toBeTruthy()
+    expect(within(barre).getByRole('button', { name: /copier les 2 blocs cochés/i })).toBeTruthy()
 
     await user.click(screen.getByLabelText(/inclure mathématiques dans la copie groupée/i))
     expect(within(barre).getByRole('button', { name: /^copier français$/i })).toBeTruthy()
@@ -158,6 +158,27 @@ describe('Livret', () => {
 
     await waitFor(() => expect(enregistrerFormulation).toHaveBeenCalledWith('k1', expect.objectContaining({
       reussite: 'lit très bien maintenant',
+    })))
+  })
+
+  // Une phrase gardee l'an dernier peut etre mauvaise cette annee : elle ne
+  // disparait pas une fois enregistree.
+  test('laisse corriger une phrase déjà écrite', async () => {
+    const user = userEvent.setup()
+    afficher({ positions: [{ eleveId: 'e1', periode: 1, competenceId: 'k1', niveau: 'atteint' }] })
+
+    const repli = screen.getByText(/corriger mes phrases déjà écrites \(1\)/i)
+    expect(repli).toBeTruthy()
+
+    const champ = screen.getByLabelText(/comment dire « identifier des mots » quand c’est atteint/i)
+    expect((champ as HTMLInputElement).value).toBe('lit avec assurance les mots étudiés')
+
+    await user.clear(champ)
+    await user.type(champ, 'lit tout seul maintenant')
+    await user.click(screen.getByRole('button', { name: /garder cette phrase/i }))
+
+    await waitFor(() => expect(enregistrerFormulation).toHaveBeenCalledWith('k1', expect.objectContaining({
+      reussite: 'lit tout seul maintenant',
     })))
   })
 
@@ -194,6 +215,75 @@ describe('Livret', () => {
 
     await user.click(screen.getByRole('button', { name: /tom →/i }))
     expect(screen.getByRole('heading', { name: /où en est tom/i })).toBeTruthy()
+  })
+
+  // Demande de Christophe du 28/07 : le bilan general se compose dans le suivi
+  // de l'eleve. Le livret le relit, le copie, et le laisse modifiable.
+  test('relit l’appréciation générale écrite dans le suivi', () => {
+    afficher({
+      appreciations: [{
+        eleveId: 'e1', periode: 1, matiere: '__general',
+        texte: 'Lina a globalement bien travaillé.', ecartees: [], retouchees: {},
+      }],
+      semaineParPeriode: { 1: 's7' },
+    })
+
+    expect((screen.getByLabelText(/appréciation générale de lina/i) as HTMLTextAreaElement).value)
+      .toBe('Lina a globalement bien travaillé.')
+    expect(screen.getByRole('button', { name: /copier l’appréciation générale/i })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /le reprendre dans le suivi/i })
+      .getAttribute('href')).toBe('/semaine/s7')
+  })
+
+  test('l’appréciation générale reste modifiable depuis le livret', async () => {
+    const user = userEvent.setup()
+    afficher()
+
+    await user.type(screen.getByLabelText(/appréciation générale de lina/i), 'Belle période.')
+    await waitFor(() => expect(enregistrerAppreciationPeriode).toHaveBeenCalledWith(
+      'e1', 1, '__general', expect.stringContaining('Belle période.'), [], {},
+    ))
+  })
+
+  test('la copie groupée compte l’appréciation générale', () => {
+    afficher({
+      appreciations: [{
+        eleveId: 'e1', periode: 1, matiere: '__general',
+        texte: 'Lina a globalement bien travaillé.', ecartees: [], retouchees: {},
+      }],
+    })
+    const barre = screen.getByLabelText(/tout le bilan/i).closest('div')!
+    expect(within(barre).getByRole('button', { name: /copier les 3 blocs cochés/i })).toBeTruthy()
+  })
+
+  test('dit où écrire l’appréciation générale quand elle est vide', () => {
+    afficher({ semaineParPeriode: { 1: 's7' } })
+    expect(screen.getByPlaceholderText(/s’écrit dans son suivi/i)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /aller l’écrire dans le suivi/i })).toBeTruthy()
+  })
+
+  // Regle d'or de Christophe : on ne bloque jamais. Un niveau clique par erreur
+  // doit pouvoir redevenir « pas encore positionne ».
+  test('recliquer le niveau posé l’efface', async () => {
+    const user = userEvent.setup()
+    afficher({ positions: [{ eleveId: 'e1', periode: 1, competenceId: 'k1', niveau: 'atteint' }] })
+
+    await user.click(screen.getByRole('radio', { name: /lina, identifier des mots : atteint/i }))
+    await waitFor(() => expect(definirPositionnement).toHaveBeenCalledWith('e1', 1, 'k1', null))
+    expect(screen.getByRole('radio', {
+      name: /lina, identifier des mots : atteint/i,
+    }).getAttribute('aria-checked')).toBe('false')
+  })
+
+  // Un bilan general seul suffit a dire que l'eleve est commence.
+  test('compte l’élève comme commencé sur sa seule appréciation générale', () => {
+    afficher({
+      appreciations: [{
+        eleveId: 'e2', periode: 1, matiere: '__general',
+        texte: 'Tom a traversé une période difficile.', ecartees: [], retouchees: {},
+      }],
+    })
+    expect(screen.getByText(/1 bilan commencé sur 2/i)).toBeTruthy()
   })
 
   test('le dit quand aucune compétence n’est cochée sur la période', async () => {

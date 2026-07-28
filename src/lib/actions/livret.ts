@@ -20,16 +20,31 @@ async function classeDeLUtilisateur() {
   return { supabase, classId: classe.id as string }
 }
 
-/** Le positionnement corrigé à la main sur une compétence. */
+/**
+ * Le positionnement corrigé à la main sur une compétence.
+ *
+ * `null` efface la ligne : on clique à côté, et une compétence non positionnée
+ * n'est pas la même chose qu'une compétence non atteinte.
+ */
 export async function definirPositionnement(
   eleveId: string,
   periodeNumero: number,
   competenceId: string,
-  niveau: Niveau,
+  niveau: Niveau | null,
 ): Promise<Resultat<void>> {
   return resultat(async () => {
-    if (!estNiveau(niveau)) throw new Error('Ce niveau n’existe pas.')
     const { supabase, classId } = await classeDeLUtilisateur()
+
+    if (niveau === null) {
+      const { error } = await supabase.from('positionnements_periode').delete()
+        .eq('class_id', classId).eq('eleve_id', eleveId)
+        .eq('periode_numero', periodeNumero).eq('competence_id', competenceId)
+      if (error) throw new Error('Le positionnement n’a pas pu être effacé.')
+      revalidatePath('/livret')
+      return
+    }
+
+    if (!estNiveau(niveau)) throw new Error('Ce niveau n’existe pas.')
 
     const { error } = await supabase.from('positionnements_periode').upsert({
       class_id: classId,

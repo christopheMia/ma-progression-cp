@@ -40,6 +40,9 @@ const COULEURS_NIVEAU: Record<Niveau, { choisi: string; libre: string }> = {
  * Les quatre boutons restent sur UNE ligne : replies sur deux, l'echelle ne se
  * lit plus comme une echelle.
  *
+ * Recliquer le niveau choisi l'efface : on se trompe de bouton, et « pas encore
+ * positionne » n'est pas « non atteint ». Rien n'est jamais fige.
+ *
  * Sert dans le suivi de la semaine ET dans le livret : c'est le meme geste,
  * donc le meme composant.
  */
@@ -50,7 +53,7 @@ export default function BoutonsNiveau({
   libelle,
 }: {
   valeur: Niveau | null
-  onChange: (valeur: Niveau) => void
+  onChange: (valeur: Niveau | null) => void
   disabled: boolean
   libelle: string
 }) {
@@ -83,10 +86,10 @@ export default function BoutonsNiveau({
             type="button"
             role="radio"
             aria-checked={choisi}
-            aria-label={`${libelle} : ${LIBELLE_NIVEAU[niveau]}`}
+            aria-label={`${libelle} : ${LIBELLE_NIVEAU[niveau]}${choisi ? ' (recliquer pour effacer)' : ''}`}
             tabIndex={choisi || (index === -1 && i === 0) ? 0 : -1}
             disabled={disabled}
-            onClick={() => onChange(niveau)}
+            onClick={() => onChange(choisi ? null : niveau)}
             className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold transition-colors disabled:opacity-50 ${
               choisi ? COULEURS_NIVEAU[niveau].choisi : COULEURS_NIVEAU[niveau].libre
             }`}
@@ -109,6 +112,7 @@ export function LegendeNiveaux() {
           {LIBELLE_NIVEAU[niveau]}
         </span>
       ))}
+      <span className="text-gray-500">Reclique le niveau choisi pour l’effacer.</span>
     </p>
   )
 }

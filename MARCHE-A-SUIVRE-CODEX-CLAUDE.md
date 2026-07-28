@@ -407,6 +407,103 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-28 (nuit) - Claude - LE SUIVI DEVIENT DU TEXTE LIBRE, ET C'EST LUI QUI ÉCRIT L'APPRÉCIATION GÉNÉRALE.**
+  Trois commits poussés sur `origin/main` : `26c8db1` (les visages), `205198a` (le
+  suivi libre), `1b6301e` (le bilan dans le suivi). **63 suites, 554 tests, zéro
+  échec. Types propres. Build de production réussi.** Christophe n'a pas encore
+  regardé les écrans en vrai.
+
+  **Ce que Christophe a demandé, mot pour mot** : « c'est encore trop détaillé, la
+  base doit être les compétences officielles uniquement, pas besoin de jour 1, jour
+  2, c'est l'utilisateur qui gère au fur et à mesure grâce au programme. Le suivi
+  des élèves doit se transformer uniquement en zone de texte libre, avec possibilité
+  de mettre la date avec le calendrier. La liste des élèves doit être déroulante,
+  avec un système à code couleur qui dira comment s'est passée chaque semaine :
+  rouge pas bon, orange attention, vert bien. C'est pour représenter le
+  comportement. » Puis : « le bouton bilan doit être pour chaque élève dans leur
+  suivi plutôt ».
+
+  **`StudentTracking.tsx` est supprimé, `SuiviEleves.tsx` le remplace.** Plus de
+  grille de notions par élève. L'écran d'une semaine, c'est maintenant : un élève à
+  la fois (liste déroulante plus deux flèches), une pastille de comportement pour la
+  semaine, la frise de toute la période, des observations datées en texte libre, et
+  le bilan de la période. **Une seule pastille par élève et par semaine**, demande
+  explicite.
+
+  **Migration `023_suivi_libre.sql` appliquée** : `comportements_semaine`
+  (unique sur `eleve_id, semaine_id`, contrainte sur `etat` dans
+  `difficile / attention / bien`) et `observations` (`observee_le` datée, texte
+  libre). Une policy RLS par table, sur le modèle habituel du `exists` par
+  `classes.user_id`. La migration `021_eleve_genre.sql` ajoute `eleves.genre`
+  (`f` / `m` / null).
+
+  **`src/lib/comportement.ts`** (12 tests) tient les trois états, le résumé de la
+  période et la phrase de posture. Deux choses non évidentes : les semaines sans
+  avis ne comptent pas (une semaine vide n'est pas une semaine difficile), et les
+  phrases sont écrites **sans adjectif accordé**, parce qu'elles se collent derrière
+  « Elle » ou « Il » (« a globalement bien travaillé, avec quelques semaines plus
+  fragiles »). Un test vérifie qu'aucune phrase ne porte d'accord. Sans rien de noté,
+  la fonction rend `''` : règle 3, on n'invente pas.
+
+  **Le visage, pas la météo.** Christophe a écarté les icônes météo, puis choisi la
+  famille E (le visage) en traitement E3 (trait épais). `src/components/ui/Visage.tsx`
+  le dessine **en SVG et pas en emoji** : un emoji change de tête selon le téléphone,
+  et ces trois têtes doivent vouloir dire exactement la même chose partout. Recliquer
+  l'état déjà choisi le retire (on se trompe de bouton, et « rien de noté » doit
+  rester atteignable).
+
+  **Le bilan de la période vit dans le suivi de chaque élève.** Ses briques : la
+  posture tirée de la frise, plus chaque observation écrite pendant la période, toutes
+  décochables. Nouveau rôle `observation` dans `briques-bilan.ts` : une observation
+  **sort telle quelle**, sans qu'on lui colle un sujet devant, sinon « Lina A osé lire
+  devant le groupe. » Le texte est rangé dans `appreciations_periode` avec la matière
+  réservée **`__general`**, parce que le livret range l'appréciation générale au même
+  endroit que les commentaires de discipline.
+
+  **Le genre est demandé là où on regarde l'élève** : deux boutons F et G à côté de
+  son prénom, dans le bandeau du suivi. Tant qu'il n'est pas renseigné, le bilan
+  **répète le prénom** au lieu du pronom (plus lourd, jamais faux) et l'écran le dit.
+  **On ne devine JAMAIS le genre depuis le prénom** : Camille, Dominique, Charlie,
+  Alix, Sasha, et Maël contre Maëlle. Se tromper de pronom sur le livret d'un enfant
+  coûte infiniment plus cher que de demander. Christophe a validé (« Ça me va »).
+
+  **`/livret` relit cette appréciation générale, il ne la rédige pas.** Bloc en haut
+  de l'écran, texte en lecture seule, son propre bouton de copie, sa case pour partir
+  avec la copie groupée, et un lien vers le suivi de la dernière semaine de la période
+  pour la modifier. La case du bas s'appelle maintenant « Tout le bilan » et le bouton
+  compte des **blocs** et non plus des matières. Un élève est « commencé » dès qu'il a
+  du texte quelque part, appréciation générale comprise.
+
+  **« On est d'accord que tout reste modifiable ? » (Christophe, 28/07).** Question
+  posée après coup, et la réponse honnête était NON : trois endroits bloquaient. Les
+  trois sont corrigés, c'est la règle d'or (jamais bloquer l'utilisateur).
+  1. **Un niveau NA/PA/A/D cliqué par erreur ne s'effaçait plus.** `BoutonsNiveau`
+     efface maintenant quand on reclique le niveau choisi, et `definirPositionnement`
+     accepte `null` pour supprimer la ligne. « Pas encore positionné » n'est pas
+     « non atteint », et la nuance compte dans un livret.
+  2. **L'appréciation générale était en lecture seule dans `/livret`** (je venais de
+     la faire comme ça). C'est une vraie zone de texte : elle se compose dans le
+     suivi, elle se corrige des deux côtés, le dernier qui écrit a raison.
+  3. **Une phrase de compétence enregistrée disparaissait de l'écran** : l'éditeur ne
+     montrait que les phrases manquantes. Un repli « Corriger mes phrases déjà
+     écrites » les rouvre toutes. Une phrase gardée l'an dernier peut ne plus aller.
+
+  **Ce qui a été supprimé avec son test** : `bilan-periode.ts`, `notions-semblables.ts`,
+  `programme-couvert.ts`, `NotionLigne.tsx`, `ProposerRattachementsButton.tsx`,
+  `actions/mapping.ts`, `StudentTracking.tsx`, `vue-classe.ts`. Le type `ElementLivret`
+  a déménagé dans `briques-bilan.ts`.
+
+  **Données effacées le 28/07 sur autorisation explicite de Christophe** (« tu peux
+  effacer les données, garde juste la classe et les programmes importés »), après
+  sauvegarde de 8 tables dans le schéma `sauvegarde_20260728`. Restent : 1 classe,
+  23 élèves, 36 semaines, 154 lignes de progression, 5 méthodes, 101 compétences.
+
+  **La suite** : les deux autres portes vers `/livret` (un bouton depuis `/periodes`,
+  une ligne dans la dernière semaine d'une période), l'ouverture de `/livret` sur la
+  période en cours et le premier élève sans bilan, la table `competences_perso`, et
+  une migration pour retirer `acquisitions` et `criteres_observation` devenues
+  inutiles.
+
 - **2026-07-27 (soir) - Claude - ÉTAPE 1 FAITE ET EN LIGNE : le suivi est passé à quatre niveaux.**
   Commit **`b88b3da`**, poussé sur `origin/main`, déploiement Vercel de production prêt
   et vérifié (le domaine répond et redirige vers `/connexion`). Christophe a donné son

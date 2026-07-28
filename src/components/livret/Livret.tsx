@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Copy } from 'lucide-react'
 import BoutonsNiveau, { LegendeNiveaux } from '@/components/ui/BoutonsNiveau'
 import BlocMatiere from '@/components/livret/BlocMatiere'
@@ -33,6 +34,14 @@ export type EtatAppreciation = {
 
 const VIDE: EtatAppreciation = { texte: '', ecartees: [], retouchees: {} }
 
+/**
+ * L'appréciation générale est rangée comme une matière réservée, parce que le
+ * livret la range au même endroit que les commentaires de discipline. Elle
+ * s'écrit AILLEURS : dans le suivi de l'élève (demande de Christophe du
+ * 28/07/2026). Ici, elle se relit et se copie, elle ne se rédige pas.
+ */
+const GENERAL = '__general'
+
 const LIBELLE_MATIERE: Record<string, string> = {
   francais: 'Français',
   maths: 'Mathématiques',
@@ -56,6 +65,7 @@ export default function Livret({
   formulations,
   positions,
   appreciations,
+  semaineParPeriode = {},
 }: {
   eleves: Eleve[]
   periodes: number[]
@@ -64,6 +74,8 @@ export default function Livret({
   travaillees: { periode: number; competenceId: string }[]
   motsDeLaSemaine: Record<string, Record<number, MotDeLaSemaine[]>>
   formulations: Record<string, Formulation>
+  /** La dernière semaine de chaque période : la porte vers le suivi. */
+  semaineParPeriode?: Record<number, string>
   positions: { eleveId: string; periode: number; competenceId: string; niveau: string }[]
   appreciations: {
     eleveId: string; periode: number; matiere: string
@@ -98,6 +110,7 @@ export default function Livret({
 
   const [phrases, setPhrases] = useState<Record<string, Formulation>>(formulations)
   const [choisies, setChoisies] = useState<Record<string, boolean>>({})
+  const [generalChoisi, setGeneralChoisi] = useState(true)
 
   const eleve = eleves[iEleve]
 
@@ -143,28 +156,49 @@ export default function Livret({
     })
   }
 
-  /** Les compétences positionnées dont la phrase de ce niveau n'existe pas. */
-  function aFormuler(matiere: string) {
-    return elements.filter(element => {
-      if (element.matiere !== matiere || element.niveau === null) return false
-      const f = phrases[element.competenceId]
-      if (!f) return true
-      if (element.niveau === 'depasse') return !f.eclat.trim() && !f.reussite.trim()
-      if (element.niveau === 'atteint') return !f.reussite.trim()
-      if (element.niveau === 'partiellement') return !f.encours.trim()
-      return !f.vigilance.trim()
-    })
+  /** La phrase de ce niveau manque-t-elle pour cette compétence ? */
+  function manqueLaPhrase(element: ElementLivret) {
+    const f = phrases[element.competenceId]
+    if (!f) return true
+    if (element.niveau === 'depasse') return !f.eclat.trim() && !f.reussite.trim()
+    if (element.niveau === 'atteint') return !f.reussite.trim()
+    if (element.niveau === 'partiellement') return !f.encours.trim()
+    return !f.vigilance.trim()
   }
 
-  const bilansCommences = eleves.filter(e => matieres.some(m => (
-    (textes[cleAppreciation(e.id, periode, m)]?.texte ?? '').trim().length > 0
-  ))).length
+  /** Les compétences positionnées dont la phrase de ce niveau n'existe pas. */
+  function aFormuler(matiere: string) {
+    return elements.filter(e => e.matiere === matiere && e.niveau !== null && manqueLaPhrase(e))
+  }
 
-  function poserNiveau(competenceId: string, niveau: Niveau) {
+  /**
+   * Celles dont la phrase existe déjà : une phrase gardée l'an dernier peut
+   * être mauvaise cette année, elle doit rester corrigeable.
+   */
+  function aCorriger(matiere: string) {
+    return elements.filter(e => e.matiere === matiere && e.niveau !== null && !manqueLaPhrase(e))
+  }
+
+  // Un bilan est « commencé » dès qu'il y a du texte quelque part, y compris
+  // l'appréciation générale écrite dans le suivi.
+  function aCommence(eleveId: string) {
+    return [...matieres, GENERAL].some(m => (
+      (textes[cleAppreciation(eleveId, periode, m)]?.texte ?? '').trim().length > 0
+    ))
+  }
+
+  const bilansCommences = eleves.filter(e => aCommence(e.id)).length
+
+  function poserNiveau(competenceId: string, niveau: Niveau | null) {
     const cle = clePosition(eleve.id, periode, competenceId)
     const precedent = niveaux[cle]
     setErreur('')
-    setNiveaux(etat => ({ ...etat, [cle]: niveau }))
+    setNiveaux(etat => {
+      const suivant = { ...etat }
+      if (niveau === null) delete suivant[cle]
+      else suivant[cle] = niveau
+      return suivant
+    })
 
     startTransition(async () => {
       const r = await definirPositionnement(eleve.id, periode, competenceId, niveau)
@@ -216,6 +250,16 @@ export default function Livret({
     return lignes.join('\n')
   }
 
+  // Écrite dans le suivi de l'élève, relue ici telle quelle.
+  const texteGeneral = (textes[cleAppreciation(eleve?.id ?? '', periode, GENERAL)]?.texte ?? '').trim()
+  const blocGeneral = `APPRÉCIATION GÉNÉRALE\n${texteGeneral}`
+  const lienSuivi = semaineParPeriode[periode] ? `/semaine/${semaineParPeriode[periode]}` : null
+
+  const morceauxChoisis = [
+    ...(generalChoisi && texteGeneral ? [blocGeneral] : []),
+    ...matieresChoisies.map(texteMatiere),
+  ]
+
   function copier(texte: string, confirmation: string) {
     const fini = () => {
       setMessage(confirmation)
@@ -226,15 +270,15 @@ export default function Livret({
   }
 
   function copierGroupe() {
-    if (matieresChoisies.length === 0) return
+    if (morceauxChoisis.length === 0) return
     const texte = [
       `${eleve.prenom} · Période ${periode}`,
       '',
-      matieresChoisies.map(texteMatiere).join('\n\n'),
+      morceauxChoisis.join('\n\n'),
     ].join('\n')
-    copier(texte, matieresChoisies.length === matieres.length
+    copier(texte, morceauxChoisis.length === matieres.length + (texteGeneral ? 1 : 0)
       ? '✓ tout le bilan copié'
-      : `✓ ${matieresChoisies.length} matière${matieresChoisies.length > 1 ? 's copiées' : ' copiée'}`)
+      : `✓ ${morceauxChoisis.length} bloc${morceauxChoisis.length > 1 ? 's copiés' : ' copié'}`)
   }
 
   if (eleves.length === 0) {
@@ -271,16 +315,11 @@ export default function Livret({
               onChange={e => setIEleve(Number(e.target.value))}
               className="rounded-lg border px-2 py-1 font-semibold text-gray-900"
             >
-              {eleves.map((e, i) => {
-                const commence = matieres.some(m => (
-                  (textes[cleAppreciation(e.id, periode, m)]?.texte ?? '').trim().length > 0
-                ))
-                return (
-                  <option key={e.id} value={i}>
-                    {e.prenom} · {commence ? 'commencé' : 'rien saisi'}
-                  </option>
-                )
-              })}
+              {eleves.map((e, i) => (
+                <option key={e.id} value={i}>
+                  {e.prenom} · {aCommence(e.id) ? 'commencé' : 'rien saisi'}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -311,6 +350,59 @@ export default function Livret({
         {erreur && (
           <p role="alert" className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
             {erreur}
+          </p>
+        )}
+      </section>
+
+      {/* L'appréciation générale ouvre le livret officiel, donc elle ouvre
+          l'écran. Elle ne se rédige pas ici : elle vient du suivi de l'élève,
+          où la frise et les observations la nourrissent. */}
+      <section className="rounded-2xl border bg-white p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="font-bold text-gray-700">Appréciation générale</h2>
+          {texteGeneral && (
+            <>
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={generalChoisi}
+                  onChange={e => setGeneralChoisi(e.target.checked)}
+                  aria-label="Inclure l’appréciation générale dans la copie groupée"
+                  className="h-4 w-4 accent-violet-600"
+                />
+                À copier avec le reste
+              </label>
+              <button
+                type="button"
+                onClick={() => copier(blocGeneral, '✓ appréciation générale copiée')}
+                className="ml-auto flex items-center gap-1.5 rounded-lg border border-violet-300 px-3 py-1.5 text-sm font-semibold text-violet-800 hover:bg-violet-50"
+              >
+                <Copy className="h-4 w-4" aria-hidden />
+                Copier l’appréciation générale
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Elle se compose dans le suivi (la frise et les observations sont
+            la-bas), mais elle reste modifiable ici : le dernier qui ecrit a
+            raison. Rien n'est jamais fige dans cette application. */}
+        <label className="mt-3 block">
+          <span className="sr-only">Appréciation générale de {eleve.prenom}</span>
+          <textarea
+            value={textes[cleAppreciation(eleve.id, periode, GENERAL)]?.texte ?? ''}
+            onChange={e => majAppreciation(GENERAL, { texte: e.target.value })}
+            rows={3}
+            placeholder={`Le bilan de ${eleve.prenom} s’écrit dans son suivi, à partir de sa frise de comportement et de tes observations. Tu peux aussi l’écrire ici.`}
+            className="w-full rounded-lg border-2 border-violet-200 p-2 text-sm text-gray-900 focus:border-violet-600 focus:outline-none"
+          />
+        </label>
+
+        {lienSuivi && (
+          <p className="mt-1 text-xs">
+            <Link href={lienSuivi} className="font-semibold text-violet-700 underline">
+              {texteGeneral ? 'Le reprendre dans le suivi' : 'Aller l’écrire dans le suivi'}
+            </Link>
           </p>
         )}
       </section>
@@ -373,6 +465,7 @@ export default function Livret({
               eleve={eleve}
               briques={briquesDe(matiere)}
               aFormuler={aFormuler(matiere)}
+              aCorriger={aCorriger(matiere)}
               formulations={phrases}
               etat={etatDe(matiere)}
               choisie={estChoisie(matiere)}
@@ -388,27 +481,30 @@ export default function Livret({
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
               <input
                 type="checkbox"
-                checked={matieresChoisies.length === matieres.length}
+                checked={matieresChoisies.length === matieres.length && (!texteGeneral || generalChoisi)}
                 onChange={e => {
                   const valeur = e.target.checked
                   setChoisies(Object.fromEntries(matieres.map(m => [m, valeur])))
+                  setGeneralChoisi(valeur)
                 }}
                 className="h-4 w-4 accent-violet-600"
               />
-              Toutes les matières
+              Tout le bilan
             </label>
             <button
               type="button"
               onClick={copierGroupe}
-              disabled={matieresChoisies.length === 0}
+              disabled={morceauxChoisis.length === 0}
               className="flex items-center gap-1.5 rounded-lg border border-violet-600 bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               <Copy className="h-4 w-4" aria-hidden />
-              {matieresChoisies.length === 0
+              {morceauxChoisis.length === 0
                 ? 'Rien à copier'
-                : matieresChoisies.length === 1
-                  ? `Copier ${nommerMatiere(matieresChoisies[0])}`
-                  : `Copier les ${matieresChoisies.length} matières cochées`}
+                : morceauxChoisis.length === 1
+                  ? (matieresChoisies.length === 1
+                      ? `Copier ${nommerMatiere(matieresChoisies[0])}`
+                      : 'Copier l’appréciation générale')
+                  : `Copier les ${morceauxChoisis.length} blocs cochés`}
             </button>
             {message && <span className="text-sm font-semibold text-emerald-700">{message}</span>}
           </div>
@@ -430,7 +526,7 @@ function MatiereLignes({
   elements: ElementLivret[]
   prenom: string
   disabled: boolean
-  onNiveau: (competenceId: string, niveau: Niveau) => void
+  onNiveau: (competenceId: string, niveau: Niveau | null) => void
 }) {
   let domainePrecedent = ''
   return (

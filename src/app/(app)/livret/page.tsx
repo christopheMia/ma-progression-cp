@@ -76,6 +76,14 @@ export default async function LivretPage() {
     })
   }
 
+  // La dernière semaine de chaque période : c'est là qu'on écrit le bilan
+  // général, donc c'est la porte que le livret propose.
+  const semaineParPeriode: Record<number, string> = {}
+  for (const s of semaines ?? []) {
+    const p = s.periode_numero as number | null
+    if (p != null) semaineParPeriode[p] = s.id as string
+  }
+
   const formulationsParCompetence: Record<string, Formulation> = {}
   for (const f of formulations ?? []) {
     formulationsParCompetence[f.competence_id as string] = {
@@ -122,6 +130,7 @@ export default async function LivretPage() {
         }))}
         motsDeLaSemaine={mots}
         formulations={formulationsParCompetence}
+        semaineParPeriode={semaineParPeriode}
         positions={(positions ?? []).map(p => ({
           eleveId: p.eleve_id as string,
           periode: p.periode_numero as number,
