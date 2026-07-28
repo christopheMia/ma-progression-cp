@@ -7,6 +7,8 @@ import SuiviEleves from '../SuiviEleves'
 import {
   ajouterObservation,
   definirComportement,
+  definirGenre,
+  enregistrerBilanPeriode,
   modifierObservation,
   supprimerObservation,
 } from '@/lib/actions/suivi-libre'
@@ -14,13 +16,15 @@ import {
 jest.mock('@/lib/actions/suivi-libre', () => ({
   ajouterObservation: jest.fn(),
   definirComportement: jest.fn(),
+  definirGenre: jest.fn(),
+  enregistrerBilanPeriode: jest.fn(),
   modifierObservation: jest.fn(),
   supprimerObservation: jest.fn(),
 }))
 
 const eleves = [
-  { id: 'e1', prenom: 'Lina' },
-  { id: 'e2', prenom: 'Tom' },
+  { id: 'e1', prenom: 'Lina', genre: 'f' as const },
+  { id: 'e2', prenom: 'Tom', genre: null },
 ]
 
 const semainesPeriode = [
@@ -34,6 +38,7 @@ function afficher(surcharges: Record<string, unknown> = {}) {
     <SuiviEleves
       semaineId="s10"
       numeroSemaine={10}
+      periode={2}
       dateParDefaut="2026-11-24"
       eleves={eleves}
       semainesPeriode={semainesPeriode}
@@ -42,6 +47,7 @@ function afficher(surcharges: Record<string, unknown> = {}) {
         id: 'o1', eleveId: 'e1', semaineId: 's10',
         observeeLe: '2026-11-25', texte: 'A osé lire devant le groupe.',
       }]}
+      bilans={{}}
       {...surcharges}
     />,
   )
@@ -54,6 +60,8 @@ describe('SuiviEleves', () => {
     ;(ajouterObservation as jest.Mock).mockResolvedValue({ ok: true, valeur: 'o2' })
     ;(modifierObservation as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
     ;(supprimerObservation as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    ;(definirGenre as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    ;(enregistrerBilanPeriode as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
   })
 
   test('reprend le comportement déjà noté pour la semaine', () => {
@@ -158,5 +166,70 @@ describe('SuiviEleves', () => {
     const frise = screen.getByText(/la période d’un coup d’œil/i).parentElement!
     expect(within(frise).getByText(/semaine 9 : ça va bien/i)).toBeTruthy()
     expect(within(frise).getByText(/semaine 11 : rien de noté/i)).toBeTruthy()
+  })
+})
+
+// Demande de Christophe du 28/07 : le bouton bilan vit dans le suivi de chaque
+// eleve, pas dans le livret.
+describe('SuiviEleves, le bilan de la période', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(definirGenre as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    ;(enregistrerBilanPeriode as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+  })
+
+  test('assemble ses briques depuis la frise et les observations', () => {
+    afficher()
+    // La posture apparait deux fois : annoncee sous la frise, et comme brique.
+    expect(screen.getAllByText(/a globalement bien travaillé, avec quelques semaines plus fragiles/i))
+      .toHaveLength(2)
+    // L'observation apparait dans sa zone de saisie et comme brique du bilan.
+    expect(screen.getAllByText('A osé lire devant le groupe.')).toHaveLength(2)
+    expect(screen.getByText(/le 25\/11\/2026/i)).toBeTruthy()
+  })
+
+  test('rédige, en employant le pronom du genre renseigné', async () => {
+    const user = userEvent.setup()
+    afficher()
+
+    await user.click(screen.getByRole('button', { name: /faire le bilan de la période/i }))
+    await waitFor(() => expect(enregistrerBilanPeriode).toHaveBeenCalledWith(
+      'e1', 2,
+      'Lina a globalement bien travaillé, avec quelques semaines plus fragiles. '
+      + 'A osé lire devant le groupe.',
+      [],
+    ))
+  })
+
+  test('avertit quand le genre n’est pas renseigné', async () => {
+    const user = userEvent.setup()
+    afficher()
+    await user.click(screen.getByRole('button', { name: /tom →/i }))
+    expect(screen.getByText(/dis fille ou garçon en haut/i)).toBeTruthy()
+  })
+
+  test('enregistre le genre choisi', async () => {
+    const user = userEvent.setup()
+    afficher()
+    await user.click(screen.getByRole('button', { name: /tom →/i }))
+    await user.click(screen.getByRole('radio', { name: /tom : garçon/i }))
+    await waitFor(() => expect(definirGenre).toHaveBeenCalledWith('e2', 'm'))
+  })
+
+  test('une brique décochée ne part pas dans le texte', async () => {
+    const user = userEvent.setup()
+    afficher()
+
+    await user.click(screen.getByRole('checkbox', { name: /utiliser : a osé lire devant le groupe/i }))
+    await waitFor(() => expect(enregistrerBilanPeriode).toHaveBeenCalledWith(
+      'e1', 2, '', expect.arrayContaining([expect.stringMatching(/^obs:/)]),
+    ))
+  })
+
+  test('le dit quand rien n’a été noté sur la période', async () => {
+    const user = userEvent.setup()
+    afficher()
+    await user.click(screen.getByRole('button', { name: /tom →/i }))
+    expect(screen.getByText(/rien de noté sur la période pour tom/i)).toBeTruthy()
   })
 })

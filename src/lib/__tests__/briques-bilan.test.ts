@@ -252,3 +252,39 @@ describe('redigerAppreciation', () => {
       .toBe('Lina lit avec assurance les mots contenant les sons étudiés. Elle ose demander quand elle bloque.')
   })
 })
+
+// Le bilan de periode d'un eleve, depuis son suivi : la posture vient de la
+// frise, les observations sont les phrases deja ecrites par l'enseignante.
+describe('le bilan de période depuis le suivi', () => {
+  const eleve = { prenom: 'Lina', genre: 'f' as const }
+
+  function brique(role: string, texte: string) {
+    return { cle: `x:${texte}`, role, texte, suite: '', source: '', actif: true }
+  }
+
+  it('sort une observation telle quelle, sans lui coller un sujet', () => {
+    expect(redigerAppreciation([brique('observation', 'a osé lire devant le groupe')], eleve))
+      .toBe('A osé lire devant le groupe.')
+  })
+
+  it('n’ajoute pas un second point quand la phrase est déjà ponctuée', () => {
+    expect(redigerAppreciation([brique('observation', 'Quel progrès !')], eleve))
+      .toBe('Quel progrès !')
+  })
+
+  it('ouvre sur la posture, puis enchaîne les observations', () => {
+    const texte = redigerAppreciation([
+      brique('observation', 'a osé lire devant le groupe'),
+      brique('posture', 'a globalement bien travaillé'),
+    ], eleve)
+    expect(texte).toBe('Lina a globalement bien travaillé. A osé lire devant le groupe.')
+  })
+
+  it('place les observations avant l’encouragement', () => {
+    const texte = redigerAppreciation([
+      brique('encouragement', 'Continue ainsi.'),
+      brique('observation', 'a beaucoup progressé en copie'),
+    ], eleve)
+    expect(texte).toBe('A beaucoup progressé en copie. Continue ainsi.')
+  })
+})

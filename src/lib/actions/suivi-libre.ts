@@ -104,3 +104,52 @@ export async function supprimerObservation(
     revalidatePath('/livret')
   }, 'L’observation n’a pas pu être retirée.')
 }
+
+/**
+ * Le bilan de la période d'un élève, rédigé depuis son suivi.
+ *
+ * Demande de Christophe du 28/07/2026 : le bouton vit dans le suivi de chaque
+ * élève, pas dans le livret. Le texte est rangé dans `appreciations_periode`
+ * avec la matière réservée `__general`, parce que c'est l'appréciation
+ * générale du livret et pas le commentaire d'une discipline.
+ */
+export async function enregistrerBilanPeriode(
+  eleveId: string,
+  periodeNumero: number,
+  texte: string,
+  ecartees: string[],
+): Promise<Resultat<void>> {
+  return resultat(async () => {
+    const { supabase, classId } = await classeDeLUtilisateur()
+
+    const { error } = await supabase.from('appreciations_periode').upsert({
+      class_id: classId,
+      eleve_id: eleveId,
+      periode_numero: periodeNumero,
+      matiere: '__general',
+      texte,
+      briques_ecartees: ecartees,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'class_id,eleve_id,periode_numero,matiere' })
+    if (error) throw new Error('Le bilan n’a pas pu être enregistré.')
+
+    revalidatePath('/livret')
+  }, 'Le bilan n’a pas pu être enregistré.')
+}
+
+/** Fille ou garçon, pour que le bilan écrive « Il » ou « Elle ». */
+export async function definirGenre(
+  eleveId: string,
+  genre: 'f' | 'm' | null,
+): Promise<Resultat<void>> {
+  return resultat(async () => {
+    if (genre !== null && genre !== 'f' && genre !== 'm') throw new Error('Valeur inattendue.')
+    const { supabase, classId } = await classeDeLUtilisateur()
+
+    const { error } = await supabase.from('eleves')
+      .update({ genre }).eq('id', eleveId).eq('class_id', classId)
+    if (error) throw new Error('Le choix n’a pas pu être enregistré.')
+
+    revalidatePath('/livret')
+  }, 'Le choix n’a pas pu être enregistré.')
+}

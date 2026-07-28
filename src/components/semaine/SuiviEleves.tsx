@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { CalendarDays, Plus, Trash2 } from 'lucide-react'
+import { CalendarDays, Copy, Plus, Sparkles, Trash2 } from 'lucide-react'
 import ChoixComportement, { TEINTE_COMPORTEMENT, Visage } from '@/components/ui/Visage'
 import {
   LIBELLE_COMPORTEMENT,
@@ -9,14 +9,17 @@ import {
   resumerComportement,
   type EtatComportement,
 } from '@/lib/comportement'
+import { redigerAppreciation, type Brique } from '@/lib/briques-bilan'
 import {
   ajouterObservation,
   definirComportement,
+  definirGenre,
+  enregistrerBilanPeriode,
   modifierObservation,
   supprimerObservation,
 } from '@/lib/actions/suivi-libre'
 
-export type EleveSuivi = { id: string; prenom: string }
+export type EleveSuivi = { id: string; prenom: string; genre: 'f' | 'm' | null }
 export type SemainePeriode = { id: string; numero: number }
 export type Observation = {
   id: string
@@ -45,14 +48,18 @@ function enFrancais(iso: string) {
 export default function SuiviEleves({
   semaineId,
   numeroSemaine,
+  periode,
   dateParDefaut,
   eleves,
   semainesPeriode,
   comportements: comportementsInitiaux,
   observations: observationsInitiales,
+  bilans: bilansInitiaux,
 }: {
   semaineId: string
   numeroSemaine: number
+  /** La période en cours, ou null si le calendrier ne la connaît pas. */
+  periode: number | null
   /** Le premier jour de la semaine : la date la plus probable d'une observation. */
   dateParDefaut: string
   eleves: EleveSuivi[]
@@ -61,6 +68,8 @@ export default function SuiviEleves({
   /** Clé `eleveId|semaineId`. */
   comportements: Record<string, EtatComportement>
   observations: Observation[]
+  /** Le bilan déjà rédigé, par élève. */
+  bilans: Record<string, { texte: string; ecartees: string[] }>
 }) {
   const [isPending, startTransition] = useTransition()
   const [erreur, setErreur] = useState('')
@@ -68,6 +77,11 @@ export default function SuiviEleves({
   const [comportements, setComportements] = useState(comportementsInitiaux)
   const [observations, setObservations] = useState(observationsInitiales)
   const [dateSaisie, setDateSaisie] = useState(dateParDefaut)
+  const [bilans, setBilans] = useState(bilansInitiaux)
+  const [copie, setCopie] = useState('')
+  const [genres, setGenres] = useState<Record<string, 'f' | 'm' | null>>(
+    () => Object.fromEntries(eleves.map(e => [e.id, e.genre])),
+  )
 
   const eleve = eleves[iEleve]
   const cle = (eleveId: string, sId: string) => `${eleveId}|${sId}`
@@ -139,6 +153,83 @@ export default function SuiviEleves({
     })
   }
 
+  // ── Le bilan de la période, dans le suivi de l'élève ──────────────────────
+  // Demande de Christophe : le bouton vit ici, pas dans le livret. Les briques
+  // viennent de ce qui a ete saisi, jamais d'ailleurs : la posture sort de la
+  // frise, les observations sont les phrases deja ecrites.
+
+  const bilan = bilans[eleve.id] ?? { texte: '', ecartees: [] }
+  const ecartees = new Set(bilan.ecartees)
+
+  const briquesBilan: Brique[] = [
+    ...(posture
+      ? [{
+        cle: 'posture', role: 'posture', texte: posture, suite: '',
+        source: `frise de la période${periode ? ` ${periode}` : ''}`,
+        actif: !ecartees.has('posture'),
+      }]
+      : []),
+    ...siennes
+      .filter(o => o.texte.trim())
+      .map(o => ({
+        cle: `obs:${o.id}`,
+        role: 'observation',
+        texte: o.texte.trim(),
+        suite: '',
+        source: `le ${enFrancais(o.observeeLe)}`,
+        actif: !ecartees.has(`obs:${o.id}`),
+      })),
+  ]
+
+  function enregistrerBilan(suivant: { texte: string; ecartees: string[] }) {
+    setBilans(etat => ({ ...etat, [eleve.id]: suivant }))
+    if (periode === null) return
+    startTransition(async () => {
+      const r = await enregistrerBilanPeriode(
+        eleve.id, periode, suivant.texte, suivant.ecartees,
+      )
+      if (!r.ok) setErreur(r.message)
+    })
+  }
+
+  function basculerBrique(cle: string) {
+    const suivantes = ecartees.has(cle)
+      ? bilan.ecartees.filter(c => c !== cle)
+      : [...bilan.ecartees, cle]
+    enregistrerBilan({ ...bilan, ecartees: suivantes })
+  }
+
+  function faireLeBilan() {
+    const texte = redigerAppreciation(briquesBilan, {
+      prenom: eleve.prenom,
+      genre: genres[eleve.id] ?? null,
+    })
+    enregistrerBilan({ ...bilan, texte })
+  }
+
+  function poserGenre(genre: 'f' | 'm' | null) {
+    const precedent = genres[eleve.id] ?? null
+    setErreur('')
+    setGenres(etat => ({ ...etat, [eleve.id]: genre }))
+    startTransition(async () => {
+      const r = await definirGenre(eleve.id, genre)
+      if (!r.ok) {
+        setGenres(etat => ({ ...etat, [eleve.id]: precedent }))
+        setErreur(r.message)
+      }
+    })
+  }
+
+  function copierBilan() {
+    const texte = `${eleve.prenom}${periode ? ` · période ${periode}` : ''}\n\n${bilan.texte.trim()}`
+    const fini = () => {
+      setCopie('✓ copié')
+      setTimeout(() => setCopie(''), 3000)
+    }
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(texte).then(fini, fini)
+    else fini()
+  }
+
   function retirer(id: string) {
     const avant = observations
     setObservations(liste => liste.filter(o => o.id !== id))
@@ -166,6 +257,33 @@ export default function SuiviEleves({
             {eleves.map((e, i) => <option key={e.id} value={i}>{e.prenom}</option>)}
           </select>
         </label>
+        {/* Fille ou garcon : sans ca le bilan repete le prenom au lieu du
+            pronom. On ne devine jamais le genre a partir du prenom, une
+            erreur sortirait dans le livret officiel que les parents signent. */}
+        <span className="flex items-center gap-1" role="radiogroup" aria-label={`Genre de ${eleve.prenom}`}>
+          {([['f', 'F'], ['m', 'G']] as const).map(([code, lettre]) => {
+            const choisi = genres[eleve.id] === code
+            return (
+              <button
+                key={code}
+                type="button"
+                role="radio"
+                aria-checked={choisi}
+                aria-label={`${eleve.prenom} : ${code === 'f' ? 'fille' : 'garçon'}`}
+                disabled={isPending}
+                onClick={() => poserGenre(choisi ? null : code)}
+                className={`h-7 w-7 rounded-lg border text-xs font-bold disabled:opacity-50 ${
+                  choisi
+                    ? 'border-violet-600 bg-violet-600 text-white'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300'
+                }`}
+              >
+                {lettre}
+              </button>
+            )
+          })}
+        </span>
+
         <div className="ml-auto flex gap-2">
           <button
             type="button"
@@ -308,6 +426,90 @@ export default function SuiviEleves({
           Une observation par moment, pas une par semaine : ce que tu vois le lundi et
           ce que tu vois le jeudi ne se mélangent pas.
         </p>
+      </section>
+
+      <section className="border-t pt-4">
+        <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+          Bilan de la période{periode ? ` ${periode}` : ''}
+        </h3>
+        <p className="mb-2 text-xs text-gray-600">
+          Assemblé depuis la frise et tes observations, rien d’autre. Décoche ce que tu
+          ne veux pas dire, puis rédige.
+        </p>
+
+        {briquesBilan.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Rien de noté sur la période pour {eleve.prenom} : il n’y a pas encore de quoi
+            faire un bilan.
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {briquesBilan.map(brique => (
+              <li
+                key={brique.cle}
+                className={`flex items-start gap-2 rounded-xl border p-2 text-sm ${
+                  brique.actif ? 'bg-white' : 'bg-gray-50 opacity-60'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={brique.actif}
+                  onChange={() => basculerBrique(brique.cle)}
+                  aria-label={`Utiliser : ${brique.texte}`}
+                  className="mt-1 h-4 w-4 shrink-0 accent-violet-600"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[0.65rem] font-bold uppercase tracking-wide text-violet-700">
+                    {brique.role}
+                    <span className="font-normal normal-case tracking-normal text-gray-500">
+                      {' '}· {brique.source}
+                    </span>
+                  </span>
+                  <span className="text-gray-900">{brique.texte}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={faireLeBilan}
+            disabled={isPending || briquesBilan.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-600 bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Faire le bilan de la période
+          </button>
+          <button
+            type="button"
+            onClick={copierBilan}
+            disabled={!bilan.texte.trim()}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-300 px-2.5 py-1.5 text-xs font-semibold text-violet-800 hover:bg-violet-50 disabled:opacity-40"
+          >
+            <Copy className="h-3.5 w-3.5" aria-hidden />
+            Copier
+          </button>
+          {copie && <span className="text-sm font-semibold text-emerald-700">{copie}</span>}
+          {!genres[eleve.id] && (
+            <span className="text-xs text-amber-700">
+              Dis fille ou garçon en haut, sinon le texte répète le prénom.
+            </span>
+          )}
+        </div>
+
+        <label className="mt-3 block">
+          <span className="sr-only">Bilan de {eleve.prenom}</span>
+          <textarea
+            value={bilan.texte}
+            onChange={e => enregistrerBilan({ ...bilan, texte: e.target.value })}
+            rows={4}
+            placeholder="Le texte apparaîtra ici, et reste modifiable."
+            aria-label={`Bilan de la période de ${eleve.prenom}`}
+            className="w-full rounded-lg border-2 border-violet-200 p-2 text-sm text-gray-900 focus:border-violet-600 focus:outline-none"
+          />
+        </label>
       </section>
     </div>
   )

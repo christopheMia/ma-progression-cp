@@ -78,6 +78,8 @@ const ROLE_DU_NIVEAU: Record<Niveau, string> = {
 const ORDRE_ROLES = ['posture', 'réussite', 'progrès', 'vigilance', 'encouragement']
 
 function rangDuRole(role: string): number {
+  // Les observations passent apres la vigilance, avant l'encouragement.
+  if (role === 'observation') return ORDRE_ROLES.indexOf('vigilance') + 0.4
   const i = ORDRE_ROLES.indexOf(role)
   return i === -1 ? ORDRE_ROLES.length - 1.5 : i
 }
@@ -194,7 +196,16 @@ export function redigerAppreciation(
     phrases.push(majuscule(brique.texte) + (brique.suite ? ` ; ${brique.suite}.` : '.'))
   }
 
-  const connus = new Set(ORDRE_ROLES)
+  // Une observation est deja une phrase entiere, ecrite par l'enseignante :
+  // elle sort telle quelle. Lui coller un sujet devant donnerait « Lina A ose
+  // lire devant le groupe. »
+  for (const brique of parRole('observation')) {
+    const texte = majuscule(brique.texte.trim())
+    phrases.push(/[.!?]$/.test(texte) ? texte : `${texte}.`)
+    nomme = true
+  }
+
+  const connus = new Set([...ORDRE_ROLES, 'observation'])
   for (const brique of prises.filter(b => !connus.has(b.role))) {
     phrases.push(`${sujet()} ${brique.texte}.`)
   }

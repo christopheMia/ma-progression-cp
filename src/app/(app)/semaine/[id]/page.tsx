@@ -44,11 +44,16 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     .map(s => ({ id: s.id as string, numero: s.numero as number }))
   const idsPeriode = semainesPeriode.length > 0 ? semainesPeriode.map(s => s.id) : [id]
 
-  const [{ data: comportements }, { data: observations }] = await Promise.all([
+  const [{ data: comportements }, { data: observations }, { data: bilansPeriode }] = await Promise.all([
     supabase.from('comportements_semaine').select('eleve_id, semaine_id, etat')
       .in('semaine_id', idsPeriode),
     supabase.from('observations').select('id, eleve_id, semaine_id, observee_le, texte')
       .in('semaine_id', idsPeriode),
+    // Le bilan de periode est range comme une appreciation, avec la matiere
+    // reservee `__general` : c'est l'appreciation generale du livret.
+    supabase.from('appreciations_periode').select('eleve_id, texte, briques_ecartees')
+      .eq('class_id', semaine.class_id).eq('matiere', '__general')
+      .eq('periode_numero', semaine.periode_numero ?? 0),
   ])
 
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
@@ -79,8 +84,13 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       <SuiviEleves
         semaineId={id}
         numeroSemaine={semaine.numero as number}
+        periode={(semaine.periode_numero as number | null) ?? null}
         dateParDefaut={semaine.date_debut as string}
-        eleves={(eleves ?? []).map(e => ({ id: e.id as string, prenom: e.prenom as string }))}
+        eleves={(eleves ?? []).map(e => ({
+          id: e.id as string,
+          prenom: e.prenom as string,
+          genre: (e.genre as 'f' | 'm' | null) ?? null,
+        }))}
         semainesPeriode={semainesPeriode}
         comportements={Object.fromEntries(
           (comportements ?? []).map(c => [
@@ -94,6 +104,12 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           observeeLe: o.observee_le as string,
           texte: (o.texte as string) ?? '',
         }))}
+        bilans={Object.fromEntries(
+          (bilansPeriode ?? []).map(b => [b.eleve_id as string, {
+            texte: (b.texte as string) ?? '',
+            ecartees: (b.briques_ecartees as string[]) ?? [],
+          }]),
+        )}
       />
       {/* Verification de l'emploi du temps AVANT de generer le cahier journal
           (retour du 20/07). Replie par defaut pour ne pas alourdir la page. */}
