@@ -514,6 +514,22 @@ l'historique.)
   Requête à écrire : les `appreciations` des semaines de la période, par élève et par
   matière, converties en briques dans une fonction pure et testable.
 
+  **LES COMPÉTENCES AJOUTÉES À LA MAIN SUIVENT LA MÊME RÈGLE.** Demande de Christophe
+  le 28/07 : « faudra que ça puisse prendre en compte aussi les compétences ajoutées
+  manuellement ». Une compétence perso porte donc **exactement les mêmes champs** qu'une
+  compétence officielle : `eclat` (facultatif), `reussite`, `encours`, `vigilance` et
+  `suite`. C'est ce qui lui permet d'écrire dans le livret comme les autres, **sans
+  aucun traitement particulier nulle part dans le code** : la fonction qui transforme un
+  niveau en brique ne sait pas d'où vient la compétence, et n'a pas à le savoir.
+  L'écran 3 de la maquette demande donc ces formulations au moment de la création, avec
+  chaque champ étiqueté de la couleur de son niveau. Seule la phrase de « non atteint »
+  impose sa prochaine étape. Vérifié dans la maquette : la compétence perso
+  « Participer au cercle de contes du vendredi » écrit bien dans l'appréciation de Lina
+  (atteint) et de Tom (partiellement, puis non atteint), avec la mention « ajoutée par
+  toi » dans le tableau.
+  Conséquence pour la table `competences_perso` de l'étape 2 : prévoir ces cinq colonnes
+  de texte dès la migration, pas seulement le libellé.
+
   **Les contours des zones modifiables doivent se voir** (même message) : une bordure
   quasi invisible laissait croire à du texte figé. Les briques et la zone
   d'appréciation portent maintenant une vraie bordure au repos

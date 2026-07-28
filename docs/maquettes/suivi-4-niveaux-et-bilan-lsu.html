@@ -190,6 +190,24 @@
   .zone-texte:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
   .aide { font-size: .78rem; color: var(--muted); margin: .45rem 0 0; }
 
+  /* Les quatre formulations d'une competence perso : une par niveau, chacune
+     etiquetee de la couleur de son niveau pour qu'on sache ce qu'on ecrit. */
+  .etiquette-champ {
+    display: block; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700; margin-bottom: .25rem;
+  }
+  .formulations { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
+  .formulation { border: 1px solid var(--line); border-radius: 10px; padding: .6rem; background: var(--violet-tint); }
+  .etiquette-niveau {
+    display: inline-block; margin-bottom: .35rem;
+    border: 1px solid; border-radius: 999px; padding: .1rem .5rem;
+    font-size: .72rem; font-weight: 700;
+  }
+  .etiquette-niveau.on-na { background: var(--na-bg); border-color: var(--na); color: var(--na); }
+  .etiquette-niveau.on-pa { background: var(--pa-bg); border-color: var(--pa); color: var(--pa); }
+  .etiquette-niveau.on-a  { background: var(--a-bg);  border-color: var(--a);  color: var(--a); }
+  .etiquette-niveau.on-d  { background: var(--d-bg);  border-color: var(--d);  color: var(--d); }
+
   /* Les briques qui nourrissent l'appreciation : selectionnables et modifiables */
   .briques { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
   .brique {
@@ -447,8 +465,9 @@
   </div>
   <p class="intro">
     Le LSU accepte du texte libre. Tes compétences perso vivent donc à côté des 101
-    officielles, rattachées à la matière et au domaine que tu choisis, et se
-    comportent exactement pareil.
+    officielles, rattachées à la matière et au domaine que tu choisis, et se comportent
+    exactement pareil : elles se positionnent sur les quatre niveaux, et elles écrivent
+    dans l'appréciation comme les autres.
   </p>
 
   <div class="ecran">
@@ -456,13 +475,44 @@
       <span class="champ"><span>Matière</span> <span class="faux-select">Français ▾</span></span>
       <span class="champ"><span>Domaine</span> <span class="faux-select">Langage oral ▾</span></span>
     </div>
-    <div class="zone-texte">Participer au cercle de contes du vendredi</div>
+    <label class="etiquette-champ" for="perso-libelle">Ce que tu travailles</label>
+    <div class="zone-texte" id="perso-libelle" contenteditable="true" role="textbox" aria-label="Ce que tu travailles">Participer au cercle de contes du vendredi</div>
+
+    <p class="aide" style="margin-top:.9rem">
+      Et ce que tu écriras dans le livret selon le niveau atteint. Ces phrases se
+      complètent après « Elle » ou « Il », et ce sont elles qui partent dans
+      l'appréciation, jamais le libellé ci-dessus.
+    </p>
+
+    <div class="formulations">
+      <div class="formulation">
+        <span class="etiquette-niveau on-a">A · atteint</span>
+        <div class="zone-texte" contenteditable="true" role="textbox" aria-label="Formulation quand c’est atteint">prend la parole avec plaisir devant le groupe</div>
+      </div>
+      <div class="formulation">
+        <span class="etiquette-niveau on-pa">PA · partiellement atteint</span>
+        <div class="zone-texte" contenteditable="true" role="textbox" aria-label="Formulation quand c’est partiellement atteint">ose de plus en plus prendre la parole devant le groupe</div>
+      </div>
+      <div class="formulation">
+        <span class="etiquette-niveau on-na">NA · non atteint</span>
+        <div class="zone-texte" contenteditable="true" role="textbox" aria-label="Formulation quand ce n’est pas atteint">prendre la parole devant le groupe reste impressionnant</div>
+        <label class="etiquette-champ" style="margin-top:.4rem">et ce que tu vas faire (obligatoire)</label>
+        <div class="zone-texte" contenteditable="true" role="textbox" aria-label="Prochaine étape">nous continuerons à lui ménager des temps courts</div>
+      </div>
+      <div class="formulation">
+        <span class="etiquette-niveau on-d">D · dépassé</span>
+        <div class="zone-texte" contenteditable="true" role="textbox" aria-label="Formulation quand c’est dépassé">est devenue une vraie conteuse pour ses camarades</div>
+        <p class="aide">Facultatif. Sans elle, « dépassé » reprend la phrase de « atteint ».</p>
+      </div>
+    </div>
+
     <div class="actions">
       <span class="bouton">Ajouter cette compétence</span>
     </div>
     <p class="aide">
-      Elle apparaîtra dans le domaine choisi, avec la mention « ajoutée par toi », et
-      tu pourras la suivre comme les autres.
+      Elle apparaîtra dans le domaine choisi, avec la mention « ajoutée par toi », et se
+      suivra comme les autres. Regarde l'écran 2 : « Participer au cercle de contes du
+      vendredi » y est déjà, et elle écrit dans l'appréciation de Lina.
     </p>
   </div>
 
@@ -470,6 +520,8 @@
     <h4>Structure</h4>
     <ul>
       <li>Nouvelle table <code>competences_perso</code>, propre à ta classe. Le référentiel officiel reste intact et partagé.</li>
+      <li><b>Mêmes champs que les compétences officielles</b> : les quatre formulations plus la prochaine étape. C'est ce qui permet à une compétence à toi d'écrire dans le livret exactement comme les autres, sans traitement particulier nulle part dans le code.</li>
+      <li>Seule la phrase de « non atteint » impose sa prochaine étape : une difficulté ne s'énonce jamais seule.</li>
       <li>Les deux sources sont fusionnées à la lecture par une fonction pure, testable, sur le modèle de <code>vue-classe.ts</code>.</li>
       <li>Le rattachement matière et domaine réutilise les domaines officiels, donc une compétence perso se range au bon endroit dans le livret.</li>
     </ul>
@@ -669,8 +721,12 @@
       encours: "copie un texte court, encore lentement",
       vigilance: "la copie reste lente et fatigante",
       suite: "nous continuerons à travailler le geste d'écriture" },
+    /* Une competence ajoutee a la main. Elle porte exactement les memes champs
+       qu'une competence officielle, donc elle ecrit dans le livret comme les
+       autres, sans traitement particulier nulle part. */
     { matiere: "Français", domaine: "Langage oral",
-      libelle: "Participer au cercle de contes du vendredi", total: 0, perso: true,
+      libelle: "Participer au cercle de contes du vendredi", total: 3, perso: true,
+      eclat: "est devenue une vraie conteuse pour ses camarades",
       reussite: "prend la parole avec plaisir devant le groupe",
       encours: "ose de plus en plus prendre la parole devant le groupe",
       vigilance: "prendre la parole devant le groupe reste impressionnant",
@@ -688,7 +744,7 @@
      l'enseignante), les retouches faites sur les briques deduites (`edits`) et
      l'appreciation redigee de chaque matiere (`textes`). */
   var ELEVES = [
-    { nom: "Lina", genre: "f", etat: "commencé", observes: [7, 2, 4, null, 5], niveaux: ["a", "pa", "d", "", "a"],
+    { nom: "Lina", genre: "f", etat: "commencé", observes: [7, 2, 4, 3, 5], niveaux: ["a", "pa", "d", "a", "a"],
       textes: {}, edits: {},
       perso: [
         { matiere: "Français", role: "posture", on: true, texte: "se montre attentive et volontaire, elle ose demander quand elle n'a pas compris" },
@@ -701,7 +757,7 @@
         { matiere: "Mathématiques", role: "ton mot de la semaine 10", on: true, texte: "calcule de plus en plus vite les petites additions", semaine: 10 },
         { matiere: "Mathématiques", role: "encouragement", on: true, texte: "Un domaine où elle avance avec plaisir." }
       ] },
-    { nom: "Tom", genre: "m", etat: "commencé", observes: [3, 1, 2, null, 4], niveaux: ["pa", "na", "pa", "", "a"],
+    { nom: "Tom", genre: "m", etat: "commencé", observes: [3, 1, 2, 1, 4], niveaux: ["pa", "na", "pa", "pa", "a"],
       textes: {}, edits: {},
       perso: [
         { matiere: "Français", role: "posture", on: true, texte: "s'applique et reste concentré sur les temps courts" },
