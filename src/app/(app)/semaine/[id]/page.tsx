@@ -4,11 +4,12 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import Link from 'next/link'
 import MatiereBlock from '@/components/semaine/MatiereBlock'
-import StudentTracking from '@/components/semaine/StudentTracking'
+import SuiviEleves from '@/components/semaine/SuiviEleves'
 import CahierJournalEditor from '@/components/semaine/CahierJournalEditor'
 import CollapsibleSection from '@/components/semaine/CollapsibleSection'
 import EdtApercu from '@/components/semaine/EdtApercu'
 import PrintButton from '@/components/PrintButton'
+import type { EtatComportement } from '@/lib/comportement'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,7 +27,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     { data: progression },
     { data: methodesList },
     { data: edt },
-    { data: criteresObservation },
+    { data: semainesClasse },
   ] = await Promise.all([
     supabase.from('eleves').select('*').eq('class_id', semaine.class_id).order('ordre'),
     supabase.from('acquisitions').select('*').eq('semaine_id', id),
@@ -34,27 +35,21 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     supabase.from('progression').select('*').eq('class_id', semaine.class_id).eq('numero', semaine.numero),
     supabase.from('methodes').select('id, matiere, suivi_actif, manuel').eq('class_id', semaine.class_id).order('created_at'),
     supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id).order('ordre'),
-    supabase.from('criteres_observation').select('*').eq('semaine_id', id).order('ordre'),
+    supabase.from('semaines').select('id, numero, periode_numero').eq('class_id', semaine.class_id).order('numero'),
   ])
 
-  const idsCriteres = (criteresObservation ?? []).map(critere => critere.id)
-  const { data: acquisitionsCriteres } = idsCriteres.length > 0
-    ? await supabase
-      .from('acquisitions_criteres')
-      .select('critere_id, eleve_id, niveau, acquis')
-      .in('critere_id', idsCriteres)
-    : { data: [] }
+  // Les semaines de la période en cours : c'est la frise du suivi.
+  const semainesPeriode = (semainesClasse ?? [])
+    .filter(s => s.periode_numero === semaine.periode_numero)
+    .map(s => ({ id: s.id as string, numero: s.numero as number }))
+  const idsPeriode = semainesPeriode.length > 0 ? semainesPeriode.map(s => s.id) : [id]
 
-  // Construit la liste des méthodes pour StudentTracking, uniquement si le suivi est actif.
-  const methodesPourSuivi = (methodesList ?? []).map(m => {
-    const prog = progression?.find(p => p.methode_id === m.id)
-    return {
-      methode_id: m.id,
-      matiere: m.matiere,
-      suivi_actif: m.suivi_actif as boolean,
-      items: (prog?.items as string[]) ?? (m.matiere === 'francais' ? (semaine.graphemes as string[]) : []),
-    }
-  })
+  const [{ data: comportements }, { data: observations }] = await Promise.all([
+    supabase.from('comportements_semaine').select('eleve_id, semaine_id, etat')
+      .in('semaine_id', idsPeriode),
+    supabase.from('observations').select('id, eleve_id, semaine_id, observee_le, texte')
+      .in('semaine_id', idsPeriode),
+  ])
 
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
 
@@ -81,14 +76,24 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           )
         })}
       </CollapsibleSection>
-      <StudentTracking
-        semaine={semaine}
-        eleves={eleves ?? []}
-        acquisitions={acquisitions ?? []}
-        appreciations={appreciations ?? []}
-        methodes={methodesPourSuivi}
-        criteresObservation={criteresObservation ?? []}
-        acquisitionsCriteres={acquisitionsCriteres ?? []}
+      <SuiviEleves
+        semaineId={id}
+        numeroSemaine={semaine.numero as number}
+        dateParDefaut={semaine.date_debut as string}
+        eleves={(eleves ?? []).map(e => ({ id: e.id as string, prenom: e.prenom as string }))}
+        semainesPeriode={semainesPeriode}
+        comportements={Object.fromEntries(
+          (comportements ?? []).map(c => [
+            `${c.eleve_id}|${c.semaine_id}`, c.etat as EtatComportement,
+          ]),
+        )}
+        observations={(observations ?? []).map(o => ({
+          id: o.id as string,
+          eleveId: o.eleve_id as string,
+          semaineId: o.semaine_id as string,
+          observeeLe: o.observee_le as string,
+          texte: (o.texte as string) ?? '',
+        }))}
       />
       {/* Verification de l'emploi du temps AVANT de generer le cahier journal
           (retour du 20/07). Replie par defaut pour ne pas alourdir la page. */}
