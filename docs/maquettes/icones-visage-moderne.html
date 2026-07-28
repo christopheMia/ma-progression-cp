@@ -1,0 +1,227 @@
+<title>Le visage, trois traitements modernes</title>
+<style>
+  :root {
+    --ground: #fbfaff; --ink: #171717; --muted: #6b6880; --line: #e7e3f0;
+    --violet: #7c3aed; --violet-ink: #5b21b6; --violet-tint: #f7f5ff;
+    --r: #e11d48; --r-bg: #fff1f2;
+    --o: #f59e0b; --o-bg: #fffbeb;
+    --v: #10b981; --v-bg: #ecfdf5;
+    color-scheme: light;
+  }
+  body {
+    background: var(--ground); color: var(--ink);
+    font: 16px/1.55 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 1.5rem 1rem 4rem;
+  }
+  .page { max-width: 50rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.3rem; }
+  .eyebrow { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--violet); font-weight: 700; margin: 0; }
+  h1 { font-size: 1.4rem; margin: .2rem 0 .5rem; }
+  header p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  .variante { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 1.1rem; }
+  .entete { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; margin-bottom: .15rem; }
+  .variante h2 { font-size: 1rem; margin: 0; }
+  .lettre { background: var(--violet); color: #fff; border-radius: 8px; font-size: .74rem; font-weight: 700; padding: .12rem .5rem; }
+  .pourquoi { margin: 0 0 .85rem; font-size: .85rem; color: var(--muted); }
+
+  .choix { display: flex; flex-wrap: wrap; gap: .6rem; }
+  .etat {
+    display: flex; align-items: center; gap: .6rem;
+    border: 2px solid var(--line); background: #fff; color: var(--muted);
+    border-radius: 14px; padding: .5rem .85rem; font: inherit; font-size: .88rem;
+    font-weight: 650; cursor: pointer; transition: border-color .12s, background .12s;
+  }
+  .etat:hover { border-color: #c9bcee; }
+  .etat.on-r { background: var(--r-bg); border-color: var(--r); color: var(--r); }
+  .etat.on-o { background: var(--o-bg); border-color: var(--o); color: var(--o); }
+  .etat.on-v { background: var(--v-bg); border-color: var(--v); color: var(--v); }
+  .etat svg { display: block; flex-shrink: 0; }
+
+  .frise { display: flex; gap: .3rem; margin-top: .85rem; align-items: center; flex-wrap: wrap; }
+  .frise-titre { font-size: .74rem; color: var(--muted); margin-right: .2rem; }
+  .c { display: flex; align-items: center; justify-content: center; }
+
+  .verdict { margin: .8rem 0 0; font-size: .82rem; color: var(--muted); }
+  .note { background: var(--violet-tint); border: 1px solid var(--line); border-radius: 14px; padding: .9rem 1.1rem; font-size: .88rem; }
+  .note h3 { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--violet-ink); margin: 0 0 .5rem; }
+  .note ul { margin: 0; padding-left: 1.1rem; }
+  .note li { margin-bottom: .35rem; }
+</style>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">Ma Progression CP · le visage, version moderne</p>
+  <h1>Trois traitements du même visage</h1>
+  <p>
+    Tu as choisi le visage. Le trait fin de la planche précédente faisait daté :
+    voici trois façons plus actuelles de le dessiner. Clique dans chaque ligne, et
+    compare surtout les frises, à taille réelle.
+  </p>
+</header>
+
+<div id="variantes"></div>
+
+<div class="note">
+  <h3>Ce qui change par rapport à la première version</h3>
+  <ul>
+    <li><b>Des formes pleines plutôt qu'un contour fin.</b> Un trait d'un pixel disparaît sur un écran de téléphone et à l'impression ; une surface pleine tient à toutes les tailles.</li>
+    <li><b>Des yeux ronds et une bouche épaisse aux bouts arrondis.</b> C'est ce qui fait la différence entre un pictogramme des années 2000 et un dessin d'aujourd'hui.</li>
+    <li><b>Pas de sourcils, pas de grimace.</b> « Difficile » se dit par une bouche droite légèrement inclinée, jamais par une figure qui boude : on décrit une semaine, pas un enfant.</li>
+    <li><b>Des couleurs un cran plus vives</b> (rose framboise, ambre, émeraude) que les rouge et vert classiques, qui font signalisation routière.</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* Trois traitements du meme visage. Chacun rend les trois etats a partir
+     d'une seule fonction, pour que la comparaison soit honnete. */
+
+  function pastille(etat, taille) {
+    /* Pleine : le visage est decoupe en blanc dans un disque de couleur. */
+    var bouche = etat === "v"
+      ? '<path d="M8.5 14.2c1 1.5 2.3 2.2 3.5 2.2s2.5-.7 3.5-2.2" stroke="#fff" stroke-width="1.9" stroke-linecap="round" fill="none"/>'
+      : etat === "o"
+        ? '<path d="M8.8 15h6.4" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/>'
+        : '<path d="M8.8 15.6l6.4-1.1" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/>';
+    return '<svg width="' + taille + '" height="' + taille + '" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="11" fill="currentColor"/>'
+      + '<circle cx="8.8" cy="9.8" r="1.45" fill="#fff"/>'
+      + '<circle cx="15.2" cy="9.8" r="1.45" fill="#fff"/>'
+      + bouche + '</svg>';
+  }
+
+  function squircle(etat, taille) {
+    /* Doux : fond teinte en carre tres arrondi, visage dans la couleur. */
+    var bouche = etat === "v"
+      ? '<path d="M8.6 14.4c.9 1.5 2.1 2.2 3.4 2.2s2.5-.7 3.4-2.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" fill="none"/>'
+      : etat === "o"
+        ? '<path d="M8.9 15.2h6.2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>'
+        : '<path d="M8.9 15.8l6.2-1" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>';
+    return '<svg width="' + taille + '" height="' + taille + '" viewBox="0 0 24 24" aria-hidden="true">'
+      + '<rect x="0" y="0" width="24" height="24" rx="8.5" fill="currentColor" opacity="0.14"/>'
+      + '<circle cx="8.9" cy="9.9" r="1.5" fill="currentColor"/>'
+      + '<circle cx="15.1" cy="9.9" r="1.5" fill="currentColor"/>'
+      + bouche + '</svg>';
+  }
+
+  function contour(etat, taille) {
+    /* Minimal : pas de fond, un cercle epais et des traits arrondis. */
+    var bouche = etat === "v"
+      ? '<path d="M8.4 14c1 1.6 2.3 2.4 3.6 2.4s2.6-.8 3.6-2.4" fill="none"/>'
+      : etat === "o"
+        ? '<path d="M8.7 15h6.6"/>'
+        : '<path d="M8.7 15.7l6.6-1.2"/>';
+    return '<svg width="' + taille + '" height="' + taille + '" viewBox="0 0 24 24" fill="none" '
+      + 'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="10"/>'
+      + '<circle cx="8.9" cy="9.9" r="1" fill="currentColor" stroke="none"/>'
+      + '<circle cx="15.1" cy="9.9" r="1" fill="currentColor" stroke="none"/>'
+      + bouche + '</svg>';
+  }
+
+  var VARIANTES = [
+    { lettre: "E1", nom: "La pastille pleine", dessin: pastille,
+      pourquoi: "Un disque plein de couleur, le visage découpé en blanc dedans.",
+      verdict: "Le plus lisible des trois en tout petit, et le plus affirmé. C'est celui que je te recommande pour la frise." },
+    { lettre: "E2", nom: "Le carré très arrondi", dessin: squircle,
+      pourquoi: "Un fond teinté doux, le visage dessiné par-dessus dans la couleur.",
+      verdict: "Le plus doux, et celui qui ressemble le plus au reste de l'application. Un peu moins net à deux centimètres." },
+    { lettre: "E3", nom: "Le contour épais", dessin: contour,
+      pourquoi: "Pas de fond du tout, un trait épais aux bouts arrondis.",
+      verdict: "Le plus léger sur une page chargée. Il s'efface un peu quand il est petit." }
+  ];
+
+  var ETATS = [
+    { c: "r", mot: "Difficile" },
+    { c: "o", mot: "À surveiller" },
+    { c: "v", mot: "Ça va bien" }
+  ];
+  var SEMAINES = ["v", "v", "o", "v", "r", "o", "v"];
+  var COULEUR = { r: "var(--r)", o: "var(--o)", v: "var(--v)" };
+
+  var conteneur = document.getElementById("variantes");
+
+  VARIANTES.forEach(function (variante) {
+    var carte = document.createElement("div");
+    carte.className = "variante";
+
+    var entete = document.createElement("div");
+    entete.className = "entete";
+    var lettre = document.createElement("span");
+    lettre.className = "lettre";
+    lettre.textContent = variante.lettre;
+    entete.appendChild(lettre);
+    var h = document.createElement("h2");
+    h.textContent = variante.nom;
+    entete.appendChild(h);
+    carte.appendChild(entete);
+
+    var p = document.createElement("p");
+    p.className = "pourquoi";
+    p.textContent = variante.pourquoi;
+    carte.appendChild(p);
+
+    var choix = document.createElement("div");
+    choix.className = "choix";
+    choix.setAttribute("role", "radiogroup");
+    choix.setAttribute("aria-label", variante.nom);
+    var courant = "v";
+
+    function peindre() {
+      Array.prototype.forEach.call(choix.children, function (b) {
+        var code = b.getAttribute("data-etat");
+        b.className = "etat" + (code === courant ? " on-" + code : "");
+        b.setAttribute("aria-checked", code === courant ? "true" : "false");
+        /* Hors selection le visage reste gris : la couleur dit le choix. */
+        b.querySelector("span").style.color = code === courant ? COULEUR[code] : "var(--muted)";
+      });
+    }
+
+    ETATS.forEach(function (e) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "etat";
+      b.setAttribute("role", "radio");
+      b.setAttribute("data-etat", e.c);
+      b.setAttribute("aria-label", variante.nom + " : " + e.mot);
+      var boite = document.createElement("span");
+      boite.innerHTML = variante.dessin(e.c, 26);
+      b.appendChild(boite);
+      b.appendChild(document.createTextNode(e.mot));
+      b.addEventListener("click", function () { courant = e.c; peindre(); });
+      choix.appendChild(b);
+    });
+    peindre();
+    carte.appendChild(choix);
+
+    var frise = document.createElement("div");
+    frise.className = "frise";
+    var t = document.createElement("span");
+    t.className = "frise-titre";
+    t.textContent = "Une période, taille réelle :";
+    frise.appendChild(t);
+    SEMAINES.forEach(function (code, n) {
+      var etat = ETATS.filter(function (e) { return e.c === code; })[0];
+      var c = document.createElement("span");
+      c.className = "c";
+      c.style.color = COULEUR[code];
+      c.setAttribute("title", "Semaine " + (9 + n) + " : " + etat.mot);
+      c.innerHTML = variante.dessin(code, 30);
+      frise.appendChild(c);
+    });
+    carte.appendChild(frise);
+
+    var v = document.createElement("p");
+    v.className = "verdict";
+    v.textContent = variante.verdict;
+    carte.appendChild(v);
+
+    conteneur.appendChild(carte);
+  });
+})();
+</script>
