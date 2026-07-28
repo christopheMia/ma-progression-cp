@@ -11,6 +11,9 @@ import LogoutButton from './LogoutButton'
 const LINKS = [
   { href: '/accueil', label: 'Accueil', aide: 'Ta page de démarrage : semaine en cours, raccourcis et outils IA' },
   { href: '/planning', label: 'Planning', aide: 'Toutes les semaines de l’année, période par période' },
+  // Ouvert cinq fois par an, mais pendant deux semaines a chaque fois : ca
+  // merite une place fixe plutot qu'un lien cache (decision du 28/07).
+  { href: '/livret', label: 'Livret', aide: 'Le bilan de chaque élève, période par période, à copier dans le LSU' },
   { href: '/parametres', label: 'Paramètres', aide: 'Tes élèves, ton emploi du temps, tes méthodes et la date de rentrée' },
   { href: '/aide', label: 'Aide', aide: 'Le mode d’emploi de l’application' },
 ]
@@ -89,7 +92,12 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
                       actif ? 'bg-violet-100 text-violet-800 font-semibold' : 'text-slate-700 hover:bg-slate-100'
                     }`}>
                     <span className="block">{l.label}</span>
-                    <span className="block text-xs text-slate-500">{l.aide}</span>
+                    {/* Sur le fond violet de l'entree active, un gris neutre
+                        tombe sous le contraste minimum pour du petit texte :
+                        la ligne d'aide prend la teinte du fond. */}
+                    <span className={`block text-xs ${actif ? 'text-violet-700' : 'text-slate-500'}`}>
+                      {l.aide}
+                    </span>
                   </Link>
                 )
               })}
