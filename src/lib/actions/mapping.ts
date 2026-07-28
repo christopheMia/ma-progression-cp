@@ -1,6 +1,8 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
+import { notionsSemblables, tete } from '@/lib/notions-semblables'
+import { resultat, type Resultat } from '@/lib/resultat'
 import { revalidatePath } from 'next/cache'
 
 async function getClasseId() {
@@ -103,17 +105,107 @@ export async function proposerRattachements(
   return { notions: notions.length, rattaches: rows.length }
 }
 
-/** Change (ou pose) manuellement la compétence rattachée à une notion. */
+/**
+ * Change (ou pose) manuellement la compétence rattachée à une notion.
+ *
+ * RENVOIE son message d'erreur au lieu de le lever : en production, Next.js
+ * efface le texte d'une erreur levée dans une action serveur. Voir
+ * `src/lib/resultat.ts`.
+ */
 export async function rattacherNotionManuel(
   matiere: string, semaineNumero: number, notion: string, competenceId: string,
-) {
-  const { supabase, classId } = await getClasseId()
-  // Une seule compétence principale par notion : on remplace l'existant.
-  await supabase.from('notion_competence').delete()
-    .eq('class_id', classId).eq('matiere', matiere).eq('semaine_numero', semaineNumero).eq('notion', notion)
-  const { error } = await supabase.from('notion_competence').insert({
-    class_id: classId, matiere, semaine_numero: semaineNumero, notion, competence_id: competenceId, source: 'manuel',
-  })
-  if (error) throw new Error(error.message)
-  revalidatePath('/programme')
+): Promise<Resultat<void>> {
+  return resultat(async () => {
+    const { supabase, classId } = await getClasseId()
+    // Une seule compétence principale par notion : on remplace l'existant.
+    await supabase.from('notion_competence').delete()
+      .eq('class_id', classId).eq('matiere', matiere).eq('semaine_numero', semaineNumero).eq('notion', notion)
+    const { error } = await supabase.from('notion_competence').insert({
+      class_id: classId, matiere, semaine_numero: semaineNumero, notion, competence_id: competenceId, source: 'manuel',
+    })
+    if (error) throw new Error('Le rattachement n’a pas pu être enregistré.')
+    revalidatePath('/programme')
+  }, 'Le rattachement n’a pas pu être enregistré.')
+}
+
+/**
+ * Les notions de la matière qui ressemblent à celle-ci et ne sont pas encore
+ * rattachées. Sert à annoncer honnêtement ce que fera « appliquer aux notions
+ * semblables » AVANT de le faire.
+ *
+ * La liste est recalculée ici, à partir de la progression : le navigateur ne
+ * choisit pas les notions à modifier, il demande seulement à voir.
+ */
+export async function compterNotionsSemblables(
+  matiere: string, notion: string,
+): Promise<Resultat<{ notions: string[]; tete: string }>> {
+  return resultat(async () => {
+    const { supabase, classId } = await getClasseId()
+    const candidates = await notionsNonRattachees(supabase, classId, matiere)
+    const semblables = notionsSemblables(notion, candidates)
+    // Une même notion revient sur plusieurs semaines : on l'annonce une fois.
+    const notions = [...new Set(semblables.map(n => n.notion))]
+    return { notions, tete: tete(notion) }
+  }, 'Les notions semblables n’ont pas pu être cherchées.')
+}
+
+/**
+ * Rattache d'un coup toutes les notions semblables PAS ENCORE rattachées.
+ *
+ * Ne touche jamais à un rattachement existant : la répétition est une corvée,
+ * l'écrasement silencieux serait une perte. Rend le nombre de notions traitées
+ * pour que l'écran puisse le dire.
+ */
+export async function rattacherNotionsSemblables(
+  matiere: string, notion: string, competenceId: string,
+): Promise<Resultat<number>> {
+  return resultat(async () => {
+    const { supabase, classId } = await getClasseId()
+    const candidates = await notionsNonRattachees(supabase, classId, matiere)
+    const semblables = notionsSemblables(notion, candidates)
+    if (semblables.length === 0) return 0
+
+    const { error } = await supabase.from('notion_competence').insert(
+      semblables.map(n => ({
+        class_id: classId,
+        matiere,
+        semaine_numero: n.semaine,
+        notion: n.notion,
+        competence_id: competenceId,
+        source: 'manuel',
+      })),
+    )
+    if (error) throw new Error('Les rattachements n’ont pas pu être enregistrés.')
+
+    revalidatePath('/programme')
+    return semblables.length
+  }, 'Les rattachements n’ont pas pu être enregistrés.')
+}
+
+/** Les notions de la progression d'une matière qui n'ont encore aucun lien. */
+async function notionsNonRattachees(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classId: string,
+  matiere: string,
+): Promise<Notion[]> {
+  const { data: prog } = await supabase
+    .from('progression').select('numero, items').eq('class_id', classId).eq('matiere', matiere)
+  const { data: liens } = await supabase
+    .from('notion_competence').select('semaine_numero, notion')
+    .eq('class_id', classId).eq('matiere', matiere)
+
+  const dejaLiees = new Set(
+    (liens ?? []).map(l => `${l.semaine_numero}|${l.notion}`),
+  )
+
+  const notions: Notion[] = []
+  for (const p of prog ?? []) {
+    for (const item of ((p.items as string[] | null) ?? [])) {
+      const t = (item ?? '').trim()
+      if (!t) continue
+      if (dejaLiees.has(`${p.numero}|${t}`)) continue
+      notions.push({ semaine: p.numero as number, notion: t })
+    }
+  }
+  return notions
 }

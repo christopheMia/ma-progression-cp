@@ -546,6 +546,7 @@ l'historique.)
      les bilans ». Ailleurs ce serait du bruit.
   À l'ouverture, la **période en cours** et le **premier élève sans bilan** sont déjà
   choisis : on arrive sur du travail à faire, pas sur un écran vide.
+  **Christophe a validé les trois portes et le nom `/livret` le 28/07.**
 
   **Les contours des zones modifiables doivent se voir** (même message) : une bordure
   quasi invisible laissait croire à du texte figé. Les briques et la zone
