@@ -530,6 +530,23 @@ l'historique.)
   Conséquence pour la table `competences_perso` de l'étape 2 : prévoir ces cinq colonnes
   de texte dès la migration, pas seulement le libellé.
 
+  **PAR OÙ ON ACCÈDE AU LIVRET.** Question de Christophe : « comment on accède au LSU
+  numérique généré, car c'est le socle des commentaires et c'est là que sera copié par
+  un bouton ». Aujourd'hui : **aucun chemin**, la page n'existe pas (étape 3). La page
+  s'appellera **`/livret`** et non `/bilan` : c'est le nom du document officiel, et
+  « bilan » désigne déjà le bouton IA de la semaine, il ne faut pas deux sens pour un
+  mot. Trois portes proposées, la première étant la principale :
+  1. **Un onglet « Livret » dans `HeaderNav`**, à côté d'Accueil, Planning, Paramètres
+     et Aide. Ouvert cinq fois par an, mais pendant deux semaines à chaque fois : ça
+     mérite une place fixe.
+  2. **Depuis `/periodes`** (qui existe déjà) : un bouton « Faire les bilans de cette
+     période » sur chaque période, qui arrive avec la période déjà choisie.
+  3. **Depuis le suivi de la semaine**, uniquement quand la semaine termine une
+     période : une ligne « c'est la dernière semaine de la période 2, tu peux commencer
+     les bilans ». Ailleurs ce serait du bruit.
+  À l'ouverture, la **période en cours** et le **premier élève sans bilan** sont déjà
+  choisis : on arrive sur du travail à faire, pas sur un écran vide.
+
   **Les contours des zones modifiables doivent se voir** (même message) : une bordure
   quasi invisible laissait croire à du texte figé. Les briques et la zone
   d'appréciation portent maintenant une vraie bordure au repos

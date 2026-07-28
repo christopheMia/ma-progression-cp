@@ -244,6 +244,26 @@
   .bouton:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
   .confirmation { font-size: .8rem; color: var(--a); font-weight: 700; }
 
+  /* Par ou on arrive sur l'ecran : distingue de la note de structure, qui parle
+     de la mecanique, alors que celle-ci parle du chemin. */
+  .chemins {
+    border: 1px solid var(--violet-ligne); border-radius: 12px;
+    padding: .85rem 1rem; margin-bottom: 1rem; background: #fff;
+  }
+  .chemins h4 { font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--violet-ink); margin-bottom: .5rem; }
+  .chemins p { font-size: .87rem; margin: 0 0 .5rem; }
+  .chemins ol { margin: 0; padding-left: 1.2rem; font-size: .87rem; }
+  .chemins li { margin-bottom: .55rem; }
+  .chemins code { font-size: .82rem; background: var(--violet-tint); padding: .05rem .3rem; border-radius: 4px; }
+
+  /* Le bandeau de navigation, en petit, pour situer l'onglet propose */
+  .apercu-nav { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .4rem; }
+  .apercu-nav span {
+    border: 1px solid var(--line); border-radius: 999px; padding: .15rem .55rem;
+    font-size: .76rem; color: var(--muted); background: #fff;
+  }
+  .apercu-nav .actif { background: var(--violet); border-color: var(--violet); color: #fff; font-weight: 700; }
+
   /* Notes de structure */
   /* Note de structure : distinguee par un fond teinte et son intitule, sans
      barre d'accent laterale (procede trop connote interface generee). */
@@ -359,8 +379,42 @@
 
 <section>
   <div class="titre-ecran">
-    <h2>2. Le bilan d'une période, élève par élève</h2>
-    <span class="ou">nouvelle page <code>/bilan</code></span>
+    <h2>2. Le livret, période par période et élève par élève</h2>
+    <span class="ou">nouvelle page <code>/livret</code></span>
+  </div>
+
+  <div class="chemins">
+    <h4>Comment on y accède</h4>
+    <p>
+      C'est le socle : tout ce que tu observes converge ici, et c'est d'ici que tu
+      copies. Il faut donc y arriver sans le chercher. Trois portes, la première étant
+      la principale.
+    </p>
+    <ol>
+      <li>
+        <b>Un onglet « Livret » dans le bandeau du haut</b>, à côté d'Accueil, Planning,
+        Paramètres et Aide. C'est une fonction qu'on ouvre cinq fois dans l'année, mais
+        pendant deux semaines à chaque fois : elle mérite sa place fixe.
+        <span class="apercu-nav">
+          <span>Accueil</span><span>Planning</span><span class="actif">Livret</span><span>Paramètres</span><span>Aide</span>
+        </span>
+      </li>
+      <li>
+        <b>Depuis la vue par période</b> (<code>/periodes</code>, qui existe déjà) : sur
+        chaque période, un bouton « Faire les bilans de cette période ». Tu es en train
+        de regarder ce qui a été travaillé, le bilan est à un clic, et la période est
+        déjà choisie.
+      </li>
+      <li>
+        <b>Depuis le suivi de la semaine</b>, quand la semaine termine une période : une
+        ligne discrète « c'est la dernière semaine de la période 2, tu peux commencer
+        les bilans ». Elle ne s'affiche que là, sinon c'est du bruit.
+      </li>
+    </ol>
+    <p class="aide">
+      À l'ouverture, la période en cours et le premier élève sans bilan sont déjà
+      choisis : tu arrives sur du travail à faire, pas sur un écran vide.
+    </p>
   </div>
     <p class="intro">
     Tu choisis l'élève dans un menu déroulant, qui indique au passage qui a déjà un
@@ -625,7 +679,7 @@
   <ol style="margin:.3rem 0 0">
     <li>Le suivi à quatre niveaux. La base est déjà migrée, il reste l'écran.</li>
     <li>L'écran de rattachement, et les compétences ajoutées à la main.</li>
-    <li>Le bilan par élève, ses commentaires par matière et leurs boutons de copie.</li>
+    <li>La page <code>/livret</code> : son onglet, le bilan par élève, ses commentaires par matière et leurs boutons de copie.</li>
   </ol>
 </section>
 
