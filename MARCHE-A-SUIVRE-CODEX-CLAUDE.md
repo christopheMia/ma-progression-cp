@@ -461,6 +461,44 @@ l'historique.)
   `competences_perso` ; 3) le bilan par élève et par période, avec les commentaires par
   matière et leurs boutons de copie.
 
+- **2026-07-28 - Claude - ÉTAPE 2, première moitié : les deux défauts de `/programme` corrigés.**
+  Commit **`1726b9b`**, en local, **pas encore poussé** (attente du feu vert).
+  **63 suites, 530 tests, zéro échec. Types propres. Build de production réussi.**
+
+  1. **Plus de rechargement de page.** `NotionLigne` faisait
+     `window.location.reload()` après chaque rattachement : sur 36 semaines de
+     notions, on repartait en haut de page à chaque choix. Le menu tient maintenant
+     son choix dans un état local (sinon il reviendrait à sa valeur d'avant en
+     attendant la réponse) et l'action revalide la route.
+  2. **« Rattacher aussi celles qui se ressemblent ».** Après un rattachement,
+     l'écran annonce les notions semblables, **les nomme** (« Lire i, Lire ch, Lire
+     ou, et 11 autres ») et propose de les traiter d'un coup. On peut refuser.
+
+  **Nouveau module pur `src/lib/notions-semblables.ts`** (18 tests) : `motsDe`,
+  `tete`, `similarite`, `notionsSemblables`. Deux notions se ressemblent si elles
+  font **le même geste** (même premier mot porteur, en pratique le verbe) ou si
+  elles se recouvrent largement (Jaccard >= 0,6). **Un verbe différent ne suffit
+  jamais seul** : « Lire a » et « Écrire la lettre a » partagent un mot mais ne vont
+  pas sur la même compétence, les confondre serait une faute. Pas d'IA (décision du
+  27/07) : la comparaison doit être prévisible par l'enseignante.
+
+  **Deux garde-fous** : les rattachements existants ne sont **jamais écrasés** (la
+  répétition est une corvée, l'écrasement silencieux serait une perte), et la liste
+  des notions à modifier est **recalculée côté serveur** à partir de la progression,
+  le navigateur demande seulement à voir.
+
+  **Curiosité notée dans un test** : dans « Lire a » le « a » est le graphème étudié,
+  dans « jusqu'à » c'est une préposition, et la comparaison de mots ne peut pas faire
+  la différence. Sans conséquence, le regroupement est décidé par le verbe.
+
+  `rattacherNotionManuel` **renvoie** désormais son message (piège du 27/07).
+  **Reste à faire** : `proposerRattachements` (le chemin IA) lève encore.
+
+  **RESTE DE L'ÉTAPE 2** : la table `competences_perso` et ses **cinq colonnes de
+  texte** (voir plus bas). À cadrer avec Christophe : cette table ne devient visible
+  qu'une fois `/livret` construit, donc il peut être plus logique de faire l'étape 3
+  d'abord.
+
 - **2026-07-28 - Claude - LE TEXTE DÉCOULE DU POSITIONNEMENT. C'est la mécanique du bilan.**
   Question de Christophe : « est-ce que le texte rédigé prendra bien en compte les notes
   de positionnement ? », puis « c'est un peu la base, si une compétence n'est pas
