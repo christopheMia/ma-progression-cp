@@ -461,6 +461,66 @@ l'historique.)
   `competences_perso` ; 3) le bilan par élève et par période, avec les commentaires par
   matière et leurs boutons de copie.
 
+- **2026-07-28 - Claude - LE TEXTE DÉCOULE DU POSITIONNEMENT. C'est la mécanique du bilan.**
+  Question de Christophe : « est-ce que le texte rédigé prendra bien en compte les notes
+  de positionnement ? », puis « c'est un peu la base, si une compétence n'est pas
+  atteinte ça doit forcément se fier à ça ». Il avait raison de vérifier : dans la
+  maquette, les briques étaient des **données de démonstration figées**, sans aucun lien
+  avec les niveaux. C'est maintenant câblé, et c'est LA règle du chantier.
+
+  **Le niveau posé décide de la brique, de son rôle et de sa formulation** :
+
+  | Niveau | Rôle dans la phrase | Formulation |
+  |---|---|---|
+  | dépassé | réussite | la formule d'éclat, ou la réussite à défaut |
+  | atteint | réussite | « lit à voix haute un texte préparé avec une belle fluidité » |
+  | partiellement atteint | **progrès** | « commence à lire à voix haute un texte préparé » |
+  | non atteint | vigilance | « la lecture à voix haute reste difficile », **toujours** suivie de sa prochaine étape |
+  | rien de positionné | aucune brique | on n'écrit pas sur ce qu'on n'a pas observé |
+
+  Les quatre niveaux produisent **quatre textes différents**. « Partiellement atteint »
+  et « non atteint » ne se lisent pas pareil pour une famille : le premier dit un enfant
+  en chemin, le second une difficulté, et seule la difficulté porte une suite (règle 2).
+
+  **Conséquence de conception, à ne pas rater** : chaque compétence doit porter
+  **quatre formulations lisibles par un parent**, une par niveau (`eclat`, `reussite`,
+  `encours`, `vigilance` plus `suite`). Le libellé officiel ne peut PAS servir : il est
+  écrit pour l'institution, et la règle 1 interdit qu'il atterrisse dans le livret.
+  C'est exactement la **« programmation simplifiée »** repérée chez LivrEval le 27/07.
+  **Il faut donc écrire ces formulations pour les 101 compétences officielles**, une
+  fois pour toutes, et les compétences ajoutées à la main auront leurs champs à remplir.
+  C'est un vrai morceau de contenu, à prévoir dans l'étape 2 ou juste après.
+
+  **Les retouches sont gardées par élément ET par rôle** (`edits[cle|role]`). Sans le
+  rôle dans la clé, une phrase de réussite corrigée à la main se retrouverait posée sur
+  une difficulté après un changement de niveau. Chaque brique affiche aussi en gris de
+  quel élément du programme elle vient, pour pouvoir remonter du texte à sa source.
+
+  **Ce qui n'est PAS automatique, volontairement** : changer un niveau met à jour la
+  liste des briques, mais **ne réécrit pas** le texte déjà rédigé. L'enseignante relit
+  et reclique « Rédiger » si elle veut. On n'efface jamais son travail sans le lui
+  demander.
+
+  **LES COMMENTAIRES DE LA SEMAINE ALIMENTENT LE BILAN DE PÉRIODE.** Précision de
+  Christophe le 28/07 : « chaque commentaire ajouté doit venir se greffer et alimenter
+  le LSU numérique ». Le champ « Bilan et commentaire de la semaine » de
+  `StudentTracking` (table `appreciations`, une ligne par élève, semaine et matière)
+  existe déjà et se remplit chaque semaine. Ces commentaires **remontent dans le bilan
+  de la période comme des briques**, rangées dans leur matière et étiquetées de leur
+  semaine (« ton mot de la semaine 9 »). L'enseignante ne réécrit rien : elle décoche ce
+  qui ne mérite pas d'aller dans le livret. C'est ce qui rend le bilan de période
+  presque écrit d'avance, et c'est l'angle différenciant repéré le 27/07 (les
+  concurrents font taper les appréciations à la main).
+  Requête à écrire : les `appreciations` des semaines de la période, par élève et par
+  matière, converties en briques dans une fonction pure et testable.
+
+  **Les contours des zones modifiables doivent se voir** (même message) : une bordure
+  quasi invisible laissait croire à du texte figé. Les briques et la zone
+  d'appréciation portent maintenant une vraie bordure au repos
+  (`--violet-ligne: #c3b5ea`), qui se renforce au survol et au focus. Règle générale :
+  dans cet écran, **ce qui se modifie doit se voir comme un champ sans avoir à le
+  survoler pour le découvrir**.
+
 - **2026-07-27 (soir) - Claude - le bilan se copie PAR MATIÈRE, à l'unité ou par paquet.**
   Demande de Christophe en reprenant le chantier : « le bilan de commentaires doit être
   copiable par matière avec un bouton », puis « on doit pouvoir éditer les bilans

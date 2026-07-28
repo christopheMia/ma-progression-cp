@@ -5,6 +5,9 @@
     --ink: #171717;
     --muted: #6b6880;          /* gris legerement biaise violet */
     --line: #e7e3f0;
+    /* Bordure des champs modifiables : assez marquee pour se voir au repos,
+       assez douce pour ne pas quadriller la page. */
+    --violet-ligne: #c3b5ea;
     --violet: #7c3aed;
     --violet-ink: #5b21b6;
     --violet-tint: #f7f5ff;
@@ -177,10 +180,14 @@
     border: 1px solid var(--line); border-radius: 12px; background: #fff;
   }
   .barre-copie label { font-size: .85rem; font-weight: 700; }
+  /* Ce qui se modifie doit SE VOIR comme un champ. Une bordure discrete laissait
+     croire a du texte fige : on ne devinait pas qu'on pouvait ecrire dedans. */
   .zone-texte {
-    background: #fff; border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; border: 2px solid var(--violet-ligne); border-radius: 8px;
     padding: .6rem .7rem; font-size: .88rem; color: var(--ink); min-height: 3.5rem;
   }
+  .zone-texte:hover { border-color: var(--violet); }
+  .zone-texte:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
   .aide { font-size: .78rem; color: var(--muted); margin: .45rem 0 0; }
 
   /* Les briques qui nourrissent l'appreciation : selectionnables et modifiables */
@@ -196,11 +203,17 @@
     font-size: .64rem; letter-spacing: .07em; text-transform: uppercase;
     color: var(--violet); font-weight: 700; display: block;
   }
+  /* D'ou vient la brique : discret, mais toujours la */
+  .source-brique { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+  /* Chaque brique est un champ, pas une phrase figee : on doit voir qu'on peut
+     la reecrire sans avoir a survoler pour le decouvrir. */
   .brique-texte {
-    font-size: .87rem; outline: none; border-bottom: 1px dashed transparent; padding-bottom: 1px;
+    font-size: .87rem; outline: none; margin-top: .2rem;
+    border: 1px solid var(--violet-ligne); border-radius: 6px;
+    padding: .25rem .4rem; background: #fff;
   }
-  .brique-texte:hover { border-bottom-color: var(--line); }
-  .brique-texte:focus { border-bottom-color: var(--violet); }
+  .brique-texte:hover { border-color: var(--violet); }
+  .brique-texte:focus { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
 
   .actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; align-items: center; }
   .bouton {
@@ -416,7 +429,11 @@
       <li>Sous chaque élément, la trace de ce qui a produit le niveau proposé. Rien n'est calculé en cachette.</li>
       <li><b>Un commentaire par matière</b>, parce que le livret officiel en demande un par matière. Chaque bloc a ses briques, son bouton « Rédiger », son texte modifiable et son bouton « Copier ». Rien n'oblige à tout faire d'un coup.</li>
       <li><b>La sélection est la case du titre.</b> Elle sert à la copie groupée : le bouton du bas dit ce qu'il va copier (« Copier les 2 matières cochées »), et « Toutes les matières » coche tout d'un geste. Une matière décochée s'estompe, elle reste lisible et modifiable.</li>
-      <li><b>L'appréciation s'assemble à partir de briques</b> tirées de la période, chacune décochable et modifiable sur place. Tu enlèves ce que tu ne veux pas dire avant de rédiger.</li>
+      <li><b>Tes commentaires de la semaine remontent ici tout seuls.</b> Ce que tu écris chaque semaine dans « Bilan et commentaire de la semaine » se greffe sur le bilan de la période, dans sa matière, avec sa semaine (« ton mot de la semaine 9 »). Tu ne réécris rien : tu décoches ce qui ne mérite pas d'aller dans le livret. C'est ce qui rend le bilan de période presque écrit d'avance.</li>
+      <li><b>Les briques viennent du positionnement.</b> Chaque niveau posé dans le tableau produit sa brique, avec sa propre formulation : dépassé et atteint donnent une réussite, partiellement atteint donne un progrès (« commence à… »), non atteint donne un point de vigilance toujours suivi de ce qu'on va faire. Un élément non positionné ne produit rien : on n'écrit pas sur ce qu'on n'a pas observé. Change un niveau dans le tableau et regarde la liste bouger.</li>
+      <li><b>Chaque compétence porte donc quatre formulations lisibles par un parent</b>, une par niveau, écrites une fois pour toutes. C'est la « programmation simplifiée » repérée chez LivrEval : le libellé officiel est écrit pour l'institution, pas pour une famille, et il ne doit jamais atterrir tel quel dans le livret.</li>
+      <li><b>Tes retouches survivent.</b> Corriger une phrase ou décocher une brique est gardé par élément et par rôle : si le niveau rebascule, une phrase de réussite corrigée ne se retrouve pas posée sur une difficulté. Et la petite mention grise dit de quel élément du programme vient la brique.</li>
+      <li><b>L'appréciation s'assemble à partir de briques</b>, chacune décochable et modifiable sur place. Tu enlèves ce que tu ne veux pas dire avant de rédiger.</li>
       <li><b>Modèle de formulation en cinq temps</b> : posture, réussites, progrès, point de vigilance avec sa prochaine étape, encouragement. Jamais un code de niveau, jamais le libellé technique d'une compétence : un parent doit comprendre.</li>
       <li><b>RGPD</b> (convention 5 du projet) : le prénom ne part jamais vers l'IA. Les briques lui sont envoyées avec un marqueur, et le prénom est réinséré côté navigateur.</li>
     </ul>
@@ -603,58 +620,175 @@
   document.addEventListener("click", function (e) {
     var bouton = e.target.closest ? e.target.closest(".n") : null;
     if (!bouton) return;
-    poserNiveau(bouton.parentNode, bouton.getAttribute("data-niveau"));
+    var code = bouton.getAttribute("data-niveau");
+    poserNiveau(bouton.parentNode, code);
+
+    /* Dans le bilan, changer un niveau change les briques : une compétence qui
+       n'est plus atteinte devient un point de vigilance, et l'appréciation le
+       dira. Le texte déjà rédigé, lui, n'est pas réécrit sans qu'on le demande. */
+    var tr = bouton.closest ? bouton.closest("tr[data-index]") : null;
+    if (!tr) return;
+    var el = ELEVES[iEleve];
+    el.niveaux[Number(tr.getAttribute("data-index"))] = code;
+    dessinerAppreciations(el);
   });
 
   /* ── Les donnees du bilan, quatre eleves pour la demonstration ───────────── */
 
+  /* Chaque element du programme porte ses formulations lisibles par un parent,
+     UNE PAR NIVEAU. C'est ce qui permet au texte de suivre le positionnement
+     sans jamais recopier le libelle officiel, qui est ecrit pour l'institution
+     et pas pour une famille.
+
+       eclat     : quand c'est depasse (facultatif, `reussite` sert sinon)
+       reussite  : quand c'est atteint
+       encours   : quand c'est partiellement atteint, l'enfant est en chemin
+       vigilance : quand ce n'est pas atteint, avec `suite`, ce qu'on va faire
+
+     Toutes se completent apres « Elle / Il ». C'est la « programmation
+     simplifiee » reperee chez LivrEval : la reecriture lisible des libelles
+     officiels, « souvent tres techniques » pour les parents. */
   var LIGNES = [
-    { matiere: "Français",      domaine: "Lecture",            libelle: "Identifier des mots de manière de plus en plus aisée", total: 9 },
-    { matiere: "Français",      domaine: "Lecture",            libelle: "Lire à voix haute un texte court après préparation",   total: 6 },
-    { matiere: "Français",      domaine: "Écriture",           libelle: "Copier un texte court sans erreur",                    total: 4 },
-    { matiere: "Français",      domaine: "Langage oral",       libelle: "Participer au cercle de contes du vendredi",           total: 0, perso: true },
-    { matiere: "Mathématiques", domaine: "Nombres et calculs", libelle: "Nommer, lire, écrire les nombres jusqu'à 100",         total: 5 }
+    { matiere: "Français", domaine: "Lecture",
+      libelle: "Identifier des mots de manière de plus en plus aisée", total: 9,
+      eclat: "déchiffre seule des mots nouveaux, bien au-delà de ce qui est attendu",
+      reussite: "lit maintenant avec assurance les mots contenant les sons étudiés",
+      encours: "déchiffre de mieux en mieux les mots contenant les sons étudiés",
+      vigilance: "le déchiffrage des mots nouveaux demande encore beaucoup d'aide",
+      suite: "nous le travaillerons en petit groupe" },
+    { matiere: "Français", domaine: "Lecture",
+      libelle: "Lire à voix haute un texte court après préparation", total: 6,
+      reussite: "lit à voix haute un texte préparé avec une belle fluidité",
+      encours: "commence à lire à voix haute un texte préparé",
+      vigilance: "la lecture à voix haute reste difficile",
+      suite: "un temps de lecture quotidien à la maison l'aiderait beaucoup" },
+    { matiere: "Français", domaine: "Écriture",
+      libelle: "Copier un texte court sans erreur", total: 4,
+      eclat: "copie vite et sans erreur, en soignant son écriture",
+      reussite: "copie un texte court avec beaucoup de soin",
+      encours: "copie un texte court, encore lentement",
+      vigilance: "la copie reste lente et fatigante",
+      suite: "nous continuerons à travailler le geste d'écriture" },
+    { matiere: "Français", domaine: "Langage oral",
+      libelle: "Participer au cercle de contes du vendredi", total: 0, perso: true,
+      reussite: "prend la parole avec plaisir devant le groupe",
+      encours: "ose de plus en plus prendre la parole devant le groupe",
+      vigilance: "prendre la parole devant le groupe reste impressionnant",
+      suite: "nous continuerons à lui ménager des temps courts" },
+    { matiere: "Mathématiques", domaine: "Nombres et calculs",
+      libelle: "Nommer, lire, écrire les nombres jusqu'à 100", total: 5,
+      reussite: "nomme, lit et écrit les nombres jusqu'à 100",
+      encours: "nomme et lit les nombres jusqu'à 100, les écrire demande encore de l'aide",
+      vigilance: "les nombres au-delà de 60 ne sont pas encore installés",
+      suite: "nous les retravaillerons avec du matériel" }
   ];
 
-  /* Chaque brique appartient a UNE matiere : le livret officiel demande un
-     commentaire par matiere, donc les briques se rangent la ou elles seront lues.
-     `textes` garde l'appreciation redigee de chaque matiere, `copier` dit si elle
-     part dans la copie groupee. */
+  /* Un eleve porte son positionnement (`niveaux`), ses briques a lui (`perso`,
+     ce que le programme officiel ne peut pas deviner : la posture, un mot de
+     l'enseignante), les retouches faites sur les briques deduites (`edits`) et
+     l'appreciation redigee de chaque matiere (`textes`). */
   var ELEVES = [
     { nom: "Lina", genre: "f", etat: "commencé", observes: [7, 2, 4, null, 5], niveaux: ["a", "pa", "d", "", "a"],
-      textes: {},
-      briques: [
-        { matiere: "Français", role: "posture",      on: true,  texte: "se montre attentive et volontaire, elle ose demander quand elle n'a pas compris" },
-        { matiere: "Français", role: "réussite",     on: true,  texte: "lit maintenant avec assurance les mots contenant les sons étudiés" },
-        { matiere: "Français", role: "réussite",     on: true,  texte: "copie un texte court avec beaucoup de soin" },
-        { matiere: "Français", role: "progrès",      on: true,  texte: "a bien progressé en lecture depuis la première période" },
-        { matiere: "Français", role: "vigilance",    on: true,  texte: "la lecture à voix haute demande encore de la préparation",
-          action: "nous continuerons à la travailler en petit groupe" },
-        { matiere: "Français", role: "encouragement",on: true,  texte: "Continue ainsi, c'est un très bon trimestre." },
-        { matiere: "Français", role: "ton mot du 14/11", on: false, texte: "très à l'aise à l'oral devant le groupe" },
-        { matiere: "Mathématiques", role: "réussite", on: true, texte: "nomme, lit et écrit les nombres jusqu'à 100" },
-        { matiere: "Mathématiques", role: "progrès",  on: true, texte: "calcule de plus en plus vite les petites additions" },
+      textes: {}, edits: {},
+      perso: [
+        { matiere: "Français", role: "posture", on: true, texte: "se montre attentive et volontaire, elle ose demander quand elle n'a pas compris" },
+        /* Les briques « ton mot de la semaine N » viennent des commentaires
+           ecrits pendant la periode dans le suivi hebdomadaire : ils remontent
+           ici tout seuls, dans leur matiere, avec leur semaine. */
+        { matiere: "Français", role: "ton mot de la semaine 9", on: true, texte: "a bien progressé en lecture depuis la première période", semaine: 9 },
+        { matiere: "Français", role: "ton mot de la semaine 11", on: false, texte: "très à l'aise à l'oral devant le groupe", semaine: 11 },
+        { matiere: "Français", role: "encouragement", on: true, texte: "Continue ainsi, c'est un très bon trimestre." },
+        { matiere: "Mathématiques", role: "ton mot de la semaine 10", on: true, texte: "calcule de plus en plus vite les petites additions", semaine: 10 },
         { matiere: "Mathématiques", role: "encouragement", on: true, texte: "Un domaine où elle avance avec plaisir." }
       ] },
     { nom: "Tom", genre: "m", etat: "commencé", observes: [3, 1, 2, null, 4], niveaux: ["pa", "na", "pa", "", "a"],
-      textes: {},
-      briques: [
-        { matiere: "Français", role: "posture",      on: true,  texte: "s'applique et reste concentré sur les temps courts" },
-        { matiere: "Français", role: "progrès",      on: true,  texte: "commence à repérer seul les sons dans les mots" },
-        { matiere: "Français", role: "vigilance",    on: true,  texte: "la lecture à voix haute reste difficile",
-          action: "un temps de lecture quotidien à la maison l'aiderait beaucoup" },
-        { matiere: "Français", role: "vigilance",    on: false, texte: "la copie est encore lente",
-          action: "nous travaillerons le geste d'écriture" },
-        { matiere: "Français", role: "encouragement",on: true,  texte: "Les efforts commencent à porter, il faut poursuivre." },
-        { matiere: "Mathématiques", role: "réussite", on: true, texte: "reconnaît et nomme les nombres jusqu'à 100" },
-        { matiere: "Mathématiques", role: "vigilance", on: true, texte: "la soustraction demande encore du matériel",
-          action: "nous garderons les jetons le temps qu'il faudra" }
+      textes: {}, edits: {},
+      perso: [
+        { matiere: "Français", role: "posture", on: true, texte: "s'applique et reste concentré sur les temps courts" },
+        { matiere: "Français", role: "ton mot de la semaine 10", on: true, texte: "commence à repérer seul les sons dans les mots", semaine: 10 },
+        { matiere: "Français", role: "encouragement", on: true, texte: "Les efforts commencent à porter, il faut poursuivre." }
       ] },
     { nom: "Jade", genre: "f", etat: "rien saisi", observes: [9, 6, 4, null, 5], niveaux: ["", "", "", "", ""],
-      textes: {}, briques: [] },
+      textes: {}, edits: {}, perso: [] },
     { nom: "Hugo", genre: "m", etat: "rien saisi", observes: [2, 0, 1, null, 2], niveaux: ["", "", "", "", ""],
-      textes: {}, briques: [] }
+      textes: {}, edits: {}, perso: [] }
   ];
+
+  /* ── Du positionnement aux briques ───────────────────────────────────────── */
+
+  /* LE POINT CENTRAL : le niveau posé dans le tableau décide de la brique, de
+     son rôle dans la phrase et de sa formulation. Chacun des quatre niveaux
+     s'écrit différemment, parce que « partiellement atteint » et « non
+     atteint » ne se lisent pas pareil pour une famille.
+
+       dépassé            -> une réussite, avec la formule d'éclat s'il y en a
+       atteint            -> une réussite
+       partiellement      -> un progrès : l'enfant est en chemin, on le dit
+       non atteint        -> une vigilance, TOUJOURS suivie de sa prochaine
+                             étape (règle 2 : une difficulté ne s'énonce
+                             jamais seule)
+       rien de positionné -> rien du tout : on n'écrit pas sur ce qu'on n'a
+                             pas observé (règle 3)
+
+     Le CODE du niveau, lui, n'apparaît jamais dans le texte final (règle 1). */
+  var ROLE_DU_NIVEAU = { d: "réussite", a: "réussite", pa: "progrès", na: "vigilance" };
+
+  function formulation(ligne, niveau) {
+    if (niveau === "d") return ligne.eclat || ligne.reussite;
+    if (niveau === "a") return ligne.reussite;
+    if (niveau === "pa") return ligne.encours;
+    return ligne.vigilance;
+  }
+
+  function briquesDe(el, matiere) {
+    var out = [];
+
+    LIGNES.forEach(function (ligne, i) {
+      if (ligne.matiere !== matiere) return;
+      var niveau = el.niveaux[i];
+      if (!niveau) return;
+
+      var brique = {
+        cle: "l" + i,
+        source: ligne.libelle,
+        role: ROLE_DU_NIVEAU[niveau],
+        texte: formulation(ligne, niveau),
+        /* Seule la difficulte porte une suite : c'est elle qui ne doit jamais
+           rester seule. */
+        action: niveau === "na" ? ligne.suite : "",
+        on: true
+      };
+
+      /* Une retouche est gardee par element ET par role : si le niveau
+         rebascule de atteint a partiellement, la phrase de reussite corrigee
+         ne doit pas se retrouver posee sur une difficulte. */
+      var edit = el.edits[brique.cle + "|" + brique.role];
+      if (edit) {
+        brique.texte = edit.texte;
+        brique.action = edit.action;
+        brique.on = edit.on;
+      }
+      out.push(brique);
+    });
+
+    el.perso.forEach(function (b, j) {
+      if (b.matiere !== matiere) return;
+      b.cle = "p" + j;
+      out.push(b);
+    });
+
+    /* Meme ordre a l'ecran que dans le texte final : on lit la liste comme on
+       lira l'appreciation. */
+    return out.sort(function (a, b) {
+      return rang(a.role) - rang(b.role);
+    });
+  }
+
+  function rang(role) {
+    var i = ORDRE_ROLES.indexOf(role);
+    /* Les briques libres passent juste avant l'encouragement. */
+    return i === -1 ? ORDRE_ROLES.length - 1.5 : i;
+  }
 
   /* Les matieres du bilan, dans l'ordre du tableau. */
   var MATIERES = [];
@@ -673,8 +807,8 @@
   function pronom(el) { return el.genre === "m" ? "Il" : "Elle"; }
 
   function rediger(el, matiere) {
-    var prises = el.briques.filter(function (b) {
-      return b.matiere === matiere && b.on && b.texte.trim();
+    var prises = briquesDe(el, matiere).filter(function (b) {
+      return b.on && b.texte.trim();
     });
     if (!prises.length) return "";
     var pris = function (role) { return prises.filter(function (b) { return b.role === role; }); };
@@ -765,6 +899,7 @@
 
       var tr = document.createElement("tr");
       tr.setAttribute("data-matiere", ligne.matiere);
+      tr.setAttribute("data-index", String(i));
 
       var tdCoche = document.createElement("td");
       var coche = document.createElement("input");
@@ -896,7 +1031,7 @@
     mot.textContent = "Le texte reste modifiable ici avant que tu le recopies dans le livret.";
     bloc.appendChild(mot);
 
-    dessinerBriques(ul, el.briques.filter(function (b) { return b.matiere === matiere; }), btnRediger);
+    dessinerBriques(ul, briquesDe(el, matiere), btnRediger, el);
 
     btnRediger.addEventListener("click", function () {
       el.textes[matiere] = rediger(el, matiere);
@@ -918,12 +1053,19 @@
     return bloc;
   }
 
-  function dessinerBriques(briquesUl, briques, btnRediger) {
+  /* Une retouche est gardee : sur une brique deduite elle va dans `edits`, sur
+     une brique a l'enseignante l'objet est mute directement. */
+  function noter(el, b) {
+    if (b.cle.charAt(0) === "p") return;
+    el.edits[b.cle + "|" + b.role] = { on: b.on, texte: b.texte, action: b.action };
+  }
+
+  function dessinerBriques(briquesUl, briques, btnRediger, el) {
     briquesUl.textContent = "";
     if (!briques.length) {
       var vide = document.createElement("li");
       vide.className = "aide";
-      vide.textContent = "Rien d'observé dans cette matière sur la période : il n'y a pas encore de quoi rédiger.";
+      vide.textContent = "Rien de positionné dans cette matière sur la période : il n'y a pas encore de quoi rédiger.";
       briquesUl.appendChild(vide);
       btnRediger.disabled = true;
       btnRediger.style.opacity = ".5";
@@ -932,7 +1074,7 @@
     btnRediger.disabled = false;
     btnRediger.style.opacity = "";
 
-    briques.forEach(function (b, i) {
+    briques.forEach(function (b) {
       var li = document.createElement("li");
       li.className = "brique" + (b.on ? "" : " off");
 
@@ -944,6 +1086,7 @@
       coche.addEventListener("change", function () {
         b.on = coche.checked;
         li.className = "brique" + (b.on ? "" : " off");
+        noter(el, b);
       });
       li.appendChild(coche);
 
@@ -953,6 +1096,14 @@
       var role = document.createElement("span");
       role.className = "brique-role";
       role.textContent = b.role;
+      /* D'ou vient la brique : l'enseignante doit pouvoir remonter du texte a
+         l'element du programme qui l'a produite. */
+      if (b.source) {
+        var src = document.createElement("span");
+        src.className = "source-brique";
+        src.textContent = " · " + b.source;
+        role.appendChild(src);
+      }
       corpsB.appendChild(role);
 
       var txt = document.createElement("div");
@@ -969,6 +1120,7 @@
           b.texte = v;
           b.action = "";
         }
+        noter(el, b);
       });
       corpsB.appendChild(txt);
 
