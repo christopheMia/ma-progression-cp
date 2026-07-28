@@ -169,6 +169,88 @@ describe('SuiviEleves', () => {
   })
 })
 
+// Remarque de Christophe du 28/07 : « en fin de periode il risque d'y avoir une
+// tonne de notes », et « on doit pouvoir naviguer par periode et par mois pour
+// retrouver des faits ».
+describe('SuiviEleves, retrouver une observation', () => {
+  const semainesClasse = [
+    { id: 's4', numero: 4, periode: 1 },
+    { id: 's9', numero: 9, periode: 2 },
+    { id: 's10', numero: 10, periode: 2 },
+    { id: 's11', numero: 11, periode: 2 },
+  ]
+
+  const troisNotes = [
+    { id: 'o1', eleveId: 'e1', semaineId: 's10', observeeLe: '2026-11-25', texte: 'A osé lire devant le groupe.' },
+    { id: 'o2', eleveId: 'e1', semaineId: 's9', observeeLe: '2026-11-17', texte: 'Colère à la récréation.' },
+    { id: 'o3', eleveId: 'e1', semaineId: 's4', observeeLe: '2026-09-22', texte: 'Bon début en calcul.' },
+  ]
+
+  function afficherAvecHistorique(surcharges: Record<string, unknown> = {}) {
+    afficher({ semainesClasse, observations: troisNotes, ...surcharges })
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(enregistrerBilanPeriode as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+  })
+
+  test('ne montre que la semaine ouverte par défaut', () => {
+    afficherAvecHistorique()
+    expect(screen.getByLabelText(/^observation du 25\/11\/2026/i)).toBeTruthy()
+    expect(screen.queryByLabelText(/^observation du 17\/11\/2026/i)).toBeNull()
+    expect(screen.queryByLabelText(/^observation du 22\/09\/2026/i)).toBeNull()
+  })
+
+  test('compte ce que chaque tranche contient', () => {
+    afficherAvecHistorique()
+    const choix = screen.getByLabelText(/quelles observations afficher/i)
+    expect(choix.textContent).toMatch(/Cette semaine \(S10\) · 1/)
+    expect(choix.textContent).toMatch(/Période 2 · 2/)
+    expect(choix.textContent).toMatch(/Période 1 · 1/)
+    expect(choix.textContent).toMatch(/Toute l’année · 3/)
+  })
+
+  test('retrouve une note d’une autre période, étiquetée de sa semaine', async () => {
+    const user = userEvent.setup()
+    afficherAvecHistorique()
+
+    await user.selectOptions(screen.getByLabelText(/quelles observations afficher/i), 'periode:1')
+    expect(screen.getByLabelText(/^observation du 22\/09\/2026/i)).toBeTruthy()
+    expect(screen.getByText('S4 · P1')).toBeTruthy()
+    expect(screen.queryByLabelText(/^observation du 25\/11\/2026/i)).toBeNull()
+  })
+
+  test('cherche un mot dans les observations', async () => {
+    const user = userEvent.setup()
+    afficherAvecHistorique()
+
+    await user.selectOptions(screen.getByLabelText(/quelles observations afficher/i), 'annee')
+    await user.type(screen.getByLabelText(/retrouver un mot/i), 'colère')
+
+    expect(screen.getByLabelText(/^observation du 17\/11\/2026/i)).toBeTruthy()
+    expect(screen.queryByLabelText(/^observation du 25\/11\/2026/i)).toBeNull()
+  })
+
+  test('le dit quand la recherche ne donne rien', async () => {
+    const user = userEvent.setup()
+    afficherAvecHistorique()
+    await user.type(screen.getByLabelText(/retrouver un mot/i), 'piscine')
+    expect(screen.getByText(/aucune observation avec « piscine »/i)).toBeTruthy()
+  })
+
+  // L'ecran peut montrer toute l'annee, le bilan ne bilante qu'une periode.
+  test('le bilan ne prend que les notes de la période, jamais celles d’avant', async () => {
+    const user = userEvent.setup()
+    afficherAvecHistorique({ comportements: {} })
+
+    await user.click(screen.getByRole('button', { name: /faire le bilan de la période/i }))
+    await waitFor(() => expect(enregistrerBilanPeriode).toHaveBeenCalledWith(
+      'e1', 2, 'Colère à la récréation. A osé lire devant le groupe.', [],
+    ))
+  })
+})
+
 // Demande de Christophe du 28/07 : le bouton bilan vit dans le suivi de chaque
 // eleve, pas dans le livret.
 describe('SuiviEleves, le bilan de la période', () => {

@@ -52,6 +52,7 @@ export default function SuiviEleves({
   dateParDefaut,
   eleves,
   semainesPeriode,
+  semainesClasse = [],
   comportements: comportementsInitiaux,
   observations: observationsInitiales,
   bilans: bilansInitiaux,
@@ -65,6 +66,8 @@ export default function SuiviEleves({
   eleves: EleveSuivi[]
   /** Les semaines de la période en cours, pour la frise. */
   semainesPeriode: SemainePeriode[]
+  /** Toute l'année, pour retrouver une note écrite une autre période. */
+  semainesClasse?: { id: string; numero: number; periode: number | null }[]
   /** Clé `eleveId|semaineId`. */
   comportements: Record<string, EtatComportement>
   observations: Observation[]
@@ -79,6 +82,8 @@ export default function SuiviEleves({
   const [dateSaisie, setDateSaisie] = useState(dateParDefaut)
   const [bilans, setBilans] = useState(bilansInitiaux)
   const [copie, setCopie] = useState('')
+  const [vue, setVue] = useState('semaine')
+  const [recherche, setRecherche] = useState('')
   const [genres, setGenres] = useState<Record<string, 'f' | 'm' | null>>(
     () => Object.fromEntries(eleves.map(e => [e.id, e.genre])),
   )
@@ -102,6 +107,36 @@ export default function SuiviEleves({
   const siennes = observations
     .filter(o => o.eleveId === eleve.id)
     .sort((a, b) => a.observeeLe.localeCompare(b.observeeLe))
+
+  // En fin de periode il y a une tonne de notes (remarque de Christophe du
+  // 28/07), et il faut pouvoir en retrouver une ecrite il y a deux mois. Donc
+  // on montre une tranche a la fois, et on navigue.
+  const periodeDeLaSemaine = new Map(semainesClasse.map(s => [s.id, s.periode]))
+  const numeroDeLaSemaine = new Map(semainesClasse.map(s => [s.id, s.numero]))
+  const moisEnCours = dateParDefaut.slice(0, 7)
+
+  /** Les observations de la période en cours : c'est elles qui font le bilan. */
+  const idsPeriode = new Set(semainesPeriode.map(s => s.id))
+  const siennesPeriode = siennes.filter(o => idsPeriode.has(o.semaineId))
+
+  const tranches: { code: string; libelle: string; notes: Observation[] }[] = [
+    { code: 'semaine', libelle: `Cette semaine (S${numeroSemaine})`, notes: siennes.filter(o => o.semaineId === semaineId) },
+    { code: 'mois', libelle: 'Ce mois-ci', notes: siennes.filter(o => o.observeeLe.slice(0, 7) === moisEnCours) },
+    ...[...new Set(semainesClasse.map(s => s.periode).filter((p): p is number => p != null))]
+      .sort((a, b) => a - b)
+      .map(p => ({
+        code: `periode:${p}`,
+        libelle: `Période ${p}`,
+        notes: siennes.filter(o => periodeDeLaSemaine.get(o.semaineId) === p),
+      })),
+    { code: 'annee', libelle: 'Toute l’année', notes: siennes },
+  ]
+
+  const tranche = tranches.find(t => t.code === vue) ?? tranches[0]
+  const cherche = recherche.trim().toLowerCase()
+  const affichees = cherche
+    ? tranche.notes.filter(o => o.texte.toLowerCase().includes(cherche))
+    : tranche.notes
 
   function poserComportement(etat: EtatComportement | null) {
     const precedent = etatSemaine
@@ -169,7 +204,9 @@ export default function SuiviEleves({
         actif: !ecartees.has('posture'),
       }]
       : []),
-    ...siennes
+    // Celles de la periode en cours et d'elle seule : l'ecran peut afficher
+    // toute l'annee pour retrouver un fait, le bilan ne bilante qu'une periode.
+    ...siennesPeriode
       .filter(o => o.texte.trim())
       .map(o => ({
         cle: `obs:${o.id}`,
@@ -359,76 +396,6 @@ export default function SuiviEleves({
       )}
 
       <section className="border-t pt-4">
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Mes observations sur {eleve.prenom}
-        </h3>
-
-        {siennes.length === 0 ? (
-          <p className="text-sm text-gray-500">Rien d’écrit pour l’instant.</p>
-        ) : (
-          <ul className="space-y-2">
-            {siennes.map(o => (
-              <li key={o.id} className="rounded-xl border p-2.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <CalendarDays className="h-3.5 w-3.5 text-violet-700" aria-hidden />
-                  <input
-                    type="date"
-                    value={o.observeeLe}
-                    onChange={e => modifier(o.id, { observeeLe: e.target.value })}
-                    aria-label={`Date de l’observation du ${enFrancais(o.observeeLe)}`}
-                    className="rounded border border-violet-200 px-1.5 py-0.5 text-xs font-semibold text-violet-900"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => retirer(o.id)}
-                    disabled={isPending}
-                    aria-label={`Retirer l’observation du ${enFrancais(o.observeeLe)}`}
-                    className="ml-auto rounded border border-gray-200 p-1 text-gray-500 hover:border-rose-300 hover:text-rose-700 disabled:opacity-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                </div>
-                <textarea
-                  value={o.texte}
-                  onChange={e => modifier(o.id, { texte: e.target.value })}
-                  rows={2}
-                  placeholder="Ce que tu as vu, avec tes mots."
-                  aria-label={`Observation du ${enFrancais(o.observeeLe)}`}
-                  className="mt-1.5 w-full rounded-lg border-2 border-violet-200 p-2 text-sm text-gray-900 focus:border-violet-600 focus:outline-none"
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label className="text-sm font-semibold text-gray-800">
-            Le{' '}
-            <input
-              type="date"
-              value={dateSaisie}
-              onChange={e => setDateSaisie(e.target.value)}
-              aria-label="Date de la nouvelle observation"
-              className="rounded-lg border px-2 py-1 text-sm font-semibold text-gray-900"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={ajouter}
-            disabled={isPending}
-            className="flex items-center gap-1.5 rounded-lg border border-violet-600 bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            Ajouter une observation
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-gray-600">
-          Une observation par moment, pas une par semaine : ce que tu vois le lundi et
-          ce que tu vois le jeudi ne se mélangent pas.
-        </p>
-      </section>
-
-      <section className="border-t pt-4">
         <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
           Bilan de la période{periode ? ` ${periode}` : ''}
         </h3>
@@ -510,6 +477,121 @@ export default function SuiviEleves({
             className="w-full rounded-lg border-2 border-violet-200 p-2 text-sm text-gray-900 focus:border-violet-600 focus:outline-none"
           />
         </label>
+      </section>
+
+      {/* Les observations viennent APRES le bilan : la liste grossit toute
+          l'annee, et rien d'important ne doit descendre avec elle. Le geste du
+          jour (ajouter) est en haut du bloc, pas en bas. */}
+      <section className="border-t pt-4">
+        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+          Mes observations sur {eleve.prenom}
+        </h3>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-sm font-semibold text-gray-800">
+            Le{' '}
+            <input
+              type="date"
+              value={dateSaisie}
+              onChange={e => setDateSaisie(e.target.value)}
+              aria-label="Date de la nouvelle observation"
+              className="rounded-lg border px-2 py-1 text-sm font-semibold text-gray-900"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={ajouter}
+            disabled={isPending}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-600 bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Ajouter une observation
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-gray-600">
+          Une observation par moment, pas une par semaine : ce que tu vois le lundi et
+          ce que tu vois le jeudi ne se mélangent pas.
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+          <label className="text-xs font-semibold text-gray-700">
+            Voir{' '}
+            <select
+              value={vue}
+              onChange={e => setVue(e.target.value)}
+              aria-label="Quelles observations afficher"
+              className="rounded-lg border px-2 py-1 text-sm font-semibold text-gray-900"
+            >
+              {tranches.map(t => (
+                <option key={t.code} value={t.code}>
+                  {t.libelle} · {t.notes.length}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex-1">
+            <span className="sr-only">Retrouver un mot dans les observations</span>
+            <input
+              type="search"
+              value={recherche}
+              onChange={e => setRecherche(e.target.value)}
+              placeholder="Retrouver un mot (lecture, colère, progrès...)"
+              aria-label="Retrouver un mot dans les observations"
+              className="w-full min-w-[12rem] rounded-lg border px-2 py-1 text-sm text-gray-900"
+            />
+          </label>
+        </div>
+
+        {affichees.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-500">
+            {cherche
+              ? `Aucune observation avec « ${recherche.trim()} » dans ${tranche.libelle.toLowerCase()}.`
+              : 'Rien d’écrit pour l’instant.'}
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {affichees.map(o => (
+              <li key={o.id} className="rounded-xl border p-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CalendarDays className="h-3.5 w-3.5 text-violet-700" aria-hidden />
+                  <input
+                    type="date"
+                    value={o.observeeLe}
+                    onChange={e => modifier(o.id, { observeeLe: e.target.value })}
+                    aria-label={`Date de l’observation du ${enFrancais(o.observeeLe)}`}
+                    className="rounded border border-violet-200 px-1.5 py-0.5 text-xs font-semibold text-violet-900"
+                  />
+                  {/* Une note d'une autre semaine dit d'ou elle vient, sinon on
+                      ne sait plus ou on est en naviguant. */}
+                  {o.semaineId !== semaineId && numeroDeLaSemaine.has(o.semaineId) && (
+                    <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[0.65rem] font-bold text-violet-800">
+                      S{numeroDeLaSemaine.get(o.semaineId)}
+                      {periodeDeLaSemaine.get(o.semaineId) != null
+                        && ` · P${periodeDeLaSemaine.get(o.semaineId)}`}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => retirer(o.id)}
+                    disabled={isPending}
+                    aria-label={`Retirer l’observation du ${enFrancais(o.observeeLe)}`}
+                    className="ml-auto rounded border border-gray-200 p-1 text-gray-500 hover:border-rose-300 hover:text-rose-700 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </div>
+                <textarea
+                  value={o.texte}
+                  onChange={e => modifier(o.id, { texte: e.target.value })}
+                  rows={2}
+                  placeholder="Ce que tu as vu, avec tes mots."
+                  aria-label={`Observation du ${enFrancais(o.observeeLe)}`}
+                  className="mt-1.5 w-full rounded-lg border-2 border-violet-200 p-2 text-sm text-gray-900 focus:border-violet-600 focus:outline-none"
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   )

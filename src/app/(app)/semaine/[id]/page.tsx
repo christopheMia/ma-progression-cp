@@ -47,8 +47,11 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   const [{ data: comportements }, { data: observations }, { data: bilansPeriode }] = await Promise.all([
     supabase.from('comportements_semaine').select('eleve_id, semaine_id, etat')
       .in('semaine_id', idsPeriode),
+    // Toute l'annee, pas seulement la periode : Christophe veut pouvoir
+    // retrouver un fait ecrit deux mois plus tot. Le bilan, lui, ne prend que
+    // la periode en cours, et c'est le composant qui fait ce tri.
     supabase.from('observations').select('id, eleve_id, semaine_id, observee_le, texte')
-      .in('semaine_id', idsPeriode),
+      .in('semaine_id', (semainesClasse ?? []).map(s => s.id as string)),
     // Le bilan de periode est range comme une appreciation, avec la matiere
     // reservee `__general` : c'est l'appreciation generale du livret.
     supabase.from('appreciations_periode').select('eleve_id, texte, briques_ecartees')
@@ -92,6 +95,11 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           genre: (e.genre as 'f' | 'm' | null) ?? null,
         }))}
         semainesPeriode={semainesPeriode}
+        semainesClasse={(semainesClasse ?? []).map(s => ({
+          id: s.id as string,
+          numero: s.numero as number,
+          periode: (s.periode_numero as number | null) ?? null,
+        }))}
         comportements={Object.fromEntries(
           (comportements ?? []).map(c => [
             `${c.eleve_id}|${c.semaine_id}`, c.etat as EtatComportement,
