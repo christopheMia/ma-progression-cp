@@ -1,0 +1,290 @@
+<title>Six familles d'icônes pour le comportement</title>
+<style>
+  :root {
+    --ground: #fbfaff;
+    --ink: #171717;
+    --muted: #6b6880;
+    --line: #e7e3f0;
+    --violet: #7c3aed;
+    --violet-ink: #5b21b6;
+    --violet-tint: #f7f5ff;
+
+    --r: #dc2626; --r-bg: #fef2f2;
+    --o: #d97706; --o-bg: #fffbeb;
+    --v: #059669; --v-bg: #ecfdf5;
+
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--ground); color: var(--ink);
+    font: 16px/1.55 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 1.5rem 1rem 4rem;
+  }
+  .page { max-width: 54rem; margin: 0 auto; display: flex; flex-direction: column; gap: 1.4rem; }
+
+  header h1 { font-size: 1.45rem; margin: .2rem 0 .5rem; }
+  .eyebrow {
+    font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--violet); font-weight: 700; margin: 0;
+  }
+  header p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  .famille {
+    background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 1rem 1.1rem;
+  }
+  .famille.retenue { border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-tint); }
+  .entete { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; margin-bottom: .2rem; }
+  .famille h2 { font-size: 1.02rem; margin: 0; }
+  .lettre {
+    background: var(--violet); color: #fff; border-radius: 7px;
+    font-size: .74rem; font-weight: 700; padding: .1rem .45rem;
+  }
+  .pourquoi { margin: 0 0 .75rem; font-size: .85rem; color: var(--muted); }
+
+  .choix { display: flex; flex-wrap: wrap; gap: .55rem; }
+  .etat {
+    display: flex; align-items: center; gap: .5rem;
+    border: 2px solid var(--line); background: #fff; color: var(--muted);
+    border-radius: 12px; padding: .45rem .75rem; font: inherit; font-size: .86rem;
+    font-weight: 700; cursor: pointer;
+  }
+  .etat:hover { border-color: #c3b5ea; }
+  .etat svg { display: block; flex-shrink: 0; }
+  .etat .emo { font-size: 1.2rem; line-height: 1; }
+  .etat.on-r { background: var(--r-bg); border-color: var(--r); color: var(--r); }
+  .etat.on-o { background: var(--o-bg); border-color: var(--o); color: var(--o); }
+  .etat.on-v { background: var(--v-bg); border-color: var(--v); color: var(--v); }
+
+  .frise { display: flex; gap: .25rem; margin-top: .7rem; align-items: center; }
+  .frise .c {
+    width: 2rem; height: 2rem; border-radius: 8px; border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center; background: #fff;
+  }
+  .frise .c.r { background: var(--r-bg); border-color: var(--r); }
+  .frise .c.o { background: var(--o-bg); border-color: var(--o); }
+  .frise .c.v { background: var(--v-bg); border-color: var(--v); }
+  .frise-titre { font-size: .74rem; color: var(--muted); margin-right: .3rem; }
+
+  .verdict { margin: .7rem 0 0; font-size: .82rem; }
+  .plus { color: #047857; }
+  .moins { color: #b45309; }
+
+  .note {
+    background: var(--violet-tint); border: 1px solid var(--line); border-radius: 14px;
+    padding: .9rem 1.1rem; font-size: .89rem;
+  }
+  .note h3 { font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; color: var(--violet-ink); margin: 0 0 .5rem; }
+  .note ul { margin: 0; padding-left: 1.1rem; }
+  .note li { margin-bottom: .35rem; }
+</style>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">Ma Progression CP · à choisir</p>
+  <h1>Six façons de dire comment s'est passée la semaine</h1>
+  <p>
+    Les mêmes trois états à chaque fois. Clique dans chaque famille, et regarde surtout
+    la frise en dessous : c'est là qu'on verra sept semaines d'affilée dans le livret.
+    Dis-moi la lettre que tu préfères.
+  </p>
+</header>
+
+<div id="familles"></div>
+
+<div class="note">
+  <h3>Ce qui a guidé les propositions</h3>
+  <ul>
+    <li><b>Jamais la couleur seule.</b> Chaque état a sa forme et son mot, sinon un daltonien ou une impression en noir et blanc perd l'information. Toutes les familles ci-dessus respectent ça.</li>
+    <li><b>Rien qui juge l'enfant.</b> Un enfant en difficulté n'est pas un enfant triste ni un mauvais élève : les figures qui boudent ou les pouces baissés sont écartés d'office.</li>
+    <li><b>Lisible en tout petit.</b> Dans la frise, chaque état fait deux centimètres. Les dessins trop détaillés deviennent des taches.</li>
+    <li><b>Dessiné, pas en emoji.</b> Les emoji changent de tête selon le téléphone, l'ordinateur et la version. Les familles A à D sont dessinées dans l'application : elles seront identiques partout, et on peut les retoucher.</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* Chaque icone est dessinee, pas prise dans les emoji : elle sera identique
+     sur tous les appareils, et on peut la corriger. `couleur` sert de trait. */
+  function svg(contenu, taille) {
+    return '<svg width="' + taille + '" height="' + taille + '" viewBox="0 0 24 24" '
+      + 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+      + 'stroke-linejoin="round" aria-hidden="true">' + contenu + '</svg>';
+  }
+
+  var FAMILLES = [
+    {
+      lettre: "A", nom: "Le bonhomme, par sa posture",
+      pourquoi: "Un personnage entier : tassé, debout, ou bras levés. C'est la posture qui parle, pas une expression du visage.",
+      plus: "Original, chaleureux, et un enfant le comprend au premier coup d'œil.",
+      moins: "Il faut le dessiner correctement pour qu'il reste lisible à deux centimètres.",
+      etats: [
+        { c: "r", mot: "Difficile", ic: svg('<circle cx="12" cy="6" r="2.6"/><path d="M12 8.6v5"/><path d="M9 11.5l-2.5 2"/><path d="M15 11.5l2.5 2"/><path d="M12 13.6l-2.5 5"/><path d="M12 13.6l2.5 5"/>', 22) },
+        { c: "o", mot: "À surveiller", ic: svg('<circle cx="12" cy="5.6" r="2.6"/><path d="M12 8.2v6"/><path d="M8.5 10.5h7"/><path d="M12 14.2l-2 4.5"/><path d="M12 14.2l2 4.5"/>', 22) },
+        { c: "v", mot: "Ça va bien", ic: svg('<circle cx="12" cy="5.6" r="2.6"/><path d="M12 8.2v6"/><path d="M12 10l-4-3"/><path d="M12 10l4-3"/><path d="M12 14.2l-2.5 4.5"/><path d="M12 14.2l2.5 4.5"/>', 22) }
+      ]
+    },
+    {
+      lettre: "B", nom: "La pousse qui grandit",
+      pourquoi: "Une graine, une pousse, un arbre. On parle de croissance, pas de niveau : personne n'est « mauvais », on est plus ou moins avancé.",
+      plus: "Aucun jugement, et l'image dit exactement ce qu'on veut dire d'un enfant de six ans.",
+      moins: "Le lien avec le comportement d'une semaine est moins immédiat.",
+      etats: [
+        { c: "r", mot: "Difficile", ic: svg('<path d="M12 20v-4"/><path d="M12 16c-2.5 0-4-1.5-4-3.5"/><path d="M5 20h14"/>', 22) },
+        { c: "o", mot: "À surveiller", ic: svg('<path d="M12 20v-8"/><path d="M12 14c-3 0-4.5-2-4.5-4.5C10 9.5 12 11 12 14z"/><path d="M5 20h14"/>', 22) },
+        { c: "v", mot: "Ça va bien", ic: svg('<path d="M12 20v-9"/><path d="M12 13c-3 0-4.5-2-4.5-4.5C10 8.5 12 10 12 13z"/><path d="M12 13c3 0 4.5-2 4.5-4.5C14 8.5 12 10 12 13z"/><path d="M5 20h14"/>', 22) }
+      ]
+    },
+    {
+      lettre: "C", nom: "L'allure, de l'escargot au coureur",
+      pourquoi: "Trois vitesses : ça traîne, ça avance, ça file. C'est le rythme de la semaine, pas la valeur de l'enfant.",
+      plus: "Très parlant, et amusant sans être moqueur.",
+      moins: "Peut se lire comme une remarque sur la lenteur, alors qu'on parle du comportement.",
+      etats: [
+        { c: "r", mot: "Difficile", ic: svg('<path d="M4 17h9a4 4 0 100-8 3 3 0 00-3 3"/><circle cx="13" cy="13" r="3.2"/><path d="M16 8.5l1.5-2"/><path d="M18.5 9l2-1.5"/>', 22) },
+        { c: "o", mot: "À surveiller", ic: svg('<circle cx="13" cy="4.6" r="2.2"/><path d="M11 20l1.5-6 2.5 2.5V20"/><path d="M12.5 14L10 9.5 7 12"/><path d="M15 11l3 1"/>', 22) },
+        { c: "v", mot: "Ça va bien", ic: svg('<circle cx="15" cy="4.4" r="2.2"/><path d="M9 20l3-5 3 2.5V20"/><path d="M12 15L9.5 10l-4 2"/><path d="M13 10l4.5.5"/><path d="M4 12l2.5.5"/>', 22) }
+      ]
+    },
+    {
+      lettre: "D", nom: "Les formes pleines",
+      pourquoi: "Un carré, un triangle, un cercle. Aucune image, aucune interprétation possible : trois formes qu'on distingue même minuscules.",
+      plus: "Imbattable en lisibilité, et parfaitement neutre.",
+      moins: "Froid. Ça ne ressemble pas au reste de l'application.",
+      etats: [
+        { c: "r", mot: "Difficile", ic: svg('<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor" stroke="none"/>', 18) },
+        { c: "o", mot: "À surveiller", ic: svg('<path d="M12 4l8 15H4z" fill="currentColor" stroke="none"/>', 18) },
+        { c: "v", mot: "Ça va bien", ic: svg('<circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/>', 18) }
+      ]
+    },
+    {
+      lettre: "E", nom: "Le visage, dessiné et sobre",
+      pourquoi: "Trois visages simples, dessinés à la même main que le reste. Le trait de la bouche suffit, sans grimace.",
+      plus: "Ce que tout le monde comprend sans explication.",
+      moins: "Ça reste un jugement sur l'enfant, et c'est ce qu'on voulait éviter.",
+      etats: [
+        { c: "r", mot: "Difficile", ic: svg('<circle cx="12" cy="12" r="9"/><path d="M9 16c1.8-1.6 4.2-1.6 6 0"/><path d="M9 9.5h.01"/><path d="M15 9.5h.01"/>', 22) },
+        { c: "o", mot: "À surveiller", ic: svg('<circle cx="12" cy="12" r="9"/><path d="M9 15.5h6"/><path d="M9 9.5h.01"/><path d="M15 9.5h.01"/>', 22) },
+        { c: "v", mot: "Ça va bien", ic: svg('<circle cx="12" cy="12" r="9"/><path d="M9 14.5c1.8 1.8 4.2 1.8 6 0"/><path d="M9 9.5h.01"/><path d="M15 9.5h.01"/>', 22) }
+      ]
+    },
+    {
+      lettre: "F", nom: "La météo",
+      pourquoi: "Ce que je t'avais proposé, gardé ici pour comparer.",
+      plus: "Familier, et une famille le lit sans mode d'emploi.",
+      moins: "Tu ne l'aimes pas, et les emoji changent de tête selon l'appareil.",
+      etats: [
+        { c: "r", mot: "Difficile", emo: "🌧" },
+        { c: "o", mot: "À surveiller", emo: "🌤" },
+        { c: "v", mot: "Ça va bien", emo: "☀️" }
+      ]
+    }
+  ];
+
+  /* Une periode de demonstration, la meme partout, pour comparer les frises. */
+  var SEMAINES = ["v", "v", "o", "v", "r", "o", "v"];
+
+  var conteneur = document.getElementById("familles");
+
+  FAMILLES.forEach(function (f) {
+    var carte = document.createElement("div");
+    carte.className = "famille";
+
+    var entete = document.createElement("div");
+    entete.className = "entete";
+    var lettre = document.createElement("span");
+    lettre.className = "lettre";
+    lettre.textContent = f.lettre;
+    entete.appendChild(lettre);
+    var h = document.createElement("h2");
+    h.textContent = f.nom;
+    entete.appendChild(h);
+    carte.appendChild(entete);
+
+    var p = document.createElement("p");
+    p.className = "pourquoi";
+    p.textContent = f.pourquoi;
+    carte.appendChild(p);
+
+    var choix = document.createElement("div");
+    choix.className = "choix";
+    choix.setAttribute("role", "radiogroup");
+    choix.setAttribute("aria-label", "Famille " + f.lettre + " : " + f.nom);
+
+    var courant = "v";
+    function peindre() {
+      Array.prototype.forEach.call(choix.children, function (b) {
+        var code = b.getAttribute("data-etat");
+        b.className = "etat" + (code === courant ? " on-" + code : "");
+        b.setAttribute("aria-checked", code === courant ? "true" : "false");
+      });
+    }
+
+    f.etats.forEach(function (e) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "etat";
+      b.setAttribute("role", "radio");
+      b.setAttribute("data-etat", e.c);
+      b.setAttribute("aria-label", f.nom + " : " + e.mot);
+
+      if (e.emo) {
+        var span = document.createElement("span");
+        span.className = "emo";
+        span.setAttribute("aria-hidden", "true");
+        span.textContent = e.emo;
+        b.appendChild(span);
+      } else {
+        var boite = document.createElement("span");
+        boite.innerHTML = e.ic;
+        b.appendChild(boite);
+      }
+      b.appendChild(document.createTextNode(e.mot));
+      b.addEventListener("click", function () { courant = e.c; peindre(); });
+      choix.appendChild(b);
+    });
+    peindre();
+    carte.appendChild(choix);
+
+    /* La frise : c'est la que se joue vraiment la lisibilite. */
+    var frise = document.createElement("div");
+    frise.className = "frise";
+    var t = document.createElement("span");
+    t.className = "frise-titre";
+    t.textContent = "Une période :";
+    frise.appendChild(t);
+
+    SEMAINES.forEach(function (code, n) {
+      var etat = f.etats.filter(function (e) { return e.c === code; })[0];
+      var c = document.createElement("span");
+      c.className = "c " + code;
+      c.style.color = code === "r" ? "var(--r)" : code === "o" ? "var(--o)" : "var(--v)";
+      c.setAttribute("title", "Semaine " + (9 + n) + " : " + etat.mot);
+      if (etat.emo) c.textContent = etat.emo;
+      else c.innerHTML = etat.ic.replace(/width="\d+" height="\d+"/, 'width="17" height="17"');
+      frise.appendChild(c);
+    });
+    carte.appendChild(frise);
+
+    var v = document.createElement("p");
+    v.className = "verdict";
+    var plus = document.createElement("span");
+    plus.className = "plus";
+    plus.textContent = "Pour : " + f.plus;
+    v.appendChild(plus);
+    v.appendChild(document.createElement("br"));
+    var moins = document.createElement("span");
+    moins.className = "moins";
+    moins.textContent = "Contre : " + f.moins;
+    v.appendChild(moins);
+    carte.appendChild(v);
+
+    conteneur.appendChild(carte);
+  });
+})();
+</script>
