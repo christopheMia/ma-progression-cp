@@ -22,7 +22,7 @@ export default function CahierJournalCard({ courante, suivantes }: {
 
   if (!courante) {
     return (
-      <Link href="/planning"
+      <Link prefetch={false} href="/planning"
         className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
         <NotebookPen size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
         <div className="font-semibold text-slate-900 mt-1">Cahier journal</div>
@@ -33,7 +33,7 @@ export default function CahierJournalCard({ courante, suivantes }: {
 
   return (
     <div className="carte-i flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
-      <Link href={`/semaine/${courante.id}`} className="group block">
+      <Link prefetch={false} href={`/semaine/${courante.id}`} className="group block">
         <NotebookPen size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
         <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">
           Cahier journal en cours

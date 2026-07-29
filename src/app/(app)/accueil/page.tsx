@@ -61,7 +61,7 @@ export default async function AccueilPage() {
           {apercu.map(a => {
             const Icone = a.icon
             return (
-              <Link key={a.titre} href="/setup"
+              <Link prefetch={false} key={a.titre} href="/setup"
                 className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
                 <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 group-hover:-translate-y-0.5">
                   <Icone size={22} aria-hidden="true" />
@@ -169,7 +169,7 @@ export default async function AccueilPage() {
 
       {/* Semaine en cours */}
       {courante && (
-        <Link href={`/semaine/${courante.id}`}
+        <Link prefetch={false} href={`/semaine/${courante.id}`}
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-violet-600">
@@ -188,21 +188,21 @@ export default async function AccueilPage() {
 
       {/* Statistiques (cartes cliquables : chacune mène à l'endroit utile) */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Link href="/planning"
+        <Link prefetch={false} href="/planning"
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{courante?.numero ?? 0}<span className="text-base font-normal text-slate-400">/{total}</span></div>
           <div className="text-sm text-slate-500 mt-1 mb-3 flex items-center gap-1">Semaine de l&apos;année <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
           <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-violet-500" />
         </Link>
 
-        <Link href={courante ? `/semaine/${courante.id}` : '/planning'}
+        <Link prefetch={false} href={courante ? `/semaine/${courante.id}` : '/planning'}
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{Math.round((acquisCount / (possible || 1)) * 100)}<span className="text-base font-normal text-slate-400">%</span></div>
           <div className="text-sm text-slate-500 mt-1 mb-3 flex items-center gap-1">Graphèmes acquis (classe) <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
           <ProgressBar value={acquisCount} max={possible} color="bg-emerald-500" />
         </Link>
 
-        <Link href="/parametres"
+        <Link prefetch={false} href="/parametres"
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{nbEleves}</div>
           <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
@@ -216,14 +216,14 @@ export default async function AccueilPage() {
         {/* Le suivi est un geste quotidien : il a sa porte des l'accueil
             (demande de Christophe du 29/07). L'ancre ouvre directement le bloc,
             sans faire defiler la fiche de la semaine. */}
-        <Link href={courante ? `/semaine/${courante.id}#suivi` : '/planning'}
+        <Link prefetch={false} href={courante ? `/semaine/${courante.id}#suivi` : '/planning'}
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Users size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Suivi des élèves<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Comportement, observations, bilan de période</div>
         </Link>
 
-        <Link href="/planning"
+        <Link prefetch={false} href="/planning"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <CalendarDays size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Planning annuel<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
@@ -232,21 +232,21 @@ export default async function AccueilPage() {
 
         <CahierJournalCard courante={couranteLien} suivantes={suivantes} />
 
-        <Link href="/parametres#edt"
+        <Link prefetch={false} href="/parametres#edt"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Clock size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Emploi du temps<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Tes journées, créneau par créneau</div>
         </Link>
 
-        <Link href="/parametres#methodes"
+        <Link prefetch={false} href="/parametres#methodes"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Plus size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Ajoute tes matières<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Tes matières et leurs progressions</div>
         </Link>
 
-        <Link href="/setup"
+        <Link prefetch={false} href="/setup"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Compass size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Configuration initiale<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>

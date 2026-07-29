@@ -64,7 +64,7 @@ export default function OutilsIaSection({ outils, children }: {
             {outils.map(o => {
               const Icone = ICONES[o.icon]
               return (
-                <Link key={o.href} href={o.href}
+                <Link prefetch={false} key={o.href} href={o.href}
                   className="carte-i group flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-4">
                   <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 shrink-0 transition-transform duration-200 group-hover:-translate-y-0.5">
                     <Icone size={22} aria-hidden="true" />
