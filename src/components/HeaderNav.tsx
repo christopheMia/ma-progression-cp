@@ -1,9 +1,29 @@
 'use client'
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Menu, X, Sparkles } from 'lucide-react'
+import { Menu, X, Sparkles, Loader2 } from 'lucide-react'
 import LogoutButton from './LogoutButton'
+
+/**
+ * La petite roue qui tourne dès le clic, dans l'entrée cliquée.
+ *
+ * Retour de Christophe du 29/07 : « encore un décalage entre le clic et
+ * l'action ». Le squelette de chargement ne s'affiche qu'une fois la
+ * navigation engagée, c'est-à-dire après le premier aller-retour serveur :
+ * entre le clic et lui, l'écran ne bouge pas et on croit avoir mal cliqué.
+ * `useLinkStatus` sait, lui, dès le clic.
+ */
+function RoueDuClic() {
+  const { pending } = useLinkStatus()
+  if (!pending) return null
+  return (
+    <>
+      <Loader2 aria-hidden className="ml-1 inline-block h-3.5 w-3.5 animate-spin align-[-2px]" />
+      <span className="sr-only">Chargement</span>
+    </>
+  )
+}
 
 // Les bulles (title) expliquent chaque entree au survol : elles remplacent les
 // cartes "Parametres" et "Aide" retirees de l'accueil (retour du 20/07, elles
@@ -55,6 +75,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
         {LINKS.map(l => (
           <Link key={l.href} href={l.href} title={l.aide} className={classeLien(pathname === l.href)}>
             {l.label}
+            <RoueDuClic />
           </Link>
         ))}
         <LogoutButton />
@@ -91,7 +112,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
                     className={`rounded-lg px-3 py-2 transition-colors ${
                       actif ? 'bg-violet-100 text-violet-800 font-semibold' : 'text-slate-700 hover:bg-slate-100'
                     }`}>
-                    <span className="block">{l.label}</span>
+                    <span className="block">{l.label}<RoueDuClic /></span>
                     {/* Sur le fond violet de l'entree active, un gris neutre
                         tombe sous le contraste minimum pour du petit texte :
                         la ligne d'aide prend la teinte du fond. */}
