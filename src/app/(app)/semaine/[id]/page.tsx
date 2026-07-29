@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { utilisateurCourant } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -14,10 +13,9 @@ import type { EtatComportement } from '@/lib/comportement'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  // Identité déjà vérifiée par le layout : `session.ts` évite de la redemander.
-  const user = await utilisateurCourant()
-  if (!user) redirect('/connexion')
-
+  // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
+  // RLS ne rend que les semaines de la personne connectée. Une semaine qui ne
+  // lui appartient pas revient vide, donc on repart sur le planning.
   const supabase = await createClient()
 
   const { data: semaine } = await supabase.from('semaines').select('*').eq('id', id).single()

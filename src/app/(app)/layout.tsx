@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await utilisateurCourant()
   if (!user) redirect('/connexion')
 
-  const classe = await classeCourante(user.id)
+  const classe = await classeCourante()
 
   // Contexte minimal pour que l'assistant sache de quelle classe on parle.
   const supabase = await createClient()

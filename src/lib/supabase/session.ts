@@ -20,13 +20,25 @@ export const utilisateurCourant = cache(async () => {
   return user
 })
 
-/** La classe la plus récente de l'utilisateur, ou `null` s'il n'en a pas. */
-export const classeCourante = cache(async (userId: string) => {
+/**
+ * La classe la plus récente de l'utilisateur, ou `null` s'il n'en a pas.
+ *
+ * Aucun `user_id` n'est passé, et c'est volontaire : la table `classes` est
+ * protégée par RLS (« Users manage own class »), donc PostgreSQL ne renvoie
+ * déjà que les classes de la personne connectée. Filtrer en plus côté
+ * application obligeait à connaître son identifiant, donc à appeler `getUser`,
+ * donc à payer un aller-retour reseau de plus a chaque navigation de menu (les
+ * layouts ne sont pas re-rendus entre deux pages soeurs, la page ne pouvait
+ * donc pas partager celui du layout).
+ *
+ * La sécurité ne se relâche pas, elle se rapproche de la base : c'est la
+ * politique RLS qui décide, pas une clause `where` qu'on pourrait oublier.
+ */
+export const classeCourante = cache(async () => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('classes')
     .select('id, prenom_enseignant, rentree_date, zone_scolaire')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()

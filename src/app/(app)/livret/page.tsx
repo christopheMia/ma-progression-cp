@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { classeCourante, utilisateurCourant } from '@/lib/supabase/session'
+import { classeCourante } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Livret, { type CompetenceBilan } from '@/components/livret/Livret'
@@ -16,12 +16,10 @@ import type { Formulation, MotDeLaSemaine } from '@/lib/briques-bilan'
  * dans `briques-bilan.ts`, testés à part.
  */
 export default async function LivretPage() {
-  // Le layout vient de vérifier l'identité et de charger la classe : par
-  // `session.ts`, on récupère son résultat au lieu de refaire les deux appels.
-  const user = await utilisateurCourant()
-  if (!user) redirect('/connexion')
-
-  const classe = await classeCourante(user.id)
+  // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
+  // RLS ne rend que la classe de la personne connectée. Une navigation de menu
+  // ne re-rend pas le layout, donc cet appel n'aurait été mutualisé avec rien.
+  const classe = await classeCourante()
   if (!classe) redirect('/setup')
 
   const supabase = await createClient()

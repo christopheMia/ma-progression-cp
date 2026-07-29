@@ -17,14 +17,11 @@ import {
 import Bouton from '@/components/ui/Bouton'
 
 export default async function AccueilPage() {
-  // Identité déjà vérifiée par le layout : `session.ts` évite l'aller-retour
-  // en double vers le serveur d'authentification.
-  const user = await utilisateurCourant()
-  if (!user) redirect('/connexion')
-
+  // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
+  // RLS ne rend que la classe de la personne connectée (voir `session.ts`).
   const supabase = await createClient()
 
-  const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const { data: classe } = await supabase.from('classes').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle()
 
   // Premiere visite (aucune classe) : on invite a configurer, sans jamais bloquer.
   // Le menu du haut (Parametres, etc.) reste accessible a tout moment.

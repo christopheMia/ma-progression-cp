@@ -15,10 +15,17 @@ export async function proxy(request: NextRequest) {
   // Next.js précharge les liens visibles : les cinq entrées du menu et chaque
   // carte de l'accueil déclenchent une requête de préchargement. Sans ce
   // court-circuit, chacune payait sa propre vérification d'identité, donc une
-  // dizaine d'allers-retours pendant qu'on lit simplement la page. Le
-  // préchargement rend quand même la page : le layout, lui, vérifie
-  // l'identité, donc rien ne fuit.
-  if (request.headers.get('next-router-prefetch') === '1') {
+  // dizaine d'allers-retours pendant qu'on lit simplement la page.
+  //
+  // Mais UNIQUEMENT quand un jeton de session existe déjà. Sans cette
+  // condition, un préchargement lancé depuis la page de connexion rendait
+  // l'application déconnectée, et le navigateur gardait cette version vide :
+  // en arrivant sur l'accueil, on voyait « Configurer ma classe » alors que la
+  // classe existe (signalé par Christophe le 29/07). Lire un cookie ne coûte
+  // rien, contrairement à `getUser`.
+  const aUnJeton = request.cookies.getAll()
+    .some(c => c.name.startsWith('sb-') && c.name.includes('auth-token'))
+  if (request.headers.get('next-router-prefetch') === '1' && aUnJeton) {
     return NextResponse.next({ request })
   }
 
