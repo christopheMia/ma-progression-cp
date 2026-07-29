@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -37,7 +38,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     { data: comportements },
     { data: observations },
     { data: bilansPeriode },
-  ] = await Promise.all([
+  ] = await mesurer('semaine', () => Promise.all([
     supabase.from('eleves').select('*').eq('class_id', semaine.class_id).order('ordre'),
     supabase.from('acquisitions').select('*').eq('semaine_id', id),
     supabase.from('appreciations').select('*').eq('semaine_id', id),
@@ -57,7 +58,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     supabase.from('appreciations_periode').select('eleve_id, texte, briques_ecartees')
       .eq('class_id', semaine.class_id).eq('matiere', '__general')
       .eq('periode_numero', semaine.periode_numero ?? 0),
-  ])
+  ]))
 
   // Les semaines de la période en cours : c'est la frise du suivi.
   const semainesPeriode = (semainesClasse ?? [])

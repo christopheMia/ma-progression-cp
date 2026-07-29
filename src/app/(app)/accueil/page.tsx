@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { utilisateurCourant } from '@/lib/supabase/session'
+import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -78,26 +78,28 @@ export default async function AccueilPage() {
 
   // Ces deux requetes sont independantes : les enchainer doublait inutilement le
   // temps d'attente a chaque affichage de l'accueil (retour "latence" du 20/07).
-  const [{ data: semaines }, { count: nbElevesCount }, { data: methodes }] = await Promise.all([
+  const [
+    { data: semaines },
+    { count: nbElevesCount },
+    { data: methodes },
+    { count: acquisBrut },
+  ] = await mesurer('accueil', () => Promise.all([
     supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
     supabase.from('eleves').select('id', { count: 'exact', head: true }).eq('class_id', classe.id),
     supabase.from('methodes').select('matiere, manuel').eq('class_id', classe.id).order('created_at'),
-  ])
+    // Le compte des acquis attendait la liste des semaines pour la filtrer :
+    // un troisieme aller-retour en serie a chaque affichage de l'accueil. La
+    // jointure interne sur `semaines` le ramene dans le meme groupe.
+    supabase.from('acquisitions')
+      .select('id, semaines!inner(class_id)', { count: 'exact', head: true })
+      .eq('acquis', true).eq('semaines.class_id', classe.id),
+  ]))
 
   // Noms des manuels importes, affiches sur la carte "Mes méthodes" : sans eux
   // l'enseignante ne sait pas d'ou vient sa progression (retour du 20/07).
   const nomsManuels = (methodes ?? [])
     .map(m => (m.manuel as string | null)?.trim())
     .filter((n): n is string => !!n)
-
-  // On ne veut qu'un NOMBRE : `head: true` renvoie le compte sans rapatrier les
-  // lignes, alors qu'on chargeait auparavant toutes les acquisitions de l'annee.
-  const semaineIds = (semaines ?? []).map(s => s.id)
-  const { count: acquisBrut } = semaineIds.length
-    ? await supabase.from('acquisitions')
-        .select('id', { count: 'exact', head: true })
-        .eq('acquis', true).in('semaine_id', semaineIds)
-    : { count: 0 }
 
   const total = semaines?.length ?? 0
   const nbEleves = nbElevesCount ?? 0

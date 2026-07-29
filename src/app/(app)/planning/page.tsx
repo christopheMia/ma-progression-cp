@@ -9,13 +9,14 @@ import Bouton from '@/components/ui/Bouton'
 import { codeMatiereCanonique } from '@/lib/matieres'
 import { construirePlanningAnnuel } from '@/lib/planning-annuel'
 import { semaineEnCours } from '@/lib/semaines'
+import { mesurer } from '@/lib/perf'
 
 export default async function PlanningPage() {
+  // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
+  // RLS ne rend que la classe de la personne connectée (voir `session.ts`).
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/connexion')
 
-  const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const { data: classe } = await supabase.from('classes').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle()
   if (!classe) redirect('/setup')
 
   const [
@@ -24,7 +25,8 @@ export default async function PlanningPage() {
     { data: periodes },
     { data: progression },
     { data: methodes },
-  ] = await Promise.all([
+    { data: acquisitionsBrutes },
+  ] = await mesurer('planning', () => Promise.all([
     supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
     supabase.from('eleves').select('id').eq('class_id', classe.id),
     supabase.from('periodes')
@@ -38,15 +40,15 @@ export default async function PlanningPage() {
       .select('id, matiere, manuel, suivi_actif')
       .eq('class_id', classe.id)
       .order('created_at'),
-  ])
+    // Ces lignes attendaient la liste des semaines pour etre filtrees : un
+    // aller-retour de plus en serie. La jointure interne les ramene ici.
+    supabase.from('acquisitions')
+      .select('semaine_id, eleve_id, matiere, grapheme, semaines!inner(class_id)')
+      .eq('acquis', true)
+      .eq('semaines.class_id', classe.id),
+  ]))
 
-  const semaineIds = (semaines ?? []).map(s => s.id)
-  const acquisitions = semaineIds.length
-    ? (await supabase.from('acquisitions')
-        .select('semaine_id, eleve_id, matiere, grapheme')
-        .eq('acquis', true)
-        .in('semaine_id', semaineIds)).data ?? []
-    : []
+  const acquisitions = acquisitionsBrutes ?? []
 
   const nomsMethodes = (methodes ?? [])
     .map(methode => methode.manuel?.trim())
