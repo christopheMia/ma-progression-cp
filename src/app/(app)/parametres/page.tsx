@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import PrenomEnseignantEditor from '@/components/parametres/PrenomEnseignantEditor'
@@ -28,34 +29,37 @@ function Section({ titre, children, id, headerRight }: { titre: string; children
 }
 
 export default async function ParametresPage() {
+  // Cette page enchainait SEPT requetes l'une apres l'autre : identite, classe,
+  // eleves, emploi du temps, methodes, progression, documents. Sept
+  // allers-retours en serie vers l'Irlande, mesures a 2,08 secondes cote
+  // navigateur le 29/07. Elles n'en font plus que deux vagues.
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/connexion')
 
-  const { data: classe } = await supabase.from('classes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const { data: classe } = await supabase.from('classes').select('*')
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
   if (!classe) redirect('/setup')
 
-  const { data: eleves } = await supabase.from('eleves')
-    .select('*').eq('class_id', classe.id).order('ordre')
-  const { data: edt } = await supabase.from('emploi_du_temps')
-    .select('*').eq('class_id', classe.id).order('ordre')
-  const { data: methodes } = await supabase
-    .from('methodes').select('*').eq('class_id', classe.id).order('created_at')
-  const { data: progression } = await supabase
-    .from('progression').select('methode_id, items').eq('class_id', classe.id)
-  const methodeIds = (methodes ?? []).map(methode => methode.id)
-  let sources: MethodeSource[] = []
-  if (methodeIds.length > 0) {
-    const { data: sourcesLues, error: sourcesError } = await supabase
-      .from('methode_sources')
-      .select('*')
-      .in('methode_id', methodeIds)
-      .order('created_at')
-    if (sourcesError) {
-      throw new Error(`Lecture des documents impossible : ${sourcesError.message}`)
-    }
-    sources = (sourcesLues ?? []) as MethodeSource[]
+  const [
+    { data: eleves },
+    { data: edt },
+    { data: methodes },
+    { data: progression },
+    { data: sourcesLues, error: sourcesError },
+  ] = await mesurer('parametres', () => Promise.all([
+    supabase.from('eleves').select('*').eq('class_id', classe.id).order('ordre'),
+    supabase.from('emploi_du_temps').select('*').eq('class_id', classe.id).order('ordre'),
+    supabase.from('methodes').select('*').eq('class_id', classe.id).order('created_at'),
+    supabase.from('progression').select('methode_id, items').eq('class_id', classe.id),
+    // Les documents attendaient la liste des methodes : la jointure interne les
+    // ramene dans la meme vague.
+    supabase.from('methode_sources').select('*, methodes!inner(class_id)')
+      .eq('methodes.class_id', classe.id).order('created_at'),
+  ]))
+
+  if (sourcesError) {
+    throw new Error(`Lecture des documents impossible : ${sourcesError.message}`)
   }
+  const sources = (sourcesLues ?? []) as unknown as MethodeSource[]
 
   // Recap par methode : ce que l'IA a produit a l'import (nb de semaines + nb de notions).
   const resumes: Record<string, { semaines: number; notions: number }> = {}

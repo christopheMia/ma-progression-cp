@@ -14,9 +14,7 @@ const LABEL_MATIERE: Record<string, string> = {
 
 export default async function CompetencesPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/connexion')
-
+  // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté.
   const { data: comps } = await supabase
     .from('competences_officielles')
     .select('matiere, domaine, libelle, ordre, version_programme')

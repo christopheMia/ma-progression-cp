@@ -19,10 +19,10 @@ function libelleMatiere(code: string, manuel: string | null): string {
 
 export default async function PeriodesPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/connexion')
+  // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
+  // RLS ne rend que la classe de la personne connectée (voir `session.ts`).
   const { data: classe } = await supabase.from('classes').select('id')
-    .eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+    .order('created_at', { ascending: false }).limit(1).maybeSingle()
   if (!classe) redirect('/setup')
 
   const [{ data: prog }, { data: sems }, { data: periodes }, { data: methodes }] = await Promise.all([
