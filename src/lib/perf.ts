@@ -10,6 +10,21 @@
  * `npx vercel logs <deploiement> --json`. Aucune donnée d'élève n'y figure :
  * un nom d'étape et un nombre de millisecondes, rien d'autre.
  */
+/**
+ * Chronomètre chaque requête d'un lot lancé en parallèle.
+ *
+ * Un `Promise.all` ne dit que la durée de la plus lente. Quand un lot de six
+ * requêtes sur des tables minuscules met 913 ms, il faut savoir laquelle
+ * traîne, et si les autres ont vraiment démarré en même temps.
+ */
+export function chronometrer<T>(etape: string, promesse: PromiseLike<T>): Promise<T> {
+  const depart = Date.now()
+  return Promise.resolve(promesse).then(
+    valeur => { console.log(`[perf]   ${etape} ${Date.now() - depart}ms`); return valeur },
+    erreur => { console.log(`[perf]   ${etape} ${Date.now() - depart}ms (echec)`); throw erreur },
+  )
+}
+
 export async function mesurer<T>(etape: string, travail: () => Promise<T>): Promise<T> {
   const depart = Date.now()
   try {

@@ -9,7 +9,7 @@ import Bouton from '@/components/ui/Bouton'
 import { codeMatiereCanonique } from '@/lib/matieres'
 import { construirePlanningAnnuel } from '@/lib/planning-annuel'
 import { semaineEnCours } from '@/lib/semaines'
-import { mesurer } from '@/lib/perf'
+import { chronometrer, mesurer } from '@/lib/perf'
 
 export default async function PlanningPage() {
   // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
@@ -27,25 +27,25 @@ export default async function PlanningPage() {
     { data: methodes },
     { data: acquisitionsBrutes },
   ] = await mesurer('planning', () => Promise.all([
-    supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
-    supabase.from('eleves').select('id').eq('class_id', classe.id),
-    supabase.from('periodes')
+    chronometrer('semaines', supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero')),
+    chronometrer('eleves', supabase.from('eleves').select('id').eq('class_id', classe.id)),
+    chronometrer('periodes', supabase.from('periodes')
       .select('numero, nom, date_debut, date_fin, ordre')
-      .eq('class_id', classe.id).order('ordre'),
-    supabase.from('progression')
+      .eq('class_id', classe.id).order('ordre')),
+    chronometrer('progression', supabase.from('progression')
       .select('numero, matiere, methode_id, items, pages, mots_exemple')
       .eq('class_id', classe.id)
-      .order('numero'),
-    supabase.from('methodes')
+      .order('numero')),
+    chronometrer('methodes', supabase.from('methodes')
       .select('id, matiere, manuel, suivi_actif')
       .eq('class_id', classe.id)
-      .order('created_at'),
+      .order('created_at')),
     // Ces lignes attendaient la liste des semaines pour etre filtrees : un
     // aller-retour de plus en serie. La jointure interne les ramene ici.
-    supabase.from('acquisitions')
+    chronometrer('acquisitions', supabase.from('acquisitions')
       .select('semaine_id, eleve_id, matiere, grapheme, semaines!inner(class_id)')
       .eq('acquis', true)
-      .eq('semaines.class_id', classe.id),
+      .eq('semaines.class_id', classe.id)),
   ]))
 
   const acquisitions = acquisitionsBrutes ?? []
