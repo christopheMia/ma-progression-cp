@@ -19,6 +19,7 @@ export type CompetenceBilan = {
   libelle: string
 }
 import { LIBELLE_NIVEAU, estNiveau, type Niveau } from '@/lib/niveaux'
+import { useSauvegardeDifferee } from '@/lib/useSauvegardeDifferee'
 import {
   definirPositionnement,
   enregistrerAppreciationPeriode,
@@ -111,6 +112,7 @@ export default function Livret({
   const [phrases, setPhrases] = useState<Record<string, Formulation>>(formulations)
   const [choisies, setChoisies] = useState<Record<string, boolean>>({})
   const [generalChoisi, setGeneralChoisi] = useState(true)
+  const programmer = useSauvegardeDifferee()
 
   const eleve = eleves[iEleve]
 
@@ -220,11 +222,17 @@ export default function Livret({
     setTextes(etat => ({ ...etat, [cle]: suivant }))
     setErreur('')
 
-    startTransition(async () => {
-      const r = await enregistrerAppreciationPeriode(
-        eleve.id, periode, matiere, suivant.texte, suivant.ecartees, suivant.retouchees,
-      )
-      if (!r.ok) setErreur(r.message)
+    // Chaque lettre tapee declenchait un aller-retour serveur ET un
+    // `revalidatePath('/livret')`, donc un rechargement de la page en train
+    // d'etre remplie : d'ou la lenteur signalee le 29/07. On enregistre quand
+    // la frappe s'arrete.
+    programmer(cle, () => {
+      startTransition(async () => {
+        const r = await enregistrerAppreciationPeriode(
+          eleve.id, periode, matiere, suivant.texte, suivant.ecartees, suivant.retouchees,
+        )
+        if (!r.ok) setErreur(r.message)
+      })
     })
   }
 

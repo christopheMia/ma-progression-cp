@@ -102,6 +102,29 @@ describe('TimetableGrid : rendu de la grille fusionnée', () => {
     expect(cellule?.style.backgroundColor).toBe('rgb(255, 0, 0)')
   })
 
+  // Retour de Christophe du 29/07 : la fonction existait, mais derriere un
+  // pinceau dont le libelle n'apparaissait qu'au survol. Sur telephone, pas de
+  // survol : elle etait invisible.
+  test('propose en clair d’appliquer le style à toutes les cases de la matière', () => {
+    poser(CAS_11H)
+    fireEvent.click(screen.getByLabelText(/mise en forme lundi 11:00/i))
+
+    const nom = /mettre les 2 « calcul mental » comme ça/i
+    expect(screen.getByRole('button', { name: nom })).toBeTruthy()
+
+    fireEvent.change(screen.getByLabelText(/couleur du fond lundi 11:00/i), {
+      target: { value: '#ff0000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: nom }))
+
+    // Les deux cases « Calcul mental » portent la couleur, et elles seules.
+    const rouges = Array.from(document.querySelectorAll('td'))
+      .filter(td => td.style.backgroundColor === 'rgb(255, 0, 0)')
+    expect(rouges).toHaveLength(2)
+    expect(screen.getByRole('status').textContent)
+      .toMatch(/2 cases « Calcul mental » mises comme ça/i)
+  })
+
   test('corrige une édition non conforme avant de l’enregistrer', () => {
     const onSave = jest.fn()
     render(

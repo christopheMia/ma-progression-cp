@@ -210,6 +210,16 @@ export default async function AccueilPage() {
           Parametres et Aide ne sont plus ici : ils sont deja dans le menu du
           haut, ou ils portent desormais une bulle explicative au survol. */}
       <div className="grid gap-3 sm:grid-cols-3 [&>*]:h-full">
+        {/* Le suivi est un geste quotidien : il a sa porte des l'accueil
+            (demande de Christophe du 29/07). L'ancre ouvre directement le bloc,
+            sans faire defiler la fiche de la semaine. */}
+        <Link href={courante ? `/semaine/${courante.id}#suivi` : '/planning'}
+          className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
+          <Users size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Suivi des élèves<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
+          <div className="text-sm text-slate-500">Comportement, observations, bilan de période</div>
+        </Link>
+
         <Link href="/planning"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <CalendarDays size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />

@@ -55,6 +55,7 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
   // Les controles de style restent masques partout ailleurs : la grille doit
   // rester lisible, la mise en forme est une option, pas le sujet principal.
   const [styleOuvert, setStyleOuvert] = useState<string | null>(null)
+  const [applique, setApplique] = useState('')
   const cleCase = (jour: string, debut: string, fin: string) => `${jour}|${debut}|${fin}`
 
   // Historique pour l'annulation (Ctrl+Z). La grille est petite, on garde donc
@@ -147,6 +148,11 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
       c.jour === jour && c.heure_debut === debut && c.heure_fin === fin ? { ...c, [field]: !c[field] } : c))
   }
 
+  /** Combien de cases portent cette matière : le bouton le dit avant d'agir. */
+  function compterMemeMatiere(matiere: string) {
+    return creneaux.filter(c => c.matiere === matiere).length
+  }
+
   /** Applique le fond, la couleur de texte et la mise en forme d'une case à
    *  TOUTES les cases de la même matière (gain de temps demandé par l'enseignant). */
   function appliquerMemeMatiere(src: Creneau) {
@@ -154,6 +160,9 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
       c.matiere && c.matiere === src.matiere
         ? { ...c, couleur: src.couleur, couleur_texte: src.couleur_texte, texte_gras: src.texte_gras, texte_italique: src.texte_italique, texte_souligne: src.texte_souligne }
         : c))
+    const n = compterMemeMatiere(src.matiere)
+    setApplique(`${n} case${n > 1 ? 's' : ''} « ${src.matiere} » mise${n > 1 ? 's' : ''} comme ça.`)
+    setTimeout(() => setApplique(''), 4000)
   }
 
   // Les actions ci-dessous portent sur une LIGNE de la grille. Une ligne étant
@@ -267,9 +276,12 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
               const isMasque = surLigne.some(c => c.visible_journal === false)
               return (
                 <tr key={`${debut}-${fin}`}>
-                  <td className="relative border border-violet-100 bg-violet-50/70 p-1 text-center text-[0.56rem] text-slate-500 sm:text-[0.68rem]">
-                    <div className="font-medium tabular-nums text-slate-700">{heureSansSecondes(debut)}</div>
-                    <div className="tabular-nums text-slate-400">{heureSansSecondes(fin)}</div>
+                  {/* L'heure de fin etait en slate-400 sur un fond violet
+                      clair : environ 2,6 pour 1, illisible. Christophe avait
+                      deja signale le contraste de l'EDT le 26/07. */}
+                  <td className="relative border border-violet-100 bg-violet-50/70 p-1 text-center text-[0.56rem] text-slate-700 sm:text-[0.68rem]">
+                    <div className="font-medium tabular-nums text-slate-900">{heureSansSecondes(debut)}</div>
+                    <div className="tabular-nums text-slate-600">{heureSansSecondes(fin)}</div>
                     <details className="group/options no-print relative mt-0.5">
                       <summary className="mx-auto flex h-5 w-5 cursor-pointer list-none items-center justify-center rounded text-violet-500 hover:bg-violet-100 focus-visible:outline-2 focus-visible:outline-violet-500"
                         aria-label={`Options de la tranche ${debut} à ${fin}`} title="Options de la tranche">
@@ -370,12 +382,27 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                               className={`text-[11px] leading-none px-1 rounded italic ${c.texte_italique ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>i</button>
                             <button type="button" title="Souligné" onClick={() => toggleStyle(jour, cDebut, cFin, 'texte_souligne')}
                               className={`text-[11px] leading-none px-1 rounded underline ${c.texte_souligne ? 'bg-violet-200 text-violet-900' : 'text-gray-600 hover:bg-gray-100'}`}>U</button>
-                            {c.matiere && (
-                              <button type="button" title={`Appliquer ce style à toutes les cases « ${c.matiere} »`}
-                                onClick={() => appliquerMemeMatiere(c)}
-                                className="text-[11px] leading-none px-1 rounded text-violet-600 hover:bg-violet-100">🖌️</button>
-                            )}
                             </div>
+                            {/* La fonction existait, cachee derriere un pinceau
+                                dont le libelle n'apparaissait qu'au survol :
+                                invisible sur telephone. Elle est ecrite en
+                                clair, avec le nombre de cases concernees
+                                (retour de Christophe du 29/07). */}
+                            {c.matiere && (
+                              <button type="button"
+                                onClick={() => appliquerMemeMatiere(c)}
+                                className="flex w-full items-center gap-1.5 rounded border border-violet-300 px-1.5 py-1 text-left text-[11px] font-semibold text-violet-800 hover:bg-violet-50">
+                                <span aria-hidden>🖌️</span>
+                                Mettre {compterMemeMatiere(c.matiere) > 1
+                                  ? `les ${compterMemeMatiere(c.matiere)} « ${c.matiere} »`
+                                  : `« ${c.matiere} »`} comme ça
+                              </button>
+                            )}
+                            {applique && (
+                              <p role="status" className="text-[11px] font-semibold text-emerald-700">
+                                {applique}
+                              </p>
+                            )}
                           </div>
                         )}
                       </td>

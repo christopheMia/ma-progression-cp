@@ -240,9 +240,11 @@ describe('Livret', () => {
     afficher()
 
     await user.type(screen.getByLabelText(/appréciation générale de lina/i), 'Belle période.')
+    // L'enregistrement part APRES la frappe (600 ms), pas a chaque lettre.
     await waitFor(() => expect(enregistrerAppreciationPeriode).toHaveBeenCalledWith(
       'e1', 1, '__general', expect.stringContaining('Belle période.'), [], {},
-    ))
+    ), { timeout: 3000 })
+    expect((enregistrerAppreciationPeriode as jest.Mock).mock.calls).toHaveLength(1)
   })
 
   test('la copie groupée compte l’appréciation générale', () => {

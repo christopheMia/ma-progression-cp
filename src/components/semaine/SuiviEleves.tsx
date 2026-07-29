@@ -10,6 +10,7 @@ import {
   type EtatComportement,
 } from '@/lib/comportement'
 import { redigerAppreciation, type Brique } from '@/lib/briques-bilan'
+import { useSauvegardeDifferee } from '@/lib/useSauvegardeDifferee'
 import {
   ajouterObservation,
   definirComportement,
@@ -102,6 +103,7 @@ export default function SuiviEleves({
   const [copie, setCopie] = useState('')
   const [vue, setVue] = useState('semaine')
   const [recherche, setRecherche] = useState('')
+  const programmer = useSauvegardeDifferee()
   const [genres, setGenres] = useState<Record<string, 'f' | 'm' | null>>(
     () => Object.fromEntries(eleves.map(e => [e.id, e.genre])),
   )
@@ -200,9 +202,13 @@ export default function SuiviEleves({
     const observation = suivant.find(o => o.id === id)
     if (!observation) return
 
-    startTransition(async () => {
-      const r = await modifierObservation(id, observation.texte, observation.observeeLe)
-      if (!r.ok) setErreur(r.message)
+    // Une lettre tapee ne vaut pas un aller-retour serveur : on enregistre
+    // quand la frappe s'arrete.
+    programmer(`obs:${id}`, () => {
+      startTransition(async () => {
+        const r = await modifierObservation(id, observation.texte, observation.observeeLe)
+        if (!r.ok) setErreur(r.message)
+      })
     })
   }
 
@@ -236,15 +242,18 @@ export default function SuiviEleves({
       })),
   ]
 
-  function enregistrerBilan(suivant: { texte: string; ecartees: string[] }) {
+  /** `differe` pour la frappe au clavier ; un clic part tout de suite. */
+  function enregistrerBilan(suivant: { texte: string; ecartees: string[] }, differe = false) {
     setBilans(etat => ({ ...etat, [eleve.id]: suivant }))
     if (periode === null) return
-    startTransition(async () => {
+    const envoyer = () => startTransition(async () => {
       const r = await enregistrerBilanPeriode(
         eleve.id, periode, suivant.texte, suivant.ecartees,
       )
       if (!r.ok) setErreur(r.message)
     })
+    if (differe) programmer(`bilan:${eleve.id}`, envoyer)
+    else envoyer()
   }
 
   function basculerBrique(cle: string) {
@@ -298,7 +307,7 @@ export default function SuiviEleves({
   }
 
   return (
-    <div className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
+    <div id="suivi" className="scroll-mt-20 space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-bold text-violet-950">Suivi des élèves</h2>
         <label className="text-sm font-semibold text-gray-800">
@@ -488,7 +497,7 @@ export default function SuiviEleves({
           <span className="sr-only">Bilan de {eleve.prenom}</span>
           <textarea
             value={bilan.texte}
-            onChange={e => enregistrerBilan({ ...bilan, texte: e.target.value })}
+            onChange={e => enregistrerBilan({ ...bilan, texte: e.target.value }, true)}
             rows={4}
             placeholder="Le texte apparaîtra ici, et reste modifiable."
             aria-label={`Bilan de la période de ${eleve.prenom}`}

@@ -123,9 +123,12 @@ describe('SuiviEleves', () => {
     afficher()
 
     await user.type(screen.getByLabelText(/^observation du 25\/11\/2026/i), ' Beau progrès.')
+    // L'enregistrement part APRES la frappe (600 ms), pas a chaque lettre.
     await waitFor(() => expect(modifierObservation).toHaveBeenCalledWith(
       'o1', expect.stringContaining('Beau progrès.'), '2026-11-25',
-    ))
+    ), { timeout: 3000 })
+    // Une seule ecriture pour toute la phrase, pas une par caractere.
+    expect((modifierObservation as jest.Mock).mock.calls).toHaveLength(1)
   })
 
   test('retire une observation', async () => {
