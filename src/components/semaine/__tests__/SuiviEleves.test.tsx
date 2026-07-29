@@ -161,6 +161,26 @@ describe('SuiviEleves', () => {
     }).getAttribute('aria-checked')).toBe('true'))
   })
 
+  // Retour de Christophe du 29/07 : les titres se lisaient comme des
+  // etiquettes techniques, et deux lettres F et G ne disent pas a quoi elles
+  // servent.
+  test('chaque bloc porte un vrai titre', () => {
+    afficher()
+    for (const titre of [
+      /comment s’est passée la semaine 10/i,
+      /la période d’un coup d’œil/i,
+      /bilan de la période 2/i,
+      /mes observations sur lina/i,
+    ]) {
+      expect(screen.getByRole('heading', { name: titre })).toBeTruthy()
+    }
+  })
+
+  test('dit en clair à quoi servent les boutons F et G', () => {
+    afficher()
+    expect(screen.getByText(/fille ou garçon \?/i)).toBeTruthy()
+  })
+
   test('la frise dit chaque semaine, y compris celles sans rien', () => {
     afficher()
     const frise = screen.getByText(/la période d’un coup d’œil/i).parentElement!

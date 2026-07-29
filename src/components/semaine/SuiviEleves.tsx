@@ -35,6 +35,24 @@ function enFrancais(iso: string) {
 }
 
 /**
+ * Le titre d'une section du suivi.
+ *
+ * Retour de Christophe du 29/07 : « les titres des sections doivent etre plus
+ * visibles ». Ils etaient en tout petit, en majuscules grises : ils se lisaient
+ * comme une etiquette technique, pas comme un titre. Ils sont maintenant a la
+ * taille du texte courant, en gras et en violet fonce, avec une barre de
+ * couleur qui marque le debut du bloc.
+ */
+function TitreSection({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-2 flex items-center gap-2 text-base font-bold text-violet-950">
+      <span aria-hidden className="h-5 w-1 shrink-0 rounded-full bg-violet-600" />
+      {children}
+    </h3>
+  )
+}
+
+/**
  * Le suivi des élèves, en texte libre.
  *
  * Refait le 28/07/2026. Christophe : « le suivi des élèves doit se transformer
@@ -282,7 +300,7 @@ export default function SuiviEleves({
   return (
     <div className="space-y-5 rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="font-bold text-gray-700">Suivi des élèves</h2>
+        <h2 className="text-lg font-bold text-violet-950">Suivi des élèves</h2>
         <label className="text-sm font-semibold text-gray-800">
           <span className="sr-only">Élève</span>
           <select
@@ -297,28 +315,34 @@ export default function SuiviEleves({
         {/* Fille ou garcon : sans ca le bilan repete le prenom au lieu du
             pronom. On ne devine jamais le genre a partir du prenom, une
             erreur sortirait dans le livret officiel que les parents signent. */}
-        <span className="flex items-center gap-1" role="radiogroup" aria-label={`Genre de ${eleve.prenom}`}>
-          {([['f', 'F'], ['m', 'G']] as const).map(([code, lettre]) => {
-            const choisi = genres[eleve.id] === code
-            return (
-              <button
-                key={code}
-                type="button"
-                role="radio"
-                aria-checked={choisi}
-                aria-label={`${eleve.prenom} : ${code === 'f' ? 'fille' : 'garçon'}`}
-                disabled={isPending}
-                onClick={() => poserGenre(choisi ? null : code)}
-                className={`h-7 w-7 rounded-lg border text-xs font-bold disabled:opacity-50 ${
-                  choisi
-                    ? 'border-violet-600 bg-violet-600 text-white'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300'
-                }`}
-              >
-                {lettre}
-              </button>
-            )
-          })}
+        {/* Deux lettres seules ne disent pas a quoi elles servent (retour de
+            Christophe du 29/07) : le libelle est ecrit a cote, en clair. */}
+        <span className="flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-gray-800">Fille ou garçon ?</span>
+          <span className="flex items-center gap-1" role="radiogroup" aria-label={`Genre de ${eleve.prenom}`}>
+            {([['f', 'F', 'Fille'], ['m', 'G', 'Garçon']] as const).map(([code, lettre, mot]) => {
+              const choisi = genres[eleve.id] === code
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={choisi}
+                  aria-label={`${eleve.prenom} : ${mot.toLowerCase()}`}
+                  title={mot}
+                  disabled={isPending}
+                  onClick={() => poserGenre(choisi ? null : code)}
+                  className={`h-7 w-7 rounded-lg border text-xs font-bold disabled:opacity-50 ${
+                    choisi
+                      ? 'border-violet-600 bg-violet-600 text-white'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300'
+                  }`}
+                >
+                  {lettre}
+                </button>
+              )
+            })}
+          </span>
         </span>
 
         <div className="ml-auto flex gap-2">
@@ -347,9 +371,7 @@ export default function SuiviEleves({
       )}
 
       <section>
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Comment s’est passée la semaine {numeroSemaine}
-        </h3>
+        <TitreSection>Comment s’est passée la semaine {numeroSemaine}</TitreSection>
         <ChoixComportement
           valeur={etatSemaine}
           onChange={poserComportement}
@@ -360,9 +382,7 @@ export default function SuiviEleves({
 
       {semainesPeriode.length > 0 && (
         <section className="border-t pt-4">
-          <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-            La période d’un coup d’œil
-          </h3>
+          <TitreSection>La période d’un coup d’œil</TitreSection>
           <div className="flex flex-wrap items-center gap-1.5">
             {semainesPeriode.map(s => {
               const etat = comportements[cle(eleve.id, s.id)] ?? null
@@ -396,9 +416,7 @@ export default function SuiviEleves({
       )}
 
       <section className="border-t pt-4">
-        <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Bilan de la période{periode ? ` ${periode}` : ''}
-        </h3>
+        <TitreSection>Bilan de la période{periode ? ` ${periode}` : ''}</TitreSection>
         <p className="mb-2 text-xs text-gray-600">
           Assemblé depuis la frise et tes observations, rien d’autre. Décoche ce que tu
           ne veux pas dire, puis rédige.
@@ -483,9 +501,7 @@ export default function SuiviEleves({
           l'annee, et rien d'important ne doit descendre avec elle. Le geste du
           jour (ajouter) est en haut du bloc, pas en bas. */}
       <section className="border-t pt-4">
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
-          Mes observations sur {eleve.prenom}
-        </h3>
+        <TitreSection>Mes observations sur {eleve.prenom}</TitreSection>
 
         <div className="flex flex-wrap items-center gap-2">
           <label className="text-sm font-semibold text-gray-800">
