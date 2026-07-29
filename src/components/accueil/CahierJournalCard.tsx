@@ -54,7 +54,10 @@ export default function CahierJournalCard({ courante, suivantes }: {
             <ul className="mt-2 space-y-1">
               {suivantes.map(s => (
                 <li key={s.id}>
-                  <Link href={`/semaine/${s.id}`}
+                  {/* Pas de prechargement sur une liste : ce sont des rendus
+                      complets de la fiche de semaine, lancés tous ensemble
+                      pour des pages qu'on n'ouvrira pas. */}
+                  <Link href={`/semaine/${s.id}`} prefetch={false}
                     className="block rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-violet-50 hover:text-violet-700 transition-colors">
                     <span className="font-medium text-slate-800">S{s.numero}</span>
                     {s.libelle ? ` · ${s.libelle}` : ''}

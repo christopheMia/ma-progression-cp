@@ -19,7 +19,13 @@ export default function WeekCard({
   const complete = total > 0 && acquis >= total
 
   return (
-    <Link href={`/semaine/${semaine.id}`}>
+    // `prefetch={false}` : le planning affiche 36 cartes, et Next precharge
+    // par defaut celles qui sont a l'ecran. Ouvrir le planning declenchait
+    // donc une dizaine de rendus COMPLETS de la fiche de semaine, la page la
+    // plus lourde de l'application, tous en meme temps. La page reellement
+    // cliquee attendait derriere : c'est le decalage de 1 a 2 secondes mesure
+    // le 29/07. On ne precharge que ce qui a une chance d'etre ouvert.
+    <Link href={`/semaine/${semaine.id}`} prefetch={false}>
       <div className={`border rounded-xl p-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md ${statusStyles[status]}`}>
         <div className="flex justify-between items-start mb-1">
           <span className="font-bold text-sm">S{semaine.numero}</span>
