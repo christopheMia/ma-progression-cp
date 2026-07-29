@@ -407,6 +407,77 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-29 (soir) - Claude - CHASSE À LA LENTEUR : ce qui était vrai, ce qui était faux, et le plancher.**
+  Commits `219cf56`, `db6f3b8`, `2f9d65b`, `937788c`, `62d4fa3`, `f046bc2`, `7ee9696`.
+  **64 suites, 573 tests, build de production réussi.** Christophe signalait « un
+  décalage de 1 à 2 secondes entre le clic et la page ». Il a fallu six allers-retours
+  avec lui, dont plusieurs sur de fausses pistes. Lire cette entrée AVANT de
+  retoucher aux performances : elle dit surtout ce qu'il ne faut pas refaire.
+
+  **CE QUI ÉTAIT VRAI (mesuré, corrigé)**
+  1. **`/parametres` enchaînait SEPT requêtes en série** : identité, classe, élèves,
+     EDT, méthodes, progression, documents. **2,08 s mesurées côté navigateur, 905 ms
+     après mise en parallèle**, puis 314 ms côté serveur. C'était le vrai gros
+     morceau, et je ne l'avais jamais instrumentée, donc jamais vue.
+  2. **Le préchargement** : Next précharge les liens visibles, et une réponse
+     dynamique n'est jamais mise en cache. Le planning (36 cartes) et l'accueil
+     (15 liens) lançaient donc des rendus complets de la fiche de semaine par
+     dizaines. `prefetch={false}` partout sauf... plus nulle part.
+  3. **Une écriture par caractère tapé** dans les observations, bilans et
+     appréciations, et côté livret chacune rechargeait la page en cours de saisie.
+     `useSauvegardeDifferee` (600 ms après la dernière touche).
+  4. **`revalidatePath` sur la page ouverte** après chaque clic de pastille : la page
+     relançait ses huit requêtes pour un clic dont l'écran connaissait le résultat.
+  5. **Le moment aveugle** : le squelette n'apparaît qu'une fois la navigation
+     engagée. `useLinkStatus` met une roue dans l'entrée cliquée dès le clic.
+
+  **CE QUI ÉTAIT FAUX (mesuré, écarté). Ne pas y revenir sans nouvelle mesure.**
+  - **La région** : Vercel tourne à `cdg1` (Paris), Supabase en `eu-west-1`
+    (Irlande). Une vingtaine de millisecondes. Rien à gagner.
+  - **Le démarrage à froid** : après 2 min 30 sans trafic, la page répond en 143 ms.
+  - **Le portier** : `getUser` dans `proxy.ts` coûte **31 à 96 ms**, pas 300. La
+    migration vers des clés de signature asymétriques + `getClaims()` aurait gagné
+    cinquante millisecondes : proposition retirée avant de faire cliquer Christophe.
+  - **Le volume de données** : `progression` 154 lignes, `semaines` 36,
+    `competences_officielles` 101, et **`acquisitions` est VIDE** depuis le virage.
+
+  **LE PLANCHER, et c'est l'information la plus utile.** Mesuré hors de Vercel,
+  depuis un poste en France : une requête REST triviale sur une ligne met **164 à
+  182 ms**, dont seulement 28 à 43 ms de connexion et TLS. **Chaque appel Supabase
+  coûte donc ~150 ms, quelle que soit la table.** Une page qui fait deux vagues
+  (lire la classe, puis le reste) part avec 300 ms incompressibles. Les pages sont
+  aujourd'hui à 314 ms (parametres), 326 ms (livret), 395 ms (accueil), 425 ms
+  (planning) : proches du plancher. **Optimiser une requête ne sert à rien, réduire
+  le NOMBRE d'appels est le seul levier.**
+
+  **CE QU'IL NE FAUT PAS FAIRE POUR Y ARRIVER.** L'idée évidente est de supprimer
+  les filtres `.eq('class_id', ...)`, puisque RLS filtre déjà : la ligne de classe
+  rejoindrait le lot parallèle et on passerait à une seule vague. **Christophe l'a
+  refusée le 29/07, et il a eu raison** : la cible produit inclut **les remplaçants,
+  qui ont plusieurs classes**. RLS filtre par UTILISATEUR, pas par classe : les
+  classes se mélangeraient silencieusement dans chaque écran. La bonne route est une
+  **fonction SQL (RPC) prenant la classe en argument** et rendant tout en un appel,
+  avec le filtre écrit dans le SQL. Non fait, à faire de tête reposée.
+
+  **Instrumentation laissée en place** : `src/lib/perf.ts` (`mesurer` pour un lot,
+  `chronometrer` pour une requête d'un lot), plus deux lignes dans `proxy.ts` et
+  `session.ts`. Elles écrivent `[perf] <étape> <ms>` dans les journaux Vercel, sans
+  aucune donnée d'élève. Lecture : `npx vercel logs <deploiement> --scope
+  christophemias-projects`. À retirer quand Christophe le demandera.
+
+  **Corrigé au passage, et c'était ma faute** : le court-circuit du préchargement
+  dans `proxy.ts` ne vérifiait plus l'identité DU TOUT. Un préchargement lancé depuis
+  la page de connexion rendait l'application déconnectée, le navigateur gardait cette
+  version vide, et Christophe arrivait sur « Configurer ma classe » alors que sa
+  classe existe. Le court-circuit exige désormais un jeton de session dans les
+  cookies (lecture locale, gratuite). Cinq tests neufs couvrent le proxy, qui n'en
+  avait aucun.
+
+  **Reste ouvert** : la carte « Graphèmes acquis (classe) » de l'accueil affichera
+  toujours 0 (table vide depuis le virage), décision produit ; et le chantier
+  multi-classes lui-même, bien plus large que la performance, puisque toute
+  l'application lit « la classe la plus récente ».
+
 - **2026-07-29 - Claude - RETOURS D'USAGE SUR LE SUIVI ET L'EDT : lisibilité, navigation, lenteur.**
   Trois commits poussés et déployés : `eccbd4e`, `5c6615a`, `3e3c26e`.
   **63 suites, 566 tests, zéro échec. Types propres. Build de production réussi.**
