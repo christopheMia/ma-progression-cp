@@ -447,7 +447,6 @@ export default function Livret({
                       matiere={matiere}
                       elements={elements.filter(e => e.matiere === matiere)}
                       prenom={eleve.prenom}
-                      disabled={isPending}
                       onNiveau={poserNiveau}
                     />
                   ))}
@@ -527,13 +526,11 @@ function MatiereLignes({
   matiere,
   elements,
   prenom,
-  disabled,
   onNiveau,
 }: {
   matiere: string
   elements: ElementLivret[]
   prenom: string
-  disabled: boolean
   onNiveau: (competenceId: string, niveau: Niveau | null) => void
 }) {
   let domainePrecedent = ''
@@ -562,10 +559,14 @@ function MatiereLignes({
                 qui se recopie dans le livret (demande de Christophe du 28/07). */}
             <td className="py-2 pr-3 font-semibold text-gray-900">{element.libelle}</td>
             <td className="py-2">
+              {/* Jamais desactive pendant l'enregistrement : poser un niveau
+                  doit rester instantane, meme si le precedent n'est pas encore
+                  parti. L'ecran garde le niveau et le remet en place si le
+                  serveur refuse. */}
               <BoutonsNiveau
                 valeur={element.niveau}
                 onChange={niveau => onNiveau(element.competenceId, niveau)}
-                disabled={disabled}
+                disabled={false}
                 libelle={`${prenom}, ${element.libelle}`}
               />
             </td>

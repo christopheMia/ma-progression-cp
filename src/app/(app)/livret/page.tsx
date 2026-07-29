@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { classeCourante, utilisateurCourant } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Livret, { type CompetenceBilan } from '@/components/livret/Livret'
@@ -15,13 +16,15 @@ import type { Formulation, MotDeLaSemaine } from '@/lib/briques-bilan'
  * dans `briques-bilan.ts`, testés à part.
  */
 export default async function LivretPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Le layout vient de vérifier l'identité et de charger la classe : par
+  // `session.ts`, on récupère son résultat au lieu de refaire les deux appels.
+  const user = await utilisateurCourant()
   if (!user) redirect('/connexion')
 
-  const { data: classe } = await supabase.from('classes').select('id')
-    .eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const classe = await classeCourante(user.id)
   if (!classe) redirect('/setup')
+
+  const supabase = await createClient()
 
   const [
     { data: eleves },
@@ -31,6 +34,7 @@ export default async function LivretPage() {
     { data: positions },
     { data: appreciationsPeriode },
     { data: formulations },
+    { data: motsHebdo },
   ] = await Promise.all([
     supabase.from('eleves').select('id, prenom, genre').eq('class_id', classe.id).order('ordre'),
     supabase.from('semaines').select('id, numero, periode_numero').eq('class_id', classe.id).order('numero'),
@@ -46,13 +50,14 @@ export default async function LivretPage() {
     supabase.from('formulations_competence')
       .select('competence_id, eclat, reussite, encours, vigilance, suite')
       .eq('class_id', classe.id),
+    // `appreciations` ne porte pas `class_id` : on passe par une jointure
+    // interne sur `semaines`. Avant, cette requete attendait la liste des
+    // semaines rendue par la precedente, donc un deuxieme aller-retour en
+    // serie a chaque ouverture du livret.
+    supabase.from('appreciations')
+      .select('semaine_id, eleve_id, matiere, commentaire, semaines!inner(class_id)')
+      .eq('semaines.class_id', classe.id),
   ])
-
-  const idsSemaines = (semaines ?? []).map(s => s.id as string)
-  const { data: motsHebdo } = idsSemaines.length > 0
-    ? await supabase.from('appreciations').select('semaine_id, eleve_id, matiere, commentaire')
-      .in('semaine_id', idsSemaines)
-    : { data: [] }
 
   const semaineParId = new Map((semaines ?? []).map(s => [s.id as string, s]))
   const periodes = [...new Set(

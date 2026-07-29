@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { estEtatComportement, type EtatComportement } from '@/lib/comportement'
 import { resultat, type Resultat } from '@/lib/resultat'
@@ -8,6 +7,13 @@ import { resultat, type Resultat } from '@/lib/resultat'
 // Ces actions RENVOIENT leur message d'erreur au lieu de le lever : en
 // production, Next.js efface le texte d'une erreur levee dans une action
 // serveur. Voir `src/lib/resultat.ts`.
+//
+// Aucune n'appelle `revalidatePath` (retire le 29/07/2026 : « c'est lent quand
+// on selectionne une note »). Chaque appel invalidait la page ouverte, donc
+// relancait toutes ses requetes Supabase pour un clic dont l'ecran connaissait
+// deja le resultat : l'ecran tient son etat en local et le remet en place si le
+// serveur refuse. Et ces pages sont dynamiques, donc elles se rechargent
+// d'elles-memes a la prochaine vraie navigation.
 
 async function classeDeLUtilisateur() {
   const supabase = await createClient()
@@ -45,8 +51,6 @@ export async function definirComportement(
       if (error) throw new Error('Le choix n’a pas pu être enregistré.')
     }
 
-    revalidatePath(`/semaine/${semaineId}`)
-    revalidatePath('/livret')
   }, 'Le choix n’a pas pu être enregistré.')
 }
 
@@ -68,8 +72,6 @@ export async function ajouterObservation(
     }).select('id').single()
     if (error || !data) throw new Error('L’observation n’a pas pu être ajoutée.')
 
-    revalidatePath(`/semaine/${semaineId}`)
-    revalidatePath('/livret')
     return data.id as string
   }, 'L’observation n’a pas pu être ajoutée.')
 }
@@ -87,7 +89,6 @@ export async function modifierObservation(
       .eq('id', observationId).eq('class_id', classId)
     if (error) throw new Error('L’observation n’a pas pu être enregistrée.')
 
-    revalidatePath('/livret')
   }, 'L’observation n’a pas pu être enregistrée.')
 }
 
@@ -101,7 +102,6 @@ export async function supprimerObservation(
       .delete().eq('id', observationId).eq('class_id', classId)
     if (error) throw new Error('L’observation n’a pas pu être retirée.')
 
-    revalidatePath('/livret')
   }, 'L’observation n’a pas pu être retirée.')
 }
 
@@ -133,7 +133,6 @@ export async function enregistrerBilanPeriode(
     }, { onConflict: 'class_id,eleve_id,periode_numero,matiere' })
     if (error) throw new Error('Le bilan n’a pas pu être enregistré.')
 
-    revalidatePath('/livret')
   }, 'Le bilan n’a pas pu être enregistré.')
 }
 
@@ -150,6 +149,5 @@ export async function definirGenre(
       .update({ genre }).eq('id', eleveId).eq('class_id', classId)
     if (error) throw new Error('Le choix n’a pas pu être enregistré.')
 
-    revalidatePath('/livret')
   }, 'Le choix n’a pas pu être enregistré.')
 }

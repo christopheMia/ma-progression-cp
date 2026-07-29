@@ -40,7 +40,6 @@ export async function definirPositionnement(
         .eq('class_id', classId).eq('eleve_id', eleveId)
         .eq('periode_numero', periodeNumero).eq('competence_id', competenceId)
       if (error) throw new Error('Le positionnement n’a pas pu être effacé.')
-      revalidatePath('/livret')
       return
     }
 
@@ -56,7 +55,11 @@ export async function definirPositionnement(
     }, { onConflict: 'class_id,eleve_id,periode_numero,competence_id' })
     if (error) throw new Error('Le positionnement n’a pas pu être enregistré.')
 
-    revalidatePath('/livret')
+    // Pas de `revalidatePath` ici (retire le 29/07/2026 : « c'est lent quand on
+    // selectionne une note, ex : NA »). Il invalidait `/livret`, donc la page
+    // ouverte relancait ses huit requetes Supabase apres CHAQUE clic sur une
+    // pastille. L'ecran connait deja le resultat, il le garde en local et le
+    // remet en place si le serveur refuse.
   }, 'Le positionnement n’a pas pu être enregistré.')
 }
 
@@ -87,7 +90,7 @@ export async function enregistrerAppreciationPeriode(
     }, { onConflict: 'class_id,eleve_id,periode_numero,matiere' })
     if (error) throw new Error('L’appréciation n’a pas pu être enregistrée.')
 
-    revalidatePath('/livret')
+    // Même raison : c'est la page ouverte, et elle tient déjà son texte.
   }, 'L’appréciation n’a pas pu être enregistrée.')
 }
 

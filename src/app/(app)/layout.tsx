@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { classeCourante, utilisateurCourant } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import HeaderNav from '@/components/HeaderNav'
@@ -6,13 +7,16 @@ import AssistantFlottant from '@/components/assistant/AssistantFlottant'
 import { estZoneScolaire } from '@/lib/calendrier-officiel'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Identité et classe passent par `session.ts` : la page rendue juste après
+  // demande les mêmes, et `cache` de React fait qu'elles ne partent qu'une
+  // fois par requête au lieu de deux.
+  const user = await utilisateurCourant()
   if (!user) redirect('/connexion')
 
-  const { data: classe } = await supabase.from('classes').select('id, prenom_enseignant, rentree_date, zone_scolaire').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const classe = await classeCourante(user.id)
 
   // Contexte minimal pour que l'assistant sache de quelle classe on parle.
+  const supabase = await createClient()
   const { data: methodes } = classe
     ? await supabase.from('methodes').select('matiere').eq('class_id', classe.id)
     : { data: null }

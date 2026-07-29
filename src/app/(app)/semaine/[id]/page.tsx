@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { utilisateurCourant } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -13,13 +14,20 @@ import type { EtatComportement } from '@/lib/comportement'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Identité déjà vérifiée par le layout : `session.ts` évite de la redemander.
+  const user = await utilisateurCourant()
   if (!user) redirect('/connexion')
+
+  const supabase = await createClient()
 
   const { data: semaine } = await supabase.from('semaines').select('*').eq('id', id).single()
   if (!semaine) redirect('/planning')
 
+  // Un seul aller-retour. Avant, un deuxieme groupe de requetes attendait le
+  // premier (il lui fallait les identifiants des semaines de la periode) : deux
+  // allers-retours en serie a chaque ouverture de la fiche. Comportements et
+  // observations portent `class_id`, donc ils se demandent tout de suite, et
+  // c'est le composant qui trie ce qui releve de la periode.
   const [
     { data: eleves },
     { data: acquisitions },
@@ -28,6 +36,9 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     { data: methodesList },
     { data: edt },
     { data: semainesClasse },
+    { data: comportements },
+    { data: observations },
+    { data: bilansPeriode },
   ] = await Promise.all([
     supabase.from('eleves').select('*').eq('class_id', semaine.class_id).order('ordre'),
     supabase.from('acquisitions').select('*').eq('semaine_id', id),
@@ -36,22 +47,13 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
     supabase.from('methodes').select('id, matiere, suivi_actif, manuel').eq('class_id', semaine.class_id).order('created_at'),
     supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id).order('ordre'),
     supabase.from('semaines').select('id, numero, periode_numero').eq('class_id', semaine.class_id).order('numero'),
-  ])
-
-  // Les semaines de la période en cours : c'est la frise du suivi.
-  const semainesPeriode = (semainesClasse ?? [])
-    .filter(s => s.periode_numero === semaine.periode_numero)
-    .map(s => ({ id: s.id as string, numero: s.numero as number }))
-  const idsPeriode = semainesPeriode.length > 0 ? semainesPeriode.map(s => s.id) : [id]
-
-  const [{ data: comportements }, { data: observations }, { data: bilansPeriode }] = await Promise.all([
     supabase.from('comportements_semaine').select('eleve_id, semaine_id, etat')
-      .in('semaine_id', idsPeriode),
+      .eq('class_id', semaine.class_id),
     // Toute l'annee, pas seulement la periode : Christophe veut pouvoir
     // retrouver un fait ecrit deux mois plus tot. Le bilan, lui, ne prend que
     // la periode en cours, et c'est le composant qui fait ce tri.
     supabase.from('observations').select('id, eleve_id, semaine_id, observee_le, texte')
-      .in('semaine_id', (semainesClasse ?? []).map(s => s.id as string)),
+      .eq('class_id', semaine.class_id),
     // Le bilan de periode est range comme une appreciation, avec la matiere
     // reservee `__general` : c'est l'appreciation generale du livret.
     supabase.from('appreciations_periode').select('eleve_id, texte, briques_ecartees')
@@ -59,6 +61,10 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
       .eq('periode_numero', semaine.periode_numero ?? 0),
   ])
 
+  // Les semaines de la période en cours : c'est la frise du suivi.
+  const semainesPeriode = (semainesClasse ?? [])
+    .filter(s => s.periode_numero === semaine.periode_numero)
+    .map(s => ({ id: s.id as string, numero: s.numero as number }))
   const dateFormatee = format(new Date(semaine.date_debut), 'd MMMM yyyy', { locale: fr })
 
   return (
