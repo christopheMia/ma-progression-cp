@@ -407,6 +407,75 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-07-29 - Claude - RETOURS D'USAGE SUR LE SUIVI ET L'EDT : lisibilité, navigation, lenteur.**
+  Trois commits poussés et déployés : `eccbd4e`, `5c6615a`, `3e3c26e`.
+  **63 suites, 566 tests, zéro échec. Types propres. Build de production réussi.**
+  Christophe regardait les écrans depuis son téléphone et a signalé au fil de l'eau.
+  Aucun de ces retours n'était une préférence : les cinq étaient des défauts réels.
+
+  **1. « Ton bouton est en bas et en fin de période il risque d'y avoir une tonne de
+  notes. »** Vrai, et pire que ça : le bouton « Ajouter une observation » était lui
+  aussi en bas, donc le défilement gênait **tous les jours**, pas seulement en fin de
+  période. L'ordre du bloc change : le bilan de la période remonte juste sous la
+  frise (les deux parlent de la période), les observations passent en dessous parce
+  que c'est la seule partie qui grossit sans fin, et dans leur bloc le geste du jour
+  (la date et « Ajouter ») est en haut.
+
+  **2. « On doit pouvoir naviguer par période et par mois pour retrouver des faits. »**
+  La page charge maintenant les observations de **toute l'année** (plus seulement
+  celles de la période), et le bloc a son sélecteur : cette semaine, ce mois-ci,
+  chaque période, toute l'année, chacun avec son nombre de notes, plus une recherche
+  par mot. Une note venue d'ailleurs porte son étiquette `S4 · P1`.
+  **Piège à ne pas rouvrir** : l'écran peut afficher toute l'année, mais le bilan ne
+  prend que `siennesPeriode`, jamais `siennes`. Un test le verrouille avec une note
+  de la période 1 qui doit rester dehors du bilan de la période 2.
+
+  **3. « Les titres des sections doivent être plus visibles. »** Ils étaient en
+  `text-xs uppercase text-gray-500` : ça se lit comme une étiquette technique, pas
+  comme un titre. Composant `TitreSection` dans `SuiviEleves.tsx` : taille du texte
+  courant, gras, violet foncé, barre de couleur en tête de bloc.
+
+  **4. « Il faut une indication à côté de G, F, sinon on sait pas à quoi ça
+  correspond. »** La question est écrite en clair : « Fille ou garçon ? » devant les
+  deux boutons, plus une infobulle sur chacun. Deux lettres seules ne disent pas ce
+  qu'on attend de l'utilisateur.
+
+  **5. « On avait pas dit qu'une fois le fond modifié pour une matière on devait
+  pouvoir changer tous les autres d'un coup dans l'EDT ? »** Si, et **c'était déjà
+  codé** : `appliquerMemeMatiere` existe depuis la refonte des couleurs. Le défaut
+  était ailleurs : le bouton était un pinceau seul dont le libellé vivait dans un
+  `title`, donc invisible sur téléphone (pas de survol). Il est maintenant écrit en
+  clair, sur sa propre ligne, avec le nombre de cases annoncé avant d'agir et une
+  confirmation après. **Leçon générale : un `title` n'est pas un libellé.** Chercher
+  les autres boutons de l'application qui n'ont qu'un emoji et un `title`.
+  Au passage, l'heure de fin dans la colonne de gauche de l'EDT était en `slate-400`
+  sur `violet-50` (environ 2,6 pour 1) : corrigée. Christophe avait déjà signalé le
+  contraste de l'EDT le 26/07.
+
+  **6. « J'ai l'impression que c'est encore un peu lent la navigation. »** Deux
+  causes réelles, mesurables dans le code.
+  - **Chaque lettre tapée** dans une observation, un bilan ou une appréciation
+    déclenchait une action serveur, et côté livret cette action appelait
+    `revalidatePath('/livret')`, donc rechargeait la page en train d'être remplie.
+    Nouveau **`src/lib/useSauvegardeDifferee.ts`** : l'écriture part 600 ms après la
+    dernière touche, et ce qui reste en attente est envoyé au démontage pour ne pas
+    perdre la dernière phrase en changeant de page. Les gestes uniques (pastille,
+    date, ajout, case à cocher) partent toujours tout de suite : les passer en
+    différé donnerait une impression de bouton mou.
+  - **`/livret` et `/periodes` n'avaient pas de `loading.tsx`** : la navigation
+    paraissait figée jusqu'à la réponse du serveur. Elles ont leur squelette.
+  Deux tests vérifient qu'une phrase entière ne produit plus qu'une seule écriture.
+
+  **Aussi** : carte « Suivi des élèves » en tête des raccourcis de l'accueil, avec
+  l'ancre `#suivi` (et `scroll-mt-20` sur le bloc) pour ouvrir directement le suivi
+  de la semaine en cours.
+
+  **Reste à faire, inchangé** : les deux autres portes vers `/livret` (bouton depuis
+  `/periodes`, ligne dans la dernière semaine d'une période), l'ouverture de
+  `/livret` sur la période en cours et le premier élève sans bilan, la table
+  `competences_perso`, et une migration retirant `acquisitions` et
+  `criteres_observation`.
+
 - **2026-07-28 (nuit) - Claude - LE SUIVI DEVIENT DU TEXTE LIBRE, ET C'EST LUI QUI ÉCRIT L'APPRÉCIATION GÉNÉRALE.**
   Trois commits poussés sur `origin/main` : `26c8db1` (les visages), `205198a` (le
   suivi libre), `1b6301e` (le bilan dans le suivi). **63 suites, 554 tests, zéro

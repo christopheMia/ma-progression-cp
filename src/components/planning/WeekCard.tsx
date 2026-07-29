@@ -23,9 +23,24 @@ export default function WeekCard({
       <div className={`border rounded-xl p-3 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md ${statusStyles[status]}`}>
         <div className="flex justify-between items-start mb-1">
           <span className="font-bold text-sm">S{semaine.numero}</span>
-          {complete && <span title="Semaine complète" className="text-xs">🏆</span>}
-          {!complete && status === 'done' && <span className="text-emerald-500 text-xs">✓</span>}
-          {!complete && status === 'current' && <span className="text-violet-600 text-xs font-bold">▶</span>}
+          {/* Un `title` ne se survole pas sur telephone, et ces trois marqueurs
+              portent tout le sens de la carte. Le mot est ecrit pour les
+              lecteurs d'ecran, sans rien changer a l'oeil. */}
+          {complete && (
+            <span title="Semaine complète" className="text-xs">
+              <span aria-hidden>🏆</span><span className="sr-only">Semaine complète</span>
+            </span>
+          )}
+          {!complete && status === 'done' && (
+            <span className="text-emerald-500 text-xs">
+              <span aria-hidden>✓</span><span className="sr-only">Semaine passée</span>
+            </span>
+          )}
+          {!complete && status === 'current' && (
+            <span className="text-violet-600 text-xs font-bold">
+              <span aria-hidden>▶</span><span className="sr-only">Semaine en cours</span>
+            </span>
+          )}
         </div>
         <div className="space-y-1.5 min-h-[1rem]">
           {semaine.contenus.map(contenu => (
