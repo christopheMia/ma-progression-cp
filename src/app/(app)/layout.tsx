@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import HeaderNav from '@/components/HeaderNav'
 import AssistantFlottant from '@/components/assistant/AssistantFlottant'
+import { MemoireAncre } from '@/components/AncreAuChargement'
 import { estZoneScolaire } from '@/lib/calendrier-officiel'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -32,6 +33,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <HeaderNav hasClass={!!classe} />
         </div>
       </header>
+      {/* Note l'ancre de chaque lien clique, pour que la page d'arrivee
+          atterrisse sur la bonne section (voir AncreAuChargement). */}
+      <MemoireAncre />
       {/* pb-28 : reserve la place du bouton flottant "Mon assistant", sinon il
           recouvre le dernier element de la page sur petit ecran. */}
       <main className="max-w-5xl mx-auto px-6 pt-8 pb-28">{children}</main>

@@ -3,9 +3,12 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import '@testing-library/jest-dom'
-import AncreAuChargement from '../AncreAuChargement'
+import AncreAuChargement, {
+  MemoireAncre,
+  reinitialiserPourTests,
+} from '../AncreAuChargement'
 
 /** jsdom n'implemente ni scrollIntoView ni requestAnimationFrame utilement. */
 function preparerCible(id: string) {
@@ -17,14 +20,16 @@ function preparerCible(id: string) {
   return vu
 }
 
-function allerA(hash: string) {
-  window.location.hash = hash
+function noterAncre(chemin: string, ancre: string, t = Date.now()) {
+  window.sessionStorage.setItem('aios.ancre', JSON.stringify({ chemin, ancre, t }))
 }
 
 describe('AncreAuChargement', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    window.location.hash = ''
+    window.sessionStorage.clear()
+    window.history.replaceState({}, '', '/')
+    reinitialiserPourTests()
     jest.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => {
       cb(0)
       return 1
@@ -35,72 +40,129 @@ describe('AncreAuChargement', () => {
     jest.restoreAllMocks()
   })
 
-  test('rejoue l’ancre une fois le contenu réel monté', () => {
+  test('consomme la note du clic et defile vers la section', () => {
     const vu = preparerCible('eleves')
-    allerA('#eleves')
+    window.history.replaceState({}, '', '/parametres')
+    noterAncre('/parametres', 'eleves')
 
     render(<AncreAuChargement />)
 
     expect(vu).toHaveBeenCalledWith({ block: 'start' })
+    // La note est a usage unique : un retour ulterieur ne doit pas la rejouer.
+    expect(window.sessionStorage.getItem('aios.ancre')).toBeNull()
   })
 
-  test('ne fait rien sans ancre dans l’URL', () => {
+  test("ignore une note destinee a une autre page (navigation detournee)", () => {
     const vu = preparerCible('eleves')
+    window.history.replaceState({}, '', '/planning')
+    noterAncre('/parametres', 'eleves')
 
     render(<AncreAuChargement />)
 
     expect(vu).not.toHaveBeenCalled()
   })
 
-  test('ignore une ancre qui ne désigne aucune section', () => {
+  test('ignore une note trop vieille pour etre une navigation en cours', () => {
     const vu = preparerCible('eleves')
-    allerA('#section-disparue')
+    window.history.replaceState({}, '', '/parametres')
+    noterAncre('/parametres', 'eleves', Date.now() - 60_000)
 
-    expect(() => render(<AncreAuChargement />)).not.toThrow()
+    render(<AncreAuChargement />)
+
     expect(vu).not.toHaveBeenCalled()
+  })
+
+  test("lit l'URL au premier montage apres un vrai chargement (F5, lien externe)", () => {
+    const vu = preparerCible('suivi')
+    window.history.replaceState({}, '', '/semaine/x#suivi')
+
+    render(<AncreAuChargement />)
+
+    expect(vu).toHaveBeenCalledWith({ block: 'start' })
   })
 
   /**
-   * Le hash doit etre lu DANS le rappel d animation, pas au montage.
-   *
-   * Les effets des enfants s executent avant ceux du routeur : a l instant du
-   * montage, window.location peut encore montrer l entree PRECEDENTE. Bug vu
-   * par Christophe le 30/07 : apres avoir visite /semaine/X#suivi, cliquer la
-   * carte « Prochaine semaine » (lien SANS ancre) atterrissait sur le suivi,
-   * parce que le composant relisait le hash perime de la visite d avant.
+   * LE bug vu deux fois par Christophe le 30/07 : sur une navigation interne,
+   * window.location peut encore porter le hash de la visite PRECEDENTE. La
+   * carte « Prochaine semaine » (lien sans ancre) atterrissait sur le suivi.
+   * Sur une navigation interne (pas le premier montage), l'URL ne fait pas foi :
+   * seule la note du clic compte, et un lien sans ancre n'en laisse aucune.
    */
-  test('ne rejoue pas le hash périmé de la page précédente', () => {
+  test('ne rejoue jamais un hash present dans l URL lors d une navigation interne', () => {
     const vu = preparerCible('suivi')
-    allerA('#suivi') // URL pas encore synchronisée : hash de la visite d'avant
+    const premiere = render(<AncreAuChargement />) // premiere page apres chargement
+    premiere.unmount()
 
-    jest.spyOn(window, 'requestAnimationFrame').mockRestore()
-    jest.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => {
-      // Le routeur synchronise l'URL (navigation SANS ancre) avant la frame.
-      window.location.hash = ''
-      cb(0)
-      return 1
-    })
+    window.history.replaceState({}, '', '/semaine/x#suivi') // hash perime qui traine
+
+    render(<AncreAuChargement />) // navigation interne, sans note de clic
+
+    expect(vu).not.toHaveBeenCalled()
+  })
+
+  test('ne fait rien sans note ni ancre dans l URL', () => {
+    const vu = preparerCible('eleves')
 
     render(<AncreAuChargement />)
 
     expect(vu).not.toHaveBeenCalled()
   })
+})
 
-  test("rattrape l'ancre qui n'arrive qu'avec la synchronisation de l'URL", () => {
-    const vu = preparerCible('eleves')
-    // Au montage, l'URL montre encore la page precedente, sans ancre.
+describe('MemoireAncre', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    window.sessionStorage.clear()
+    window.history.replaceState({}, '', '/accueil')
+  })
 
-    jest.spyOn(window, 'requestAnimationFrame').mockRestore()
-    jest.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => {
-      // Puis le routeur ecrit la vraie destination, ancre comprise.
-      window.location.hash = '#eleves'
-      cb(0)
-      return 1
-    })
+  function lireNote(): { chemin: string; ancre: string } | null {
+    const brut = window.sessionStorage.getItem('aios.ancre')
+    if (!brut) return null
+    const memo = JSON.parse(brut)
+    return { chemin: memo.chemin, ancre: memo.ancre }
+  }
 
-    render(<AncreAuChargement />)
+  test("note le clic sur un lien interne porteur d'ancre", () => {
+    render(
+      <>
+        <MemoireAncre />
+        <a href="/parametres#eleves">Mes élèves</a>
+      </>,
+    )
 
-    expect(vu).toHaveBeenCalledWith({ block: 'start' })
+    fireEvent.click(document.querySelector('a')!)
+
+    expect(lireNote()).toEqual({ chemin: '/parametres', ancre: 'eleves' })
+  })
+
+  test('note aussi le clic sur un element A L INTERIEUR du lien (icone, texte)', () => {
+    render(
+      <>
+        <MemoireAncre />
+        <a href="/semaine/x#suivi"><span>Suivi des élèves</span></a>
+      </>,
+    )
+
+    fireEvent.click(document.querySelector('span')!)
+
+    expect(lireNote()).toEqual({ chemin: '/semaine/x', ancre: 'suivi' })
+  })
+
+  test('ne note rien pour un lien sans ancre ou externe', () => {
+    render(
+      <>
+        <MemoireAncre />
+        <a href="/planning">Planning</a>
+        <a href="https://exemple.fr/page#section">Ailleurs</a>
+      </>,
+    )
+
+    for (const lien of Array.from(document.querySelectorAll('a'))) {
+      fireEvent.click(lien)
+    }
+
+    expect(lireNote()).toBeNull()
   })
 })
 
@@ -145,20 +207,27 @@ describe('les liens à ancre désignent tous une section existante', () => {
 })
 
 /**
- * Les deux pages qui portent une ancre ont aussi un `loading.tsx`. C'est
- * precisement la combinaison qui perdait l'ancre : le squelette s'affiche, la
- * cible n'existe pas encore, le navigateur reste en haut.
+ * Le dispositif ne marche que si ses deux moities sont montees : la memoire de
+ * clic dans le layout, et le rejoueur dans chaque page a squelette de
+ * chargement (`loading.tsx`) qui porte des sections a ancre.
  */
-describe('les pages à ancre rejouent l’ancre après leur squelette', () => {
+describe('les deux moities du dispositif sont montees', () => {
+  test('le layout note les clics (MemoireAncre)', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'src/app/(app)/layout.tsx'),
+      'utf8',
+    )
+    expect(source).toContain('<MemoireAncre />')
+  })
+
   const pages = [
     'src/app/(app)/parametres/page.tsx',
     'src/app/(app)/semaine/[id]/page.tsx',
   ]
 
-  test.each(pages)('%s monte AncreAuChargement', relatif => {
+  test.each(pages)('%s rejoue l ancre apres son squelette', relatif => {
     const dossier = path.dirname(path.join(process.cwd(), relatif))
     const source = fs.readFileSync(path.join(process.cwd(), relatif), 'utf8')
-    // Le rappel n'a de sens que si la page a bien un squelette de chargement.
     expect(fs.existsSync(path.join(dossier, 'loading.tsx'))).toBe(true)
     expect(source).toContain('<AncreAuChargement />')
   })
