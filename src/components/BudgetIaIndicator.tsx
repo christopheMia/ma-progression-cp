@@ -1,61 +1,80 @@
-import { usageMoisCourant } from '@/lib/actions/ia-usage'
-import { estimerCoutEuros, PLAFOND_EUROS } from '@/lib/ia/cout'
+import Link from 'next/link'
+import { soldeIA } from '@/lib/actions/ia-usage'
 
 /**
- * Jauge de consommation IA du mois.
+ * Ce qu il reste de credit IA.
  *
- * Retour du 20/07 : "je suis pas sur que la jauge fonctionne bien". Le calcul
- * etait correct, mais l'usage reel (~0,26 € sur 8 €) remplissait 3 % d'une barre
- * de 6 px : quelques pixels, donc invisible. On ne pouvait pas distinguer
- * "presque rien consomme" de "cassee".
+ * Affiche en DOLLARS, comme la console Anthropic : la jauge et le site de
+ * reference doivent parler la meme unite, sinon on compare deux chiffres qui
+ * ne veulent pas dire la meme chose.
  *
- * Corrections : barre plus haute, remplissage avec une largeur minimale visible
- * des qu'il y a la moindre consommation, et affichage du nombre de tokens pour
- * prouver que la mesure est bien vivante.
+ * Tant qu aucun releve n a ete saisi, l application n affiche pas de solde :
+ * elle ne peut pas le deviner (l API de couts est reservee aux comptes
+ * organisation). Elle montre alors ce qu elle a compte, et invite a saisir le
+ * point de depart. Mieux vaut un chiffre absent qu un chiffre faux.
  */
 export default async function BudgetIaIndicator() {
-  const { input, output } = await usageMoisCourant()
-  const euros = estimerCoutEuros(input, output)
-  const pct = Math.min(100, (euros / PLAFOND_EUROS) * 100)
-  const proche = euros >= PLAFOND_EUROS * 0.8
-  const aConsomme = input + output > 0
-  // Des qu'il y a de la consommation, on garde au moins 3 % de largeur : sinon
-  // une petite valeur donne une barre vide, impossible a distinguer d'un bug.
-  const largeur = aConsomme ? Math.max(3, pct) : 0
+  const { consommeUsd, restantUsd, releveAt, soldeReleveUsd } = await soldeIA()
 
-  const nf = new Intl.NumberFormat('fr-FR')
+  const dateReleve = releveAt
+    ? new Date(releveAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    : null
+
+  if (restantUsd === null || soldeReleveUsd === null) {
+    return (
+      <div className="text-xs text-slate-600">
+        <div className="font-medium text-slate-700 mb-1">Crédit IA</div>
+        <p className="text-[11px] text-slate-500 leading-snug">
+          {consommeUsd > 0
+            ? <>Environ {consommeUsd.toFixed(2)} $ consommés depuis le début du suivi. </>
+            : <>Aucune consommation enregistrée pour l&apos;instant. </>}
+          Pour voir le crédit restant,{' '}
+          <Link href="/parametres#credit-ia" className="text-violet-600 underline">
+            indique ton solde
+          </Link>{' '}
+          relevé sur la console Anthropic.
+        </p>
+      </div>
+    )
+  }
+
+  const pct = soldeReleveUsd > 0
+    ? Math.min(100, Math.max(0, (restantUsd / soldeReleveUsd) * 100))
+    : 0
+  const faible = restantUsd <= soldeReleveUsd * 0.2 || restantUsd <= 1
+  const epuise = restantUsd <= 0
 
   return (
     <div className="text-xs text-slate-600">
       <div className="flex justify-between items-baseline mb-1.5 gap-2">
-        <span className="font-medium text-slate-700">Budget IA estimé ce mois</span>
-        <span className={proche ? 'text-orange-600 font-semibold' : 'font-semibold text-slate-800'}>
-          {euros.toFixed(2)} € <span className="font-normal text-slate-500">/ {PLAFOND_EUROS} €</span>
+        <span className="font-medium text-slate-700">Crédit IA restant (estimé)</span>
+        <span className={faible ? 'text-orange-600 font-semibold' : 'font-semibold text-slate-800'}>
+          {Math.max(0, restantUsd).toFixed(2)} $
+          <span className="font-normal text-slate-500"> / {soldeReleveUsd.toFixed(2)} $</span>
         </span>
       </div>
 
       <div className="h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
         <div
-          className={`h-full rounded-full transition-all ${proche ? 'bg-orange-500' : 'bg-violet-500'}`}
-          style={{ width: `${largeur}%` }}
+          className={`h-full rounded-full transition-all ${faible ? 'bg-orange-500' : 'bg-violet-500'}`}
+          style={{ width: `${pct}%` }}
           role="progressbar"
           aria-valuenow={Math.round(pct)}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="Budget IA consommé ce mois"
+          aria-label="Crédit IA restant"
         />
       </div>
 
       <p className="text-[11px] text-slate-500 mt-1.5 leading-snug">
-        {aConsomme ? (
-          <>
-            {Math.round(pct)} % utilisé · {nf.format(input)} mots lus et {nf.format(output)} mots écrits par l&apos;IA ce mois-ci.
-          </>
-        ) : (
-          <>Aucune utilisation de l&apos;IA ce mois-ci pour l&apos;instant.</>
-        )}
+        {epuise
+          ? <>Crédit épuisé d&apos;après l&apos;estimation. </>
+          : <>Environ {consommeUsd.toFixed(2)} $ consommés depuis ton relevé{dateReleve ? ` du ${dateReleve}` : ''}. </>}
+        <Link href="/parametres#credit-ia" className="text-violet-600 underline">
+          Mettre à jour le relevé
+        </Link>
         <br />
-        Estimation indicative, ce n&apos;est pas le solde réel facturé.
+        Estimation calculée par l&apos;application, à recaler de temps en temps sur la console Anthropic.
       </p>
     </div>
   )

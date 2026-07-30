@@ -3,7 +3,7 @@ import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { systemAssistant } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
-import { refuserSiDeconnecte } from '@/lib/ia/garde'
+import { garderAppelIA } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -44,7 +44,7 @@ function chaines(valeur: unknown): string[] {
  * on ne modifie rien.
  */
 export async function POST(request: Request) {
-  const refus = await refuserSiDeconnecte()
+  const refus = await garderAppelIA()
   if (refus) return refus
   try {
     const body = await request.json()
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       ],
     })
 
-    await enregistrerUsageIA(result.usage?.input_tokens ?? 0, result.usage?.output_tokens ?? 0)
+    await enregistrerUsageIA({ route: 'assistant', modele: MODELE_CHAT, usage: result.usage })
 
     const bloc = result.content.find(b => b.type === 'text')
     const reponse = bloc && 'text' in bloc ? bloc.text.trim() : ''

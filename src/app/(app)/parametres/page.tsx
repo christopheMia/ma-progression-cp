@@ -14,6 +14,8 @@ import GenererEdtButton from '@/components/parametres/GenererEdtButton'
 import ImporterEdtButton from '@/components/parametres/ImporterEdtButton'
 import RealignerSemainesButton from '@/components/parametres/RealignerSemainesButton'
 import DemoButton from '@/components/DemoButton'
+import CreditIaEditor from '@/components/parametres/CreditIaEditor'
+import { soldeIA } from '@/lib/actions/ia-usage'
 import type { Methode, MethodeSource } from '@/types'
 
 function Section({ titre, children, id, headerRight }: { titre: string; children: React.ReactNode; id?: string; headerRight?: React.ReactNode }) {
@@ -45,6 +47,7 @@ export default async function ParametresPage() {
     { data: methodes },
     { data: progression },
     { data: sourcesLues, error: sourcesError },
+    solde,
   ] = await mesurer('parametres', () => Promise.all([
     supabase.from('eleves').select('*').eq('class_id', classe.id).order('ordre'),
     supabase.from('emploi_du_temps').select('*').eq('class_id', classe.id).order('ordre'),
@@ -54,6 +57,9 @@ export default async function ParametresPage() {
     // ramene dans la meme vague.
     supabase.from('methode_sources').select('*, methodes!inner(class_id)')
       .eq('methodes.class_id', classe.id).order('created_at'),
+    // Le credit IA voyage dans la meme vague : pas question de rajouter un
+    // aller-retour en serie sur une page qu'on vient d'accelerer.
+    soldeIA(),
   ]))
 
   if (sourcesError) {
@@ -116,6 +122,14 @@ export default async function ParametresPage() {
           sources={sources}
           creneaux={(edt ?? []).map(c => ({ id: c.id, matiere: c.matiere, jour: c.jour, methode_id: c.methode_id ?? null }))}
           resumes={resumes}
+        />
+      </Section>
+
+      <Section id="credit-ia" titre="💳 Crédit IA">
+        <CreditIaEditor
+          soldeInitial={solde.soldeReleveUsd}
+          releveAt={solde.releveAt}
+          consommeDepuis={solde.consommeUsd}
         />
       </Section>
 

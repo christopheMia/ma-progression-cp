@@ -3,12 +3,12 @@ import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { SYSTEM_BILAN, userBilan } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
-import { refuserSiDeconnecte } from '@/lib/ia/garde'
+import { garderAppelIA } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
 export async function POST(request: Request) {
-  const refus = await refuserSiDeconnecte()
+  const refus = await garderAppelIA()
   if (refus) return refus
   try {
     const body = await request.json()
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       messages: [{ role: 'user', content: userBilan({ numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut }) }],
     })
 
-    await enregistrerUsageIA(result.usage?.input_tokens ?? 0, result.usage?.output_tokens ?? 0)
+    await enregistrerUsageIA({ route: 'ia-bilan', modele: MODELE_CHAT, usage: result.usage })
 
     const block = result.content.find(b => b.type === 'text')
     const bilan = block && 'text' in block ? block.text.trim() : ''

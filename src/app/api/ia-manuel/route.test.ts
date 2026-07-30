@@ -9,6 +9,10 @@ jest.mock('@/lib/ia/anthropic', () => ({
 
 jest.mock('@/lib/actions/ia-usage', () => ({
   enregistrerUsageIA: mockEnregistrerUsageIA,
+  // Le garde consulte aussi le solde : sans releve, il laisse passer.
+  soldeIA: jest.fn(async () => ({
+    consommeUsd: 0, restantUsd: null, releveAt: null, soldeReleveUsd: null,
+  })),
 }))
 
 jest.mock('@/lib/supabase/session', () => ({
@@ -94,7 +98,13 @@ describe('POST /api/ia-manuel', () => {
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
       system: expect.stringContaining("Aucun indice de matière n'est fourni"),
     }))
-    expect(mockEnregistrerUsageIA).toHaveBeenCalledWith(12, 34)
+    // L objet `usage` complet est transmis, cache compris : c est la couche
+    // ia-usage qui sait quoi facturer, pas la route.
+    expect(mockEnregistrerUsageIA).toHaveBeenCalledWith({
+      route: 'ia-manuel',
+      modele: 'modele-test',
+      usage: { input_tokens: 12, output_tokens: 34 },
+    })
   })
 
   test('renvoie un planning de periode avec les deux tableaux', async () => {

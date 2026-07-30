@@ -8,7 +8,7 @@ import {
 import { SYSTEM_IMPORT_EDT, userImportEdt } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
-import { refuserSiDeconnecte } from '@/lib/ia/garde'
+import { garderAppelIA } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -18,7 +18,7 @@ export const maxDuration = 60
  * les colonnes, un texte aplati ne suffit pas.
  */
 export async function POST(request: Request) {
-  const refus = await refuserSiDeconnecte()
+  const refus = await garderAppelIA()
   if (refus) return refus
   try {
     const form = await request.formData()
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       }],
     })
 
-    await enregistrerUsageIA(message.usage?.input_tokens ?? 0, message.usage?.output_tokens ?? 0)
+    await enregistrerUsageIA({ route: 'ia-edt', modele: MODELE_IMPORT, usage: message.usage })
 
     const bloc = message.content.find(b => b.type === 'text')
     const parsed = bloc && 'text' in bloc ? JSON.parse(bloc.text) : { creneaux: [] }

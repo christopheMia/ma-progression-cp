@@ -13,7 +13,7 @@ import {
 } from '@/lib/ia/schema-import-auto'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
-import { refuserSiDeconnecte } from '@/lib/ia/garde'
+import { garderAppelIA } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -38,7 +38,7 @@ function normaliserMetaImport(value: Record<string, unknown>) {
 }
 
 export async function POST(request: Request) {
-  const refus = await refuserSiDeconnecte()
+  const refus = await garderAppelIA()
   if (refus) return refus
   try {
     const contentType = request.headers.get('content-type') ?? ''
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       messages: [{ role: 'user', content: contenuUtilisateur }],
     })
 
-    await enregistrerUsageIA(message.usage?.input_tokens ?? 0, message.usage?.output_tokens ?? 0)
+    await enregistrerUsageIA({ route: 'ia-manuel', modele: MODELE_IMPORT, usage: message.usage })
 
     // Récupère le bloc texte (JSON garanti par le schéma)
     const jsonBlock = message.content.find(b => b.type === 'text')
