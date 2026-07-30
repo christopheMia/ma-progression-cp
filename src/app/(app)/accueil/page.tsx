@@ -202,7 +202,7 @@ export default async function AccueilPage() {
           <ProgressBar value={acquisCount} max={possible} color="bg-emerald-500" />
         </Link>
 
-        <Link prefetch={false} href="/parametres"
+        <Link prefetch={false} href="/parametres#eleves"
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{nbEleves}</div>
           <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>

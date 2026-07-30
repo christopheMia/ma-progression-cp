@@ -11,6 +11,7 @@ import CollapsibleSection from '@/components/semaine/CollapsibleSection'
 import EdtApercu from '@/components/semaine/EdtApercu'
 import PrintButton from '@/components/PrintButton'
 import type { EtatComportement } from '@/lib/comportement'
+import AncreAuChargement from '@/components/AncreAuChargement'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -68,6 +69,9 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-4">
+      {/* Cette page a un `loading.tsx` : sans ce rappel, la carte « Suivi des
+          élèves » de l'accueil retombait en haut de la fiche au lieu du bloc. */}
+      <AncreAuChargement />
       <div className="flex items-center gap-3">
         <Link href="/planning" className="text-violet-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Semaine {semaine.numero} — {dateFormatee}</h1>

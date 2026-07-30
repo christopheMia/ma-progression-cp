@@ -15,6 +15,7 @@ import ImporterEdtButton from '@/components/parametres/ImporterEdtButton'
 import RealignerSemainesButton from '@/components/parametres/RealignerSemainesButton'
 import DemoButton from '@/components/DemoButton'
 import CreditIaEditor from '@/components/parametres/CreditIaEditor'
+import AncreAuChargement from '@/components/AncreAuChargement'
 import { soldeIA } from '@/lib/actions/ia-usage'
 import type { Methode, MethodeSource } from '@/types'
 
@@ -80,16 +81,19 @@ export default async function ParametresPage() {
 
   return (
     <div className="space-y-4">
+      {/* Cette page a un `loading.tsx` : sans ce rappel, les liens `#eleves`,
+          `#edt`, `#methodes` ou `#credit-ia` retombaient tout en haut. */}
+      <AncreAuChargement />
       <div className="flex items-center gap-3">
         <Link href="/planning" className="text-violet-600 hover:underline text-sm">← Planning</Link>
         <h1 className="text-xl font-bold text-gray-800">Paramètres de ma classe</h1>
       </div>
 
-      <Section titre="👤 Mon prénom">
+      <Section id="prenom" titre="👤 Mon prénom">
         <PrenomEnseignantEditor initial={classe.prenom_enseignant ?? ''} />
       </Section>
 
-      <Section titre="👧 Mes élèves" headerRight={<ResetBlockButton scope="eleves" message="Efface tous les élèves et leur suivi." />}>
+      <Section id="eleves" titre="👧 Mes élèves" headerRight={<ResetBlockButton scope="eleves" message="Efface tous les élèves et leur suivi." />}>
         <ElevesEditor initial={(eleves ?? []).map(e => e.prenom)} />
       </Section>
 
@@ -110,7 +114,7 @@ export default async function ParametresPage() {
         }))} />
       </Section>
 
-      <Section titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>
+      <Section id="rentree" titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>
         <RentreeEditor initial={classe.rentree_date}
           initialZone={(classe.zone_scolaire === 'B' || classe.zone_scolaire === 'C') ? classe.zone_scolaire : 'A'} />
       </Section>
@@ -133,7 +137,7 @@ export default async function ParametresPage() {
         />
       </Section>
 
-      <section className="bg-white border border-violet-200 rounded-2xl p-5">
+      <section id="demo" className="bg-white border border-violet-200 rounded-2xl p-5 scroll-mt-24">
         <h2 className="font-bold text-violet-700 mb-2">🎓 Mode démonstration</h2>
         <p className="text-sm text-gray-500 mb-4">
           Remplit une classe d&apos;exemple complète (élèves, emploi du temps, progression, suivi) pour la formation.
@@ -141,7 +145,7 @@ export default async function ParametresPage() {
         <DemoButton confirmer />
       </section>
 
-      <section className="bg-white border-2 border-red-200 rounded-2xl p-5 space-y-5">
+      <section id="remise-a-zero" className="bg-white border-2 border-red-200 rounded-2xl p-5 space-y-5 scroll-mt-24">
         <div>
           <h2 className="font-bold text-red-700 mb-1">🧽 Nouvelle année, même classe</h2>
           <p className="text-sm text-gray-500 mb-3">
