@@ -9,11 +9,11 @@ import { estZoneScolaire } from '@/lib/calendrier-officiel'
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // Identité et classe passent par `session.ts` : la page rendue juste après
   // demande les mêmes, et `cache` de React fait qu'elles ne partent qu'une
-  // fois par requête au lieu de deux.
-  const user = await utilisateurCourant()
+  // fois par requête au lieu de deux. Les deux partent ENSEMBLE : la classe
+  // n'a pas besoin de l'identité (RLS s'en charge), et les enchaîner coûtait
+  // un aller-retour Supabase de plus à chaque chargement dur (~150 ms).
+  const [user, classe] = await Promise.all([utilisateurCourant(), classeCourante()])
   if (!user) redirect('/connexion')
-
-  const classe = await classeCourante()
 
   // Contexte minimal pour que l'assistant sache de quelle classe on parle.
   const supabase = await createClient()

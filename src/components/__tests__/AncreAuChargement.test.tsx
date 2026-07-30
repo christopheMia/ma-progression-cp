@@ -59,6 +59,49 @@ describe('AncreAuChargement', () => {
     expect(() => render(<AncreAuChargement />)).not.toThrow()
     expect(vu).not.toHaveBeenCalled()
   })
+
+  /**
+   * Le hash doit etre lu DANS le rappel d animation, pas au montage.
+   *
+   * Les effets des enfants s executent avant ceux du routeur : a l instant du
+   * montage, window.location peut encore montrer l entree PRECEDENTE. Bug vu
+   * par Christophe le 30/07 : apres avoir visite /semaine/X#suivi, cliquer la
+   * carte « Prochaine semaine » (lien SANS ancre) atterrissait sur le suivi,
+   * parce que le composant relisait le hash perime de la visite d avant.
+   */
+  test('ne rejoue pas le hash périmé de la page précédente', () => {
+    const vu = preparerCible('suivi')
+    allerA('#suivi') // URL pas encore synchronisée : hash de la visite d'avant
+
+    jest.spyOn(window, 'requestAnimationFrame').mockRestore()
+    jest.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => {
+      // Le routeur synchronise l'URL (navigation SANS ancre) avant la frame.
+      window.location.hash = ''
+      cb(0)
+      return 1
+    })
+
+    render(<AncreAuChargement />)
+
+    expect(vu).not.toHaveBeenCalled()
+  })
+
+  test("rattrape l'ancre qui n'arrive qu'avec la synchronisation de l'URL", () => {
+    const vu = preparerCible('eleves')
+    // Au montage, l'URL montre encore la page precedente, sans ancre.
+
+    jest.spyOn(window, 'requestAnimationFrame').mockRestore()
+    jest.spyOn(window, 'requestAnimationFrame').mockImplementation(cb => {
+      // Puis le routeur ecrit la vraie destination, ancre comprise.
+      window.location.hash = '#eleves'
+      cb(0)
+      return 1
+    })
+
+    render(<AncreAuChargement />)
+
+    expect(vu).toHaveBeenCalledWith({ block: 'start' })
+  })
 })
 
 /**
