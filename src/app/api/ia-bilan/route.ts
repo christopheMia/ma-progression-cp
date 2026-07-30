@@ -3,10 +3,13 @@ import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { SYSTEM_BILAN, userBilan } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
+import { refuserSiDeconnecte } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
 export async function POST(request: Request) {
+  const refus = await refuserSiDeconnecte()
+  if (refus) return refus
   try {
     const body = await request.json()
     const numeroSemaine = typeof body.numeroSemaine === 'number' ? body.numeroSemaine : 0

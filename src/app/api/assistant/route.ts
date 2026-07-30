@@ -3,6 +3,7 @@ import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { systemAssistant } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
+import { refuserSiDeconnecte } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -43,6 +44,8 @@ function chaines(valeur: unknown): string[] {
  * on ne modifie rien.
  */
 export async function POST(request: Request) {
+  const refus = await refuserSiDeconnecte()
+  if (refus) return refus
   try {
     const body = await request.json()
     const message = typeof body.message === 'string' ? body.message.trim() : ''

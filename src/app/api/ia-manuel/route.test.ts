@@ -1,5 +1,6 @@
 const mockCreate = jest.fn()
 const mockEnregistrerUsageIA = jest.fn()
+const mockUtilisateurCourant = jest.fn()
 
 jest.mock('@/lib/ia/anthropic', () => ({
   getAnthropicClient: jest.fn(() => ({ messages: { create: mockCreate } })),
@@ -8,6 +9,10 @@ jest.mock('@/lib/ia/anthropic', () => ({
 
 jest.mock('@/lib/actions/ia-usage', () => ({
   enregistrerUsageIA: mockEnregistrerUsageIA,
+}))
+
+jest.mock('@/lib/supabase/session', () => ({
+  utilisateurCourant: mockUtilisateurCourant,
 }))
 
 import { POST } from './route'
@@ -34,6 +39,19 @@ describe('POST /api/ia-manuel', () => {
   beforeEach(() => {
     mockCreate.mockReset()
     mockEnregistrerUsageIA.mockReset()
+    // Par defaut, une enseignante connectee : chaque test verifie le reste.
+    mockUtilisateurCourant.mockReset()
+    mockUtilisateurCourant.mockResolvedValue({ id: 'prof-1' })
+  })
+
+  test('refuse un appel sans utilisateur connecte, sans toucher a l IA', async () => {
+    mockUtilisateurCourant.mockResolvedValue(null)
+
+    const reponse = await POST(requeteImport())
+
+    expect(reponse.status).toBe(401)
+    expect(await reponse.json()).toEqual({ error: 'Connexion requise.' })
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 
   test('renvoie un manuel avec les metadonnees normalisees au premier niveau', async () => {

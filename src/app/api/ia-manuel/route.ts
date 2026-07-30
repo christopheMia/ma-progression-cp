@@ -13,6 +13,7 @@ import {
 } from '@/lib/ia/schema-import-auto'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
+import { refuserSiDeconnecte } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -37,6 +38,8 @@ function normaliserMetaImport(value: Record<string, unknown>) {
 }
 
 export async function POST(request: Request) {
+  const refus = await refuserSiDeconnecte()
+  if (refus) return refus
   try {
     const contentType = request.headers.get('content-type') ?? ''
     let texte = ''

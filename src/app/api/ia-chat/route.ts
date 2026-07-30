@@ -5,6 +5,7 @@ import { systemChat } from '@/lib/ia/prompts'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
+import { refuserSiDeconnecte } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -34,6 +35,8 @@ const CHAT_SCHEMA = {
 type ChatTurn = { role: 'user' | 'assistant'; content: string }
 
 export async function POST(request: Request) {
+  const refus = await refuserSiDeconnecte()
+  if (refus) return refus
   try {
     const body = await request.json()
     const progression = (body.progression ?? []) as ProgressionSemaine[]

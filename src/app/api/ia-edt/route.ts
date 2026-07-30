@@ -8,6 +8,7 @@ import {
 import { SYSTEM_IMPORT_EDT, userImportEdt } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
+import { refuserSiDeconnecte } from '@/lib/ia/garde'
 
 export const maxDuration = 60
 
@@ -17,6 +18,8 @@ export const maxDuration = 60
  * les colonnes, un texte aplati ne suffit pas.
  */
 export async function POST(request: Request) {
+  const refus = await refuserSiDeconnecte()
+  if (refus) return refus
   try {
     const form = await request.formData()
     const fichiers = form.getAll('pdf').filter((f): f is File => f instanceof File)
