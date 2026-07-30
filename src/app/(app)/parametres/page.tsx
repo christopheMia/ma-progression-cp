@@ -16,7 +16,7 @@ import RealignerSemainesButton from '@/components/parametres/RealignerSemainesBu
 import DemoButton from '@/components/DemoButton'
 import CreditIaEditor from '@/components/parametres/CreditIaEditor'
 import AncreAuChargement from '@/components/AncreAuChargement'
-import { soldeIA } from '@/lib/actions/ia-usage'
+import { soldeDepuisRpc, type PageParametresData } from '@/lib/rpc-pages'
 import type { Methode, MethodeSource } from '@/types'
 
 function Section({ titre, children, id, headerRight }: { titre: string; children: React.ReactNode; id?: string; headerRight?: React.ReactNode }) {
@@ -32,41 +32,23 @@ function Section({ titre, children, id, headerRight }: { titre: string; children
 }
 
 export default async function ParametresPage() {
-  // Cette page enchainait SEPT requetes l'une apres l'autre : identite, classe,
-  // eleves, emploi du temps, methodes, progression, documents. Sept
-  // allers-retours en serie vers l'Irlande, mesures a 2,08 secondes cote
-  // navigateur le 29/07. Elles n'en font plus que deux vagues.
+  // Cette page a enchaine jusqu'a SEPT requetes en serie (2,08 s mesurees le
+  // 29/07), puis deux vagues. Depuis la migration 025, la fonction SQL
+  // `page_parametres` rend tout en UN aller-retour : classe, eleves, emploi du
+  // temps, methodes, progression, documents et solde IA.
   const supabase = await createClient()
 
-  const { data: classe } = await supabase.from('classes').select('*')
-    .order('created_at', { ascending: false }).limit(1).maybeSingle()
+  const { data, error } = await mesurer('parametres', async () => supabase.rpc('page_parametres'))
+  if (error) {
+    throw new Error(`Chargement des paramètres impossible : ${error.message}`)
+  }
+  const page = (data ?? {}) as PageParametresData
+  const classe = page.classe
   if (!classe) redirect('/setup')
 
-  const [
-    { data: eleves },
-    { data: edt },
-    { data: methodes },
-    { data: progression },
-    { data: sourcesLues, error: sourcesError },
-    solde,
-  ] = await mesurer('parametres', () => Promise.all([
-    supabase.from('eleves').select('*').eq('class_id', classe.id).order('ordre'),
-    supabase.from('emploi_du_temps').select('*').eq('class_id', classe.id).order('ordre'),
-    supabase.from('methodes').select('*').eq('class_id', classe.id).order('created_at'),
-    supabase.from('progression').select('methode_id, items').eq('class_id', classe.id),
-    // Les documents attendaient la liste des methodes : la jointure interne les
-    // ramene dans la meme vague.
-    supabase.from('methode_sources').select('*, methodes!inner(class_id)')
-      .eq('methodes.class_id', classe.id).order('created_at'),
-    // Le credit IA voyage dans la meme vague : pas question de rajouter un
-    // aller-retour en serie sur une page qu'on vient d'accelerer.
-    soldeIA(),
-  ]))
-
-  if (sourcesError) {
-    throw new Error(`Lecture des documents impossible : ${sourcesError.message}`)
-  }
-  const sources = (sourcesLues ?? []) as unknown as MethodeSource[]
+  const { eleves, edt, methodes, progression } = page
+  const solde = soldeDepuisRpc(page.solde)
+  const sources = (page.sources ?? []) as unknown as MethodeSource[]
 
   // Recap par methode : ce que l'IA a produit a l'import (nb de semaines + nb de notions).
   const resumes: Record<string, { semaines: number; notions: number }> = {}

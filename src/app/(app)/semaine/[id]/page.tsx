@@ -11,6 +11,7 @@ import CollapsibleSection from '@/components/semaine/CollapsibleSection'
 import EdtApercu from '@/components/semaine/EdtApercu'
 import PrintButton from '@/components/PrintButton'
 import type { EtatComportement } from '@/lib/comportement'
+import type { PageSemaineData } from '@/lib/rpc-pages'
 import AncreAuChargement from '@/components/AncreAuChargement'
 
 export default async function SemainePage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,46 +21,29 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   // lui appartient pas revient vide, donc on repart sur le planning.
   const supabase = await createClient()
 
-  const { data: semaine } = await supabase.from('semaines').select('*').eq('id', id).single()
+  // UN aller-retour pour toute la fiche (fonction SQL `page_semaine`,
+  // migration 025) : la semaine, puis tout ce qui s'y rattache, y compris ce
+  // qui depend d'elle (progression du meme numero, bilan de SA periode). Ces
+  // dependances obligeaient avant a attendre la semaine PUIS lancer la vague.
+  // Deux choix conserves tels quels :
+  // - observations : toute l'annee, pas seulement la periode. Christophe veut
+  //   retrouver un fait ecrit deux mois plus tot ; le composant fait le tri.
+  // - bilans_periode : les appreciations `__general` de la periode de la
+  //   semaine, c'est l'appreciation generale du livret.
+  const { data } = await mesurer('semaine', async () => supabase.rpc('page_semaine', { p_id: id }))
+  const page = (data ?? {}) as PageSemaineData
+  const semaine = page.semaine
+  // Erreur comprise : un identifiant trafique ou inconnu revient au planning,
+  // comme avant la bascule (l'ancien code ignorait deja l'erreur du .single()).
   if (!semaine) redirect('/planning')
 
-  // Un seul aller-retour. Avant, un deuxieme groupe de requetes attendait le
-  // premier (il lui fallait les identifiants des semaines de la periode) : deux
-  // allers-retours en serie a chaque ouverture de la fiche. Comportements et
-  // observations portent `class_id`, donc ils se demandent tout de suite, et
-  // c'est le composant qui trie ce qui releve de la periode.
-  const [
-    { data: eleves },
-    { data: acquisitions },
-    { data: appreciations },
-    { data: progression },
-    { data: methodesList },
-    { data: edt },
-    { data: semainesClasse },
-    { data: comportements },
-    { data: observations },
-    { data: bilansPeriode },
-  ] = await mesurer('semaine', () => Promise.all([
-    supabase.from('eleves').select('*').eq('class_id', semaine.class_id).order('ordre'),
-    supabase.from('acquisitions').select('*').eq('semaine_id', id),
-    supabase.from('appreciations').select('*').eq('semaine_id', id),
-    supabase.from('progression').select('*').eq('class_id', semaine.class_id).eq('numero', semaine.numero),
-    supabase.from('methodes').select('id, matiere, suivi_actif, manuel').eq('class_id', semaine.class_id).order('created_at'),
-    supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id).order('ordre'),
-    supabase.from('semaines').select('id, numero, periode_numero').eq('class_id', semaine.class_id).order('numero'),
-    supabase.from('comportements_semaine').select('eleve_id, semaine_id, etat')
-      .eq('class_id', semaine.class_id),
-    // Toute l'annee, pas seulement la periode : Christophe veut pouvoir
-    // retrouver un fait ecrit deux mois plus tot. Le bilan, lui, ne prend que
-    // la periode en cours, et c'est le composant qui fait ce tri.
-    supabase.from('observations').select('id, eleve_id, semaine_id, observee_le, texte')
-      .eq('class_id', semaine.class_id),
-    // Le bilan de periode est range comme une appreciation, avec la matiere
-    // reservee `__general` : c'est l'appreciation generale du livret.
-    supabase.from('appreciations_periode').select('eleve_id, texte, briques_ecartees')
-      .eq('class_id', semaine.class_id).eq('matiere', '__general')
-      .eq('periode_numero', semaine.periode_numero ?? 0),
-  ]))
+  const {
+    eleves, acquisitions, appreciations, progression, edt,
+    comportements, observations,
+  } = page
+  const methodesList = page.methodes
+  const semainesClasse = page.semaines_classe
+  const bilansPeriode = page.bilans_periode
 
   // Les semaines de la période en cours : c'est la frise du suivi.
   const semainesPeriode = (semainesClasse ?? [])

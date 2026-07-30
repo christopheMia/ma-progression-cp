@@ -9,7 +9,7 @@ import ProgressionCorrector from '@/components/ProgressionCorrector'
 import BudgetIaIndicator from '@/components/BudgetIaIndicator'
 import CahierJournalCard from '@/components/accueil/CahierJournalCard'
 import OutilsIaSection from '@/components/accueil/OutilsIaSection'
-import { soldeIA } from '@/lib/actions/ia-usage'
+import { soldeDepuisRpc, type PageAccueilData } from '@/lib/rpc-pages'
 import { semaineEnCours, getStatus, libelleContenuSemaine } from '@/lib/semaines'
 import {
   BookOpenText, Pencil, Hand, Sparkles, ArrowRight,
@@ -22,7 +22,16 @@ export default async function AccueilPage() {
   // RLS ne rend que la classe de la personne connectée (voir `session.ts`).
   const supabase = await createClient()
 
-  const { data: classe } = await supabase.from('classes').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle()
+  // UN aller-retour pour toute la page (fonction SQL `page_accueil`, migration
+  // 025) : classe, semaines, comptes et solde IA arrivent ensemble. Avant, la
+  // classe partait d'abord, puis une vague de quatre requetes, puis le solde :
+  // 320 a 420 ms de requetes par affichage (journaux Vercel du 30/07).
+  const { data, error } = await mesurer('accueil', async () => supabase.rpc('page_accueil'))
+  if (error) {
+    throw new Error(`Chargement de l'accueil impossible : ${error.message}`)
+  }
+  const page = (data ?? {}) as PageAccueilData
+  const classe = page.classe
 
   // Premiere visite (aucune classe) : on invite a configurer, sans jamais bloquer.
   // Le menu du haut (Parametres, etc.) reste accessible a tout moment.
@@ -62,7 +71,7 @@ export default async function AccueilPage() {
           {apercu.map(a => {
             const Icone = a.icon
             return (
-              <Link prefetch={false} key={a.titre} href="/setup"
+              <Link key={a.titre} href="/setup"
                 className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
                 <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-violet-100 text-violet-700 transition-transform duration-200 group-hover:-translate-y-0.5">
                   <Icone size={22} aria-hidden="true" />
@@ -77,29 +86,9 @@ export default async function AccueilPage() {
     )
   }
 
-  // Ces deux requetes sont independantes : les enchainer doublait inutilement le
-  // temps d'attente a chaque affichage de l'accueil (retour "latence" du 20/07).
-  const [
-    { data: semaines },
-    { count: nbElevesCount },
-    { data: methodes },
-    { count: acquisBrut },
-    solde,
-  ] = await mesurer('accueil', () => Promise.all([
-    supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
-    supabase.from('eleves').select('id', { count: 'exact', head: true }).eq('class_id', classe.id),
-    supabase.from('methodes').select('matiere, manuel').eq('class_id', classe.id).order('created_at'),
-    // Le compte des acquis attendait la liste des semaines pour la filtrer :
-    // un troisieme aller-retour en serie a chaque affichage de l'accueil. La
-    // jointure interne sur `semaines` le ramene dans le meme groupe.
-    supabase.from('acquisitions')
-      .select('id, semaines!inner(class_id)', { count: 'exact', head: true })
-      .eq('acquis', true).eq('semaines.class_id', classe.id),
-    // La jauge de credit voyage dans la vague, comme sur /parametres : quand
-    // elle se servait toute seule, elle ajoutait ses allers-retours EN SERIE
-    // apres ceux-ci, et chaque retour a l'accueil trainait (retour du 30/07).
-    soldeIA(),
-  ]))
+  const semaines = page.semaines
+  const methodes = page.methodes
+  const solde = soldeDepuisRpc(page.solde)
 
   // Noms des manuels importes, affiches sur la carte "Mes méthodes" : sans eux
   // l'enseignante ne sait pas d'ou vient sa progression (retour du 20/07).
@@ -108,11 +97,11 @@ export default async function AccueilPage() {
     .filter((n): n is string => !!n)
 
   const total = semaines?.length ?? 0
-  const nbEleves = nbElevesCount ?? 0
+  const nbEleves = page.nb_eleves ?? 0
   const courante = semaineEnCours(semaines ?? [])
   const totalGraphemes = (semaines ?? []).reduce((n, s) => n + s.graphemes.length, 0)
   const possible = totalGraphemes * nbEleves
-  const acquisCount = acquisBrut ?? 0
+  const acquisCount = page.nb_acquis ?? 0
   const aujourdhui = format(new Date(), 'EEEE d MMMM', { locale: fr })
   const prenom = (classe.prenom_enseignant ?? '').trim()
 
@@ -175,7 +164,7 @@ export default async function AccueilPage() {
 
       {/* Semaine en cours */}
       {courante && (
-        <Link prefetch={false} href={`/semaine/${courante.id}`}
+        <Link href={`/semaine/${courante.id}`}
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wide text-violet-600">
@@ -194,21 +183,21 @@ export default async function AccueilPage() {
 
       {/* Statistiques (cartes cliquables : chacune mène à l'endroit utile) */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Link prefetch={false} href="/planning"
+        <Link href="/planning"
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{courante?.numero ?? 0}<span className="text-base font-normal text-slate-400">/{total}</span></div>
           <div className="text-sm text-slate-500 mt-1 mb-3 flex items-center gap-1">Semaine de l&apos;année <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
           <ProgressBar value={courante?.numero ?? 0} max={total} color="bg-violet-500" />
         </Link>
 
-        <Link prefetch={false} href={courante ? `/semaine/${courante.id}` : '/planning'}
+        <Link href={courante ? `/semaine/${courante.id}` : '/planning'}
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{Math.round((acquisCount / (possible || 1)) * 100)}<span className="text-base font-normal text-slate-400">%</span></div>
           <div className="text-sm text-slate-500 mt-1 mb-3 flex items-center gap-1">Graphèmes acquis (classe) <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
           <ProgressBar value={acquisCount} max={possible} color="bg-emerald-500" />
         </Link>
 
-        <Link prefetch={false} href="/parametres#eleves"
+        <Link href="/parametres#eleves"
           className="carte-i group block bg-white border border-slate-200 rounded-2xl p-5">
           <div className="text-3xl font-bold text-slate-900">{nbEleves}</div>
           <div className="text-sm text-slate-500 mt-1 flex items-center gap-1">Élève{nbEleves > 1 ? 's' : ''} dans la classe <ArrowRight size={14} className="text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" /></div>
@@ -222,14 +211,14 @@ export default async function AccueilPage() {
         {/* Le suivi est un geste quotidien : il a sa porte des l'accueil
             (demande de Christophe du 29/07). L'ancre ouvre directement le bloc,
             sans faire defiler la fiche de la semaine. */}
-        <Link prefetch={false} href={courante ? `/semaine/${courante.id}#suivi` : '/planning'}
+        <Link href={courante ? `/semaine/${courante.id}#suivi` : '/planning'}
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Users size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Suivi des élèves<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Comportement, observations, bilan de période</div>
         </Link>
 
-        <Link prefetch={false} href="/planning"
+        <Link href="/planning"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <CalendarDays size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Planning annuel<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
@@ -238,21 +227,21 @@ export default async function AccueilPage() {
 
         <CahierJournalCard courante={couranteLien} suivantes={suivantes} />
 
-        <Link prefetch={false} href="/parametres#edt"
+        <Link href="/parametres#edt"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Clock size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Emploi du temps<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Tes journées, créneau par créneau</div>
         </Link>
 
-        <Link prefetch={false} href="/parametres#methodes"
+        <Link href="/parametres#methodes"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Plus size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Ajoute tes matières<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>
           <div className="text-sm text-slate-500">Tes matières et leurs progressions</div>
         </Link>
 
-        <Link prefetch={false} href="/setup"
+        <Link href="/setup"
           className="carte-i group flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
           <Compass size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
           <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">Configuration initiale<ArrowRight size={15} className="text-violet-500 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" aria-hidden="true" /></div>

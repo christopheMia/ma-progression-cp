@@ -29,15 +29,16 @@ function RoueDuClic() {
 // cartes "Parametres" et "Aide" retirees de l'accueil (retour du 20/07, elles
 // faisaient doublon avec ce menu).
 //
-// `prefetch={false}` partout, decide le 29/07 sur mesure. Next precharge par
-// defaut les liens visibles, et une reponse de page dynamique n'est jamais
-// mise en cache par le navigateur : chaque page affichee relancait donc le
-// rendu serveur COMPLET des cinq entrees du menu. Les journaux montraient
-// trois demandes de `/accueil`, deux de `/livret`, deux de `/periodes` pour
-// quatre clics. La vraie navigation attendait derriere ce trafic.
-//
-// Sans prechargement, un clic ne declenche plus qu'un seul rendu. Le squelette
-// de chargement et la roue de `useLinkStatus` couvrent l'attente.
+// PRECHARGEMENT : coupe le 29/07 (les prechargements relançaient des rendus
+// complets et la vraie navigation attendait derriere ce trafic), reactive le
+// 30/07 avec l'accord de Christophe, parce que les conditions ont change :
+// - le portier court-circuite les requetes de prechargement (simple lecture
+//   de cookie, plus d'appel au serveur d'authentification) ;
+// - chaque page ne coute plus qu'UN appel Supabase (fonctions SQL de la
+//   migration 025) au lieu d'une cascade.
+// Benefice : le squelette de la page est deja dans le navigateur au moment du
+// clic, l'ecran repond immediatement. La roue de `useLinkStatus` couvre le
+// reste de l'attente.
 const LINKS = [
   { href: '/accueil', label: 'Accueil', aide: 'Ta page de démarrage : semaine en cours, raccourcis et outils IA' },
   { href: '/planning', label: 'Planning', aide: 'Toutes les semaines de l’année, période par période' },
@@ -83,7 +84,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
           </Link>
         )}
         {LINKS.map(l => (
-          <Link key={l.href} href={l.href} title={l.aide} prefetch={false}
+          <Link key={l.href} href={l.href} title={l.aide}
             className={classeLien(pathname === l.href)}>
             {l.label}
             <RoueDuClic />
@@ -119,7 +120,7 @@ export default function HeaderNav({ hasClass }: { hasClass: boolean }) {
               {LINKS.map(l => {
                 const actif = pathname === l.href
                 return (
-                  <Link key={l.href} href={l.href} prefetch={false}
+                  <Link key={l.href} href={l.href}
                     className={`rounded-lg px-3 py-2 transition-colors ${
                       actif ? 'bg-violet-100 text-violet-800 font-semibold' : 'text-slate-700 hover:bg-slate-100'
                     }`}>

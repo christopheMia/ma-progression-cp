@@ -2,19 +2,24 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 describe('page planning annuel', () => {
-  test('lit les progressions et les méthodes puis construit le modèle multi-matières', () => {
-    const source = fs.readFileSync(
-      path.join(process.cwd(), 'src/app/(app)/planning/page.tsx'),
-      'utf8',
-    )
+  const source = fs.readFileSync(
+    path.join(process.cwd(), 'src/app/(app)/planning/page.tsx'),
+    'utf8',
+  )
 
-    expect(source).toContain("from('progression')")
-    expect(source).toContain("from('methodes')")
-    expect(source).toContain('numero, matiere, methode_id, items, pages, mots_exemple')
-    expect(source).toContain('id, matiere, manuel, suivi_actif')
-    expect(source).toContain('semaine_id, eleve_id, matiere, grapheme')
-    expect(source).toContain(".eq('acquis', true)")
+  // Depuis la migration 025, la page fait UN aller-retour (fonction SQL
+  // page_planning) au lieu de classe + une vague de six requetes. Le
+  // chronometrage du 30/07 avait montre que la vague se serialisait en partie
+  // a l'ouverture des connexions (145 ms la premiere, ~330 ms les suivantes).
+  test('charge tout en un seul appel, sans requete de table directe', () => {
+    expect(source).toContain("rpc('page_planning')")
+    expect(source).not.toContain('.from(')
+    expect(source).not.toContain('Promise.all')
+  })
+
+  test('construit le modèle multi-matières depuis les données de la fonction', () => {
     expect(source).toContain('construirePlanningAnnuel(')
+    // Les regressions d'avant le multi-methodes ne doivent pas revenir.
     expect(source).not.toContain("from '@/data/manuels'")
     expect(source).not.toMatch(/items:\s*s\.graphemes/)
     expect(source).not.toContain('acquisParSemaine')

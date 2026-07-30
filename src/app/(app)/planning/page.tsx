@@ -9,46 +9,30 @@ import Bouton from '@/components/ui/Bouton'
 import { codeMatiereCanonique } from '@/lib/matieres'
 import { construirePlanningAnnuel } from '@/lib/planning-annuel'
 import { semaineEnCours } from '@/lib/semaines'
-import { chronometrer, mesurer } from '@/lib/perf'
+import { mesurer } from '@/lib/perf'
+import type { PagePlanningData } from '@/lib/rpc-pages'
 
 export default async function PlanningPage() {
   // Pas de `getUser` ici : le proxy a déjà refusé qui n'est pas connecté, et
   // RLS ne rend que la classe de la personne connectée (voir `session.ts`).
   const supabase = await createClient()
 
-  const { data: classe } = await supabase.from('classes').select('*').order('created_at', { ascending: false }).limit(1).maybeSingle()
+  // UN aller-retour pour toute la page (fonction SQL `page_planning`,
+  // migration 025). Avant : la classe, puis une vague de six requetes dont le
+  // chronometrage detaille a montre qu'elles se serialisaient en partie a
+  // l'ouverture des connexions (145 ms pour la premiere, ~330 ms pour les
+  // cinq autres, journaux du 30/07). Les champs lus par ce code sont ceux
+  // que la fonction reconstruit, memes noms de colonnes.
+  const { data, error } = await mesurer('planning', async () => supabase.rpc('page_planning'))
+  if (error) {
+    throw new Error(`Chargement du planning impossible : ${error.message}`)
+  }
+  const page = (data ?? {}) as PagePlanningData
+  const classe = page.classe
   if (!classe) redirect('/setup')
 
-  const [
-    { data: semaines },
-    { data: eleves },
-    { data: periodes },
-    { data: progression },
-    { data: methodes },
-    { data: acquisitionsBrutes },
-  ] = await mesurer('planning', () => Promise.all([
-    chronometrer('semaines', supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero')),
-    chronometrer('eleves', supabase.from('eleves').select('id').eq('class_id', classe.id)),
-    chronometrer('periodes', supabase.from('periodes')
-      .select('numero, nom, date_debut, date_fin, ordre')
-      .eq('class_id', classe.id).order('ordre')),
-    chronometrer('progression', supabase.from('progression')
-      .select('numero, matiere, methode_id, items, pages, mots_exemple')
-      .eq('class_id', classe.id)
-      .order('numero')),
-    chronometrer('methodes', supabase.from('methodes')
-      .select('id, matiere, manuel, suivi_actif')
-      .eq('class_id', classe.id)
-      .order('created_at')),
-    // Ces lignes attendaient la liste des semaines pour etre filtrees : un
-    // aller-retour de plus en serie. La jointure interne les ramene ici.
-    chronometrer('acquisitions', supabase.from('acquisitions')
-      .select('semaine_id, eleve_id, matiere, grapheme, semaines!inner(class_id)')
-      .eq('acquis', true)
-      .eq('semaines.class_id', classe.id)),
-  ]))
-
-  const acquisitions = acquisitionsBrutes ?? []
+  const { semaines, eleves, periodes, progression, methodes } = page
+  const acquisitions = page.acquisitions ?? []
 
   const nomsMethodes = (methodes ?? [])
     .map(methode => methode.manuel?.trim())

@@ -69,11 +69,14 @@ describe('le solde IA ne coute qu une vague de requetes', () => {
     expect(corps).toContain('sommeCoutDepuis')
   })
 
-  test("l accueil demande le solde DANS sa vague, pas apres", () => {
+  test("l accueil recoit le solde avec le reste de la page, en un seul appel", () => {
+    // Depuis la migration 025, la fonction SQL page_accueil rend le solde avec
+    // classe, semaines et comptes : plus aucune requete apres la principale.
     const source = lire('src/app/(app)/accueil/page.tsx')
-    const vague = source.slice(source.indexOf('Promise.all'), source.indexOf(']))'))
-    expect(vague).toContain('soldeIA()')
+    expect(source).toContain("rpc('page_accueil')")
+    expect(source).toContain('soldeDepuisRpc(page.solde)')
     expect(source).toContain('<BudgetIaIndicator solde={solde} />')
+    expect(source).not.toContain('.from(')
   })
 
   test('la jauge ne declenche aucune requete elle-meme', () => {
