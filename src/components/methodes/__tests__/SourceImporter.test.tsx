@@ -6,6 +6,7 @@ import '@testing-library/jest-dom'
 import SourceImporter from '../SourceImporter'
 import { calculerEmpreinteSource } from '@/lib/progression-sources'
 import { extractPdfText } from '@/lib/ia/pdf-client'
+import { extraireTexteBureautique } from '@/lib/ia/bureautique-client'
 
 jest.mock('@/lib/progression-sources', () => ({
   ...jest.requireActual('@/lib/progression-sources'),
@@ -16,8 +17,16 @@ jest.mock('@/lib/ia/pdf-client', () => ({
   extractPdfText: jest.fn(),
 }))
 
+// `formatBureautique` et `estFormatAncien` restent les vraies : ce sont elles
+// qui decident du chemin pris, on ne teste rien si on les simule.
+jest.mock('@/lib/ia/bureautique-client', () => ({
+  ...jest.requireActual('@/lib/ia/bureautique-client'),
+  extraireTexteBureautique: jest.fn(),
+}))
+
 const mockCalculerEmpreinte = jest.mocked(calculerEmpreinteSource)
 const mockExtractPdfText = jest.mocked(extractPdfText)
+const mockExtraireBureautique = jest.mocked(extraireTexteBureautique)
 
 const REPONSE_MANUEL = {
   matiere: 'Français',
@@ -365,7 +374,7 @@ describe('SourceImporter', () => {
       new File(['pdf-2'], 'programmation-p2.pdf', { type: 'application/pdf' }),
     ]
 
-    fireEvent.change(screen.getByLabelText('Documents PDF'), {
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
       target: { files: fichiers },
     })
     await screen.findByRole('status')
@@ -394,7 +403,7 @@ describe('SourceImporter', () => {
     }))
     render(<SourceImporter onSourceReady={jest.fn()} />)
 
-    fireEvent.change(screen.getByLabelText('Documents PDF'), {
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
       target: { files: [grosPdf] },
     })
     await screen.findByRole('status')
@@ -411,11 +420,11 @@ describe('SourceImporter', () => {
       new File(['pdf'], `document-${index + 1}.pdf`, { type: 'application/pdf' })
     )
 
-    fireEvent.change(screen.getByLabelText('Documents PDF'), {
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
       target: { files: fichiers },
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/maximum 10 fichiers PDF/i)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/maximum 10 fichiers/i)
     expect(mockExtractPdfText).not.toHaveBeenCalled()
     expect(fetch).not.toHaveBeenCalled()
   })
@@ -427,7 +436,7 @@ describe('SourceImporter', () => {
       size: 25 * 1024 * 1024 + 1,
     } as File
 
-    fireEvent.change(screen.getByLabelText('Documents PDF'), {
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
       target: { files: [fichier] },
     })
 
@@ -457,7 +466,7 @@ describe('SourceImporter', () => {
       size: 2 * 1024 * 1024,
     }] as File[]
 
-    fireEvent.change(screen.getByLabelText('Documents PDF'), {
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
       target: { files: fichiers },
     })
     await waitFor(() => expect(mockExtractPdfText).toHaveBeenCalledTimes(1))
@@ -470,6 +479,100 @@ describe('SourceImporter', () => {
 
     expect(mockExtractPdfText).toHaveBeenCalledTimes(2)
     expect(mockExtractPdfText).toHaveBeenNthCalledWith(2, fichiers[1])
+  })
+
+  test('lit un Word dans le navigateur et envoie son texte, jamais le fichier', async () => {
+    const word = new File(['docx'], 'progression-p1.docx')
+    mockExtraireBureautique.mockResolvedValueOnce('Semaine 1 : le son [a], pages 10 à 12.')
+    jest.mocked(fetch).mockResolvedValueOnce(reponseJson({
+      ...REPONSE_MANUEL,
+      confiance_detection: 0.95,
+      avertissements: [],
+    }))
+    render(<SourceImporter onSourceReady={jest.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
+      target: { files: [word] },
+    })
+    await screen.findByRole('status')
+
+    expect(mockExtraireBureautique).toHaveBeenCalledWith(word)
+    expect(mockExtractPdfText).not.toHaveBeenCalled()
+    const form = jest.mocked(fetch).mock.calls[0][1]?.body as FormData
+    expect(form.get('pdf')).toBeNull()
+    expect(form.get('texte')).toBe('Semaine 1 : le son [a], pages 10 à 12.')
+  })
+
+  test('lit un Excel même petit par le chemin texte, sans envoi brut', async () => {
+    const excel = new File(['xlsx'], 'programmation.xlsx')
+    mockExtraireBureautique.mockResolvedValueOnce('Période 1\tLecture\tLe son [a]')
+    jest.mocked(fetch).mockResolvedValueOnce(reponseJson({
+      ...REPONSE_MANUEL,
+      confiance_detection: 0.95,
+      avertissements: [],
+    }))
+    render(<SourceImporter onSourceReady={jest.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
+      target: { files: [excel] },
+    })
+    await screen.findByRole('status')
+
+    const form = jest.mocked(fetch).mock.calls[0][1]?.body as FormData
+    expect(form.get('pdf')).toBeNull()
+    expect(form.get('texte')).toBe('Période 1\tLecture\tLe son [a]')
+  })
+
+  test('mélange PDF et Word : tout passe par le texte', async () => {
+    const pdf = new File(['pdf'], 'sommaire.pdf', { type: 'application/pdf' })
+    const word = new File(['docx'], 'periode-2.docx')
+    mockExtractPdfText.mockResolvedValueOnce('Texte du sommaire.')
+    mockExtraireBureautique.mockResolvedValueOnce('Texte de la période 2.')
+    jest.mocked(fetch).mockResolvedValueOnce(reponseJson({
+      ...REPONSE_MANUEL,
+      confiance_detection: 0.95,
+      avertissements: [],
+    }))
+    render(<SourceImporter onSourceReady={jest.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
+      target: { files: [pdf, word] },
+    })
+    await screen.findByRole('status')
+
+    expect(mockExtractPdfText).toHaveBeenCalledWith(pdf)
+    expect(mockExtraireBureautique).toHaveBeenCalledWith(word)
+    const form = jest.mocked(fetch).mock.calls[0][1]?.body as FormData
+    expect(form.get('texte')).toContain('Texte du sommaire.')
+    expect(form.get('texte')).toContain('Texte de la période 2.')
+  })
+
+  test('guide vers Enregistrer sous quand le fichier est un .doc', async () => {
+    render(<SourceImporter onSourceReady={jest.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
+      target: { files: [new File(['doc'], 'ma-progression.doc')] },
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Enregistrer sous/i)
+    expect(mockExtraireBureautique).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  test('remonte le message de lecture quand le Word est illisible', async () => {
+    mockExtraireBureautique.mockRejectedValueOnce(
+      new Error('« vide.docx » ne contient pas de texte lisible.'),
+    )
+    render(<SourceImporter onSourceReady={jest.fn()} />)
+
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
+      target: { files: [new File(['docx'], 'vide.docx')] },
+    })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /ne contient pas de texte lisible/i,
+    )
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   test('affiche une erreur réseau avec une alerte accessible', async () => {

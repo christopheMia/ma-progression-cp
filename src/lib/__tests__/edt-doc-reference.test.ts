@@ -166,11 +166,12 @@ ${grillesJours}
 <h3>Générer depuis le programme</h3>
 <p>Construit la grille ci-dessus à partir des volumes officiels. Une fenêtre te montre
 d'abord toutes les règles appliquées. <strong>Cette action remplace ta grille actuelle.</strong></p>
-<h3>Importer depuis un PDF</h3>
-<p>Si tu as déjà ton emploi du temps sous forme de tableau PDF, l'application le lit et
-reconstruit ta grille telle quelle : tes horaires, tes intitulés, tes rituels. Un aperçu
-s'affiche avant tout remplacement. C'est la voie à privilégier quand tu as déjà ton
-organisation, car aucun générateur ne peut la deviner.</p>
+<h3>Importer depuis un document</h3>
+<p>Si tu as déjà ton emploi du temps sous forme de tableau, l'application le lit et
+reconstruit ta grille telle quelle : tes horaires, tes intitulés, tes rituels. PDF, Word
+(.docx) et Excel (.xlsx) sont acceptés : pas besoin d'exporter ton fichier en PDF avant.
+Un aperçu s'affiche avant tout remplacement. C'est la voie à privilégier quand tu as déjà
+ton organisation, car aucun générateur ne peut la deviner.</p>
 <h3>Modifier à la main</h3>
 <ul>
 <li>Clic sur une case pour changer la matière.</li>

@@ -5,15 +5,28 @@ import { updateEmploiDuTemps } from '@/lib/actions/parametres'
 import type { CreneauImporte } from '@/lib/ia/schema-edt'
 import EdtGrilleLecture from '@/components/EdtGrilleLecture'
 import Bouton from '@/components/ui/Bouton'
+import {
+  estFormatAncien,
+  extraireTexteBureautique,
+  formatBureautique,
+} from '@/lib/ia/bureautique-client'
+
+const SEPARATEUR_FICHIERS = '\n\n--- fichier suivant ---\n\n'
 
 /**
- * "Importer mon emploi du temps depuis un PDF".
+ * "Importer mon emploi du temps depuis un document".
  *
  * Le generateur construit une grille depuis les volumes officiels, mais chaque
  * enseignante a deja SON organisation (rituels de 5 min, intitules personnels,
  * journee qui commence a 8h20...). L'exemple `partage/edt.pdf` le montre bien :
  * aucun generateur ne devinerait cette grille. On propose donc de l'importer
  * telle quelle.
+ *
+ * PDF, Word et Excel sont acceptes. Un PDF part tel quel (le modele doit voir
+ * la grille) ; un .docx ou un .xlsx est lu DANS LE NAVIGATEUR et seul son texte
+ * part sur le reseau, parce que l'API n'accepte pas ces formats binaires. Faire
+ * sortir une enseignante de l'application pour exporter en PDF serait une
+ * rupture de parcours, alors que son emploi du temps vit dans un Word.
  *
  * L'import REMPLACE la grille : on affiche donc un apercu du resultat AVANT de
  * valider, jamais d'ecrasement direct.
@@ -28,10 +41,34 @@ export default function ImporterEdtButton() {
   async function analyser(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
     if (!files?.length) return
+    const fichiers = Array.from(files)
     setErreur(null); setCorrectionMatin(null); setChargement(true); setCreneaux(null)
     try {
       const form = new FormData()
-      for (const f of Array.from(files)) form.append('pdf', f)
+      // Un seul chemin a la fois : des que Word ou Excel est de la partie, tout
+      // est lu dans le navigateur et envoye en texte. Melanger un bloc document
+      // et un bloc texte brouillerait la consigne donnee au modele.
+      const bureautiques = fichiers.filter(f => formatBureautique(f.name))
+      if (bureautiques.length) {
+        const textes: string[] = []
+        for (const f of fichiers) {
+          if (!formatBureautique(f.name)) {
+            throw new Error(
+              `« ${f.name} » ne peut pas être lu en même temps qu'un Word ou un Excel. Importe tes PDF séparément.`,
+            )
+          }
+          textes.push(await extraireTexteBureautique(f))
+        }
+        form.append('texte', textes.join(SEPARATEUR_FICHIERS))
+      } else {
+        const ancien = fichiers.find(f => estFormatAncien(f.name))
+        if (ancien) {
+          throw new Error(
+            `« ${ancien.name} » est dans un format ancien. Ouvre-le, puis « Enregistrer sous » en choisissant .docx, .xlsx ou PDF.`,
+          )
+        }
+        for (const f of fichiers) form.append('pdf', f)
+      }
       const res = await fetch('/api/ia-edt', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) setErreur(data.error ?? `Erreur ${res.status}`)
@@ -44,7 +81,9 @@ export default function ImporterEdtButton() {
         )
       }
     } catch (err) {
-      setErreur(`Erreur réseau : ${err instanceof Error ? err.message : String(err)}`)
+      // Le message d'une lecture ratee dit deja quoi faire : ne pas le noyer
+      // sous un prefixe « Erreur réseau » qui serait faux.
+      setErreur(err instanceof Error ? err.message : String(err))
     } finally {
       setChargement(false)
       e.target.value = '' // permet de redeposer le meme fichier apres une erreur
@@ -81,10 +120,19 @@ export default function ImporterEdtButton() {
     <div className="space-y-2">
       <label className="shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold border border-violet-300 text-violet-700 bg-white rounded-xl px-3 py-1.5 hover:bg-violet-50 hover:border-violet-400 transition-colors cursor-pointer focus-within:outline-none focus-within:ring-4 focus-within:ring-violet-300/60">
         {chargement
-          ? <><Loader2 size={16} className="animate-spin" aria-hidden="true" /> Lecture du PDF…</>
-          : <><FileUp size={16} aria-hidden="true" /> Importer depuis un PDF</>}
-        <input type="file" accept=".pdf" multiple onChange={analyser} disabled={chargement} className="sr-only" />
+          ? <><Loader2 size={16} className="animate-spin" aria-hidden="true" /> Lecture du document…</>
+          : <><FileUp size={16} aria-hidden="true" /> Importer depuis un document</>}
+        <input
+          type="file"
+          aria-label="Emploi du temps (PDF, Word ou Excel)"
+          accept=".pdf,.docx,.xlsx,.xlsm"
+          multiple
+          onChange={analyser}
+          disabled={chargement}
+          className="sr-only"
+        />
       </label>
+      <p className="text-xs text-slate-500">PDF, Word (.docx) ou Excel (.xlsx).</p>
 
       {erreur && <p role="alert" className="text-xs text-red-600">{erreur}</p>}
 

@@ -19,6 +19,11 @@ import {
 import type { ProgressionSemaine } from '@/data/manuels'
 import { extractPdfText } from '@/lib/ia/pdf-client'
 import {
+  estFormatAncien,
+  extraireTexteBureautique,
+  formatBureautique,
+} from '@/lib/ia/bureautique-client'
+import {
   calculerEmpreinteSource,
   type NumeroPeriode,
   type SourceProgression,
@@ -64,8 +69,8 @@ type ReponseImport = {
 }
 
 const LIMITE_PDF_BRUT = 4 * 1024 * 1024
-const LIMITE_PDF_TOTAL = 25 * 1024 * 1024
-const NOMBRE_PDF_MAX = 10
+const LIMITE_TOTALE = 25 * 1024 * 1024
+const NOMBRE_FICHIERS_MAX = 10
 const SEPARATEUR_FICHIERS = '\n\n--- fichier suivant ---\n\n'
 
 const CHAMP =
@@ -365,21 +370,33 @@ export default function SourceImporter({
     void lancerAnalyse(form, 'Texte collé')
   }
 
-  async function importerPdf(event: React.ChangeEvent<HTMLInputElement>) {
+  async function importerFichiers(event: React.ChangeEvent<HTMLInputElement>) {
     const fichiers = Array.from(event.target.files ?? [])
     if (!fichiers.length) return
     const tailleTotale = fichiers.reduce((total, fichier) => total + fichier.size, 0)
-    if (fichiers.length > NOMBRE_PDF_MAX) {
-      setError(`Tu peux importer au maximum ${NOMBRE_PDF_MAX} fichiers PDF à la fois.`)
+    if (fichiers.length > NOMBRE_FICHIERS_MAX) {
+      setError(`Tu peux importer au maximum ${NOMBRE_FICHIERS_MAX} fichiers à la fois.`)
       return
     }
-    if (tailleTotale > LIMITE_PDF_TOTAL) {
-      setError('Le total des PDF ne doit pas dépasser 25 Mio au total.')
+    if (tailleTotale > LIMITE_TOTALE) {
+      setError('Le total des fichiers ne doit pas dépasser 25 Mio au total.')
+      return
+    }
+    const ancien = fichiers.find(fichier => estFormatAncien(fichier.name))
+    if (ancien) {
+      setError(
+        `« ${ancien.name} » est dans un format ancien. Ouvre-le, puis « Enregistrer sous » en choisissant .docx, .xlsx ou PDF.`,
+      )
       return
     }
     const nomSource = fichiers.map(fichier => fichier.name).join(', ')
 
-    if (tailleTotale <= LIMITE_PDF_BRUT) {
+    // Un PDF est plus fidele envoye TEL QUEL : le modele voit alors la mise en
+    // page, et les programmations sont presque toujours des tableaux. On ne se
+    // rabat sur le texte que si le corps de requete depasse la limite Vercel,
+    // ou si un Word / Excel est de la partie (formats que l'API refuse).
+    const bureautiques = fichiers.filter(fichier => formatBureautique(fichier.name))
+    if (!bureautiques.length && tailleTotale <= LIMITE_PDF_BRUT) {
       const form = new FormData()
       for (const fichier of fichiers) form.append('pdf', fichier)
       await lancerAnalyse(form, nomSource)
@@ -391,12 +408,16 @@ export default function SourceImporter({
     try {
       for (const fichier of fichiers) {
         if (!operationActive(operation)) return
-        textes.push(await extractPdfText(fichier))
+        textes.push(
+          formatBureautique(fichier.name)
+            ? await extraireTexteBureautique(fichier)
+            : await extractPdfText(fichier),
+        )
       }
     } catch (erreur) {
       if (operationActive(operation)) {
         setError(
-          `Lecture du PDF impossible : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
+          `Lecture du document impossible : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
         )
         terminerOperation(operation)
       }
@@ -407,7 +428,7 @@ export default function SourceImporter({
     const texteExtrait = textes.join(SEPARATEUR_FICHIERS).trim()
     if (texteExtrait.length < 20) {
       setError(
-        'Ce PDF ne contient pas assez de texte sélectionnable. Colle le sommaire en texte ou utilise un autre PDF.',
+        'Ce document ne contient pas assez de texte sélectionnable. Colle le sommaire en texte ou utilise un autre fichier.',
       )
       terminerOperation(operation)
       return
@@ -576,19 +597,19 @@ export default function SourceImporter({
 
           <div className="rounded-2xl border-2 border-dashed border-violet-300 bg-violet-50 p-4">
             <label htmlFor="pdf-source" className="block cursor-pointer text-center">
-              <span className="block font-semibold text-violet-900">Dépose un ou plusieurs PDF</span>
+              <span className="block font-semibold text-violet-900">Dépose un ou plusieurs documents</span>
                   <span className="mt-1 block text-xs leading-5 text-violet-700">
-                10 PDF maximum, 25 Mio au total. Jusqu&apos;à 4 Mo, ils sont envoyés tels quels.
+                PDF, Word (.docx) ou Excel (.xlsx). 10 fichiers maximum, 25 Mio au total.
               </span>
             </label>
             <input
               id="pdf-source"
-              aria-label="Documents PDF"
+              aria-label="Documents à importer"
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,application/pdf,.docx,.xlsx,.xlsm"
               multiple
               disabled={loading}
-              onChange={event => void importerPdf(event)}
+              onChange={event => void importerFichiers(event)}
               className="mt-3 block w-full text-sm text-violet-900 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-violet-700 hover:file:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300/70"
             />
           </div>

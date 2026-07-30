@@ -5,7 +5,7 @@ import {
   EDT_JSON_SCHEMA,
   normaliserEtCorrigerEdtImporte,
 } from '@/lib/ia/schema-edt'
-import { SYSTEM_IMPORT_EDT, userImportEdt } from '@/lib/ia/prompts'
+import { systemImportEdt, userImportEdt } from '@/lib/ia/prompts'
 import { messageErreurIA } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
@@ -13,9 +13,14 @@ import { garderAppelIA } from '@/lib/ia/garde'
 export const maxDuration = 60
 
 /**
- * Importe un emploi du temps depuis un PDF. Le fichier est envoye TEL QUEL au
- * modele (bloc `document`) : il doit voir la grille pour en lire les lignes et
- * les colonnes, un texte aplati ne suffit pas.
+ * Importe un emploi du temps, par deux chemins.
+ *
+ * - `pdf` : le fichier part TEL QUEL au modele (bloc `document`), il doit voir
+ *   la grille pour en lire les lignes et les colonnes.
+ * - `texte` : la grille vient d'un Word ou d'un Excel, lu dans le navigateur.
+ *   L'API n'accepte pas ces formats binaires, mais leurs tableaux sont deja
+ *   balises a la source : le texte extrait garde ses lignes et ses colonnes,
+ *   il n'y a aucune geometrie a reconstruire comme pour un PDF.
  */
 export async function POST(request: Request) {
   const refus = await garderAppelIA()
@@ -23,8 +28,13 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData()
     const fichiers = form.getAll('pdf').filter((f): f is File => f instanceof File)
-    if (!fichiers.length) {
-      return NextResponse.json({ error: 'Aucun PDF reçu.' }, { status: 400 })
+    const texte = typeof form.get('texte') === 'string' ? (form.get('texte') as string).trim() : ''
+
+    if (!fichiers.length && texte.length < 20) {
+      return NextResponse.json(
+        { error: 'Aucun emploi du temps reçu.' },
+        { status: 400 },
+      )
     }
 
     // Limite du corps de requete des fonctions serverless Vercel (~4,5 Mo).
@@ -47,18 +57,20 @@ export async function POST(request: Request) {
         },
       })
     }
+    if (texte) documents.push({ type: 'text', text: texte })
 
+    const source = fichiers.length ? 'pdf' : 'texte'
     const client = getAnthropicClient()
     const message = await client.messages.create({
       model: MODELE_IMPORT,
       max_tokens: 16000,
-      system: SYSTEM_IMPORT_EDT,
+      system: systemImportEdt(source),
       output_config: {
         format: { type: 'json_schema', schema: EDT_JSON_SCHEMA },
       },
       messages: [{
         role: 'user',
-        content: [...documents, { type: 'text', text: userImportEdt() }],
+        content: [...documents, { type: 'text', text: userImportEdt(source) }],
       }],
     })
 
@@ -77,7 +89,7 @@ export async function POST(request: Request) {
 
     if (creneaux.length === 0) {
       return NextResponse.json(
-        { error: "L'IA n'a reconnu aucun créneau dans ce PDF. Vérifiez qu'il contient bien la grille de l'emploi du temps." },
+        { error: "L'IA n'a reconnu aucun créneau dans ce document. Vérifiez qu'il contient bien la grille de l'emploi du temps." },
         { status: 422 }
       )
     }

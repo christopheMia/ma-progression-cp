@@ -89,8 +89,23 @@ Règles impératives :
 Réponds UNIQUEMENT via le format structuré imposé.`
 }
 
-/** Import d'un EMPLOI DU TEMPS depuis un PDF (grille Horaires x Jours). */
-export const SYSTEM_IMPORT_EDT = `Tu lis l'emploi du temps hebdomadaire d'une classe de CP française, fourni en PDF sous forme de tableau (colonnes = jours, lignes = plages horaires).
+/**
+ * Import d'un EMPLOI DU TEMPS (grille Horaires x Jours).
+ *
+ * Deux provenances possibles, et la consigne ne peut pas etre la meme :
+ * - `pdf` : le fichier est joint au message, le modele VOIT la grille.
+ * - `texte` : le tableau vient d'un Word ou d'un Excel, deja structure a la
+ *   source mais aplati en lignes de texte. Dire au modele qu'on lui fournit un
+ *   PDF le pousserait a chercher une mise en page qui n'existe plus.
+ */
+export type SourceImportEdt = 'pdf' | 'texte'
+
+export function systemImportEdt(source: SourceImportEdt = 'pdf'): string {
+  const provenance = source === 'pdf'
+    ? `fourni en PDF sous forme de tableau (colonnes = jours, lignes = plages horaires)`
+    : `fourni sous forme de TEXTE extrait d'un document Word ou Excel. Le tableau d'origine a été aplati : chaque ligne du texte correspond à une ligne du tableau, et les cellules d'une même ligne sont séparées par des tabulations ou des barres verticales. La première ligne donne le plus souvent les jours, la première cellule de chaque ligne la plage horaire`
+
+  return `Tu lis l'emploi du temps hebdomadaire d'une classe de CP française, ${provenance}.
 Ta tâche : restituer CHAQUE créneau, pour CHAQUE jour, exactement tel qu'il est écrit.
 Règles impératives :
 - Un objet par créneau ET par jour. Si une même activité occupe les 4 jours, produis 4 objets.
@@ -103,9 +118,11 @@ Règles impératives :
 - Si une case fusionnée couvre plusieurs jours, répète-la pour chaque jour concerné.
 - N'invente aucun créneau absent du document et n'en omets aucun.
 Réponds UNIQUEMENT via le format structuré imposé.`
+}
 
-export function userImportEdt(): string {
-  return `Analyse l'emploi du temps joint et restitue tous ses créneaux, jour par jour, dans l'ordre chronologique.`
+export function userImportEdt(source: SourceImportEdt = 'pdf'): string {
+  const quoi = source === 'pdf' ? "l'emploi du temps joint" : "l'emploi du temps ci-dessous"
+  return `Analyse ${quoi} et restitue tous ses créneaux, jour par jour, dans l'ordre chronologique.`
 }
 
 /** Variante quand le PDF lui-meme est joint au message : le modele voit la mise
