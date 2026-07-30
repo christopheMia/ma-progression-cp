@@ -1,4 +1,10 @@
-import { coutUsd, TARIFS_USD_PAR_MTOK, usageDepuisReponse, type UsageIA } from '../cout'
+import {
+  coutUsd,
+  sommeCoutDepuis,
+  TARIFS_USD_PAR_MTOK,
+  usageDepuisReponse,
+  type UsageIA,
+} from '../cout'
 
 const RIEN: UsageIA = { input: 0, cacheCreation: 0, cacheRead: 0, output: 0 }
 
@@ -33,6 +39,45 @@ describe('coutUsd', () => {
   test('le tarif Opus est plus cher que le tarif Sonnet', () => {
     const usage: UsageIA = { ...RIEN, input: 1_000_000, output: 1_000_000 }
     expect(coutUsd('claude-opus-4-8', usage)).toBeGreaterThan(coutUsd('claude-sonnet-4-6', usage))
+  })
+})
+
+describe('sommeCoutDepuis', () => {
+  // Ce filtre etait un `gte` SQL, ce qui obligeait a attendre la lecture du
+  // releve AVANT de demander les lignes : deux allers-retours en serie a
+  // chaque affichage. Filtrer ici permet de lancer les deux requetes ensemble.
+  const lignes = [
+    { cout_usd: 0.10, created_at: '2026-07-28T10:00:00.000Z' },
+    { cout_usd: 0.20, created_at: '2026-07-30T08:00:00.000Z' },
+    { cout_usd: 0.30, created_at: '2026-07-30T12:00:00.000Z' },
+  ]
+
+  test('sans releve, tout compte', () => {
+    expect(sommeCoutDepuis(lignes, null)).toBeCloseTo(0.6, 6)
+  })
+
+  test('avec un releve, seules les lignes a partir du releve comptent', () => {
+    expect(sommeCoutDepuis(lignes, '2026-07-30T00:00:00.000Z')).toBeCloseTo(0.5, 6)
+  })
+
+  test('une ligne datee exactement du releve compte (meme regle que le gte SQL)', () => {
+    expect(sommeCoutDepuis(lignes, '2026-07-30T08:00:00.000Z')).toBeCloseTo(0.5, 6)
+  })
+
+  test('tolere un cout absent ou une date absente sans faire echouer la page', () => {
+    const abimees = [
+      { cout_usd: null, created_at: '2026-07-30T08:00:00.000Z' },
+      { cout_usd: 0.25, created_at: null },
+      { cout_usd: 0.25, created_at: '2026-07-30T09:00:00.000Z' },
+    ]
+    // Sans releve, la ligne sans date compte quand meme : on n a aucune raison
+    // de l ecarter. Avec un releve, impossible de la situer : elle est ecartee.
+    expect(sommeCoutDepuis(abimees, null)).toBeCloseTo(0.5, 6)
+    expect(sommeCoutDepuis(abimees, '2026-07-30T00:00:00.000Z')).toBeCloseTo(0.25, 6)
+  })
+
+  test('aucune ligne, zero dollar', () => {
+    expect(sommeCoutDepuis([], '2026-07-30T00:00:00.000Z')).toBe(0)
   })
 })
 

@@ -66,6 +66,31 @@ export function coutUsd(modele: string, usage: UsageIA): number {
   )
 }
 
+export type LigneCout = { cout_usd: unknown; created_at: string | null }
+
+/**
+ * Somme des couts a partir du releve (ou de tout, sans releve).
+ *
+ * Ce filtre etait un `gte` SQL, ce qui obligeait a lire le releve AVANT de
+ * demander les lignes : deux allers-retours en serie a chaque affichage de la
+ * jauge, au plancher de ~150 ms l appel Supabase (mesure le 29/07). Filtrer
+ * ici, en memoire, permet de lancer les deux requetes dans la meme vague.
+ * Meme regle que le `gte` : une ligne datee exactement du releve compte.
+ */
+export function sommeCoutDepuis(lignes: LigneCout[], releveAt: string | null): number {
+  const seuil = releveAt ? Date.parse(releveAt) : null
+  return lignes.reduce((somme, ligne) => {
+    if (seuil !== null) {
+      const date = ligne.created_at ? Date.parse(ligne.created_at) : NaN
+      // Une ligne sans date ne peut pas etre situee par rapport au releve :
+      // ecartee (NaN echoue toute comparaison, c est le comportement voulu).
+      if (!(date >= seuil)) return somme
+    }
+    const cout = Number(ligne.cout_usd ?? 0)
+    return somme + (Number.isFinite(cout) ? cout : 0)
+  }, 0)
+}
+
 function entier(valeur: unknown): number {
   return typeof valeur === 'number' && Number.isFinite(valeur) ? valeur : 0
 }

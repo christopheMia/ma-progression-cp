@@ -1,6 +1,7 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
-import { coutUsd, usageDepuisReponse } from '@/lib/ia/cout'
+import { utilisateurCourant } from '@/lib/supabase/session'
+import { coutUsd, sommeCoutDepuis, usageDepuisReponse } from '@/lib/ia/cout'
 
 function moisCourant(): string {
   const d = new Date()
@@ -22,7 +23,9 @@ export async function enregistrerUsageIA(params: {
 }) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // `utilisateurCourant` et non `auth.getUser` : le garde de la route vient
+    // de payer ce meme appel reseau, le cache de requete nous le rend gratuit.
+    const user = await utilisateurCourant()
     if (!user) return
 
     const usage = usageDepuisReponse(params.usage)
@@ -71,22 +74,31 @@ export type SoldeIA = {
  * D ou l ancrage : l utilisateur releve son solde sur la console Anthropic,
  * l application y ajoute sa propre estimation depuis cette date. Chaque nouveau
  * releve efface la derive accumulee.
+ *
+ * COUT DE NAVIGATION : cette fonction s affiche sur l accueil et dans les
+ * parametres, elle est donc payee a chaque visite. Sa premiere version faisait
+ * TROIS allers-retours en serie (getUser, releve, lignes), soit ~450 ms au
+ * plancher de 150 ms l appel : Christophe l a senti le jour meme du deploiement
+ * (« l application n est pas reactive »). Regles pour ne pas y revenir :
+ * - pas de `getUser` : RLS (`user_id = auth.uid()`) borne deja les deux tables
+ *   a la personne connectee, exactement comme `classes` (voir session.ts) ;
+ *   sans session, les requetes rendent zero ligne et le solde reste vide.
+ *   (La regle « ne pas s appuyer sur RLS » vaut pour les filtres class_id des
+ *   remplacants multi-classes ; ici la borne est l identite elle-meme.)
+ * - les deux lectures partent dans la MEME vague, le filtre de date se fait en
+ *   memoire (`sommeCoutDepuis`). On lit `cout_usd` et `created_at`, rien
+ *   d autre : quelques milliers de lignes par an au pire, negligeable.
  */
 export async function soldeIA(): Promise<SoldeIA> {
   const vide: SoldeIA = { consommeUsd: 0, restantUsd: null, releveAt: null, soldeReleveUsd: null }
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return vide
+    const [{ data: repere }, { data: lignes }] = await Promise.all([
+      supabase.from('ia_solde').select('solde_usd, releve_at').maybeSingle(),
+      supabase.from('ia_usage').select('cout_usd, created_at'),
+    ])
 
-    const { data: repere } = await supabase.from('ia_solde')
-      .select('solde_usd, releve_at').eq('user_id', user.id).maybeSingle()
-
-    let requete = supabase.from('ia_usage').select('cout_usd').eq('user_id', user.id)
-    if (repere?.releve_at) requete = requete.gte('created_at', repere.releve_at)
-    const { data: lignes } = await requete
-
-    const consommeUsd = (lignes ?? []).reduce((s, l) => s + Number(l.cout_usd ?? 0), 0)
+    const consommeUsd = sommeCoutDepuis(lignes ?? [], repere?.releve_at ?? null)
     const soldeReleveUsd = repere ? Number(repere.solde_usd) : null
 
     return {

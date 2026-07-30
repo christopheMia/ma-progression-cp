@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { soldeIA } from '@/lib/actions/ia-usage'
+import type { SoldeIA } from '@/lib/actions/ia-usage'
 
 /**
  * Ce qu il reste de credit IA.
@@ -12,9 +12,13 @@ import { soldeIA } from '@/lib/actions/ia-usage'
  * elle ne peut pas le deviner (l API de couts est reservee aux comptes
  * organisation). Elle montre alors ce qu elle a compte, et invite a saisir le
  * point de depart. Mieux vaut un chiffre absent qu un chiffre faux.
+ *
+ * Le solde arrive en PROP : quand la jauge le demandait elle-meme, l appel
+ * s executait APRES la vague de requetes de la page hote, en serie. La page
+ * le demande dans SA vague et le passe ici (voir soldeIA dans ia-usage.ts).
  */
-export default async function BudgetIaIndicator() {
-  const { consommeUsd, restantUsd, releveAt, soldeReleveUsd } = await soldeIA()
+export default function BudgetIaIndicator({ solde }: { solde: SoldeIA }) {
+  const { consommeUsd, restantUsd, releveAt, soldeReleveUsd } = solde
 
   const dateReleve = releveAt
     ? new Date(releveAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })

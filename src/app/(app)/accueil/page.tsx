@@ -9,6 +9,7 @@ import ProgressionCorrector from '@/components/ProgressionCorrector'
 import BudgetIaIndicator from '@/components/BudgetIaIndicator'
 import CahierJournalCard from '@/components/accueil/CahierJournalCard'
 import OutilsIaSection from '@/components/accueil/OutilsIaSection'
+import { soldeIA } from '@/lib/actions/ia-usage'
 import { semaineEnCours, getStatus, libelleContenuSemaine } from '@/lib/semaines'
 import {
   BookOpenText, Pencil, Hand, Sparkles, ArrowRight,
@@ -83,6 +84,7 @@ export default async function AccueilPage() {
     { count: nbElevesCount },
     { data: methodes },
     { count: acquisBrut },
+    solde,
   ] = await mesurer('accueil', () => Promise.all([
     supabase.from('semaines').select('*').eq('class_id', classe.id).order('numero'),
     supabase.from('eleves').select('id', { count: 'exact', head: true }).eq('class_id', classe.id),
@@ -93,6 +95,10 @@ export default async function AccueilPage() {
     supabase.from('acquisitions')
       .select('id, semaines!inner(class_id)', { count: 'exact', head: true })
       .eq('acquis', true).eq('semaines.class_id', classe.id),
+    // La jauge de credit voyage dans la vague, comme sur /parametres : quand
+    // elle se servait toute seule, elle ajoutait ses allers-retours EN SERIE
+    // apres ceux-ci, et chaque retour a l'accueil trainait (retour du 30/07).
+    soldeIA(),
   ]))
 
   // Noms des manuels importes, affiches sur la carte "Mes méthodes" : sans eux
@@ -265,7 +271,7 @@ export default async function AccueilPage() {
           { href: '/competences', icon: 'Target', titre: 'Compétences & livret', sous: 'Le programme officiel CP visé par ta progression' },
           { href: '/programme', icon: 'Puzzle', titre: 'Programme couvert', sous: 'L’IA relie tes notions aux compétences officielles, par période' },
         ]}>
-        <BudgetIaIndicator />
+        <BudgetIaIndicator solde={solde} />
       </OutilsIaSection>
     </div>
   )
