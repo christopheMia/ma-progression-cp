@@ -25,7 +25,15 @@ export async function proxy(request: NextRequest) {
   // rien, contrairement à `getUser`.
   const aUnJeton = request.cookies.getAll()
     .some(c => c.name.startsWith('sb-') && c.name.includes('auth-token'))
-  if (request.headers.get('next-router-prefetch') === '1' && aUnJeton) {
+  // Ne pas se fier a un seul nom d'en-tete : les journaux du 30/07 montraient
+  // des rafales de cinq `getUser` (une par entree du menu) a chaque page vue,
+  // preuve que les prechargements passaient a cote du court-circuit. Next fait
+  // varier l'en-tete selon la version et le type de prechargement.
+  const estPrechargement = request.headers.get('next-router-prefetch') === '1'
+    || request.headers.has('next-router-segment-prefetch')
+    || request.headers.get('purpose') === 'prefetch'
+    || request.headers.get('x-purpose') === 'prefetch'
+  if (estPrechargement && aUnJeton) {
     return NextResponse.next({ request })
   }
 
