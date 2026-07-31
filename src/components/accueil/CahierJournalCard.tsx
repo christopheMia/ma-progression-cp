@@ -33,7 +33,9 @@ export default function CahierJournalCard({ courante, suivantes }: {
 
   return (
     <div className="carte-i flex flex-col bg-white border border-slate-200 rounded-2xl p-5">
-      <Link href={`/semaine/${courante.id}`} className="group block">
+      {/* L'ancre manquait : la carte ouvrait la fiche de semaine EN HAUT, alors
+          que le cahier journal est tout en bas. Signalé par Christophe le 31/07. */}
+      <Link href={`/semaine/${courante.id}#cahier-journal`} className="group block">
         <NotebookPen size={26} className="text-violet-600 transition-transform duration-200 group-hover:-translate-y-0.5" aria-hidden="true" />
         <div className="font-semibold text-slate-900 mt-1 flex items-center gap-1">
           Cahier journal en cours

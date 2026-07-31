@@ -151,19 +151,16 @@ h1, h2, h3, h4 {
     margin-bottom: 1rem;
   }
 
-  /* Impression d'un seul bloc : on masque tout, puis on ré-affiche la cible */
-  body.print-isolated * {
-    visibility: hidden !important;
-  }
-  body.print-isolated .print-target,
-  body.print-isolated .print-target * {
-    visibility: visible !important;
-  }
-  body.print-isolated .print-target {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  /* Impression d'un seul bloc.
+     Le masquage du reste se fait en JS (`imprimerElement`), avec `display: none`
+     sur les frères du chemin : `visibility: hidden` laissait leur hauteur en
+     blanc et débordait sur une seconde feuille. La cible s'imprime donc au fil
+     du papier, sans position absolue. */
+  .print-target {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   @page {

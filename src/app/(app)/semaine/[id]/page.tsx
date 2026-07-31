@@ -124,10 +124,16 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
         }))} />
       </CollapsibleSection>
 
-      <CahierJournalEditor
-        semaineId={semaine.id}
-        numeroSemaine={semaine.numero}
-      />
+      {/* Cible de l'ancre `#cahier-journal` (carte de l'accueil). Elle est posée
+          ICI, sur un conteneur toujours rendu, et non dans le composant client :
+          celui-ci commence par un état de chargement, et une ancre qui n'existe
+          pas au moment où le routeur la cherche est une ancre morte. */}
+      <div id="cahier-journal" className="scroll-mt-24">
+        <CahierJournalEditor
+          semaineId={semaine.id}
+          numeroSemaine={semaine.numero}
+        />
+      </div>
     </div>
   )
 }

@@ -49,7 +49,17 @@ export default function CahierJournalEditor({
   const [exporting, setExporting] = useState(false)
   const [exported, setExported] = useState(false)
   const [chargement, setChargement] = useState(true)
+  /** Jour affiché seul, ou `null` pour la semaine entière. */
+  const [jourChoisi, setJourChoisi] = useState<string | null>(null)
   const journalRef = useRef<HTMLDivElement>(null)
+  /**
+   * Un conteneur par journée, pour pouvoir en imprimer une seule.
+   *
+   * Demande de Christophe du 31/07 : « on doit pouvoir choisir semaine jour et
+   * pouvoir imprimer le jour proprement ». Une enseignante emporte la feuille du
+   * jour en classe, pas les quatre journées de la semaine.
+   */
+  const joursRef = useRef<Record<string, HTMLDivElement | null>>({})
 
   /**
    * Relit le cahier journal déjà enregistré à chaque affichage.
@@ -285,10 +295,63 @@ export default function CahierJournalEditor({
         </div>
       )}
 
-      {journal.map((jour, jourIndex) => (
-        <div key={jour.jour} className="border rounded-xl overflow-hidden print-section">
-          <div className="bg-violet-50 px-4 py-2 font-semibold text-violet-800 capitalize">
+      {/* Choix du jour. « Toute la semaine » reste le défaut : on ne cache rien
+          tant que l'enseignante n'a pas demandé à se concentrer sur un jour. */}
+      <div className="no-print -mt-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-gray-600">Afficher :</span>
+        <Bouton
+          type="button"
+          variant={jourChoisi === null ? 'principal' : 'contour'}
+          size="sm"
+          onClick={() => setJourChoisi(null)}
+          className="text-xs"
+        >
+          Toute la semaine
+        </Bouton>
+        {journal.map(jour => (
+          <Bouton
+            key={jour.jour}
+            type="button"
+            variant={jourChoisi === jour.jour ? 'principal' : 'contour'}
+            size="sm"
+            onClick={() => setJourChoisi(jour.jour)}
+            className="text-xs capitalize"
+          >
             {jour.jour}
+          </Bouton>
+        ))}
+      </div>
+
+      {journal
+        .filter(jour => jourChoisi === null || jour.jour === jourChoisi)
+        .map(jour => {
+        const jourIndex = journal.findIndex(j => j.jour === jour.jour)
+        return (
+        <div
+          key={jour.jour}
+          ref={element => { joursRef.current[jour.jour] = element }}
+          className="border rounded-xl overflow-hidden print-section"
+        >
+          <div className="flex items-center justify-between gap-3 bg-violet-50 px-4 py-2">
+            <div className="font-semibold text-violet-800">
+              <span className="capitalize">{jour.jour}</span>
+              {/* Une feuille imprimée doit se suffire à elle-même : sortie du
+                  classeur, personne ne sait de quelle semaine elle vient. */}
+              <span className="print-only text-sm font-normal">
+                {' '}— cahier journal, semaine {numeroSemaine}
+              </span>
+            </div>
+            <Bouton
+              type="button"
+              variant="neutre"
+              size="sm"
+              icon={Printer}
+              onClick={() => imprimerElement(joursRef.current[jour.jour])}
+              title={`Imprime uniquement le ${jour.jour}, sur une feuille.`}
+              className="no-print text-xs"
+            >
+              Imprimer ce jour
+            </Bouton>
           </div>
           {jour.seances.length === 0 ? (
             <p className="p-4 text-sm text-gray-500">Aucune entrée pour cette journée.</p>
@@ -462,7 +525,8 @@ export default function CahierJournalEditor({
             </div>
           )}
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
