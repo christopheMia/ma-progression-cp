@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import PrenomEnseignantEditor from '@/components/parametres/PrenomEnseignantEditor'
@@ -38,7 +37,7 @@ export default async function ParametresPage() {
   // temps, methodes, progression, documents et solde IA.
   const supabase = await createClient()
 
-  const { data, error } = await mesurer('parametres', async () => supabase.rpc('page_parametres'))
+  const { data, error } = await supabase.rpc('page_parametres')
   if (error) {
     throw new Error(`Chargement des paramètres impossible : ${error.message}`)
   }

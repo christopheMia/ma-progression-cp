@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -30,7 +29,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
   //   retrouver un fait ecrit deux mois plus tot ; le composant fait le tri.
   // - bilans_periode : les appreciations `__general` de la periode de la
   //   semaine, c'est l'appreciation generale du livret.
-  const { data } = await mesurer('semaine', async () => supabase.rpc('page_semaine', { p_id: id }))
+  const { data } = await supabase.rpc('page_semaine', { p_id: id })
   const page = (data ?? {}) as PageSemaineData
   const semaine = page.semaine
   // Erreur comprise : un identifiant trafique ou inconnu revient au planning,

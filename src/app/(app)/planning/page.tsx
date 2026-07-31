@@ -9,7 +9,6 @@ import Bouton from '@/components/ui/Bouton'
 import { codeMatiereCanonique } from '@/lib/matieres'
 import { construirePlanningAnnuel } from '@/lib/planning-annuel'
 import { semaineEnCours } from '@/lib/semaines'
-import { mesurer } from '@/lib/perf'
 import type { PagePlanningData } from '@/lib/rpc-pages'
 
 export default async function PlanningPage() {
@@ -23,7 +22,7 @@ export default async function PlanningPage() {
   // l'ouverture des connexions (145 ms pour la premiere, ~330 ms pour les
   // cinq autres, journaux du 30/07). Les champs lus par ce code sont ceux
   // que la fonction reconstruit, memes noms de colonnes.
-  const { data, error } = await mesurer('planning', async () => supabase.rpc('page_planning'))
+  const { data, error } = await supabase.rpc('page_planning')
   if (error) {
     throw new Error(`Chargement du planning impossible : ${error.message}`)
   }

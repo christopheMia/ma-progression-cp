@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { classeCourante } from '@/lib/supabase/session'
-import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Livret, { type CompetenceBilan } from '@/components/livret/Livret'
@@ -34,7 +33,7 @@ export default async function LivretPage() {
     { data: appreciationsPeriode },
     { data: formulations },
     { data: motsHebdo },
-  ] = await mesurer('livret', () => Promise.all([
+  ] = await Promise.all([
     supabase.from('eleves').select('id, prenom, genre').eq('class_id', classe.id).order('ordre'),
     supabase.from('semaines').select('id, numero, periode_numero').eq('class_id', classe.id).order('numero'),
     supabase.from('competences_officielles').select('id, matiere, domaine, libelle')
@@ -56,7 +55,7 @@ export default async function LivretPage() {
     supabase.from('appreciations')
       .select('semaine_id, eleve_id, matiere, commentaire, semaines!inner(class_id)')
       .eq('semaines.class_id', classe.id),
-  ]))
+  ])
 
   const semaineParId = new Map((semaines ?? []).map(s => [s.id as string, s]))
   const periodes = [...new Set(

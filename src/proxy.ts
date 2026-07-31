@@ -54,12 +54,9 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Chronometre : `getUser` est un appel RESEAU au serveur d'authentification,
-  // paye avant meme que la page ne commence a se rendre. C'est le cout fixe de
-  // chaque navigation, et il faut savoir combien il vaut.
-  const departAuth = Date.now()
+  // `getUser` est un appel RESEAU au serveur d'authentification, paye avant meme
+  // que la page ne commence a se rendre : c'est le cout fixe de chaque navigation.
   const { data: { user } } = await supabase.auth.getUser()
-  console.log(`[perf] portier ${Date.now() - departAuth}ms ${request.nextUrl.pathname}`)
 
   const { pathname } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/connexion') || pathname.startsWith('/inscription')

@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { mesurer } from '@/lib/perf'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -26,7 +25,7 @@ export default async function AccueilPage() {
   // 025) : classe, semaines, comptes et solde IA arrivent ensemble. Avant, la
   // classe partait d'abord, puis une vague de quatre requetes, puis le solde :
   // 320 a 420 ms de requetes par affichage (journaux Vercel du 30/07).
-  const { data, error } = await mesurer('accueil', async () => supabase.rpc('page_accueil'))
+  const { data, error } = await supabase.rpc('page_accueil')
   if (error) {
     throw new Error(`Chargement de l'accueil impossible : ${error.message}`)
   }

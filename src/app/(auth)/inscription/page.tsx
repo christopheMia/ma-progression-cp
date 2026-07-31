@@ -51,8 +51,14 @@ export default function InscriptionPage() {
           className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-violet-500 outline-none" />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe (6 caractères min.)</label>
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6}
+        {/*
+          8 caractères, pas 6 (audit de sécurité du 30/07). Ce `minLength` n'est
+          qu'un confort : la vraie barrière est le réglage Auth de Supabase, qui
+          doit rester à 8 lui aussi. Les désaccorder donnerait un formulaire qui
+          accepte puis un serveur qui refuse, sans message compréhensible.
+        */}
+        <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe (8 caractères min.)</label>
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8}
           className="w-full border rounded-lg p-3 text-gray-900 focus:ring-2 focus:ring-violet-500 outline-none" />
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}

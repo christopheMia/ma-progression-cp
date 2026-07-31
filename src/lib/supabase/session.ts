@@ -35,7 +35,6 @@ export const utilisateurCourant = cache(async () => {
  * politique RLS qui décide, pas une clause `where` qu'on pourrait oublier.
  */
 export const classeCourante = cache(async () => {
-  const depart = Date.now()
   const supabase = await createClient()
   const { data } = await supabase
     .from('classes')
@@ -43,6 +42,5 @@ export const classeCourante = cache(async () => {
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  console.log(`[perf] classe ${Date.now() - depart}ms`)
   return data
 })
