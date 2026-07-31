@@ -1,0 +1,25 @@
+-- Purge le schema `sauvegarde`.
+--
+-- Dernier point du rapport de securite du 30/07/2026 (`partage/MARCHE-A-SUIVRE-SECURITE.md`).
+--
+-- Ce schema portait trois tables de sauvegarde du 21/07 : `eleves_20260721`,
+-- `emploi_du_temps_20260721` et `semaines_20260721`. Elles n avaient pas de RLS.
+-- Elles n etaient pas atteignables depuis l application (seul le schema `public`
+-- est expose par l API), mais une base propre est une base plus sure, et une
+-- table sans politique est exactement le genre d oubli qui devient une faille le
+-- jour ou quelqu un expose le schema « juste pour tester ».
+--
+-- Verifie AVANT de supprimer, et ca valait le coup : l emploi du temps (90
+-- creneaux) et les semaines (36) etaient identiques a la base courante, mais la
+-- sauvegarde portait 24 eleves quand la classe en a 23. L eleve « Leyna »
+-- n existait plus que la. Christophe a confirme le 31/07 que c est lui qui l a
+-- retiree, l eleve ayant quitte la classe : ce n est pas une perte accidentelle.
+-- La liste complete du 21/07 est conservee dans `partage/` (local, hors git).
+--
+-- Regle a retenir : on regarde ce qu on efface avant de l effacer, meme quand la
+-- tache est etiquetee « nettoyage ».
+--
+-- `cascade` est necessaire : les trois tables vivent dans ce schema.
+-- `if exists` rend la migration rejouable.
+
+drop schema if exists sauvegarde cascade;

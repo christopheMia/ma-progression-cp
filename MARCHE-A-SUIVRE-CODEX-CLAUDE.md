@@ -444,14 +444,14 @@ tableau prime sur les listes éparses en cas de désaccord.
 | A3 | Dans Supabase > Authentication > Settings : activer **« Leaked password protection »** ET passer le **minimum du mot de passe à 8** caractères. Le formulaire d'inscription est déjà à 8 depuis le 31/07 ; tant que le réglage serveur est à 6, les deux divergent dans le sens inoffensif, mais la vraie barrière reste celle de Supabase. | rapport sécurité |
 | A4 | Valider dans l'appli les correctifs déjà publiés mais jamais confirmés par lui : contraste de l'EDT (3.3), maths en triple (3.1), résidus « Explorer le monde » (3.2), refonte du suivi des élèves (2.4). | `docs/RETOURS-CHRISTOPHE-2026-07-26.md` |
 
-**B. Code, petites tâches sûres. FAIT le 31/07 (`9e38eb3`), sauf B4**
+**B. Code, petites tâches sûres. TOUTES FAITES le 31/07 (`9e38eb3`, migration 027)**
 
 | # | Quoi | État |
 |---|---|---|
 | B1 | **`search_path` de `synchroniser_acquis_depuis_niveau`.** | **FAIT.** Migration 026, appliquée en prod et vérifiée : les 9 fonctions du schéma `public` déclarent leur `search_path`. `''` choisi plutôt que `public`, la fonction ne nomme aucune table. |
 | B2 | **Instrumentation de perf retirée.** | **FAIT.** `src/lib/perf.ts` supprimé, ses appels retirés des 5 pages, plus les 2 `console.log` du portier et de `classeCourante`. Les chronomètres du 29/07 avaient trouvé leur cause (requêtes en série, réglée par la migration 025) : ils n'apprenaient plus rien et écrivaient dans les journaux Vercel à chaque navigation. |
 | B3 | **Mot de passe 6 vers 8 caractères.** | **FAIT côté application** (`(auth)/inscription/page.tsx`). **Reste le réglage Auth de Supabase**, sinon le formulaire accepte et le serveur refuse. Voir A3. |
-| B4 | **Purger le schéma `sauvegarde`** (3 tables du 21/07, sans RLS). | **PAS FAIT, ne pas faire sans feu vert explicite de Christophe.** Constat du 31/07 : la sauvegarde contient **24 élèves quand la classe actuelle en a 23**. L'élève « Leyna » n'existe QUE dans la sauvegarde. Purger perdrait cette trace. À trancher avec lui avant toute suppression. |
+| B4 | **Schéma `sauvegarde` purgé.** | **FAIT.** Migration 027. La vérification préalable avait trouvé 24 élèves côté sauvegarde contre 23 en classe : Christophe a confirmé le 31/07 avoir retiré « Leyna » lui-même, l'élève ayant quitté la classe. EDT et semaines étaient identiques des deux côtés. Liste du 21/07 conservée dans `partage/` (local, hors git) avant suppression. |
 | B5 | **`remplirEnveloppes` supprimé.** | **FAIT.** Vérification faite avant : tout `src/lib/edt-items.ts` n'était importé QUE par son propre fichier de tests, donc module mort en entier. Supprimé avec ses 15 tests, d'où 650 tests au lieu de 665. |
 
 **C. Code, chantiers à cadrer avant de coder**
@@ -524,12 +524,19 @@ l'historique.)
   lignes ». Réflexe à garder : avant de retirer du code réputé obsolète, chercher
   ses importateurs réels, pas ses mentions.
 
-  **B4 n'est PAS fait, et il ne faut pas le faire à la légère.** La purge du
-  schéma `sauvegarde` était présentée comme du simple ménage. Vérification faite
-  avant d'agir : la sauvegarde porte **24 élèves quand la classe en a 23**, et
-  « Leyna » n'existe que là. Supprimer aurait effacé la seule trace d'un élève.
-  Règle qui se confirme : on regarde ce qu'on efface avant de l'effacer, même
-  quand la tâche est étiquetée « nettoyage ».
+  **B4, la purge du schéma `sauvegarde` : faite, mais seulement après avoir
+  demandé.** La tâche était présentée comme du simple ménage. Vérification faite
+  avant d'agir : la sauvegarde portait **24 élèves quand la classe en a 23**, et
+  « Leyna » n'existait que là. Question posée à Christophe plutôt que suppression
+  silencieuse ; réponse : c'est lui qui l'a retirée, l'élève a quitté la classe.
+  Purge alors exécutée (migration 027), la liste du 21/07 conservée dans
+  `partage/` par précaution. Règle qui se confirme : on regarde ce qu'on efface
+  avant de l'effacer, même quand la tâche est étiquetée « nettoyage ». Le coût
+  de la question était d'une minute ; celui de l'erreur, un élève effacé sans
+  trace.
+
+  Détail relevé au passage, pas traité : deux prénoms d'élèves sont saisis en
+  minuscule (« lola », « warda »). Ils s'afficheront tels quels dans le livret.
 
 - **2026-07-31 (matin) - Claude - Passage aux nouveaux modèles, terminé et déployé.**
   Commits `7074061` (couche basse, posée la veille), `c4b7c7c` (les 5 routes),
