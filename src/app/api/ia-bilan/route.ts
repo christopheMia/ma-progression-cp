@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
+import { getAnthropicClient, MODELE_COURT } from '@/lib/ia/anthropic'
 import { SYSTEM_BILAN, userBilan } from '@/lib/ia/prompts'
-import { messageErreurIA } from '@/lib/ia/erreurs'
+import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
@@ -20,13 +20,23 @@ export async function POST(request: Request) {
 
     const client = getAnthropicClient()
     const result = await client.messages.create({
-      model: MODELE_CHAT,
+      // Haiku : rédiger un paragraphe court à partir d'un contexte déjà mâché.
+      model: MODELE_COURT,
       max_tokens: 1000,
       system: SYSTEM_BILAN,
       messages: [{ role: 'user', content: userBilan({ numeroSemaine, matiere, itemsAcquis, itemsNonAcquis, statut }) }],
     })
 
-    await enregistrerUsageIA({ route: 'ia-bilan', modele: MODELE_CHAT, usage: result.usage })
+    await enregistrerUsageIA({ route: 'ia-bilan', modele: MODELE_COURT, usage: result.usage })
+
+    // Usage enregistré d'abord : les tokens produits sont facturés même coupés.
+    const incomplete = messageReponseIncomplete(
+      result.stop_reason,
+      'Réessaie avec moins d’items cochés pour cette semaine.',
+    )
+    if (incomplete) {
+      return NextResponse.json({ error: incomplete.message }, { status: incomplete.status })
+    }
 
     const block = result.content.find(b => b.type === 'text')
     const bilan = block && 'text' in block ? block.text.trim() : ''

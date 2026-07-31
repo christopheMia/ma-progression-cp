@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
-import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
+import { getAnthropicClient, MODELE_IMPORT, REFLEXION_ETEINTE } from '@/lib/ia/anthropic'
 import {
   EDT_JSON_SCHEMA,
   normaliserEtCorrigerEdtImporte,
 } from '@/lib/ia/schema-edt'
 import { systemImportEdt, userImportEdt } from '@/lib/ia/prompts'
-import { messageErreurIA } from '@/lib/ia/erreurs'
+import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
@@ -64,6 +64,10 @@ export async function POST(request: Request) {
     const message = await client.messages.create({
       model: MODELE_IMPORT,
       max_tokens: 16000,
+      // Réflexion éteinte explicitement : depuis Sonnet 5, ne rien passer
+      // l'active. Lire une grille est de la lecture, pas du raisonnement, et la
+      // réflexion viendrait manger le budget partagé de max_tokens.
+      thinking: REFLEXION_ETEINTE,
       system: systemImportEdt(source),
       output_config: {
         format: { type: 'json_schema', schema: EDT_JSON_SCHEMA },
@@ -75,6 +79,15 @@ export async function POST(request: Request) {
     })
 
     await enregistrerUsageIA({ route: 'ia-edt', modele: MODELE_IMPORT, usage: message.usage })
+
+    // Usage enregistré (facturé même tronqué), puis garde-fou avant le parsing.
+    const incomplete = messageReponseIncomplete(
+      message.stop_reason,
+      "Réessaie avec la seule page de l'emploi du temps.",
+    )
+    if (incomplete) {
+      return NextResponse.json({ error: incomplete.message }, { status: incomplete.status })
+    }
 
     const bloc = message.content.find(b => b.type === 'text')
     const parsed = bloc && 'text' in bloc ? JSON.parse(bloc.text) : { creneaux: [] }

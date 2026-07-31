@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
-import { getAnthropicClient, MODELE_IMPORT } from '@/lib/ia/anthropic'
+import { getAnthropicClient, MODELE_IMPORT, REFLEXION_ETEINTE } from '@/lib/ia/anthropic'
 import { normalizeProgression, numerosSemainesFiables } from '@/lib/ia/schema'
 import { systemImportAutomatique, userImport, userImportDocument } from '@/lib/ia/prompts'
 import { normalizeProgrammation } from '@/lib/ia/schema-programmation'
@@ -11,7 +11,7 @@ import {
   periodeDocumentImport,
   typeDocumentImport,
 } from '@/lib/ia/schema-import-auto'
-import { messageErreurIA } from '@/lib/ia/erreurs'
+import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
@@ -102,8 +102,12 @@ export async function POST(request: Request) {
     const message = await client.messages.create({
       model: MODELE_IMPORT,
       max_tokens: 16000,
-      // Pas de "thinking" : l'extraction d'un sommaire n'a pas besoin de réflexion
-      // étendue, et ça dépasserait le temps max des fonctions serverless Vercel.
+      // Réflexion éteinte EXPLICITEMENT : depuis Sonnet 5, ne rien passer
+      // l'active au lieu de l'éteindre. Extraire un sommaire n'en a pas besoin,
+      // ça dépasserait le temps max des fonctions serverless Vercel, et surtout
+      // la réflexion mangerait le budget partagé de max_tokens, jusqu'à rendre
+      // un JSON coupé au milieu.
+      thinking: REFLEXION_ETEINTE,
       system: systemImportAutomatique(matiere || undefined, rentreeDate || undefined),
       output_config: {
         format: {
@@ -115,6 +119,14 @@ export async function POST(request: Request) {
     })
 
     await enregistrerUsageIA({ route: 'ia-manuel', modele: MODELE_IMPORT, usage: message.usage })
+
+    // Après l'enregistrement de l'usage (les tokens produits sont facturés même
+    // tronqués) et avant le parsing : un JSON coupé lèverait une SyntaxError
+    // traduite en « Erreur IA, réessaie », qui enverrait réessayer à l'identique.
+    const incomplete = messageReponseIncomplete(message.stop_reason)
+    if (incomplete) {
+      return NextResponse.json({ error: incomplete.message }, { status: incomplete.status })
+    }
 
     // Récupère le bloc texte (JSON garanti par le schéma)
     const jsonBlock = message.content.find(b => b.type === 'text')

@@ -3,7 +3,7 @@ import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
 import { normalizeProgression } from '@/lib/ia/schema'
 import { systemChat } from '@/lib/ia/prompts'
 import type { ProgressionSemaine } from '@/data/manuels'
-import { messageErreurIA } from '@/lib/ia/erreurs'
+import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
@@ -68,6 +68,15 @@ export async function POST(request: Request) {
     })
 
     await enregistrerUsageIA({ route: 'ia-chat', modele: MODELE_CHAT, usage: result.usage })
+
+    // Usage enregistré d'abord : les tokens produits sont facturés même coupés.
+    const incomplete = messageReponseIncomplete(
+      result.stop_reason,
+      'Demande une modification plus ciblée, sur moins de semaines à la fois.',
+    )
+    if (incomplete) {
+      return NextResponse.json({ error: incomplete.message }, { status: incomplete.status })
+    }
 
     const block = result.content.find(b => b.type === 'text')
     const parsed = block && 'text' in block ? JSON.parse(block.text) : { progression, reponse: '' }

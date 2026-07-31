@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { getAnthropicClient, MODELE_CHAT } from '@/lib/ia/anthropic'
+import { getAnthropicClient, MODELE_COURT } from '@/lib/ia/anthropic'
 import { systemAssistant } from '@/lib/ia/prompts'
-import { messageErreurIA } from '@/lib/ia/erreurs'
+import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
@@ -55,7 +55,8 @@ export async function POST(request: Request) {
 
     const client = getAnthropicClient()
     const result = await client.messages.create({
-      model: MODELE_CHAT,
+      // Haiku : répondre à une question sur l'application, sur un contexte court.
+      model: MODELE_COURT,
       max_tokens: 2000,
       system: [{
         type: 'text',
@@ -72,7 +73,16 @@ export async function POST(request: Request) {
       ],
     })
 
-    await enregistrerUsageIA({ route: 'assistant', modele: MODELE_CHAT, usage: result.usage })
+    await enregistrerUsageIA({ route: 'assistant', modele: MODELE_COURT, usage: result.usage })
+
+    // Usage enregistré d'abord : les tokens produits sont facturés même coupés.
+    const incomplete = messageReponseIncomplete(
+      result.stop_reason,
+      'Pose une question plus courte.',
+    )
+    if (incomplete) {
+      return NextResponse.json({ error: incomplete.message }, { status: incomplete.status })
+    }
 
     const bloc = result.content.find(b => b.type === 'text')
     const reponse = bloc && 'text' in bloc ? bloc.text.trim() : ''
