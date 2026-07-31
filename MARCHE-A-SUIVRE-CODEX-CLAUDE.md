@@ -440,7 +440,7 @@ tableau prime sur les listes éparses en cas de désaccord.
 | # | Quoi | Où |
 |---|---|---|
 | A1 | Faire un **import de PDF réel** et confirmer que la lecture des tableaux est au moins aussi bonne qu'avant. Seul juge du gain de Sonnet 5. | `REPRISE-2026-07-31.md` |
-| A2 | Saisir le **solde réel** relevé sur console.anthropic.com dans Paramètres > Crédit IA (1,66 $ au 30/07). Sans ce relevé la jauge n'affiche aucun solde. | `REPRISE-2026-07-30.md` |
+| ~~A2~~ | ~~Saisir le solde réel dans Paramètres > Crédit IA.~~ | **FAIT** : 1,66 $ relevé le 30/07 à 17h40 UTC, vérifié dans `ia_solde` le 31/07. Aucune consommation enregistrée depuis (dernier appel le 26/07). **La jauge n'a donc jamais encore mesuré un appel avec le système de la migration 024** : le prochain import est son premier vrai test. Si le montant reste à 0,00 $ après un import, l'enregistrement ne se fait pas. |
 | A3 | Dans Supabase > Authentication > Settings : activer **« Leaked password protection »** ET passer le **minimum du mot de passe à 8** caractères. Le formulaire d'inscription est déjà à 8 depuis le 31/07 ; tant que le réglage serveur est à 6, les deux divergent dans le sens inoffensif, mais la vraie barrière reste celle de Supabase. | rapport sécurité |
 | A4 | Valider dans l'appli les correctifs déjà publiés mais jamais confirmés par lui : contraste de l'EDT (3.3), maths en triple (3.1), résidus « Explorer le monde » (3.2), refonte du suivi des élèves (2.4). | `docs/RETOURS-CHRISTOPHE-2026-07-26.md` |
 
