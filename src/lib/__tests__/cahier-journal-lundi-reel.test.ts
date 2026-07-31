@@ -170,12 +170,16 @@ describe('lundi réel de la semaine 1', () => {
   })
 
   /**
-   * Le seul trou restant, et il est exact : Christophe n'a aucune progression
-   * d'anglais. Vide est la bonne réponse. Inventer un contenu plausible serait
-   * pire, c'est exactement ce que faisait l'ancien bouton « Générer la
-   * journée », supprimé le 26/07.
+   * Le seul créneau sans progression : Christophe n'a rien importé en anglais.
+   *
+   * Il reçoit le nom de sa matière, pas une séance inventée. La distinction est
+   * tout l'enjeu : recopier « Anglais » depuis l'emploi du temps qu'il a saisi
+   * lui-même n'apprend rien de faux à personne, alors que rédiger « séance de
+   * découverte des salutations » affirme un contenu que nul n'a prévu. C'est
+   * exactement ce que faisait l'ancien bouton « Générer la journée », supprimé
+   * le 26/07.
    */
-  test('un créneau sans aucune progression reste vide, jamais inventé', () => {
-    expect(deroulementDe('Anglais')).toBe('')
+  test('un créneau sans progression affiche sa matière, jamais une séance inventée', () => {
+    expect(deroulementDe('Anglais')).toBe('Anglais')
   })
 })

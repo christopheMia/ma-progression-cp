@@ -68,20 +68,36 @@ export function itemsDuJour(items: string[], indexJour: number, nbJours: number)
   })
 }
 
+/**
+ * Ce qu'affiche un créneau quand aucune progression ne l'alimente : le nom de
+ * la matière, comme amorce à compléter.
+ *
+ * Décision de Christophe le 31/07. Une case vide ne dit pas si l'application
+ * n'a rien trouvé ou si la séance n'a rien de prévu, et elle n'invite à rien.
+ * Le libellé de la matière répond aux deux : l'enseignante voit ce qu'il y a à
+ * remplir, et elle écrit par-dessus.
+ *
+ * Ce n'est pas une invention de contenu : on ne fait que recopier ce qu'elle a
+ * elle-même écrit dans son emploi du temps. C'est la différence avec l'ancien
+ * bouton « Générer la journée », qui rédigeait des séances plausibles que
+ * personne n'avait prévues.
+ */
 function deroulementInitial(
   creneau: CreneauHoraire,
   progression: ProgressionMatiere[],
   indexJour: number,
   nbJours: number,
 ): string {
+  // Les routines (récréation, accueil, rituels) ne se remplissent pas.
   if (creneau.type === 'routine') return ''
+
   const p = progressionPourCreneau(creneau, progression)
-  if (!p || p.items.length === 0) return ''
-  const retenus = itemsDuJour(p.items, indexJour, nbJours)
-  if (retenus.length === 0) return ''
+  const retenus = p ? itemsDuJour(p.items, indexJour, nbJours) : []
+  if (retenus.length === 0) return creneau.matiere
+
   const items = retenus.join(', ')
-  const pages = p.pages ? ` — ${p.pages}` : ''
-  const mots = p.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
+  const pages = p?.pages ? ` — ${p.pages}` : ''
+  const mots = p?.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
   return `${items}${pages}${mots}`
 }
 

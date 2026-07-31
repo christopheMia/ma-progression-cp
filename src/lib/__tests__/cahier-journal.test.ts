@@ -38,8 +38,16 @@ describe('genererCahierJournal (lien par méthode)', () => {
     expect(s.deroulement).toContain('Nombres jusqu’à 10')
   })
 
-  test('un créneau sans méthode a un déroulement vide', () => {
+  // Décision de Christophe du 31/07 : une case vide n'invite à rien et ne dit
+  // pas si l'application n'a rien trouvé ou s'il n'y a rien de prévu. On y met
+  // le nom de la matière, que l'enseignante complète.
+  test('un créneau sans progression affiche sa matière, à compléter', () => {
     const edt = [creneau({ matiere: 'Arts visuels', methode_id: null })]
+    expect(genererCahierJournal(edt, progression)[0].seances[0].deroulement).toBe('Arts visuels')
+  })
+
+  test('une routine reste vide : elle ne se remplit pas', () => {
+    const edt = [creneau({ matiere: 'Récréation', type: 'routine' })]
     expect(genererCahierJournal(edt, progression)[0].seances[0].deroulement).toBe('')
   })
 

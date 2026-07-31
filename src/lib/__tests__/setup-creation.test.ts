@@ -445,7 +445,10 @@ describe('executerCreationClasse', () => {
 
     expect(journal[0].seances[0].deroulement).toContain('Découvrir le son a')
     expect(journal[0].seances[1].deroulement).toContain('Comparer des collections')
-    expect(journal[0].seances[2].deroulement).toBe('')
+    // Arts visuels n'a pas de progression : le créneau affiche sa matière, à
+    // compléter par l'enseignante (décision du 31/07). La récréation est une
+    // routine, elle ne se remplit pas.
+    expect(journal[0].seances[2].deroulement).toBe('Arts visuels')
     expect(journal[0].seances[3].deroulement).toBe('')
 
     const semaines = jest.mocked(dependances.insererSemaines).mock.calls[0][0]
