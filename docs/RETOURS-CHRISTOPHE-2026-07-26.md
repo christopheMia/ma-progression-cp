@@ -28,7 +28,7 @@ traité le jour même (voir plus bas).
 |---|---|---|
 | 2.1 | **Bouton « Valider » après chaque saisie de progression**, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter`. |
 | 2.2 | **Importer un emploi du temps existant** (PDF ou DOC) avant la génération automatique. | Une route d'import EDT existe déjà côté prompt (`SYSTEM_IMPORT_EDT`, `userImportEdt`) : vérifier ce qui est déjà branché avant de recoder. |
-| 2.3 | **Barre d'outils de mise en forme** (couleurs, soulignement) : ajouter une validation explicite pour fermer la fenêtre. | Touche `TimetableGrid`. |
+| 2.3 | **Barre d'outils de mise en forme** (couleurs, soulignement) : ajouter une validation explicite pour fermer la fenêtre. | **FAIT le 31/07 (`7f34d06`)**. Le panneau n'avait qu'une sortie : recliquer le crayon, cible de 10 px à moitié transparente, invisible sur téléphone faute de survol. Ajout d'un bouton « Terminé » pleine largeur en pied de panneau et de la touche Échap. Le crayon reste une bascule. 3 tests dans `TimetableGrid.rendu.test.tsx`. |
 | 2.4 | **Refonte du suivi des élèves** : alléger visuellement, corriger le cadrage, raccourcir les intitulés trop longs. | **PUBLIÉ le 27/07**, migration 018 appliquée en base. Suivi par notion, critères personnalisables, états Acquis ou Non acquis par élève. Reste la validation de Christophe dans l'appli. |
 
 ## 3. Bugs identifiés

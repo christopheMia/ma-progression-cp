@@ -459,7 +459,7 @@ tableau prime sur les listes éparses en cas de désaccord.
 | # | Quoi | Pourquoi ce n'est pas trivial |
 |---|---|---|
 | C1 | **UI/UX 2.1** : bouton « Valider » après chaque saisie de progression, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter` |
-| C2 | **UI/UX 2.3** : validation explicite pour fermer la barre de mise en forme de l'EDT. | Touche `TimetableGrid` |
+| ~~C2~~ | ~~UI/UX 2.3 : validation explicite pour fermer la barre de mise en forme de l'EDT.~~ | **FAIT le 31/07 (`7f34d06`)** : bouton « Terminé » en pied de panneau + touche Échap. Le crayon reste utilisable comme bascule. 3 tests. |
 | C3 | **Import ciblé sur UNE semaine précise.** Aujourd'hui l'import prend un document entier et l'IA décide où ça tombe. | Demande du 26/07, ni spécifiée ni commencée |
 | C4 | **Plusieurs méthodes dès le setup** (aujourd'hui seul le français, le reste dans Paramètres). | |
 | C5 | **Vue par période éditable** (option B). Christophe a dit « on commence par A », B reporté. | Une période est un assemblage de semaines : il faut décider sur quelle semaine l'édition s'écrit |
