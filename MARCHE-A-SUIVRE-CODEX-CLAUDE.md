@@ -184,6 +184,12 @@ navigateur pour la voir). Caractéristiques à respecter :
 
 ## 8. État courant / chantiers ouverts (au 2026-07-31)
 
+> **REPRISE IMMÉDIATE : lire `CONSIGNES-CODEX-2026-07-31.md` à la racine.**
+> Passation écrite le 31/07 au soir, à jour de `20bbe65`. Elle contient les deux
+> règles posées par Christophe (aucune devinette de placement ; la matière
+> plutôt que le vide), les cinq défauts du cahier journal corrigés ce jour, et
+> les chantiers C0a à C0c avec leurs décisions déjà prises.
+
 ### Fait et publié le 2026-07-31 sur `main` (commits `7074061`, `c4b7c7c`, `8ba457b`)
 
 Passage aux nouveaux modèles, terminé et déployé. `tsc` propre, **665 tests verts
