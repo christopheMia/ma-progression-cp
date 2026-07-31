@@ -458,6 +458,9 @@ tableau prime sur les listes éparses en cas de désaccord.
 
 | # | Quoi | Pourquoi ce n'est pas trivial |
 |---|---|---|
+| **C0a** | **Rebrancher les liens créneau vers méthode après un import d'emploi du temps.** Le mécanisme existe (`lierCreneaux`) et le setup s'en sert déjà ; l'import d'EDT remplace les créneaux et laisse tout à `null`. **Priorité haute** : c'est un échec silencieux, la progression existe et n'alimente rien. | Décider ce qui se passe quand un ancien créneau relié disparaît, et signaler dans l'interface les créneaux non rattachés |
+| **C0b** | **Faire du cahier journal un reflet plutôt qu'une photo** : ne stocker que les retouches de l'enseignante, recomposer le reste à la lecture depuis l'EDT et la progression courants. | Migration + réécriture de la lecture. Le test du lundi réel sert de garde-fou pendant l'opération |
+| **C0c** | **Supprimer la table `public.cahier_journal_archive_20260731`** (copie de sauvegarde prise avant la régénération du 31/07, RLS activée sans politique) une fois que Christophe a validé le nouveau contenu. | Demander avant, comme toujours |
 | C1 | **UI/UX 2.1** : bouton « Valider » après chaque saisie de progression, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter` |
 | ~~C2~~ | ~~UI/UX 2.3 : validation explicite pour fermer la barre de mise en forme de l'EDT.~~ | **FAIT le 31/07 (`7f34d06`)** : bouton « Terminé » en pied de panneau + touche Échap. Le crayon reste utilisable comme bascule. 3 tests. |
 | C3 | **Import ciblé sur UNE semaine précise.** Aujourd'hui l'import prend un document entier et l'IA décide où ça tombe. | Demande du 26/07, ni spécifiée ni commencée |
@@ -507,6 +510,58 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 (Traits d'union simples : la convention 1 bannit le tiret cadratin, et cette ligne
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
+
+- **2026-07-31 (soir) - Claude - CAHIER JOURNAL : quatre défauts trouvés en tirant un seul fil.**
+  Commits `5a910de`, `d494191`, `b25c1ed`, `96d45f7`. 668 tests verts, `tsc`
+  propre, build vert. Point de départ : Christophe, « comment on peut avoir des
+  jour 1 jour 2 dans la première heure du lundi ». Lire cette entrée avant de
+  toucher au cahier journal, elle contient plus de pièges que de correctifs.
+
+  **1. Les items datés étaient ignorés.** Une progression importée d'un planning
+  de période porte ses jours dans le texte (« Jour 1 : LC… »). Le générateur
+  déversait la totalité des items dans CHAQUE créneau de la matière, tous les
+  jours. `itemsDuJour` lit désormais le préfixe. Attention au piège : « Jour 3 »
+  désigne le troisième jour d'ÉCOLE, donc le jeudi sans mercredi.
+
+  **2. Une virgule cassait le rattachement.** `familleMatiere` retirait les
+  accents mais pas la ponctuation : le créneau « Chut, je lis. » ne
+  correspondait à AUCUNE famille malgré la règle `chut je lis`, donc restait
+  vide en silence. La comparaison normalise maintenant la ponctuation. **Trouvé
+  par un test sur les données réelles, pas à l'œil.**
+
+  **3. Le lien créneau vers méthode saute à l'import d'un EDT.**
+  `executerCreationClasse` relie bien les créneaux aux méthodes à la création de
+  la classe. Mais **l'import d'un emploi du temps remplace les créneaux sans
+  refaire les liens** : les 90 créneaux de Christophe avaient tous
+  `methode_id = null`. Tout reposait alors sur le rapprochement par libellé, qui
+  marche par coïncidence de noms et échoue sans rien dire. C'est LE défaut le
+  plus dangereux pour un client : sa progression existe, s'affiche, et
+  n'alimente rien.
+
+  **4. Le journal est une photo, pas un reflet.** Il est calculé à la première
+  ouverture de la semaine puis STOCKÉ. Celui de Christophe datait du 26/07
+  15h46, son import de maths de 15h58 : il affichait une progression périmée
+  depuis cinq jours, et gardait de la prose écrite par le bouton « Générer la
+  journée » supprimé le 26/07.
+
+  **Deux règles posées par Christophe, à ne pas défaire :**
+  - « si ça génère n'importe quoi je perdrai tous les clients ». Un journal faux
+    est pire qu'un journal vide : il a l'air juste et personne ne le relit. J'ai
+    renoncé pour cette raison à un algorithme qui devinait la case d'un item par
+    comparaison de mots. **Ne pas le réintroduire.**
+  - « quand il n'y a pas de progression on met la matière et l'utilisateur
+    remplira ». Recopier un libellé que l'enseignante a saisi n'affirme rien de
+    faux ; rédiger une séance plausible, si.
+
+  **Filet en place** : `cahier-journal-lundi-reel.test.ts` rejoue le lundi RÉEL
+  de Cécile (ses 17 créneaux, fautes de frappe comprises, sa vraie progression).
+  C'est lui qui a trouvé le défaut 2. Le mettre à jour en connaissance de cause,
+  jamais pour faire passer une suite.
+
+  **Correction d'une affirmation que j'ai faite trop vite** en cours de session :
+  j'ai dit que rien ne reliait automatiquement les créneaux. C'est faux, le setup
+  le fait. C'est l'import d'EDT qui ne le fait pas. Un test l'a montré en
+  échouant.
 
 - **2026-07-31 (matin, 2) - Claude - Ménage : perf, code mort, deux points de sécurité.**
   Commit `9e38eb3`. 650 tests verts (15 de moins, voir plus bas), `tsc` propre,
