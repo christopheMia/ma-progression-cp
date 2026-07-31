@@ -18,13 +18,26 @@ import type { CreneauHoraire } from '@/types'
  * refléter le réel, pas une version propre du réel.
  */
 
+/**
+ * Identifiant de la méthode « Histoire Géographie Sciences EMC ».
+ *
+ * Chez Christophe, histoire, géographie et sciences SONT de l'EMC : c'est un
+ * seul bloc, et sa méthode porte ce nom. Le programme officiel les sépare
+ * (« questionner le monde » d'un côté, EMC de l'autre), donc le rapprochement
+ * automatique par libellé ne pouvait pas deviner son classement, et laissait le
+ * créneau d'histoire vide. Le lien explicite créneau vers méthode tranche : c'est
+ * l'enseignante qui décide, jamais une règle qui suppose.
+ */
+const METHODE_EMC = 'm-emc'
+
 const c = (
   heure_debut: string, heure_fin: string, matiere: string,
   type: 'cours' | 'routine', visible_journal: boolean, ordre: number,
+  methode_id: string | null = null,
 ): CreneauHoraire => ({
   id: `l-${ordre}`, class_id: 'classe', jour: 'lundi',
   heure_debut, heure_fin, matiere, ordre, couleur: null, type,
-  methode_id: null, visible_journal,
+  methode_id, visible_journal,
 })
 
 const LUNDI: CreneauHoraire[] = [
@@ -41,9 +54,9 @@ const LUNDI: CreneauHoraire[] = [
   c('11:00', '11:30', 'calcul mental', 'cours', true, 10),
   c('13:30', '13:45', 'Chut, je lis.', 'cours', true, 12),
   c('13:45', '14:15', 'Anglais', 'cours', true, 13),
-  c('14:25', '14:45', 'Histoire, géographie, sciences et technologie', 'cours', true, 14),
+  c('14:25', '14:45', 'Histoire, géographie, sciences et technologie', 'cours', true, 14, METHODE_EMC),
   c('15:20', '15:35', 'Ecriture', 'cours', true, 17),
-  c('15:35', '15:45', 'EMC / Poésie', 'cours', true, 18),
+  c('15:35', '15:45', 'EMC / Poésie', 'cours', true, 18, METHODE_EMC),
   c('15:45', '16:15', "Compréhension écrite ou production d'cérits", 'cours', true, 19),
 ]
 
@@ -78,7 +91,7 @@ const PROGRESSION = [
     ],
   },
   {
-    methode_id: null, matiere: 'emc', pages: null, mots_exemple: [],
+    methode_id: METHODE_EMC, matiere: 'emc', pages: null, mots_exemple: [],
     items: [
       'Histoire : Repérer le mois de son anniversaire et le jour sur un calendrier.',
       'Géographie : Le monde : L’Europe, la France et les Pays Bas',
@@ -138,27 +151,31 @@ describe('lundi réel de la semaine 1', () => {
   })
 
   /**
-   * DEUX TROUS CONNUS, volontairement figés ici plutôt que masqués.
+   * Le lien explicite l'emporte sur le rapprochement par libellé.
    *
-   * Ces deux créneaux ressortent VIDES, et c'est le comportement voulu tant
-   * qu'on n'a pas décidé mieux : rien dans la progression ne leur correspond.
+   * Sans lui, ce créneau restait VIDE alors que sa progression existait et
+   * était visible dans l'application : le libellé « Histoire, géographie,
+   * sciences et technologie » est rangé dans la famille `qlm` du programme
+   * officiel, tandis que le contenu vit dans la ligne `emc`. Aucune règle
+   * automatique ne pouvait deviner que, chez Christophe, ces matières forment
+   * un seul bloc EMC.
    *
-   * - « Anglais » : aucune ligne de progression en anglais n'existe.
-   * - « Histoire, géographie, sciences et technologie » : le contenu existe
-   *   (les items « Histoire : », « Géographie : », « Sciences : ») mais il a été
-   *   rangé dans la ligne `emc` à l'import, et un créneau d'histoire cherche la
-   *   famille `qlm`. Le document « Programmation Histoire géographie
-   *   sciences.pdf » mélange en réalité deux matières.
-   *
-   * Vide est le bon comportement par défaut : inventer un contenu plausible
-   * serait pire, c'est exactement ce que faisait l'ancien bouton « Générer la
-   * journée », supprimé le 26/07.
-   *
-   * Le jour où ces trous seront comblés, ce test échouera : c'est voulu, il
-   * faudra alors le mettre à jour EN CONNAISSANCE DE CAUSE.
+   * C'est la démonstration de ce qui doit primer : ce que l'enseignante a
+   * déclaré, pas ce qu'une règle déduit de l'intitulé qu'elle a tapé.
    */
-  test('les créneaux sans progression correspondante restent vides, pas inventés', () => {
+  test('un créneau relié à sa méthode reçoit sa progression, quel que soit son libellé', () => {
+    const texte = deroulementDe('Histoire, géographie, sciences et technologie')
+    expect(texte).toContain('Repérer le mois de son anniversaire')
+    expect(texte).toContain('Le relevé de température')
+  })
+
+  /**
+   * Le seul trou restant, et il est exact : Christophe n'a aucune progression
+   * d'anglais. Vide est la bonne réponse. Inventer un contenu plausible serait
+   * pire, c'est exactement ce que faisait l'ancien bouton « Générer la
+   * journée », supprimé le 26/07.
+   */
+  test('un créneau sans aucune progression reste vide, jamais inventé', () => {
     expect(deroulementDe('Anglais')).toBe('')
-    expect(deroulementDe('Histoire, géographie, sciences et technologie')).toBe('')
   })
 })
