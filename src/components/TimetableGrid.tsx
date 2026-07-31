@@ -113,6 +113,15 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
         e.preventDefault()
         annuler()
       }
+      // Échap ferme le panneau de mise en forme. Retour de Christophe du 26/07
+      // (point 2.3) : le panneau ne se fermait qu'en recliquant le crayon, un
+      // geste qui ne se devine pas. Échap est le réflexe attendu de tout
+      // panneau flottant ; le bouton « Terminé » sert à celles qui ne
+      // l'auront pas.
+      if (e.key === 'Escape' && styleOuvert) {
+        e.preventDefault()
+        setStyleOuvert(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -403,6 +412,17 @@ export default function TimetableGrid({ initial, onSave, onChange, saving, finis
                                 {applique}
                               </p>
                             )}
+                            {/* Sortie explicite du panneau (retour de Christophe
+                                du 26/07, point 2.3). Avant, le seul moyen de
+                                refermer etait de recliquer le crayon, en haut a
+                                droite de la case : un geste qui ne se devine pas,
+                                et qui oblige a viser une cible de 10 px sur
+                                telephone. Le panneau se ferme aussi avec Echap. */}
+                            <button type="button"
+                              onClick={() => setStyleOuvert(null)}
+                              className="w-full rounded bg-violet-600 px-1.5 py-1 text-[11px] font-semibold text-white hover:bg-violet-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-violet-700">
+                              Terminé
+                            </button>
                           </div>
                         )}
                       </td>

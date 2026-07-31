@@ -125,6 +125,39 @@ describe('TimetableGrid : rendu de la grille fusionnée', () => {
       .toMatch(/2 cases « Calcul mental » mises comme ça/i)
   })
 
+  // Retour de Christophe du 26/07, point 2.3 : le panneau de mise en forme ne
+  // se fermait qu'en recliquant le crayon, une cible de 10 px en haut de la
+  // case. Deux sorties explicites plutôt qu'un geste à deviner.
+  describe('fermeture du panneau de mise en forme', () => {
+    const ouvrirPanneau = () => {
+      poser(CAS_11H)
+      fireEvent.click(screen.getByLabelText(/mise en forme lundi 11:00/i))
+      expect(screen.getByRole('button', { name: 'Terminé' })).toBeTruthy()
+    }
+
+    test('le bouton « Terminé » referme le panneau', () => {
+      ouvrirPanneau()
+      fireEvent.click(screen.getByRole('button', { name: 'Terminé' }))
+      expect(screen.queryByRole('button', { name: 'Terminé' })).toBeNull()
+    })
+
+    test('la touche Échap referme le panneau', () => {
+      ouvrirPanneau()
+      fireEvent.keyDown(window, { key: 'Escape' })
+      expect(screen.queryByRole('button', { name: 'Terminé' })).toBeNull()
+    })
+
+    test('le crayon indique si le panneau est ouvert', () => {
+      poser(CAS_11H)
+      const crayon = screen.getByLabelText(/mise en forme lundi 11:00/i)
+      expect(crayon.getAttribute('aria-expanded')).toBe('false')
+      fireEvent.click(crayon)
+      expect(crayon.getAttribute('aria-expanded')).toBe('true')
+      fireEvent.click(screen.getByRole('button', { name: 'Terminé' }))
+      expect(crayon.getAttribute('aria-expanded')).toBe('false')
+    })
+  })
+
   test('corrige une édition non conforme avant de l’enregistrer', () => {
     const onSave = jest.fn()
     render(
