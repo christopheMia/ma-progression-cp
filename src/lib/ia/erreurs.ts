@@ -12,3 +12,35 @@ export function messageErreurIA(err: unknown): { message: string; status: number
   }
   return { message: 'Erreur IA. Réessaie dans un instant.', status: 500 }
 }
+
+/**
+ * Une réponse coupée n'est PAS une erreur : l'appel réussit (HTTP 200).
+ *
+ * `max_tokens` plafonne tout ce que le modèle produit, réflexion comprise, et
+ * le modèle ne voit pas ce plafond : il ne se rationne donc pas. Quand il le
+ * heurte, la phrase s'arrête au milieu. Sur les routes d'import, ce milieu de
+ * phrase est un JSON tronqué : sans ce garde-fou, `JSON.parse` lève une
+ * SyntaxError que `messageErreurIA` traduit en « Erreur IA, réessaie », ce qui
+ * est faux et envoie l'enseignante réessayer à l'identique (et repayer) au
+ * lieu de raccourcir son document.
+ *
+ * `refusal` est traité ici pour la même raison : statut 200, contenu vide ou
+ * partiel, donc mêmes dégâts au parsing. Le cas est improbable sur des
+ * documents de CP, mais il coûte deux lignes à couvrir.
+ *
+ * Renvoie `null` quand la réponse est complète : appeler après avoir
+ * enregistré la consommation, car les tokens produits sont facturés même
+ * tronqués.
+ */
+export function messageReponseIncomplete(
+  stopReason: string | null | undefined,
+  conseil = 'Réessaie avec un document plus court, ou page par page.'
+): { message: string; status: number } | null {
+  if (stopReason === 'max_tokens') {
+    return { message: `La réponse de l'IA a été coupée avant la fin. ${conseil}`, status: 422 }
+  }
+  if (stopReason === 'refusal') {
+    return { message: "L'IA n'a pas pu traiter ce contenu. Réessaie avec un autre document.", status: 422 }
+  }
+  return null
+}
