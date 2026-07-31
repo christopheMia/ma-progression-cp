@@ -6,12 +6,14 @@ import userEvent from '@testing-library/user-event'
 import CahierJournalEditor from '../CahierJournalEditor'
 import {
   genererOuChargerJournal,
+  lireJournal,
   sauvegarderJournal,
 } from '@/lib/actions/journal'
 import type { JourJournal } from '@/types'
 
 jest.mock('@/lib/actions/journal', () => ({
   genererOuChargerJournal: jest.fn(),
+  lireJournal: jest.fn(),
   sauvegarderJournal: jest.fn(),
   regenererJournal: jest.fn(),
 }))
@@ -48,7 +50,9 @@ const journal: JourJournal[] = [{
 async function ouvrirJournal() {
   const user = userEvent.setup()
   render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
-  await user.click(screen.getByRole('button', { name: /générer le cahier journal/i }))
+  // Le bouton n'apparaît qu'une fois la relecture terminée : tant qu'on ne sait
+  // pas si la semaine existe déjà, on ne propose pas de la générer.
+  await user.click(await screen.findByRole('button', { name: /générer le cahier journal/i }))
   await screen.findByText('Son a')
   return user
 }
@@ -60,6 +64,40 @@ describe('CahierJournalEditor', () => {
     // production Next.js efface le texte d'une erreur levee dans une action.
     ;(genererOuChargerJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: journal })
     ;(sauvegarderJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: undefined })
+    // Par défaut : aucune semaine déjà enregistrée, donc le bouton est proposé.
+    ;(lireJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: null })
+  })
+
+  // Retour de Christophe du 31/07 : « quand je génère mes cahiers journaux ils
+  // s'effacent quand je change d'onglet ». Rien ne s'effaçait : le composant
+  // repartait d'un état vide à chaque montage et ne relisait jamais la base,
+  // donc il réaffichait le bouton « Générer » comme si le travail avait disparu.
+  describe('retour sur une semaine déjà travaillée', () => {
+    test('réaffiche le cahier journal enregistré, sans rien redemander', async () => {
+      ;(lireJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: journal })
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+
+      expect(await screen.findByText('Son a')).toBeTruthy()
+      expect(screen.queryByRole('button', { name: /générer le cahier journal/i })).toBeNull()
+      // La relecture ne doit RIEN créer : sinon chaque semaine survolée se
+      // figerait en photo au lieu de continuer à suivre l'emploi du temps.
+      expect(genererOuChargerJournal).not.toHaveBeenCalled()
+    })
+
+    test('propose de générer quand la semaine n’a jamais été ouverte', async () => {
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+
+      expect(await screen.findByRole('button', { name: /générer le cahier journal/i })).toBeTruthy()
+    })
+
+    test('ne propose pas de générer tant que la relecture n’a pas répondu', () => {
+      ;(lireJournal as jest.Mock).mockReturnValue(new Promise(() => {}))
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+
+      // Proposer « Générer » pendant le chargement inviterait à recréer un
+      // cahier journal qui existe déjà.
+      expect(screen.queryByRole('button', { name: /générer le cahier journal/i })).toBeNull()
+    })
   })
 
   test('ne propose plus de générer une journée avec l’IA', async () => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition, useRef, useEffect } from 'react'
 import {
   FileDown,
   NotebookPen,
@@ -14,6 +14,7 @@ import {
 import type { JourJournal, SeanceJournal } from '@/types'
 import {
   genererOuChargerJournal,
+  lireJournal,
   sauvegarderJournal,
   regenererJournal,
 } from '@/lib/actions/journal'
@@ -47,7 +48,31 @@ export default function CahierJournalEditor({
   const [erreur, setErreur] = useState('')
   const [exporting, setExporting] = useState(false)
   const [exported, setExported] = useState(false)
+  const [chargement, setChargement] = useState(true)
   const journalRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * Relit le cahier journal déjà enregistré à chaque affichage.
+   *
+   * Sans ça, revenir sur la semaine (changement d'onglet, retour de menu)
+   * ramenait le bouton « Générer le cahier journal » et donnait à Christophe
+   * l'impression que son travail s'était effacé. Il ne s'effaçait pas : l'état
+   * du composant repart de zéro à chaque montage, et personne ne relisait la
+   * base.
+   *
+   * `lireJournal` ne crée jamais rien : une semaine jamais générée reste
+   * proposée au bouton, elle ne se fige pas en photo au simple passage.
+   */
+  useEffect(() => {
+    let abandonne = false
+    lireJournal(semaineId)
+      .then(r => {
+        if (abandonne) return
+        if (r.ok && r.valeur) setJournal(r.valeur)
+      })
+      .finally(() => { if (!abandonne) setChargement(false) })
+    return () => { abandonne = true }
+  }, [semaineId])
 
   async function handleExportWord() {
     if (!journal) return
@@ -171,6 +196,11 @@ export default function CahierJournalEditor({
     return (
       <div className="bg-white border rounded-2xl p-5 text-center shadow-sm">
         <h2 className="font-bold text-gray-700 mb-3">📋 Cahier journal</h2>
+        {/* Tant que la relecture n'a pas répondu, ne pas proposer « Générer » :
+            ce serait inviter à recréer un cahier journal qui existe déjà. */}
+        {chargement ? (
+          <p className="text-sm text-gray-500">Chargement…</p>
+        ) : (
         <Bouton
           type="button"
           variant="principal"
@@ -181,6 +211,7 @@ export default function CahierJournalEditor({
         >
           Générer le cahier journal
         </Bouton>
+        )}
         {erreur && <p role="alert" className="mt-3 text-sm text-red-700">{erreur}</p>}
       </div>
     )
