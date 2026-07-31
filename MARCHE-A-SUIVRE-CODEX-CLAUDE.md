@@ -441,18 +441,18 @@ tableau prime sur les listes éparses en cas de désaccord.
 |---|---|---|
 | A1 | Faire un **import de PDF réel** et confirmer que la lecture des tableaux est au moins aussi bonne qu'avant. Seul juge du gain de Sonnet 5. | `REPRISE-2026-07-31.md` |
 | A2 | Saisir le **solde réel** relevé sur console.anthropic.com dans Paramètres > Crédit IA (1,66 $ au 30/07). Sans ce relevé la jauge n'affiche aucun solde. | `REPRISE-2026-07-30.md` |
-| A3 | Activer **« Leaked password protection »** dans Supabase (Authentication > Settings). Deux minutes, gratuit. | rapport sécurité |
+| A3 | Dans Supabase > Authentication > Settings : activer **« Leaked password protection »** ET passer le **minimum du mot de passe à 8** caractères. Le formulaire d'inscription est déjà à 8 depuis le 31/07 ; tant que le réglage serveur est à 6, les deux divergent dans le sens inoffensif, mais la vraie barrière reste celle de Supabase. | rapport sécurité |
 | A4 | Valider dans l'appli les correctifs déjà publiés mais jamais confirmés par lui : contraste de l'EDT (3.3), maths en triple (3.1), résidus « Explorer le monde » (3.2), refonte du suivi des élèves (2.4). | `docs/RETOURS-CHRISTOPHE-2026-07-26.md` |
 
-**B. Code, petites tâches sûres (à prendre en premier)**
+**B. Code, petites tâches sûres. FAIT le 31/07 (`9e38eb3`), sauf B4**
 
-| # | Quoi | Note |
+| # | Quoi | État |
 |---|---|---|
-| B1 | **Fixer le `search_path`** de la fonction SQL `synchroniser_acquis_depuis_niveau` (migration 019). Une ligne de migration ; les trois autres fonctions l'ont déjà. | Vérifié le 31/07 : toujours ouvert |
-| B2 | **Retirer les `console.log` de perf** du chantier lenteur : `src/proxy.ts:62`, `src/lib/perf.ts`, `src/lib/supabase/session.ts:46`. | Vérifié le 31/07 : toujours présents |
-| B3 | **Mot de passe minimum de 6 à 8 caractères**, dans la page d'inscription ET dans les réglages Auth de Supabase. Les deux doivent rester cohérents. | rapport sécurité |
-| B4 | **Purger le schéma `sauvegarde`** (3 tables du 21/07, sans RLS) quand il ne servira plus. Non exposé à l'application, mais une base propre est plus sûre. | rapport sécurité, demander avant |
-| B5 | **Nettoyage `remplirEnveloppes`** (point 4 ci-dessus). | |
+| B1 | **`search_path` de `synchroniser_acquis_depuis_niveau`.** | **FAIT.** Migration 026, appliquée en prod et vérifiée : les 9 fonctions du schéma `public` déclarent leur `search_path`. `''` choisi plutôt que `public`, la fonction ne nomme aucune table. |
+| B2 | **Instrumentation de perf retirée.** | **FAIT.** `src/lib/perf.ts` supprimé, ses appels retirés des 5 pages, plus les 2 `console.log` du portier et de `classeCourante`. Les chronomètres du 29/07 avaient trouvé leur cause (requêtes en série, réglée par la migration 025) : ils n'apprenaient plus rien et écrivaient dans les journaux Vercel à chaque navigation. |
+| B3 | **Mot de passe 6 vers 8 caractères.** | **FAIT côté application** (`(auth)/inscription/page.tsx`). **Reste le réglage Auth de Supabase**, sinon le formulaire accepte et le serveur refuse. Voir A3. |
+| B4 | **Purger le schéma `sauvegarde`** (3 tables du 21/07, sans RLS). | **PAS FAIT, ne pas faire sans feu vert explicite de Christophe.** Constat du 31/07 : la sauvegarde contient **24 élèves quand la classe actuelle en a 23**. L'élève « Leyna » n'existe QUE dans la sauvegarde. Purger perdrait cette trace. À trancher avec lui avant toute suppression. |
+| B5 | **`remplirEnveloppes` supprimé.** | **FAIT.** Vérification faite avant : tout `src/lib/edt-items.ts` n'était importé QUE par son propre fichier de tests, donc module mort en entier. Supprimé avec ses 15 tests, d'où 650 tests au lieu de 665. |
 
 **C. Code, chantiers à cadrer avant de coder**
 
@@ -507,6 +507,29 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 (Traits d'union simples : la convention 1 bannit le tiret cadratin, et cette ligne
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
+
+- **2026-07-31 (matin, 2) - Claude - Ménage : perf, code mort, deux points de sécurité.**
+  Commit `9e38eb3`. 650 tests verts (15 de moins, voir plus bas), `tsc` propre,
+  build vert, migration 026 appliquée en production.
+
+  Quatre des cinq petites tâches du backlog B, prises ensemble parce qu'elles ne
+  se recouvrent pas : instrumentation de perf retirée, `edt-items.ts` supprimé,
+  mot de passe minimum porté à 8 côté application, `search_path` de
+  `synchroniser_acquis_depuis_niveau` fixé.
+
+  **Ce que la baisse du nombre de tests veut dire.** 665 vers 650 n'est pas une
+  régression : `src/lib/edt-items.ts` n'était importé QUE par son propre fichier
+  de tests. Un module mort avec sa suite verte se relit comme du code vivant, et
+  c'est précisément ce qui l'avait fait survivre à la décision « EDT = grandes
+  lignes ». Réflexe à garder : avant de retirer du code réputé obsolète, chercher
+  ses importateurs réels, pas ses mentions.
+
+  **B4 n'est PAS fait, et il ne faut pas le faire à la légère.** La purge du
+  schéma `sauvegarde` était présentée comme du simple ménage. Vérification faite
+  avant d'agir : la sauvegarde porte **24 élèves quand la classe en a 23**, et
+  « Leyna » n'existe que là. Supprimer aurait effacé la seule trace d'un élève.
+  Règle qui se confirme : on regarde ce qu'on efface avant de l'effacer, même
+  quand la tâche est étiquetée « nettoyage ».
 
 - **2026-07-31 (matin) - Claude - Passage aux nouveaux modèles, terminé et déployé.**
   Commits `7074061` (couche basse, posée la veille), `c4b7c7c` (les 5 routes),
