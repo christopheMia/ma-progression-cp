@@ -182,7 +182,65 @@ navigateur pour la voir). Caractéristiques à respecter :
   projet : `./node_modules/.bin/tsc --noEmit` (ne PAS faire `npx tsc` seul, ça installe
   un faux paquet `tsc`).
 
-## 8. État courant / chantiers ouverts (au 2026-07-26)
+## 8. État courant / chantiers ouverts (au 2026-07-31)
+
+### Fait et publié le 2026-07-31 sur `main` (commits `7074061`, `c4b7c7c`, `8ba457b`)
+
+Passage aux nouveaux modèles, terminé et déployé. `tsc` propre, **665 tests verts
+sur 70 suites**, build vert, déploiement Vercel de production en Ready.
+
+- **Imports (`ia-manuel`, `ia-edt`) : Sonnet 4.6 vers `claude-sonnet-5`.** Le goulot
+  de ces routes est la LECTURE, pas le raisonnement : lire un PDF passe par la
+  vision, chaque page traitée comme une image. Sonnet 5 est le premier Sonnet à lire
+  en 2576 px sur le grand côté au lieu de 1568, donc directement la finesse de
+  déchiffrage des tableaux. Opus reste écarté : plus cher pour améliorer un
+  raisonnement qui n'est pas le goulot, et il dépasse le temps max des fonctions
+  serverless Vercel.
+- **Bilan et assistant : Sonnet 4.6 vers `claude-haiku-4-5`** (constante
+  `MODELE_COURT`). Trois fois moins cher pour écrire un paragraphe court à partir
+  d'un contexte déjà mâché.
+- **Le chat (`ia-chat`) reste sur Sonnet 4.6.** Surface interactive, la latence s'y
+  voit. Décision délibérée : ne pas la "corriger".
+
+**Piège structurant, à retenir au-delà de ce projet.** Sur Sonnet 5, ne PAS passer
+de champ `thinking` n'éteint plus la réflexion, **ça l'active** : le défaut a changé
+entre la 4.6 et la 5. Or `max_tokens` plafonne la réflexion ET la réponse ENSEMBLE,
+et le modèle ne voit pas ce plafond, donc il ne se rationne pas. Sur `ia-manuel` et
+`ia-edt` (16000 tokens), un tableau touffu pouvait partir en 12000 tokens de
+réflexion et rendre un JSON coupé au milieu d'un objet. Aggravant : Sonnet 5 change
+de découpage de tokens, le même texte compte environ 30 % de tokens en plus qu'en
+4.6, donc un plafond calibré pour la 4.6 est déjà plus serré qu'il n'en a l'air.
+D'où `REFLEXION_ETEINTE = { type: 'disabled' }` dans `src/lib/ia/anthropic.ts`,
+passé explicitement sur les deux routes d'import.
+
+**Second piège, du même chantier.** Une réponse tronquée n'est PAS une erreur :
+l'appel réussit en HTTP 200. Aucune route ne lisait `stop_reason`, donc une
+troncature ne remontait pas comme "réponse coupée" mais comme une `SyntaxError` de
+`JSON.parse`, que `messageErreurIA` traduisait en « Erreur IA, réessaie » : message
+FAUX qui envoyait l'enseignante réessayer à l'identique, et repayer, au lieu de
+raccourcir son document. Les 5 routes appellent désormais
+`messageReponseIncomplete(stop_reason, conseil)` (dans `src/lib/ia/erreurs.ts`),
+**après `enregistrerUsageIA`** (les tokens produits sont facturés même tronqués)
+et **avant le parsing**, avec un conseil adapté à chaque route. Règle générale :
+toute nouvelle route IA lit `stop_reason` à cet endroit précis.
+
+**Deux endroits par route.** Changer un modèle, c'est changer le champ `model:` de
+l'appel ET l'argument `modele:` de `enregistrerUsageIA`. Les désynchroniser
+fausserait la jauge de crédit sans que rien ne le signale.
+
+Vérifié au passage : le SDK `@anthropic-ai/sdk@^0.104.1` accepte la chaîne
+`'claude-sonnet-5'` et `thinking: { type: 'disabled' }` sans mise à jour. La table
+de tarifs de `cout.ts` couvrait déjà les deux nouveaux modèles, et un test le
+verrouille désormais (`src/lib/ia/__tests__/anthropic.test.ts`) : la vraie classe de
+bug est de changer un modèle en oubliant son tarif.
+
+**Repli si un import se dégrade** : remettre `MODELE_IMPORT = 'claude-sonnet-4-6'`.
+Le garde-fou `stop_reason` et `thinking: REFLEXION_ETEINTE` restent valables et sans
+effet de bord sur la 4.6. Détail complet dans `REPRISE-2026-07-31.md`.
+
+**Fenêtre tarifaire** : Sonnet 5 est à tarif de lancement réduit jusqu'au 31/08/2026.
+`cout.ts` retient volontairement le tarif plein : surestimer est le défaut acceptable
+pour un compteur de budget.
 
 ### Fait et publié le 2026-07-26 sur `main`
 
@@ -371,6 +429,49 @@ résidus « Explorer le monde » ne sont plus des chantiers ouverts.
    **obsolète** depuis la décision "EDT = grandes lignes, détail dans le cahier
    journal". À retirer proprement plutôt qu'à brancher.
 
+### Backlog ouvert, vue consolidée au 2026-07-31
+
+Récapitulatif de TOUT ce qui reste, toutes sources confondues (la liste ci-dessus,
+le rapport de sécurité et les reprises du 30 et du 31). Mis à jour ce jour : ce
+tableau prime sur les listes éparses en cas de désaccord.
+
+**A. Ce qui attend Christophe, pas du code**
+
+| # | Quoi | Où |
+|---|---|---|
+| A1 | Faire un **import de PDF réel** et confirmer que la lecture des tableaux est au moins aussi bonne qu'avant. Seul juge du gain de Sonnet 5. | `REPRISE-2026-07-31.md` |
+| A2 | Saisir le **solde réel** relevé sur console.anthropic.com dans Paramètres > Crédit IA (1,66 $ au 30/07). Sans ce relevé la jauge n'affiche aucun solde. | `REPRISE-2026-07-30.md` |
+| A3 | Activer **« Leaked password protection »** dans Supabase (Authentication > Settings). Deux minutes, gratuit. | rapport sécurité |
+| A4 | Valider dans l'appli les correctifs déjà publiés mais jamais confirmés par lui : contraste de l'EDT (3.3), maths en triple (3.1), résidus « Explorer le monde » (3.2), refonte du suivi des élèves (2.4). | `docs/RETOURS-CHRISTOPHE-2026-07-26.md` |
+
+**B. Code, petites tâches sûres (à prendre en premier)**
+
+| # | Quoi | Note |
+|---|---|---|
+| B1 | **Fixer le `search_path`** de la fonction SQL `synchroniser_acquis_depuis_niveau` (migration 019). Une ligne de migration ; les trois autres fonctions l'ont déjà. | Vérifié le 31/07 : toujours ouvert |
+| B2 | **Retirer les `console.log` de perf** du chantier lenteur : `src/proxy.ts:62`, `src/lib/perf.ts`, `src/lib/supabase/session.ts:46`. | Vérifié le 31/07 : toujours présents |
+| B3 | **Mot de passe minimum de 6 à 8 caractères**, dans la page d'inscription ET dans les réglages Auth de Supabase. Les deux doivent rester cohérents. | rapport sécurité |
+| B4 | **Purger le schéma `sauvegarde`** (3 tables du 21/07, sans RLS) quand il ne servira plus. Non exposé à l'application, mais une base propre est plus sûre. | rapport sécurité, demander avant |
+| B5 | **Nettoyage `remplirEnveloppes`** (point 4 ci-dessus). | |
+
+**C. Code, chantiers à cadrer avant de coder**
+
+| # | Quoi | Pourquoi ce n'est pas trivial |
+|---|---|---|
+| C1 | **UI/UX 2.1** : bouton « Valider » après chaque saisie de progression, pour éviter un défilement trop long. | Touche `SourceContentPreview` / `SourceImporter` |
+| C2 | **UI/UX 2.3** : validation explicite pour fermer la barre de mise en forme de l'EDT. | Touche `TimetableGrid` |
+| C3 | **Import ciblé sur UNE semaine précise.** Aujourd'hui l'import prend un document entier et l'IA décide où ça tombe. | Demande du 26/07, ni spécifiée ni commencée |
+| C4 | **Plusieurs méthodes dès le setup** (aujourd'hui seul le français, le reste dans Paramètres). | |
+| C5 | **Vue par période éditable** (option B). Christophe a dit « on commence par A », B reporté. | Une période est un assemblage de semaines : il faut décider sur quelle semaine l'édition s'écrit |
+| C6 | **Démarrage à froid** perceptible (~860 ms, fonction Vercel + ouverture des connexions). Levier possible : un ping périodique qui garde la fonction chaude. | Confirmé mesuré le 30/07, pas arbitré |
+| C7 | **Base de test séparée.** Une seule base sert le local ET la production (`odwgkakeepcqbgpsfugl`) : le `npm run dev` écrit dans la base que Cécile utilisera. | Chantier possible, jamais arbitré |
+
+**Déjà traité, ne pas le reprendre** : le plafond IA dur (point 3 du rapport de
+sécurité) est fait, `garderAppelIA` renvoie 402 quand le crédit estimé est épuisé.
+La question 4 du cahier journal est tranchée. La règle métier du matin et les
+résidus « Explorer le monde » ne sont plus des chantiers ouverts. Le point 2.2
+(importer un EDT existant) est livré, y compris `.docx` et `.xlsx` depuis le 30/07.
+
 ## 9. Où trouver quoi (index)
 
 Pour ne pas se perdre. Chaque assistant part d'ICI.
@@ -406,6 +507,27 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 (Traits d'union simples : la convention 1 bannit le tiret cadratin, et cette ligne
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
+
+- **2026-07-31 (matin) - Claude - Passage aux nouveaux modèles, terminé et déployé.**
+  Commits `7074061` (couche basse, posée la veille), `c4b7c7c` (les 5 routes),
+  `8ba457b` (point de reprise). 665 tests verts, `tsc` propre, build vert,
+  déploiement de production en Ready. Imports sur Sonnet 5, bilan et assistant sur
+  Haiku 4.5, chat inchangé sur Sonnet 4.6.
+
+  Le dépôt était dans un état intermédiaire dangereux depuis la veille au soir :
+  `MODELE_IMPORT` pointait déjà sur Sonnet 5 alors qu'aucune route n'éteignait la
+  réflexion. Cet état, et pas le changement de modèle, était le bug. Leçon de
+  méthode : quand un chantier change une constante partagée avant d'avoir branché
+  ses consommateurs, il ne faut pas s'interrompre au milieu, ou alors le dire en
+  toutes lettres dans le message de commit (ce qui avait été fait).
+
+  Les deux pièges du chantier (la réflexion active par défaut sur Sonnet 5, et
+  `stop_reason` que personne ne lisait) sont détaillés en tête du §8. Ils valent
+  au-delà de ce projet : ce sont deux façons pour un appel réussi de rendre un
+  résultat faux sans que rien ne proteste.
+
+  Backlog consolidé en fin de §8 (tableaux A, B, C) : c'est désormais LE point
+  d'entrée pour choisir quoi faire ensuite, plutôt que de recroiser cinq documents.
 
 - **2026-07-29 (soir) - Claude - CHASSE À LA LENTEUR : ce qui était vrai, ce qui était faux, et le plancher.**
   Commits `219cf56`, `db6f3b8`, `2f9d65b`, `937788c`, `62d4fa3`, `f046bc2`, `7ee9696`.
