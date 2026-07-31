@@ -23,9 +23,24 @@ export const COULEURS_FAMILLE = {
 
 export type Famille = keyof typeof COULEURS_FAMILLE
 
-/** Enlève les accents : les libellés générés n'en ont pas, ceux des PDF si. */
+/**
+ * Prépare un libellé à la comparaison : accents retirés, ponctuation ramenée à
+ * des espaces, espaces multiples réduits.
+ *
+ * La ponctuation compte autant que les accents, et c'est passé inaperçu
+ * longtemps : le créneau « Chut, je lis. » de Cécile ne correspondait à AUCUNE
+ * famille, à cause de la virgule, alors que la règle `chut je lis` existe. Il
+ * n'était donc rattaché à aucune progression et son cahier journal restait vide,
+ * sans que rien ne le signale. Les libellés viennent de PDF et de saisies
+ * manuelles : ils portent des virgules, des points, des barres obliques.
+ */
 function sansAccents(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
 }
 
 /**
