@@ -17,11 +17,69 @@ function progressionPourCreneau(
   return trouverProgressionMatiere(progression, creneau.matiere) ?? null
 }
 
-function deroulementInitial(creneau: CreneauHoraire, progression: ProgressionMatiere[]): string {
+/**
+ * Marqueur de jour en tête d'un item de progression : « Jour 2 : Grammaire ».
+ *
+ * Les documents qui détaillent une période séance par séance (le cas des
+ * plannings de Cécile) numérotent leurs lignes par jour d'école. L'import
+ * conserve ce préfixe dans le texte de l'item, faute d'une colonne pour le
+ * porter. C'est donc ici qu'on le relit.
+ */
+const PREFIXE_JOUR = /^\s*jours?\s*(\d+)\s*[:.\-–—]\s*/i
+
+/** Numéro de jour porté par un item, ou `null` s'il vaut pour toute la semaine. */
+export function numeroJourItem(item: string): number | null {
+  const trouve = item.match(PREFIXE_JOUR)
+  if (!trouve) return null
+  const numero = Number(trouve[1])
+  return Number.isInteger(numero) && numero > 0 ? numero : null
+}
+
+/**
+ * Les items à afficher un jour donné, préfixe retiré.
+ *
+ * `indexJour` est le rang du jour dans la SEMAINE D'ÉCOLE, pas dans la semaine
+ * civile : « Jour 3 » d'un document désigne le troisième jour de classe, qui
+ * est le jeudi quand il n'y a pas école le mercredi.
+ *
+ * Trois règles, dans cet ordre :
+ *
+ * 1. Si AUCUN item n'est daté, tous valent pour la semaine entière et sont
+ *    rendus tels quels. C'est le cas des progressions de maths, d'arts ou
+ *    d'EMC, qui décrivent des notions et non des séances : on ne change rien
+ *    pour elles.
+ * 2. Sinon, un item daté ne paraît que son jour, et un item non daté paraît
+ *    tous les jours (une consigne qui vaut pour la semaine reste visible).
+ * 3. Un item daté au-delà du nombre de jours d'école (« Jour 5 » sur une
+ *    semaine de quatre jours) atterrit sur le dernier jour EN GARDANT son
+ *    préfixe. Le perdre en silence serait pire : l'enseignante doit voir
+ *    qu'une ligne de son document ne tombe nulle part.
+ */
+export function itemsDuJour(items: string[], indexJour: number, nbJours: number): string[] {
+  if (!items.some(item => numeroJourItem(item) !== null)) return items
+
+  const dernierJour = indexJour === nbJours - 1
+  return items.flatMap(item => {
+    const numero = numeroJourItem(item)
+    if (numero === null) return [item]
+    if (numero === indexJour + 1) return [item.replace(PREFIXE_JOUR, '')]
+    if (numero > nbJours && dernierJour) return [item]
+    return []
+  })
+}
+
+function deroulementInitial(
+  creneau: CreneauHoraire,
+  progression: ProgressionMatiere[],
+  indexJour: number,
+  nbJours: number,
+): string {
   if (creneau.type === 'routine') return ''
   const p = progressionPourCreneau(creneau, progression)
   if (!p || p.items.length === 0) return ''
-  const items = p.items.join(', ')
+  const retenus = itemsDuJour(p.items, indexJour, nbJours)
+  if (retenus.length === 0) return ''
+  const items = retenus.join(', ')
   const pages = p.pages ? ` — ${p.pages}` : ''
   const mots = p.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
   return `${items}${pages}${mots}`
@@ -39,9 +97,12 @@ export function genererCahierJournal(
     parJour.set(c.jour, list)
   }
 
-  return JOURS_ORDRE
-    .filter(jour => parJour.has(jour))
-    .map(jour => ({
+  // Les jours d'ECOLE, dans l'ordre : c'est le referentiel des « Jour N » des
+  // documents importes. Sans mercredi, « Jour 3 » vaut donc pour le jeudi.
+  const joursEcole = JOURS_ORDRE.filter(jour => parJour.has(jour))
+
+  return joursEcole
+    .map((jour, indexJour) => ({
       jour,
       seances: (parJour.get(jour) ?? [])
         .sort((a, b) => a.ordre - b.ordre)
@@ -50,7 +111,7 @@ export function genererCahierJournal(
           heure_debut: c.heure_debut,
           heure_fin: c.heure_fin,
           type: c.type,
-          deroulement: deroulementInitial(c, progression),
+          deroulement: deroulementInitial(c, progression, indexJour, joursEcole.length),
         })),
     }))
 }
