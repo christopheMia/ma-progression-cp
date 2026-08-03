@@ -139,6 +139,23 @@ export type JourJournal = {
   seances: SeanceJournal[]
 }
 
+/** Une séance telle que le document l'écrit : une puce, une case, une ligne. */
+export type SeanceProgression = {
+  /** Rang du jour d'ECOLE (1..n), `null` quand le document ne montre pas de jours. */
+  jour: number | null
+  /** Domaine tel qu'écrit ("LC", "Vocabulaire"), "" si le document n'en donne pas. */
+  domaine: string
+  /** Texte exact de la puce, "(séance 3)" compris. */
+  libelle: string
+}
+
+/** Séance qu'aucun créneau n'a pu accueillir. */
+export type SeancePlacer = {
+  libelle: string
+  /** "Jour 5" hors semaine, "semaine" si non datée, sinon `null`. */
+  origine: string | null
+}
+
 /** Ligne de progression d'une matière pour une semaine (issue de la table progression). */
 export type ProgressionMatiere = {
   methode_id: string | null
@@ -146,4 +163,5 @@ export type ProgressionMatiere = {
   items: string[]
   pages: string | null
   mots_exemple: string[] | null
+  seances?: SeanceProgression[] | null
 }
