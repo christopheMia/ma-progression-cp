@@ -175,13 +175,27 @@ Cas limites, tous traités par « signaler, jamais deviner » :
   semaine de quatre jours) : elle va dans `aPlacer` du **dernier** jour, en
   gardant la mention de son jour d'origine. Aujourd'hui elle est collée au
   dernier jour sans distinction ;
-- séance non datée dans un document qui date les autres : elle va dans une liste
-  de semaine `aPlacerSemaine`, affichée une seule fois, jamais répétée sur
-  chaque jour.
+- séance non datée dans un document qui date les autres : elle va dans le
+  `aPlacer` du **premier** jour d'école, marquée « vaut pour la semaine ». Elle
+  paraît donc une seule fois, jamais répétée sur chaque jour.
 
-`genererCahierJournal` rend donc `{ jours, aPlacerSemaine }`, et chaque jour
-gagne `aPlacer: SeanceProgression[]`. L'affichage montre ces listes sous la
-journée, avec une action « choisir un créneau ».
+**Contrainte de forme à respecter.** `genererCahierJournal` rend un
+`JourJournal[]` qui est **stocké tel quel** dans `cahier_journal.contenu`
+(`src/lib/actions/journal.ts:80`) et relu par `validerContenuJournal`
+(`src/lib/cahier-journal-edition.ts:56`). On ne change donc pas le type de
+retour : `JourJournal` gagne un champ `aPlacer: SeancePlacer[]`, et le
+validateur doit le conserver, sans quoi la première sauvegarde l'effacerait en
+silence.
+
+```ts
+type SeancePlacer = {
+  libelle: string
+  origine: string | null   // "Jour 5" hors semaine, "semaine" si non datée, sinon null
+}
+```
+
+L'affichage montre cette liste sous la journée, avec une action « choisir un
+créneau ».
 
 Cette action n'invente aucun mécanisme : elle écrit le libellé de la séance dans
 le déroulement du créneau choisi via `modifierSeanceJournal`
