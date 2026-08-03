@@ -65,12 +65,21 @@ function jourValide(jour: number | null): jour is number {
 }
 
 /**
- * Convertit un élément potentiellement non-string en texte au lieu de le
- * supprimer. `items` peut venir tel quel d'une colonne JSONB Supabase, où un
- * nombre ou un `null` isolé dans le tableau est possible.
+ * Convertit un élément potentiellement non-string en texte, sans jamais
+ * supprimer du contenu. `items` peut venir tel quel d'une colonne JSONB
+ * Supabase, où un nombre, un booléen ou un `null` isolé dans le tableau est
+ * possible.
+ *
+ * Le critère est le sens, pas la littéralité : un nombre ou un booléen EST
+ * du contenu, il devient sa représentation texte ("42", "true"). Un `null`
+ * ou un `undefined` n'est PAS du contenu écrit par l'enseignante, c'est une
+ * absence : il devient "" pour être filtré comme une entrée vide, plutôt que
+ * de s'afficher en toutes lettres ("null") dans un cahier journal.
  */
 function aTexte(item: unknown): string {
-  return typeof item === 'string' ? item : String(item)
+  if (typeof item === 'string') return item
+  if (item === null || item === undefined) return ''
+  return String(item)
 }
 
 /**

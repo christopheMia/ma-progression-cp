@@ -93,13 +93,21 @@ describe('seancesDepuisItems', () => {
     ])
   })
 
-  // La colonne JSONB peut contenir un nombre ou un null isolé : converti en
-  // texte plutôt que supprimé, pour ne jamais perdre silencieusement du
-  // contenu (même une valeur inattendue reste visible pour l'enseignante).
-  it('convertit un élément non-string de la colonne JSONB en texte au lieu de le supprimer', () => {
-    expect(seancesDepuisItems([42, null] as unknown[])).toEqual([
+  // Le critère est le sens, pas la littéralité. Un nombre EST du contenu :
+  // converti en texte plutôt que supprimé, pour ne jamais perdre
+  // silencieusement ce qui pourrait être une séance.
+  it('convertit un nombre de la colonne JSONB en texte au lieu de le supprimer', () => {
+    expect(seancesDepuisItems([42] as unknown[])).toEqual([
       { jour: null, domaine: '', libelle: '42' },
-      { jour: null, domaine: '', libelle: 'null' },
+    ])
+  })
+
+  // Un null ou un undefined n'est PAS du texte écrit par l'enseignante,
+  // c'est une absence : il se filtre comme une entrée vide plutôt que de
+  // s'afficher en toutes lettres ("null") dans un cahier journal.
+  it('filtre un null ou un undefined de la colonne JSONB comme une entrée vide', () => {
+    expect(seancesDepuisItems([null, undefined, 'Jour 2 : x'] as unknown[])).toEqual([
+      { jour: 2, domaine: '', libelle: 'x' },
     ])
   })
 
