@@ -13,7 +13,7 @@ tant qu'un relecteur a des réserves.
 
 | # | Tâche | État |
 |---|---|---|
-| 1 | Conversions séances et items | ✅ codée et corrigée, `4f4ff70`. Re-relecture qualité lancée, verdict non rendu avant la fin de session |
+| 1 | Conversions séances et items | ✅ terminée et **approuvée** en relecture, `4f4ff70` |
 | 2 | L'IA rend des séances | à faire |
 | 3 | Les consignes d'import | à faire |
 | 4 | La colonne en base et son remplissage | à faire |
@@ -68,10 +68,9 @@ la migration doit la copier, pas la réinventer.
    dans `main`, et `main` est intact).
 2. Vérifier l'état : `npx jest` doit donner 71 suites et 697 tests verts, et
    `npx tsc --noEmit` doit être muet.
-3. Relire la tâche 1 une dernière fois : `git diff abff248..4f4ff70`. Sa
-   re-relecture qualité n'a pas rendu son verdict avant la fin de la session,
-   donc ce diff n'a PAS reçu son approbation finale. Rien n'indique de problème,
-   mais le contrôle n'est pas allé à son terme.
+3. Traiter les cinq restes mineurs de la tâche 1 ci-dessous. Les deux premiers
+   avant la tâche 3, parce que c'est elle qui fera remplir `domaine` et `libelle`
+   par l'IA.
 4. Enchaîner sur la tâche 2 du plan, en reprenant la même méthode : un
    implémenteur par tâche, puis une relecture de conformité à la spec, puis une
    relecture de qualité, avec boucle de correction tant qu'un relecteur a des
@@ -80,6 +79,31 @@ la migration doit la copier, pas la réinventer.
 La leçon de la tâche 1 vaut consigne : **ne pas faire confiance au texte du plan
 comme s'il était juste.** Ses blocs de code sont des propositions relues par
 personne au moment où ils ont été écrits.
+
+## Restes mineurs de la tâche 1, approuvés mais non traités
+
+Aucun ne bloque. Les deux premiers sont à faire AVANT la tâche 3.
+
+1. `progression-seances.ts:82` : `String(item)` s'applique à tout ce qui n'est ni
+   chaîne ni nullish. Un objet ou un tableau venu du JSONB donnerait
+   `'[object Object]'` affiché tel quel dans un cahier journal, ce que la règle du
+   `null` filtré cherchait justement à éviter. Restreindre la conversion aux
+   `number`, `boolean`, `bigint`, et filtrer le reste.
+2. Écrire quelque part, dans `types/index.ts:146` ou dans la docstring de
+   `itemsDepuisSeances`, que `domaine` est **dérivé et jamais resérialisé** : une
+   séance rendue par l'IA avec `domaine: 'Lecture'` et `libelle: 'La petite poule'`
+   repassera par `items` et reviendra avec `domaine: ''`.
+3. `progression-seances.ts:139` : quand `jour` et le préfixe du libellé désignent
+   des jours différents, le champ gagne en silence. Choix défendable, mais c'est
+   le seul endroit du module où du texte peut encore se perdre : à écrire dans la
+   docstring.
+4. La règle du jour valide existe en trois exemplaires (`jourValide`, la condition
+   inline de `seancesDepuisItems`, et `numeroJourItem` dans `cahier-journal.ts`).
+   Même dérive à trois branches que celle qu'on vient de fermer sur la regex.
+5. Le test de l'espace insécable le place en tête d'item, donc il passe grâce au
+   seul `trim()` sans jamais éprouver que `\s` couvre U+00A0. Un cas avec
+   l'insécable ENTRE le mot et le numéro pinnerait vraiment la propriété dont
+   dépend le contrat SQL.
 
 ## Point d'attention pour la tâche 7
 
