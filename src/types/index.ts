@@ -145,7 +145,7 @@ export type SeanceProgression = {
   jour: number | null
   /** Domaine tel qu'écrit ("LC", "Vocabulaire"), "" si le document n'en donne pas. */
   domaine: string
-  /** Texte exact de la puce, "(séance 3)" compris. */
+  /** Texte de la puce, préfixe de jour retiré et espaces superflus enlevés, "(séance 3)" compris s'il était écrit. */
   libelle: string
 }
 

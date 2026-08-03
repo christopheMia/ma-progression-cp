@@ -1,5 +1,6 @@
 import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '@/types'
 import { trouverProgressionMatiere } from '@/lib/matieres'
+import { PREFIXE_JOUR } from '@/lib/progression-seances'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
@@ -16,16 +17,6 @@ function progressionPourCreneau(
   }
   return trouverProgressionMatiere(progression, creneau.matiere) ?? null
 }
-
-/**
- * Marqueur de jour en tête d'un item de progression : « Jour 2 : Grammaire ».
- *
- * Les documents qui détaillent une période séance par séance (le cas des
- * plannings de Cécile) numérotent leurs lignes par jour d'école. L'import
- * conserve ce préfixe dans le texte de l'item, faute d'une colonne pour le
- * porter. C'est donc ici qu'on le relit.
- */
-const PREFIXE_JOUR = /^\s*jours?\s*(\d+)\s*[:.\-–—]\s*/i
 
 /** Numéro de jour porté par un item, ou `null` s'il vaut pour toute la semaine. */
 export function numeroJourItem(item: string): number | null {
