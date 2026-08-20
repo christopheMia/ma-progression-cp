@@ -8,24 +8,34 @@ bordel et pas normal, il faut me rappeler ce genre de chose ». Un chantier
 oublié se signale désormais tout seul, voir
 `.claude/rules/signaler-chantiers-abandonnes.md` dans le dépôt MON AIOS.
 
-**Fait aujourd'hui** : les 5 restes mineurs de la tâche 1 (détail plus bas,
-section devenue « TOUS TRAITÉS »). 71 suites, 698 tests verts, `tsc --noEmit`
-muet. **Pas encore commité** sur cette branche : la session a été coupée pour
-raison de contexte avant de committer.
+**Fait dans la journée du 20/08 :**
 
-**À faire au tout prochain démarrage, dans l'ordre :**
-1. Vérifier l'état : `npx jest` (71 suites, 698 tests) et `npx tsc --noEmit`
-   (muet). Si différent, quelqu'un a touché le code entre-temps, investiguer
-   avant de continuer.
-2. Committer les 5 restes mineurs (fichiers touchés : `src/lib/progression-seances.ts`,
-   `src/lib/cahier-journal.ts`, `src/types/index.ts`,
-   `src/lib/__tests__/progression-seances.test.ts`).
-3. Enchaîner sur la **tâche 2** du plan (« L'IA rend des séances »), méthode
-   sous-agents : un implémenteur, puis relecture conformité spec, puis
-   relecture qualité, boucle jusqu'à approbation des deux.
-4. Modèle recommandé pour l'orchestration et les deux relectures : le plus
-   capable disponible (Opus), pas seulement Sonnet — ce chantier a un
-   historique de bugs subtils trouvés seulement en relecture qualité.
+1. Les 5 restes mineurs de la tâche 1 (détail plus bas, section devenue
+   « TOUS TRAITÉS »). Commité : `99684c7`. La branche n'est toujours pas
+   poussée, `main` reste intact.
+2. La **tâche 2** implémentée en sous-agent, puis relue deux fois. Conformité :
+   approuvé. Qualité : **RÉSERVES**, dont deux défauts qui auraient abîmé de
+   vraies données. Une passe de correction est en cours, **rien n'est commité**.
+3. Une **tâche 4b** ajoutée au plan, elle n'y était pas (voir plus bas).
+
+**Ce que la relecture qualité a trouvé, et qu'il ne faut pas reperdre :**
+
+| Défaut | Pourquoi ça compte |
+|---|---|
+| `items` écrasé dès qu'une seule séance est rendue | 4 puces en entrée, 1 en sortie : du contenu du manuel disparaît |
+| « Jours 3-4 : révisions » ressort « Jour 3 : 4 : révisions » | le texte de l'enseignante est déformé à l'écran et en base |
+| La tâche 3 vise `systemImportPeriode`, **fonction morte** | la vraie fonction vivante est `systemImportAutomatique` ; sans ça, le modèle doit remplir un champ que personne ne lui explique |
+| Un test qui compare le code à lui-même | il resterait vert si la règle devenait fausse |
+
+**À faire au prochain démarrage, dans l'ordre :**
+1. Vérifier l'état : `npx jest` et `npx tsc --noEmit` (muet). Références avant
+   la passe de correction : 71 suites, 702 tests.
+2. Reboucler les **deux relectures** sur la correction, puis committer la
+   tâche 2 et la tâche 3 (avancée exprès, voir le tableau).
+3. Enchaîner sur la tâche 4, puis la **4b**.
+4. Modèle pour l'orchestration et les relectures : le plus capable disponible
+   (Opus), pas seulement Sonnet. Ce chantier a un historique de bugs subtils
+   que seule la relecture qualité attrape, deux fois sur deux maintenant.
 
 Un doublon sans conséquence traîne sur cette branche : un commit "Installe
 Graphify" (`baf7fd0`) qui aurait dû rester sur `main` uniquement. Il a été
@@ -48,9 +58,10 @@ tant qu'un relecteur a des réserves.
 | # | Tâche | État |
 |---|---|---|
 | 1 | Conversions séances et items | ✅ terminée et **approuvée** en relecture, `4f4ff70` |
-| 2 | L'IA rend des séances | à faire |
-| 3 | Les consignes d'import | à faire |
+| 2 | L'IA rend des séances | codée, **en correction** après relecture qualité, non commitée |
+| 3 | Les consignes d'import | **avancée** au 20/08 : le schéma exige `seances` sans que le modèle sache quoi y mettre. Visait une fonction morte, corrigée sur `systemImportAutomatique` |
 | 4 | La colonne en base et son remplissage | à faire |
+| 4b | Les trois portes fermées entre l'IA et la base | **ajoutée le 20/08**, elle manquait au plan. Sans elle les séances n'atteignent ni l'écran de vérification ni la base |
 | 5 | Une séance par créneau | à faire |
 | 6 | La sauvegarde conserve « à placer » | à faire |
 | 7 | Les deux garanties sur le lundi réel | à faire, **valeurs à valider par Christophe** |
