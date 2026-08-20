@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfEnPoche, le livre en contour seul</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600;700&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --studio:#14121a; --studio-2:#1c1926; --rule:#2e2a3c;
+    --ink:#f4f2f8; --ink-soft:#b9b2cc; --ink-faint:#8a83a0;
+    --violet-600:#7c3aed; --purple-600:#9333ea;
+    --violet-300:#c4b5fd; --purple-200:#e9d5ff; --fuchsia-200:#f5d0fe;
+    --violet-50:#f5f3ff; --violet-200:#ddd6fe;
+    --ok:#6ee7a8; --warn:#fbbf6e; --bad:#fb8ea0;
+  }
+
+  body {
+    margin:0; background:var(--studio); color:var(--ink);
+    font-family:'Quicksand',system-ui,sans-serif; font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem); }
+
+  .hero { padding:clamp(3.5rem,10vh,6.5rem) 0 clamp(1.8rem,5vh,3rem); }
+  .hero h1 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(2.2rem,6vw,3.8rem); line-height:1.04;
+    letter-spacing:-.025em; margin:0 0 1rem; text-wrap:balance;
+  }
+  .hero p { max-width:64ch; margin:0; color:var(--ink-soft); font-size:clamp(1rem,2vw,1.14rem); }
+
+  section { padding:clamp(2.6rem,7vh,4.6rem) 0; border-top:1px solid var(--rule); }
+  section > .wrap > h2 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(1.65rem,4vw,2.4rem); letter-spacing:-.02em;
+    line-height:1.1; margin:0 0 .7rem; text-wrap:balance;
+  }
+  section > .wrap > .lede { max-width:66ch; margin:0 0 2.4rem; color:var(--ink-soft); }
+
+  /* ---------- Barre reelle de l'appli ---------- */
+  .banc {
+    border-radius:18px; overflow:hidden;
+    background:linear-gradient(to bottom right,var(--violet-300),var(--purple-200) 55%,var(--fuchsia-200));
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6), 0 2px 5px rgba(0,0,0,.32);
+  }
+  .barre {
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    color:#fff; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 1.15rem; --sym-bg:#8338ee;
+  }
+  .corps { padding:1rem 1.15rem 1.25rem; display:flex; gap:.55rem; flex-wrap:wrap; }
+  .corps i { display:block; height:9px; border-radius:999px; background:rgba(255,255,255,.72); }
+  .corps i:nth-child(1){width:46%} .corps i:nth-child(2){width:26%} .corps i:nth-child(3){width:62%}
+  .nav-faux { display:flex; gap:1rem; font-size:.78rem; font-weight:600; color:rgba(255,255,255,.9); }
+  @media (max-width:700px){ .nav-faux{display:none} }
+
+  /* Great Vibes deborde vers le haut de 0,041 em. Mesure faite au tour precedent. */
+  .gv, .cv { line-height:1; white-space:nowrap; display:inline-block; }
+  .gv { font-family:'Great Vibes',cursive; }
+  .cv { font-family:'Caveat',cursive; font-weight:700; }
+  .gv-barre { font-size:2.45rem; letter-spacing:.012em; transform:translateY(.041em); }
+  .cv-barre { font-size:1.95rem; letter-spacing:.005em; }
+
+  .marque { display:flex; align-items:center; gap:.62rem; min-width:0; }
+  .sym { flex:none; display:grid; place-items:center; }
+  .sym svg { display:block; }
+
+  /* L'ancien cadre carre, garde pour la comparaison */
+  .cadre-carre {
+    width:40px; height:40px; border-radius:13px;
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+  }
+
+  /* ---------- Bouton flottant de l'assistant, d'apres AssistantFlottant.tsx ---------- */
+  .scene-appli {
+    position:relative; border-radius:18px; overflow:hidden; min-height:180px;
+    background:linear-gradient(to bottom,#fff,var(--violet-50));
+    border:1px solid var(--violet-200); padding:1.1rem 1.2rem;
+  }
+  .faux-texte i { display:block; height:9px; border-radius:999px; background:#e2e8f0; margin-bottom:.55rem; }
+  .faux-texte i:nth-child(1){width:52%} .faux-texte i:nth-child(2){width:74%}
+  .faux-texte i:nth-child(3){width:38%} .faux-texte i:nth-child(4){width:64%}
+  .flottant {
+    position:absolute; right:16px; bottom:16px;
+    width:44px; height:44px; border-radius:12px;
+    background:var(--violet-600); color:#fff;
+    display:grid; place-items:center;
+    box-shadow:0 10px 15px -3px rgba(139,92,246,.4);
+    --sym-bg:#7c3aed;
+  }
+  .flottant::before {
+    content:''; position:absolute; inset:-3px; border-radius:15px; z-index:-1;
+    background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#fde68a 300deg,#ffffff 335deg,#fef3c7 352deg,transparent 360deg);
+    animation:tourne 1.2s linear infinite;
+  }
+  @keyframes tourne { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ .flottant::before { animation:none; } }
+
+  .chat-tete {
+    display:flex; align-items:center; gap:.5rem;
+    background:var(--violet-600); color:#fff;
+    padding:.6rem .85rem; border-radius:12px 12px 0 0;
+    font-weight:600; font-size:.95rem; --sym-bg:#7c3aed;
+  }
+  .chat-corps {
+    background:#fff; border:1px solid #e2e8f0; border-top:0; border-radius:0 0 12px 12px; padding:.85rem;
+  }
+  .chat-corps i { display:block; height:8px; border-radius:999px; background:#e2e8f0; margin-bottom:.5rem; }
+  .chat-corps i:last-child { margin-bottom:0; }
+  .chat-corps i:nth-child(1){width:82%} .chat-corps i:nth-child(2){width:56%}
+
+  /* ---------- Bandes de tailles ---------- */
+  .tailles {
+    display:flex; align-items:flex-end; gap:1.35rem; flex-wrap:wrap;
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    border-radius:12px; padding:.95rem 1.1rem; --sym-bg:#8338ee;
+  }
+  .u { display:grid; place-items:center; color:#fff; }
+  .u b { display:block; font-size:.62rem; font-weight:600; color:rgba(255,255,255,.72); margin-top:.35rem; letter-spacing:.04em; }
+  .s16 svg{width:16px;height:16px} .s24 svg{width:24px;height:24px}
+  .s32 svg{width:32px;height:32px} .s48 svg{width:48px;height:48px}
+  .s64 svg{width:64px;height:64px} .s96 svg{width:96px;height:96px}
+  .s120 svg{width:120px;height:120px}
+
+  .inverse {
+    display:inline-grid; place-items:center; background:#fff; color:var(--violet-600);
+    --sym-bg:#fff; padding:13px; border-radius:14px;
+  }
+
+  /* ---------- Mise en page ---------- */
+  .grille { display:grid; gap:1.4rem; grid-template-columns:1fr; }
+  @media (min-width:900px){ .grille { grid-template-columns:1.15fr .85fr; align-items:start; } }
+
+  .cas { margin-bottom:3.2rem; padding-bottom:3.2rem; border-bottom:1px dashed var(--rule); }
+  .cas:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
+  .cas h3 {
+    font-family:'Playfair Display',serif; font-weight:600; font-size:1.35rem;
+    letter-spacing:-.01em; margin:0 0 .35rem;
+  }
+  .cas h3 .num { color:var(--violet-300); font-family:'Quicksand',sans-serif; font-weight:700; font-size:.9rem; margin-right:.5rem; vertical-align:.18em; }
+  .cas > p { max-width:68ch; color:var(--ink-soft); margin:0 0 1.3rem; font-size:.99rem; }
+
+  .colonne-droite > * + * { margin-top:1rem; }
+  .etiq { font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 .45rem; }
+  code { font-family:ui-monospace,'Cascadia Code',Consolas,monospace; font-size:.88em; background:rgba(255,255,255,.07); padding:.1em .35em; border-radius:5px; }
+
+  .verdict {
+    margin-top:1.3rem; padding:.85rem 1rem; border-radius:11px;
+    background:var(--studio-2); border:1px solid var(--rule);
+    font-size:.94rem; color:var(--ink-soft); max-width:70ch;
+  }
+  .verdict b { color:var(--ink); }
+  .verdict.oui { border-left:3px solid var(--ok); }
+  .verdict.bof { border-left:3px solid var(--warn); }
+  .verdict.non { border-left:3px solid var(--bad); }
+
+  .note {
+    background:var(--studio-2); border:1px solid var(--rule); border-radius:14px;
+    padding:1.15rem 1.3rem; max-width:74ch; color:var(--ink-soft); font-size:.97rem;
+  }
+  .note + .note { margin-top:1rem; }
+  .note b, .note strong { color:var(--ink); }
+
+  .duo { display:grid; gap:1.4rem; grid-template-columns:1fr; }
+  @media (min-width:760px){ .duo { grid-template-columns:1fr 1fr; } }
+
+  .legende { font-size:.85rem; color:var(--ink-faint); margin:.6rem 0 0; max-width:56ch; }
+  .legende.ok::before { content:'\2713\00a0'; color:var(--ok); }
+  .legende.ko::before { content:'\2715\00a0'; color:var(--bad); }
+
+  ol.decisions { max-width:70ch; padding-left:1.15rem; color:var(--ink-soft); }
+  ol.decisions li { margin-bottom:.9rem; }
+  ol.decisions b { color:var(--ink); }
+</style>
+</head>
+<body>
+
+
+<!-- ============ LES PIECES ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- LE LIVRE, CONTOUR SEUL. Un seul chemin ferme : les deux pages se
+         rejoignent au milieu, la reliure interieure a disparu. L'interieur
+         est desormais un seul volume, ce qui permet d'y centrer le symbole. -->
+    <symbol id="livreC" viewBox="0 0 24 24">
+      <path d="M2.4 5.6 C5.2 5.2 9.0 5.9 12 7.3 C15.0 5.9 18.8 5.2 21.6 5.6
+               L21.6 18.4 C18.8 18.0 15.0 18.7 12 20.1 C9.0 18.7 5.2 18.0 2.4 18.4 Z"/>
+    </symbol>
+
+    <!-- L'ANCIEN, garde uniquement pour la comparaison : deux pages + gouttiere -->
+    <symbol id="livreOld" viewBox="0 0 24 24">
+      <path d="M2.4 5.6 C5.2 5.2 9.0 5.9 11.35 7.3 L11.35 20.1 C9.0 18.7 5.2 18.0 2.4 18.4 Z"/>
+      <path d="M21.6 5.6 C18.8 5.2 15.0 5.9 12.65 7.3 L12.65 20.1 C15.0 18.7 18.8 18.0 21.6 18.4 Z"/>
+    </symbol>
+
+    <!-- ===== LES VRAIES ETOILES DU BOUTON =====
+         lucide-react v1.25.0, icone "sparkles", copiee telle quelle depuis
+         node_modules/lucide-react/dist/esm/icons/sparkles.mjs
+         C'est exactement ce que porte AssistantFlottant.tsx aujourd'hui. -->
+    <symbol id="spkTrait" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
+        <path d="M20 2v4"/><path d="M22 4h-4"/>
+        <circle cx="4" cy="20" r="2"/>
+      </g>
+    </symbol>
+
+    <!-- La meme, trait re-epaissi pour survivre a la reduction -->
+    <symbol id="spkGras" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
+        <path d="M20 2v4"/><path d="M22 4h-4"/>
+        <circle cx="4" cy="20" r="2"/>
+      </g>
+    </symbol>
+
+    <!-- La meme geometrie, mais pleine : meme dessin, autre traitement -->
+    <symbol id="spkPlein" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 2v4"/><path d="M22 4h-4"/></g>
+      <circle cx="4" cy="20" r="2" fill="currentColor"/>
+    </symbol>
+
+    <!-- La grande etoile seule, pleine : le repli pour le 16 px -->
+    <symbol id="spkSeule" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
+    </symbol>
+
+    <!-- ===== LES MONTAGES =====
+         Le symbole est centre dans le livre : echelle 0,47 et le centre de
+         l'etoile (12,12 dans son propre repere) tombe sur (12 ; 13,6),
+         c'est-a-dire au milieu du creux du livre. -->
+
+    <!-- A. Trait d'origine -->
+    <symbol id="mA" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".42" stroke-width=".8"><use href="#livreC"/></g>
+      <g transform="translate(6.36 7.96) scale(0.47)"><use href="#spkTrait"/></g>
+    </symbol>
+
+    <!-- B. Trait re-epaissi -->
+    <symbol id="mB" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".42" stroke-width=".8"><use href="#livreC"/></g>
+      <g transform="translate(6.36 7.96) scale(0.47)"><use href="#spkGras"/></g>
+    </symbol>
+
+    <!-- C. Meme dessin, plein -->
+    <symbol id="mC" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".42" stroke-width=".8"><use href="#livreC"/></g>
+      <g transform="translate(6.36 7.96) scale(0.47)"><use href="#spkPlein"/></g>
+    </symbol>
+
+    <!-- C-repli. La grande etoile seule, un peu plus grande : pour le 16 px -->
+    <symbol id="mCb" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".24" stroke="currentColor" stroke-opacity=".5" stroke-width=".9"><use href="#livreC"/></g>
+      <g transform="translate(5.28 6.88) scale(0.56)"><use href="#spkSeule"/></g>
+    </symbol>
+
+    <!-- D. Le livre au trait seul, symbole plein dedans -->
+    <symbol id="mD" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-opacity=".78" stroke-width="1.3" stroke-linejoin="round"><use href="#livreC"/></g>
+      <g transform="translate(6.36 7.96) scale(0.47)"><use href="#spkPlein"/></g>
+    </symbol>
+
+    <!-- E. Le meme que C, mais sans le point rond en bas a gauche.
+         Constate au rendu : ce point lit comme une salissure des 32 px. -->
+    <symbol id="spkSansPoint" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M20 2v4"/><path d="M22 4h-4"/></g>
+    </symbol>
+    <symbol id="mE" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".42" stroke-width=".8"><use href="#livreC"/></g>
+      <g transform="translate(6.0 7.6) scale(0.5)"><use href="#spkSansPoint"/></g>
+    </symbol>
+
+    <!-- Le temoin : la vraie Sparkles seule, taille reelle, telle qu'aujourd'hui -->
+    <symbol id="temoin" viewBox="0 0 24 24"><use href="#spkTrait"/></symbol>
+
+    <!-- L'ancien montage d'hier, pour mesurer le chemin parcouru -->
+    <symbol id="hier" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".42" stroke-width=".8"><use href="#livreOld"/></g>
+      <path transform="translate(4.51 5.66) scale(0.58)" fill="currentColor" d="M10.5 4.6 Q12.34 11.16 18.9 13 Q12.34 14.84 10.5 21.4 Q8.66 14.84 2.1 13 Q8.66 11.16 10.5 4.6 Z"/>
+      <path transform="translate(6.86 0.51) scale(0.72)" fill="currentColor" d="M18.6 1.7 Q19.41 4.59 22.3 5.4 Q19.41 6.21 18.6 9.1 Q17.79 6.21 14.9 5.4 Q17.79 4.59 18.6 1.7 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="hero"><div class="wrap">
+  <h1>Le livre en contour seul,<br>l'étoile du bouton dedans</h1>
+  <p>Deux corrections d'un coup. La reliure intérieure disparaît, le livre devient un contour unique et son intérieur un seul volume. Et le symbole qu'on y pose n'est plus mon approximation d'hier : c'est la vraie <code>Sparkles</code> de lucide, celle que porte déjà ton bouton d'assistant, copiée telle quelle depuis <code>node_modules</code>.</p>
+</div></header>
+
+<!-- ============ CE QUI CHANGE ============ -->
+<section><div class="wrap">
+  <h2>Ce qui change exactement</h2>
+  <p class="lede">Trois choses bougent entre hier et maintenant. Le trait du milieu part, l'étoile change de dessin, et plus rien ne dépasse du livre.</p>
+
+  <div class="duo">
+    <div>
+      <p class="etiq">Hier</p>
+      <div class="inverse s120"><svg><use href="#hier"/></svg></div>
+      <p class="legende ko">Deux pages séparées par une gouttière. Mon étoile maison, pas celle de l'appli. La petite étoile sort du cadre en haut à droite.</p>
+    </div>
+    <div>
+      <p class="etiq">Maintenant</p>
+      <div class="inverse s120"><svg><use href="#mE"/></svg></div>
+      <p class="legende ok">Un seul contour fermé. L'étoile du bouton, pleine, centrée dans le creux du livre. Rien ne dépasse.</p>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:1.6rem">
+    <b>La géométrie que je reprends.</b> Ton bouton utilise <code>lucide-react v1.25.0</code>, icône <code>sparkles</code>. Elle n'est pas faite de deux étoiles comme je le croyais hier : c'est <b>une grande étoile à quatre branches au centre</b>, <b>une petite croix en haut à droite</b>, et <b>un point rond en bas à gauche</b>. Je l'ai copiée au caractère près, sans la redessiner. Si tu changes un jour la version de lucide, le logo suivra sans travail.
+  </div>
+
+  <div class="grille" style="margin-top:1.4rem">
+    <div>
+      <p class="etiq">La Sparkles seule, telle qu'elle est aujourd'hui dans le bouton</p>
+      <div class="scene-appli">
+        <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+        <div class="flottant"><svg width="22" height="22"><use href="#temoin"/></svg></div>
+      </div>
+    </div>
+    <div class="colonne-droite">
+      <div class="note">Le point important : cette icône est un <b>dessin au trait</b>, pas une forme pleine. C'est gratuit à 20 px sur un bouton. Réduite dans un livre, le trait devient deux fois plus fin, et c'est là que tout se joue. Les trois montages ci-dessous ne diffèrent que par la réponse à ce problème.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ LES TROIS MONTAGES ============ -->
+<section><div class="wrap">
+  <h2>Trois façons de poser l'étoile dans le livre</h2>
+  <p class="lede">Le livre est identique dans les trois, et l'étoile est au même endroit, à la même taille. Seul le traitement du trait change. Chacune est montrée dans la barre, en bouton d'assistant, aux quatre tailles réelles, et en violet sur blanc.</p>
+
+  <!-- A -->
+  <div class="cas">
+    <h3><span class="num">A</span>Le trait d'origine</h3>
+    <p>L'icône est posée telle quelle, épaisseur comprise. C'est la plus fidèle à ce que tu vois aujourd'hui sur le bouton, au facteur de réduction près.</p>
+    <div class="grille">
+      <div>
+        <div class="banc">
+          <div class="barre">
+            <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mA"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+            <nav class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></nav>
+          </div>
+          <div class="corps"><i></i><i></i><i></i></div>
+        </div>
+        <div class="tailles" style="margin-top:1rem">
+          <span class="u s48"><svg><use href="#mA"/></svg><b>48</b></span>
+          <span class="u s32"><svg><use href="#mA"/></svg><b>32</b></span>
+          <span class="u s24"><svg><use href="#mA"/></svg><b>24</b></span>
+          <span class="u s16"><svg><use href="#mA"/></svg><b>16</b></span>
+        </div>
+      </div>
+      <div class="colonne-droite">
+        <div>
+          <p class="etiq">Le bouton de l'assistant</p>
+          <div class="scene-appli">
+            <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+            <div class="flottant"><svg width="26" height="26"><use href="#mA"/></svg></div>
+          </div>
+        </div>
+        <div class="inverse s64"><svg><use href="#mA"/></svg></div>
+      </div>
+    </div>
+    <div class="verdict bof"><b>Le trait s'évanouit.</b> Regarde la vignette 16 px. Réduite à 47 %, une épaisseur de 2 devient une épaisseur de 0,94, et sur une icône de 16 px cela fait un trait de six dixièmes de pixel. Beau en grand, absent en petit.</div>
+  </div>
+
+  <!-- B -->
+  <div class="cas">
+    <h3><span class="num">B</span>Le même trait, ré-épaissi</h3>
+    <p>Même dessin, mais je compense la réduction en épaississant le trait, de façon que l'étoile garde à l'écran le poids qu'elle a aujourd'hui sur le bouton.</p>
+    <div class="grille">
+      <div>
+        <div class="banc">
+          <div class="barre">
+            <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mB"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+            <nav class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></nav>
+          </div>
+          <div class="corps"><i></i><i></i><i></i></div>
+        </div>
+        <div class="tailles" style="margin-top:1rem">
+          <span class="u s48"><svg><use href="#mB"/></svg><b>48</b></span>
+          <span class="u s32"><svg><use href="#mB"/></svg><b>32</b></span>
+          <span class="u s24"><svg><use href="#mB"/></svg><b>24</b></span>
+          <span class="u s16"><svg><use href="#mB"/></svg><b>16</b></span>
+        </div>
+      </div>
+      <div class="colonne-droite">
+        <div>
+          <p class="etiq">Le bouton de l'assistant</p>
+          <div class="scene-appli">
+            <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+            <div class="flottant"><svg width="26" height="26"><use href="#mB"/></svg></div>
+          </div>
+        </div>
+        <div class="inverse s64"><svg><use href="#mB"/></svg></div>
+      </div>
+    </div>
+    <div class="verdict bof"><b>Ça tient en petit, mais le creux de l'étoile se bouche.</b> Une étoile à quatre branches a des entailles étroites entre les branches. Quand le trait grossit, les deux bords de l'entaille se rejoignent et la branche perd sa pointe. En grand ça se voit, l'étoile a l'air soufflée.</div>
+  </div>
+
+  <!-- C -->
+  <div class="cas">
+    <h3><span class="num">C</span>Le même dessin, mais plein</h3>
+    <p>Exactement le même contour que ton icône, au point près, mais rempli au lieu d'être tracé. La croix et le point restent comme ils sont. C'est le seul des trois qui ne change pas d'allure entre 120 px et 16 px.</p>
+    <div class="grille">
+      <div>
+        <div class="banc">
+          <div class="barre">
+            <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mC"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+            <nav class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></nav>
+          </div>
+          <div class="corps"><i></i><i></i><i></i></div>
+        </div>
+        <div class="tailles" style="margin-top:1rem">
+          <span class="u s48"><svg><use href="#mC"/></svg><b>48</b></span>
+          <span class="u s32"><svg><use href="#mC"/></svg><b>32</b></span>
+          <span class="u s24"><svg><use href="#mC"/></svg><b>24</b></span>
+          <span class="u s16"><svg><use href="#mC"/></svg><b>16</b></span>
+        </div>
+      </div>
+      <div class="colonne-droite">
+        <div>
+          <p class="etiq">Le bouton de l'assistant</p>
+          <div class="scene-appli">
+            <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+            <div class="flottant"><svg width="26" height="26"><use href="#mC"/></svg></div>
+          </div>
+        </div>
+        <div>
+          <p class="etiq">L'en-tête du chat</p>
+          <div class="chat-tete"><svg width="20" height="20"><use href="#mC"/></svg> Mon assistant</div>
+          <div class="chat-corps"><i></i><i></i></div>
+        </div>
+        <div class="inverse s64"><svg><use href="#mC"/></svg></div>
+      </div>
+    </div>
+    <div class="verdict oui"><b>C'est celui que je te recommande.</b> Le contour est celui de ton icône, donc l'identité ne bouge pas : quelqu'un qui connaît le bouton reconnaît le logo. Une forme pleine se réduit sans se dégrader, alors qu'un trait fin, non. Et sur le voile pâle du livre, une étoile pleine se détache franchement au lieu de se mélanger.</div>
+  </div>
+</div></section>
+
+<!-- ============ LE POINT ============ -->
+<section><div class="wrap">
+  <h2>Le point en bas à gauche</h2>
+  <p class="lede">Ça, je ne l'avais pas prévu, je l'ai vu en regardant les rendus. La Sparkles de lucide porte un petit disque plein en bas à gauche. Sur un bouton de 20 px isolé, il passe. Enfermé dans un livre, il change de sens : il ne lit plus comme une étincelle, il lit comme une tache sur la page.</p>
+
+  <div class="grille">
+    <div>
+      <div class="tailles">
+        <span class="u s96"><svg><use href="#mC"/></svg><b>C, avec le point</b></span>
+        <span class="u s32"><svg><use href="#mC"/></svg><b>32</b></span>
+        <span class="u s24"><svg><use href="#mC"/></svg><b>24</b></span>
+      </div>
+      <div class="tailles" style="margin-top:.9rem">
+        <span class="u s96"><svg><use href="#mE"/></svg><b>E, sans le point</b></span>
+        <span class="u s32"><svg><use href="#mE"/></svg><b>32</b></span>
+        <span class="u s24"><svg><use href="#mE"/></svg><b>24</b></span>
+      </div>
+    </div>
+    <div class="colonne-droite">
+      <div class="inverse s96"><svg><use href="#mE"/></svg></div>
+      <div class="note">Pourquoi ça se produit : dans l'icône d'origine, le disque est <b>dans le vide</b>, il se lit comme une particule qui flotte. Dans le livre, il est <b>posé sur une surface</b>, et l'œil interprète un point isolé sur une page comme un défaut, pas comme une décoration. Le contexte a changé le sens du même dessin.</div>
+    </div>
+  </div>
+
+  <div class="verdict oui"><b>Je retire le point, et je garde la croix.</b> La croix est un signe, deux traits croisés, elle continue de dire « étincelle » même en petit. Le disque, lui, n'a aucune direction, donc rien ne le distingue d'une poussière. On garde l'étoile et la croix : l'identité avec le bouton tient toujours, et le dessin se calme.</div>
+
+  <div class="cas" style="margin-top:2.6rem;padding-top:2.4rem;border-top:1px dashed var(--rule);border-bottom:0;padding-bottom:0;margin-bottom:0">
+    <h3>Et si on allait plus loin : l'étoile toute seule</h3>
+    <p>Tant qu'à retirer le point, la question se pose pour la croix aussi. Voici le logo réduit à une seule étoile pleine, centrée dans le livre. Je te le montre parce qu'en le regardant à côté des autres, ce n'est plus du tout un repli technique pour le favicon : c'est peut-être simplement le meilleur des trois.</p>
+    <div class="grille">
+      <div>
+        <div class="banc">
+          <div class="barre">
+            <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mCb"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+            <nav class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></nav>
+          </div>
+          <div class="corps"><i></i><i></i><i></i></div>
+        </div>
+        <div class="tailles" style="margin-top:1rem">
+          <span class="u s48"><svg><use href="#mCb"/></svg><b>48</b></span>
+          <span class="u s32"><svg><use href="#mCb"/></svg><b>32</b></span>
+          <span class="u s24"><svg><use href="#mCb"/></svg><b>24</b></span>
+          <span class="u s16"><svg><use href="#mCb"/></svg><b>16</b></span>
+        </div>
+      </div>
+      <div class="colonne-droite">
+        <div>
+          <p class="etiq">Le bouton de l'assistant</p>
+          <div class="scene-appli">
+            <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+            <div class="flottant"><svg width="26" height="26"><use href="#mCb"/></svg></div>
+          </div>
+        </div>
+        <div class="inverse s96"><svg><use href="#mCb"/></svg></div>
+      </div>
+    </div>
+    <div class="verdict oui"><b>C'est le plus calme et le plus solide.</b> Une forme, un contenant, rien d'autre. C'est le seul qui reste parfaitement net à 16 px sans qu'on ait à fabriquer une seconde version. Ce qu'il perd : la croix était le petit signe qui disait « intelligence artificielle » plutôt que « joli ». Sans elle, on lit une étoile sur un livre, ce qui est plus sobre mais aussi plus banal.</div>
+  </div>
+</div></section>
+
+<!-- ============ LE LIVRE, VOILE OU TRAIT ============ -->
+<section><div class="wrap">
+  <h2>Et le livre lui-même, voile ou trait</h2>
+  <p class="lede">Quand tu as écrit « juste le contour », je l'ai lu comme « le contour extérieur, pas la reliure du milieu ». Mais ça peut aussi vouloir dire « un trait, pas une surface ». Voici les deux, pour que tu tranches en les voyant plutôt qu'en les imaginant.</p>
+
+  <div class="duo">
+    <div>
+      <p class="etiq">Le voile, ce que tu avais choisi hier matin</p>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mC"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <div class="tailles" style="margin-top:.8rem">
+        <span class="u s48"><svg><use href="#mC"/></svg><b>48</b></span>
+        <span class="u s32"><svg><use href="#mC"/></svg><b>32</b></span>
+        <span class="u s24"><svg><use href="#mC"/></svg><b>24</b></span>
+        <span class="u s16"><svg><use href="#mC"/></svg><b>16</b></span>
+      </div>
+      <p class="legende ok">Le livre est une surface pâle, l'étoile pleine passe par-dessus sans conflit.</p>
+    </div>
+    <div>
+      <p class="etiq">Le trait</p>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mD"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <div class="tailles" style="margin-top:.8rem">
+        <span class="u s48"><svg><use href="#mD"/></svg><b>48</b></span>
+        <span class="u s32"><svg><use href="#mD"/></svg><b>32</b></span>
+        <span class="u s24"><svg><use href="#mD"/></svg><b>24</b></span>
+        <span class="u s16"><svg><use href="#mD"/></svg><b>16</b></span>
+      </div>
+      <p class="legende">Plus graphique, plus proche des icônes lucide du reste de l'appli. Mais le trait fin est toujours le premier à disparaître en 16 px.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ LE 16 PX ============ -->
+<section><div class="wrap">
+  <h2>Le cas du 16 pixels</h2>
+  <p class="lede">Le favicon d'onglet, c'est 16 pixels de côté. À cette taille, la croix et le point de la Sparkles ne sont plus que deux salissures. La règle habituelle, c'est un logo à deux niveaux : le dessin complet partout, une version allégée sous 20 px.</p>
+  <div class="tailles">
+    <span class="u s48"><svg><use href="#mC"/></svg><b>48 complet</b></span>
+    <span class="u s16"><svg><use href="#mC"/></svg><b>16 complet</b></span>
+    <span class="u s16"><svg><use href="#mCb"/></svg><b>16 allégé</b></span>
+    <span class="u s48"><svg><use href="#mCb"/></svg><b>48 allégé</b></span>
+  </div>
+  <div class="note" style="margin-top:1.2rem">Dans la version allégée, je retire la croix et le point, et j'agrandis un peu la grande étoile pour qu'elle occupe le livre. Compare les deux vignettes 16 du milieu : c'est le même logo, mais l'une est lisible et l'autre est un pâté. <b>Ça ne demande aucune décision de ta part</b>, c'est de la mécanique, je le signale seulement pour que tu saches pourquoi il y aura deux fichiers.</div>
+</div></section>
+
+<!-- ============ LE NOM ============ -->
+<section><div class="wrap">
+  <h2>Et le nom, à côté du livre</h2>
+  <p class="lede">La dernière décision ouverte depuis hier. Les deux polices sont montrées avec le symbole retenu, dans la vraie barre violette.</p>
+  <div class="duo">
+    <div>
+      <p class="etiq">Great Vibes</p>
+      <div class="banc"><div class="barre">
+        <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mC"/></svg></span><span class="gv gv-barre">ProfEnPoche</span></div>
+      </div><div class="corps"><i></i><i></i><i></i></div></div>
+      <p class="legende">Calligraphie fine, à la plume. Élégante, plus distante. Elle fatigue un peu en petit.</p>
+    </div>
+    <div>
+      <p class="etiq">Caveat</p>
+      <div class="banc"><div class="barre">
+        <div class="marque"><span class="sym"><svg width="40" height="40"><use href="#mC"/></svg></span><span class="cv cv-barre">ProfEnPoche</span></div>
+      </div><div class="corps"><i></i><i></i><i></i></div></div>
+      <p class="legende">Écriture au feutre, celle d'un tableau de classe. Plus chaleureuse, plus lisible en petit, moins distinguée.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ CE QU'IL ME FAUT ============ -->
+<section><div class="wrap">
+  <h2>Ce qu'il me faut de toi</h2>
+  <ol class="decisions">
+    <li><b>Le traitement de l'étoile : A, B ou C.</b> Après vérification au rendu, <b>C</b> (le même dessin, plein) est le seul qui tienne. A disparaît en petit, B se bouche en grand. Ce n'est plus vraiment une question ouverte, mais tu peux regarder les trois et me contredire.</li>
+    <li><b>Ce qu'on garde de la Sparkles : tout, sans le point, ou l'étoile seule.</b> C'est la vraie question maintenant. Je recommande <b>sans le point</b>, et je te signale que <b>l'étoile seule</b> est un candidat sérieux, pas juste un repli.</li>
+    <li><b>Le livre : voile ou trait.</b> Je recommande le <b>voile</b>, celui que tu avais choisi hier, parce qu'une surface pâle laisse l'étoile pleine se détacher.</li>
+    <li><b>Le nom : Great Vibes ou Caveat.</b> Pas de recommandation, c'est une question de ton, pas de technique.</li>
+  </ol>
+  <div class="note" style="margin-top:1.4rem">Une fois ces réponses données, j'arrête les pages d'essai et je passe au vrai travail : un composant <code>Logo</code> propre, le favicon aux bonnes tailles, le remplacement de <code>Sparkles</code> dans <code>AssistantFlottant.tsx</code>, et le renommage des 47 fichiers qui portent encore l'ancien nom.</div>
+</div></section>
+
+</body>
+</html>

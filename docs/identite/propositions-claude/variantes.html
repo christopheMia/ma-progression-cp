@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfEnPoche, variantes crayon et cadre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600;700&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --studio:#14121a; --studio-2:#1c1926; --rule:#2e2a3c;
+    --ink:#f4f2f8; --ink-soft:#b9b2cc; --ink-faint:#8a83a0;
+    --violet-600:#7c3aed; --purple-600:#9333ea; --violet-500:#8b5cf6;
+    --violet-300:#c4b5fd; --purple-200:#e9d5ff; --fuchsia-200:#f5d0fe;
+    --ok:#6ee7a8; --warn:#fbbf6e; --bad:#fb8ea0;
+  }
+
+  body {
+    margin:0; background:var(--studio); color:var(--ink);
+    font-family:'Quicksand',system-ui,sans-serif; font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem); }
+
+  .hero { padding:clamp(3.5rem,10vh,6.5rem) 0 clamp(1.8rem,5vh,3rem); }
+  .hero h1 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(2.2rem,6vw,3.8rem); line-height:1.04;
+    letter-spacing:-.025em; margin:0 0 1rem; text-wrap:balance;
+  }
+  .hero p { max-width:64ch; margin:0; color:var(--ink-soft); font-size:clamp(1rem,2vw,1.14rem); }
+
+  section { padding:clamp(2.6rem,7vh,4.6rem) 0; border-top:1px solid var(--rule); }
+  section > .wrap > h2 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(1.65rem,4vw,2.4rem); letter-spacing:-.02em;
+    line-height:1.1; margin:0 0 .7rem; text-wrap:balance;
+  }
+  section > .wrap > .lede { max-width:66ch; margin:0 0 2.4rem; color:var(--ink-soft); }
+
+  /* ---------- Barre reelle ---------- */
+  .banc {
+    border-radius:18px; overflow:hidden;
+    background:linear-gradient(to bottom right,var(--violet-300),var(--purple-200) 55%,var(--fuchsia-200));
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6), 0 2px 5px rgba(0,0,0,.32);
+  }
+  .barre {
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    color:#fff; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 1.15rem;
+  }
+  .corps { padding:1rem 1.15rem 1.25rem; display:flex; gap:.55rem; flex-wrap:wrap; }
+  .corps i { display:block; height:9px; border-radius:999px; background:rgba(255,255,255,.72); }
+  .corps i:nth-child(1){width:46%} .corps i:nth-child(2){width:26%} .corps i:nth-child(3){width:62%}
+  .nav-faux { display:flex; gap:1rem; font-size:.78rem; font-weight:600; color:rgba(255,255,255,.9); }
+  @media (max-width:700px){ .nav-faux{display:none} }
+
+  /* ---------- Typo, centrage optique mesure ----------
+     Great Vibes : 46 px d'encre pour une boite de 39, l'encre deborde vers le
+     haut. Mesure au pixel : elle tombe 1,6 px trop haut, soit 0,041 em.
+     Caveat : 0,4 px, aucune correction. */
+  .gv, .cv { line-height:1; white-space:nowrap; display:inline-block; }
+  .gv { font-family:'Great Vibes',cursive; }
+  .cv { font-family:'Caveat',cursive; font-weight:700; }
+  .gv-barre { font-size:2.45rem; letter-spacing:.012em; transform:translateY(.041em); }
+  .gv-faux  { font-size:2.45rem; letter-spacing:.012em; padding-bottom:.12em; }  /* mon reglage rate */
+  .gv-gemini{ font-size:1.85rem; }
+  .cv-barre { font-size:1.95rem; letter-spacing:.005em; }
+
+  /* ---------- Marque ---------- */
+  .marque { display:flex; align-items:center; gap:.62rem; min-width:0; }
+  .sym { flex:none; display:grid; place-items:center; }
+  .sym svg { display:block; }
+
+  /* Les trois traitements du cadre */
+  .cadre-trait { width:40px; height:40px; border-radius:13px; border:1.5px solid rgba(255,255,255,.55); }
+  .cadre-plein { width:40px; height:40px; border-radius:13px; background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3); }
+  .cadre-blanc { width:40px; height:40px; border-radius:13px; background:#fff; color:var(--violet-600); }
+
+  /* ---------- Le crayon a droite qui vient d'ecrire ----------
+     Le trait doit demarrer a la BASE du "e" final. Mesure : le bas de ce "e"
+     tombe exactement sur la ligne de base. Donc au lieu de placer le dessin a
+     des coordonnees devinees, on le pose juste apres le mot en `inline-block`
+     avec `vertical-align: baseline` : le bas de la vignette EST la ligne de
+     base, par construction. Le trace part de son coin bas gauche.
+     Avantage : ca marche pour Great Vibes comme pour Caveat sans reglage. */
+  .ecrit { display:inline-block; white-space:nowrap; }
+  .ecrit .mot { display:inline; }
+  .ecrit .trace {
+    display:inline-block; vertical-align:baseline;
+    width:2.4em; height:1.02em; margin-left:-.02em;
+  }
+  .ecrit .trace svg { display:block; width:100%; height:100%; overflow:visible; }
+
+  /* PIEGE PAYE ICI : la vignette du trait est dimensionnee en `em`, mais elle est
+     A COTE du mot, pas dedans. Elle heritait donc de la taille du texte courant
+     (17 px) au lieu de celle du nom (39 px), et le crayon ne faisait plus que
+     43 % de sa taille. La taille du nom doit donc porter sur le BLOC `.ecrit`,
+     pas sur le mot seul, pour que le trait partage le meme `em`.
+     Le calage optique porte sur le bloc pour la meme raison. */
+  .ecrit.e-gv { font-size:2.45rem; transform:translateY(.041em); }
+  .ecrit.e-cv { font-size:1.95rem; }
+  .ecrit .mot.gv { font-size:1em; letter-spacing:.012em; transform:none; padding-bottom:0; }
+  .ecrit .mot.cv { font-size:1em; letter-spacing:.005em; transform:none; }
+
+  /* ---------- Grilles ---------- */
+  .grille { display:grid; gap:1.5rem; grid-template-columns:1fr; }
+  @media (min-width:860px){ .grille { grid-template-columns:1fr 1fr; } }
+
+  .cas { margin-bottom:2.6rem; }
+  .cas:last-child { margin-bottom:0; }
+  .cas h3 {
+    font-family:'Playfair Display',serif; font-weight:600; font-size:1.18rem;
+    letter-spacing:-.01em; margin:0 0 .3rem;
+  }
+  .cas > p { max-width:68ch; color:var(--ink-soft); margin:0 0 1rem; font-size:.98rem; }
+
+  .legende { font-size:.8rem; color:var(--ink-faint); margin:.6rem 0 0; }
+  .legende b { color:var(--ink); font-weight:700; }
+  .legende.ok b { color:var(--ok); }
+  .legende.ko b { color:var(--bad); }
+
+  .note {
+    border-left:1px solid var(--violet-500); padding-left:1.1rem;
+    margin:2rem 0 0; color:var(--ink-soft); max-width:68ch;
+  }
+  .note.attention { border-color:var(--warn); }
+  .note strong { color:var(--ink); }
+
+  code {
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.86em;
+    background:var(--studio-2); border:1px solid var(--rule); border-radius:5px; padding:.08em .38em;
+  }
+
+  /* Loupe : la barre redessinee au double de sa taille reelle, plutot qu'une
+     mise a l'echelle par transform, qui rognait le haut des lettres. */
+  .loupe { background:var(--studio-2); border:1px solid var(--rule); border-radius:14px; padding:1.2rem; overflow-x:auto; }
+  .loupe .barre { height:112px; padding:0 2.3rem; border-radius:10px; }
+  .loupe .barre + .barre { margin-top:10px; }
+  .loupe .gv-faux  { font-size:4.9rem; padding-bottom:.12em; }
+  .loupe .gv-barre { font-size:4.9rem; transform:translateY(.041em); }
+  .reperes { position:relative; }
+  .reperes::after {
+    content:""; position:absolute; left:0; right:0; top:50%; height:1px;
+    background:rgba(255,255,255,.55); pointer-events:none;
+  }
+
+  footer { border-top:1px solid var(--rule); padding:2.2rem 0 4rem; color:var(--ink-faint); font-size:.88rem; }
+</style>
+</head>
+<body>
+
+<div class="wrap hero">
+  <h1>Le crayon qui vient d'écrire</h1>
+  <p>Ton idée, montée en trois variantes, plus la question du cadre : avec, sans, et une troisième que tu n'as pas demandée mais qui règle le défaut de celui de Gemini. Et d'abord la correction du centrage que ton œil avait repérée.</p>
+</div>
+
+<!-- ============ LE CENTRAGE ============ -->
+<section>
+<div class="wrap">
+  <h2>Le centrage, corrigé et prouvé</h2>
+  <p class="lede">Tu as vu juste. Mesure au pixel : l'encre de Great Vibes fait 46 px de haut pour une boîte de 39, elle déborde vers le haut et tombe naturellement 1,6 px trop haut. Mon <code>padding-bottom</code> en rajoutait 2,35. Total, environ 4 px trop haut dans une barre de 56. Le trait blanc marque le milieu exact de la barre.</p>
+
+  <div class="grille">
+    <div>
+      <div class="banc">
+        <div class="barre reperes">
+          <span class="gv gv-faux">ProfEnPoche</span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende ko"><b>Mon réglage raté</b> · le corps des lettres flotte au-dessus du trait</p>
+    </div>
+    <div>
+      <div class="banc">
+        <div class="barre reperes">
+          <span class="gv gv-barre">ProfEnPoche</span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende ok"><b>Corrigé</b> · <code>translateY(.041em)</code>, calculé et non deviné</p>
+    </div>
+  </div>
+
+  <h3 style="font-family:'Playfair Display',serif;font-weight:600;font-size:1.15rem;margin:2.4rem 0 .9rem">Les mêmes, grossis deux fois</h3>
+  <div class="loupe">
+    <div class="barre reperes"><span class="gv gv-faux">ProfEnPoche</span></div>
+    <div class="barre reperes"><span class="gv gv-barre">ProfEnPoche</span></div>
+  </div>
+  <p class="legende">En haut le raté, en bas le corrigé. À cette échelle l'écart est évident, et c'est bien là mon erreur : j'avais jugé sur une vignette réduite où 4 px sont invisibles.</p>
+</div>
+</section>
+
+<!-- ============ LE CRAYON A DROITE ============ -->
+<section>
+<div class="wrap">
+  <h2>Le crayon à droite, qui vient de tracer le nom</h2>
+  <p class="lede">Ton idée, corrigée. Le trait ne flotte plus sous le mot : il <strong>démarre à la base du « e » final</strong> et file vers la pointe du crayon, avec les deux étoiles que tu as aimées. Mesure faite, le bas de ce « e » tombe exactement sur la ligne de base ; le dessin est donc ancré sur cette ligne par construction, ce qui le rend juste pour les deux polices sans nouveau réglage.</p>
+
+  <!-- A : trait court -->
+  <div class="cas">
+    <h3>A · Le trait court</h3>
+    <p>Le trait part du « e », fait une courte courbe et rejoint tout de suite la pointe. Le geste est bref, le bloc reste compact. C'est celui qui prend le moins de place dans la barre.</p>
+    <div class="grille">
+      <div>
+        <div class="banc"><div class="barre">
+          <span class="ecrit e-gv">
+            <span class="mot gv gv-barre">ProfEnPoche</span><span class="trace" style="width:2.19em">
+              <svg viewBox="0 0 86 40" fill="none" aria-hidden="true">
+                <path d="M2 36c10 2.5 22 1 34-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" opacity=".92"/>
+                <g transform="translate(28.87 6.55) scale(1.25) rotate(-8 12 12)">
+                  <path d="M4.6 19.4l1.4-4.2 8.9-8.9 2.8 2.8-8.9 8.9-4.2 1.4Z" fill="#fff"/>
+                  <path d="M15.6 5.4l1.35-1.35a1.98 1.98 0 0 1 2.8 2.8L18.4 8.2 15.6 5.4Z" fill="#fff" fill-opacity=".7"/>
+                  <path d="M5.05 15.5l2.8 2.8" stroke="#7c3aed" stroke-width="1" opacity=".6"/>
+                </g>
+                <path d="M66 5.5c0 4.33 2.17 6.5 6.5 6.5-4.33 0-6.5 2.17-6.5 6.5 0-4.33-2.17-6.5-6.5-6.5 4.33 0 6.5-2.17 6.5-6.5Z" fill="#fff"/>
+                <path d="M78 20c0 2.67 1.33 4 4 4-2.67 0-4 1.33-4 4 0-2.67-1.33-4-4-4 2.67 0 4-1.33 4-4Z" fill="#fff" fill-opacity=".85"/>
+              </svg></span>
+          </span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div><div class="corps"><i></i><i></i><i></i></div></div>
+        <p class="legende"><b>Great Vibes</b></p>
+      </div>
+      <div>
+        <div class="banc"><div class="barre">
+          <span class="ecrit e-cv">
+            <span class="mot cv cv-barre">ProfEnPoche</span><span class="trace" style="width:2.19em">
+              <svg viewBox="0 0 86 40" fill="none" aria-hidden="true">
+                <path d="M2 36c10 2.5 22 1 34-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" opacity=".92"/>
+                <g transform="translate(28.87 6.55) scale(1.25) rotate(-8 12 12)">
+                  <path d="M4.6 19.4l1.4-4.2 8.9-8.9 2.8 2.8-8.9 8.9-4.2 1.4Z" fill="#fff"/>
+                  <path d="M15.6 5.4l1.35-1.35a1.98 1.98 0 0 1 2.8 2.8L18.4 8.2 15.6 5.4Z" fill="#fff" fill-opacity=".7"/>
+                  <path d="M5.05 15.5l2.8 2.8" stroke="#7c3aed" stroke-width="1" opacity=".6"/>
+                </g>
+                <path d="M66 5.5c0 4.33 2.17 6.5 6.5 6.5-4.33 0-6.5 2.17-6.5 6.5 0-4.33-2.17-6.5-6.5-6.5 4.33 0 6.5-2.17 6.5-6.5Z" fill="#fff"/>
+                <path d="M78 20c0 2.67 1.33 4 4 4-2.67 0-4 1.33-4 4 0-2.67-1.33-4-4-4 2.67 0 4-1.33 4-4Z" fill="#fff" fill-opacity=".85"/>
+              </svg></span>
+          </span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div><div class="corps"><i></i><i></i><i></i></div></div>
+        <p class="legende"><b>Caveat</b></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- B : trait long -->
+  <div class="cas">
+    <h3>B · Le trait long</h3>
+    <p>Le trait s'étire davantage avant de remonter vers la pointe, comme un geste qui prend son élan. Plus aérien, plus manuscrit, mais il pousse le crayon et les étoiles vers la droite.</p>
+    <div class="grille">
+      <div>
+        <div class="banc"><div class="barre">
+          <span class="ecrit e-gv">
+            <span class="mot gv gv-barre">ProfEnPoche</span><span class="trace" style="width:2.91em">
+              <svg viewBox="0 0 114 40" fill="none" aria-hidden="true">
+                <path d="M2 36c16 3.5 40 2 60-6" stroke="#fff" stroke-width="1.9" stroke-linecap="round" opacity=".92"/>
+                <g transform="translate(54.87 4.55) scale(1.25) rotate(-8 12 12)">
+                  <path d="M4.6 19.4l1.4-4.2 8.9-8.9 2.8 2.8-8.9 8.9-4.2 1.4Z" fill="#fff"/>
+                  <path d="M15.6 5.4l1.35-1.35a1.98 1.98 0 0 1 2.8 2.8L18.4 8.2 15.6 5.4Z" fill="#fff" fill-opacity=".7"/>
+                  <path d="M5.05 15.5l2.8 2.8" stroke="#7c3aed" stroke-width="1" opacity=".6"/>
+                </g>
+                <path d="M94 5.5c0 4.33 2.17 6.5 6.5 6.5-4.33 0-6.5 2.17-6.5 6.5 0-4.33-2.17-6.5-6.5-6.5 4.33 0 6.5-2.17 6.5-6.5Z" fill="#fff"/>
+                <path d="M106 20c0 2.67 1.33 4 4 4-2.67 0-4 1.33-4 4 0-2.67-1.33-4-4-4 2.67 0 4-1.33 4-4Z" fill="#fff" fill-opacity=".85"/>
+              </svg></span>
+          </span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div><div class="corps"><i></i><i></i><i></i></div></div>
+        <p class="legende"><b>Great Vibes</b></p>
+      </div>
+      <div>
+        <div class="banc"><div class="barre">
+          <span class="ecrit e-cv">
+            <span class="mot cv cv-barre">ProfEnPoche</span><span class="trace" style="width:2.91em">
+              <svg viewBox="0 0 114 40" fill="none" aria-hidden="true">
+                <path d="M2 36c16 3.5 40 2 60-6" stroke="#fff" stroke-width="1.9" stroke-linecap="round" opacity=".92"/>
+                <g transform="translate(54.87 4.55) scale(1.25) rotate(-8 12 12)">
+                  <path d="M4.6 19.4l1.4-4.2 8.9-8.9 2.8 2.8-8.9 8.9-4.2 1.4Z" fill="#fff"/>
+                  <path d="M15.6 5.4l1.35-1.35a1.98 1.98 0 0 1 2.8 2.8L18.4 8.2 15.6 5.4Z" fill="#fff" fill-opacity=".7"/>
+                  <path d="M5.05 15.5l2.8 2.8" stroke="#7c3aed" stroke-width="1" opacity=".6"/>
+                </g>
+                <path d="M94 5.5c0 4.33 2.17 6.5 6.5 6.5-4.33 0-6.5 2.17-6.5 6.5 0-4.33-2.17-6.5-6.5-6.5 4.33 0 6.5-2.17 6.5-6.5Z" fill="#fff"/>
+                <path d="M106 20c0 2.67 1.33 4 4 4-2.67 0-4 1.33-4 4 0-2.67-1.33-4-4-4 2.67 0 4-1.33 4-4Z" fill="#fff" fill-opacity=".85"/>
+              </svg></span>
+          </span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div><div class="corps"><i></i><i></i><i></i></div></div>
+        <p class="legende"><b>Caveat</b></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gros plan -->
+  <div class="cas">
+    <h3>Le raccord, vu de près</h3>
+    <p>Au double de la taille réelle, pour juger le seul point qui compte : le trait sort-il vraiment du bas du « e » ?</p>
+    <div class="loupe">
+      <div class="barre reperes">
+        <span class="ecrit e-gv" style="font-size:4.9rem">
+          <span class="mot gv gv-barre">ProfEnPoche</span><span class="trace" style="width:2.19em">
+            <svg viewBox="0 0 86 40" fill="none" aria-hidden="true">
+              <path d="M2 36c10 2.5 22 1 34-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" opacity=".92"/>
+              <g transform="translate(30.94 10.66) scale(1.1)">
+                <path d="M4.6 19.4l1.4-4.2 8.9-8.9 2.8 2.8-8.9 8.9-4.2 1.4Z" fill="#fff"/>
+                <path d="M15.6 5.4l1.35-1.35a1.98 1.98 0 0 1 2.8 2.8L18.4 8.2 15.6 5.4Z" fill="#fff" fill-opacity=".7"/>
+                <path d="M5.05 15.5l2.8 2.8" stroke="#7c3aed" stroke-width="1" opacity=".6"/>
+              </g>
+              <path d="M66 5.5c0 4.33 2.17 6.5 6.5 6.5-4.33 0-6.5 2.17-6.5 6.5 0-4.33-2.17-6.5-6.5-6.5 4.33 0 6.5-2.17 6.5-6.5Z" fill="#fff"/>
+              <path d="M78 20c0 2.67 1.33 4 4 4-2.67 0-4 1.33-4 4 0-2.67-1.33-4-4-4 2.67 0 4-1.33 4-4Z" fill="#fff" fill-opacity=".85"/>
+            </svg></span>
+        </span>
+      </div>
+      <div class="barre reperes">
+        <span class="ecrit e-cv" style="font-size:3.9rem">
+          <span class="mot cv cv-barre">ProfEnPoche</span><span class="trace" style="width:2.19em">
+            <svg viewBox="0 0 86 40" fill="none" aria-hidden="true">
+              <path d="M2 36c10 2.5 22 1 34-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" opacity=".92"/>
+              <g transform="translate(30.94 10.66) scale(1.1)">
+                <path d="M4.6 19.4l1.4-4.2 8.9-8.9 2.8 2.8-8.9 8.9-4.2 1.4Z" fill="#fff"/>
+                <path d="M15.6 5.4l1.35-1.35a1.98 1.98 0 0 1 2.8 2.8L18.4 8.2 15.6 5.4Z" fill="#fff" fill-opacity=".7"/>
+                <path d="M5.05 15.5l2.8 2.8" stroke="#7c3aed" stroke-width="1" opacity=".6"/>
+              </g>
+              <path d="M66 5.5c0 4.33 2.17 6.5 6.5 6.5-4.33 0-6.5 2.17-6.5 6.5 0-4.33-2.17-6.5-6.5-6.5 4.33 0 6.5-2.17 6.5-6.5Z" fill="#fff"/>
+              <path d="M78 20c0 2.67 1.33 4 4 4-2.67 0-4 1.33-4 4 0-2.67-1.33-4-4-4 2.67 0 4-1.33 4-4Z" fill="#fff" fill-opacity=".85"/>
+            </svg></span>
+        </span>
+      </div>
+    </div>
+    <p class="legende">Great Vibes en haut, Caveat en bas. Le trait est ancré sur la ligne de base, donc il tombe juste pour les deux sans réglage séparé.</p>
+  </div>
+
+  <div class="note attention">
+    <strong>Le prix à payer, à savoir avant de choisir :</strong> un crayon collé à droite du nom ne peut pas devenir un favicon. Il ne fonctionne qu'en bloc avec le mot. Il te faudra donc quand même un symbole seul, carré, pour l'onglet du navigateur et l'icône du téléphone. Ce n'est pas un problème, la plupart des marques ont les deux, mais ça fait deux dessins à valider et non un.
+  </div>
+</div>
+</section>
+
+<!-- ============ LE CADRE ============ -->
+<section>
+<div class="wrap">
+  <h2>Le cadre : pourquoi je l'avais enlevé, et à quoi il ressemble</h2>
+  <p class="lede">Je l'avais retiré parce que celui de Gemini ne se voit pas : il porte exactement le même violet que la barre, seul un liseré blanc à 30 % le trahit. Ce n'est pas un cadre, c'est un contour. Mais tu as raison de vouloir juger sur pièce, alors les voici tous les quatre, même symbole, même barre.</p>
+
+  <div class="grille">
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque">
+            <span class="sym" style="width:40px;height:40px;border-radius:13px;background:#8000ff;border:1px solid rgba(255,255,255,.3)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+                <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="gv gv-barre">ProfEnPoche</span>
+          </div>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende ko"><b>Le cadre de Gemini</b> · même violet que la barre, il ne sert à rien</p>
+    </div>
+
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque">
+            <span class="sym cadre-trait">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+                <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="gv gv-barre">ProfEnPoche</span>
+          </div>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><b>Contour seul</b> · liseré blanc à 55 %, intérieur transparent</p>
+    </div>
+
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque">
+            <span class="sym cadre-plein">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+                <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="gv gv-barre">ProfEnPoche</span>
+          </div>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende ok"><b>Cadre voilé</b> · fond blanc à 17 %, le cadre existe enfin</p>
+    </div>
+
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque">
+            <span class="sym cadre-blanc">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="currentColor"/>
+                <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="gv gv-barre">ProfEnPoche</span>
+          </div>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><b>Cadre plein blanc</b> · le plus visible, et c'est déjà l'icône du téléphone</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Ce que le cadre apporte vraiment :</strong> il donne au symbole un contour carré stable, donc une place fixe quelle que soit la forme du dessin, et il prépare l'icône du téléphone qui, elle, est forcément un carré. Sans cadre, le symbole flotte et sa taille perçue change à chaque variante. Ce n'est pas de la décoration.
+  </div>
+  <div class="note">
+    <strong>Et si on mettait les deux :</strong> le cadre à gauche pour le symbole, et le crayon à droite pour le geste. La barre devient chargée à mon avis, mais tu peux vouloir le voir. Dis-le et je le monte.
+  </div>
+</div>
+</section>
+
+<footer>
+<div class="wrap">
+  ProfEnPoche · variantes du 9 août 2026 · centrage corrigé par mesure, <code>translateY(.041em)</code> sur Great Vibes
+</div>
+</footer>
+
+</body>
+</html>

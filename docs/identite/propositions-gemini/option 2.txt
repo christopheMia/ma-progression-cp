@@ -1,0 +1,17 @@
+<!-- En-tête ProfEnPoche - Option 2 (Caveat) -->
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+<header class="bg-[#8000FF] text-white rounded-2xl shadow-md py-2.5 px-5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-[#8000FF] rounded-2xl flex items-center justify-center border border-white/30 shadow-sm hover:rotate-12 transition-transform duration-300 cursor-pointer">
+            <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3C12 7.5 14.5 10 19 10C14.5 10 12 12.5 12 17C12 12.5 9.5 10 5 10C9.5 10 12 7.5 12 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/>
+                <circle cx="6.5" cy="16.5" r="1.5" fill="currentColor"/>
+                <circle cx="17.5" cy="4.5" r="1" fill="currentColor"/>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold" style="font-family: 'Caveat', cursive;">ProfEnPoche</h1>
+            <p class="text-[10px] text-purple-200">Votre assistant pédagogique IA</p>
+        </div>
+    </div>
+</header>

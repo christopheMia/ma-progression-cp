@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfEnPoche, atelier d'identité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Great+Vibes&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    /* Studio : neutre profond, pour que les en-tetes violets se lisent comme des objets poses. */
+    --studio:      #14121a;
+    --studio-2:    #1c1926;
+    --rule:        #2e2a3c;
+    --ink:         #f4f2f8;
+    --ink-soft:    #b9b2cc;
+    --ink-faint:   #8a83a0;
+
+    /* Palette reelle de l'appli, relevee dans globals.css et (app)/layout.tsx */
+    --violet-600:  #7c3aed;
+    --purple-600:  #9333ea;
+    --violet-500:  #8b5cf6;
+    --violet-300:  #c4b5fd;
+    --purple-200:  #e9d5ff;
+    --fuchsia-200: #f5d0fe;
+
+    /* Le violet propose par Gemini */
+    --gemini:      #8000ff;
+
+    --ok:   #6ee7a8;
+    --warn: #fbbf6e;
+    --bad:  #fb8ea0;
+  }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--studio);
+    color: var(--ink);
+    font-family: 'Quicksand', system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(1.1rem, 4vw, 2.5rem); }
+
+  /* ---------- Titrage ---------- */
+
+  .hero { padding: clamp(4rem, 11vh, 8rem) 0 clamp(2.5rem, 6vh, 4rem); }
+  .hero h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(2.6rem, 7vw, 4.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin: 0 0 1.1rem;
+    text-wrap: balance;
+  }
+  .hero p {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: clamp(1.02rem, 2vw, 1.2rem);
+  }
+  .hero .meta {
+    margin-top: 2rem;
+    display: flex; flex-wrap: wrap; gap: .5rem .75rem;
+    font-size: .82rem; color: var(--ink-faint);
+  }
+  .meta span {
+    border: 1px solid var(--rule); border-radius: 999px;
+    padding: .3rem .8rem;
+  }
+
+  section { padding: clamp(3rem, 8vh, 5.5rem) 0; border-top: 1px solid var(--rule); }
+  section > .wrap > h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.8rem, 4vw, 2.7rem);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0 0 .7rem;
+    text-wrap: balance;
+  }
+  section > .wrap > .lede {
+    max-width: 66ch; margin: 0 0 3rem;
+    color: var(--ink-soft);
+  }
+
+  h3 {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700; font-size: 1.02rem;
+    letter-spacing: .02em;
+    margin: 0 0 .35rem;
+  }
+
+  /* ---------- Le banc d'essai : l'appli reelle ---------- */
+
+  .banc {
+    border-radius: 20px;
+    overflow: hidden;
+    /* Le vrai fond de page de l'appli */
+    background: linear-gradient(to bottom right, var(--violet-300), var(--purple-200) 55%, var(--fuchsia-200));
+    box-shadow: 0 24px 48px -20px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3);
+  }
+  .banc .barre {
+    /* Le vrai en-tete : violet-600 -> purple-600, hauteur 56px */
+    background: linear-gradient(to right, var(--violet-600), var(--purple-600));
+    color: #fff;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1.15rem;
+    box-shadow: 0 4px 14px -4px rgba(0,0,0,.35);
+  }
+  .banc .barre.plat { background: var(--gemini); }
+  .banc .barre.plat-arrondi {
+    background: var(--gemini);
+    border-radius: 16px;
+    height: 52px;
+    margin: .7rem;
+  }
+  .banc .corps {
+    padding: 1.15rem 1.15rem 1.4rem;
+    display: flex; gap: .6rem; flex-wrap: wrap;
+  }
+  .banc .corps i {
+    display: block; height: 9px; border-radius: 999px;
+    background: rgba(255,255,255,.72);
+  }
+  .banc .corps i:nth-child(1) { width: 46%; }
+  .banc .corps i:nth-child(2) { width: 26%; }
+  .banc .corps i:nth-child(3) { width: 62%; }
+  .nav-faux {
+    display: flex; gap: 1.05rem;
+    font-size: .78rem; font-weight: 600;
+    color: rgba(255,255,255,.9);
+  }
+  @media (max-width: 560px) { .nav-faux { display: none; } }
+
+  /* ---------- Les wordmarks ---------- */
+
+  .marque { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+  .marque .sym { flex: none; display: grid; place-items: center; }
+  .marque .sym svg { display: block; }
+  .marque .nom { line-height: 1; white-space: nowrap; }
+
+  .wm-vibes    { font-family: 'Great Vibes', cursive; font-size: 1.85rem; letter-spacing: .02em; }
+  .wm-caveat   { font-family: 'Caveat', cursive; font-weight: 700; font-size: 1.65rem; }
+  .wm-dancing  { font-family: 'Dancing Script', cursive; font-weight: 500; font-size: 1.6rem; }
+  .wm-quick    { font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 1.16rem; letter-spacing: -.005em; }
+  .wm-mixte    { font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 1.16rem; }
+  .wm-mixte b  { font-weight: 700; }
+  .wm-mixte em { font-family: 'Caveat', cursive; font-weight: 700; font-style: normal; font-size: 1.5rem; }
+
+  .sous {
+    display: block; font-size: 10px; font-weight: 500;
+    color: #e9d5ff; margin-top: 2px; letter-spacing: .01em;
+  }
+
+  /* La boite logo de Gemini : meme violet que la barre, seule la bordure la revele */
+  .boite-gemini {
+    width: 40px; height: 40px; border-radius: 14px;
+    background: var(--gemini);
+    border: 1px solid rgba(255,255,255,.3);
+    box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    transition: transform .3s;
+  }
+  .boite-gemini:hover { transform: rotate(12deg); }
+
+  .pastille {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.28);
+  }
+
+  /* ---------- Grilles ---------- */
+
+  .duo { display: grid; gap: 1.6rem; grid-template-columns: 1fr; }
+  @media (min-width: 880px) { .duo { grid-template-columns: 1fr 1fr; } }
+
+  .piste { margin-bottom: 3.4rem; }
+  .piste:last-child { margin-bottom: 0; }
+  .piste-tete {
+    display: flex; align-items: baseline; gap: .8rem;
+    margin-bottom: .55rem; flex-wrap: wrap;
+  }
+  .piste-tete h3 { font-size: 1.35rem; margin: 0; font-family: 'Playfair Display', serif; font-weight: 600; letter-spacing: -.01em; }
+  .badge {
+    font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    border-radius: 999px; padding: .22rem .6rem;
+    border: 1px solid currentColor;
+  }
+  .badge.reco { color: var(--ok); }
+  .piste > p { max-width: 68ch; color: var(--ink-soft); margin: 0 0 1.3rem; }
+
+  /* ---------- Diagnostic ---------- */
+
+  .defauts { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+  .defauts li {
+    display: grid; grid-template-columns: 2.1rem 1fr; gap: .1rem 1rem;
+    padding: 1.05rem 0; border-top: 1px solid var(--rule);
+  }
+  .defauts li:last-child { border-bottom: 1px solid var(--rule); }
+  .defauts .n {
+    font-variant-numeric: tabular-nums; font-weight: 700; font-size: .95rem;
+    color: var(--bad); padding-top: .1rem;
+  }
+  .defauts strong { display: block; font-weight: 700; margin-bottom: .18rem; }
+  .defauts p { margin: 0; color: var(--ink-soft); font-size: .95rem; max-width: 70ch; }
+  .defauts code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .86em; background: var(--studio-2);
+    border: 1px solid var(--rule); border-radius: 5px; padding: .08em .38em;
+  }
+
+  /* ---------- Le test des 16 pixels ---------- */
+
+  .favicons {
+    display: grid; gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  }
+  .fav {
+    background: var(--studio-2); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 1.3rem 1rem 1rem; text-align: center;
+  }
+  .fav .rangee {
+    display: flex; align-items: flex-end; justify-content: center; gap: 1.1rem;
+    min-height: 44px; margin-bottom: 1rem;
+  }
+  .fav .u {
+    background: linear-gradient(135deg, var(--violet-600), var(--purple-600));
+    display: grid; place-items: center; flex: none;
+  }
+  .fav .u.g { background: var(--gemini); }
+  .fav .u.s16 { width: 16px; height: 16px; border-radius: 4px; }
+  .fav .u.s32 { width: 32px; height: 32px; border-radius: 8px; }
+  .fav .u svg { display: block; }
+  .fav .nom-f { font-size: .82rem; font-weight: 600; }
+  .fav .verdict { font-size: .76rem; color: var(--ink-faint); margin-top: .18rem; }
+  .fav .verdict.ko { color: var(--bad); }
+  .fav .verdict.ok { color: var(--ok); }
+  .tailles { font-size: .68rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ---------- Tableau ---------- */
+
+  .tablo { overflow-x: auto; border: 1px solid var(--rule); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: .93rem; }
+  th, td { text-align: left; padding: .85rem 1.05rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 700; font-size: .8rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-faint); }
+  tr:last-child td { border-bottom: 0; }
+  td strong { font-weight: 700; }
+  .oui { color: var(--ok); font-weight: 700; }
+  .non { color: var(--bad); font-weight: 700; }
+  .bof { color: var(--warn); font-weight: 700; }
+
+  /* ---------- Divers ---------- */
+
+  .note {
+    border-left: 1px solid var(--violet-500);
+    padding-left: 1.15rem;
+    margin: 2.2rem 0 0;
+    color: var(--ink-soft);
+    max-width: 68ch;
+  }
+  .note strong { color: var(--ink); }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 2.5rem 0 4rem;
+    color: var(--ink-faint); font-size: .88rem;
+  }
+
+  .legende { font-size: .8rem; color: var(--ink-faint); margin: .7rem 0 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap hero">
+  <h1>ProfEnPoche</h1>
+  <p>Deux propositions de Gemini, trois pistes en face, et le seul test qui départage vraiment une marque d'application : sa lisibilité à 16 pixels. Tout est montré dans l'en-tête réel de ton appli, à sa taille réelle.</p>
+  <div class="meta">
+    <span>9 août 2026</span>
+    <span>Périmètre : l'appli, pas la landing</span>
+    <span>Palette relevée dans <code style="font-size:.9em">globals.css</code></span>
+  </div>
+</div>
+
+<!-- ============ GEMINI ============ -->
+<section>
+<div class="wrap">
+  <h2>Ce que propose Gemini</h2>
+  <p class="lede">Les deux fichiers sont identiques au mot près, sauf la police du nom et sa taille. Même violet, même symbole, même sous-titre. Le vrai choix qu'ils te posent est donc uniquement typographique.</p>
+
+  <div class="duo">
+    <div>
+      <div class="banc">
+        <div class="barre plat-arrondi">
+          <div class="marque">
+            <span class="boite-gemini" style="display:grid;place-items:center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3C12 7.5 14.5 10 19 10C14.5 10 12 12.5 12 17C12 12.5 9.5 10 5 10C9.5 10 12 7.5 12 3Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#fff" fill-opacity=".2"/>
+                <circle cx="6.5" cy="16.5" r="1.5" fill="#fff"/>
+                <circle cx="17.5" cy="4.5" r="1" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="nom">
+              <span class="wm-vibes">ProfEnPoche</span>
+              <span class="sous">Votre assistant pédagogique IA</span>
+            </span>
+          </div>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><strong style="color:var(--ink)">Option 1</strong> · Great Vibes · à sa taille réelle dans la barre</p>
+    </div>
+
+    <div>
+      <div class="banc">
+        <div class="barre plat-arrondi">
+          <div class="marque">
+            <span class="boite-gemini" style="display:grid;place-items:center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3C12 7.5 14.5 10 19 10C14.5 10 12 12.5 12 17C12 12.5 9.5 10 5 10C9.5 10 12 7.5 12 3Z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#fff" fill-opacity=".2"/>
+                <circle cx="6.5" cy="16.5" r="1.5" fill="#fff"/>
+                <circle cx="17.5" cy="4.5" r="1" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="nom">
+              <span class="wm-caveat">ProfEnPoche</span>
+              <span class="sous">Votre assistant pédagogique IA</span>
+            </span>
+          </div>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><strong style="color:var(--ink)">Option 2</strong> · Caveat · à sa taille réelle dans la barre</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Ce qui est juste chez Gemini :</strong> le nom est bien mis en avant, la barre arrondie donne une impression douce qui va avec ton appli, et Caveat (option 2) est un bon instinct, une écriture manuscrite parle à une maîtresse.
+  </div>
+
+  <h2 style="margin-top:3.5rem;font-size:1.5rem">Sept choses à corriger avant de coller ça dans le code</h2>
+
+  <ol class="defauts">
+    <li>
+      <span class="n">1</span>
+      <div>
+        <strong>Le symbole n'est pas le tien, c'est celui de Gemini</strong>
+        <p>Cette étoile à quatre branches est le pictogramme universel de « il y a de l'IA ici », et c'est littéralement la forme du logo de Gemini. Elle ne dit ni prof, ni poche, ni école. En 2026 tout le monde l'utilise, donc elle ne te distingue de personne.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">2</span>
+      <div>
+        <strong>La boîte du logo est invisible</strong>
+        <p>Le carré porte <code>bg-[#8000FF]</code>, exactement la même couleur que la barre qui est derrière. Seul le liseré blanc à 30 % le révèle. Tu paies un conteneur qui ne fait rien.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">3</span>
+      <div>
+        <strong>La police est chargée d'une façon que ton appli n'utilise pas</strong>
+        <p>Le <code>&lt;link&gt;</code> vers Google Fonts ajoute un aller-retour réseau et fait sauter le texte au chargement. Ton appli utilise <code>next/font/google</code>, qui héberge la police chez toi et supprime ce saut. Il faut déclarer Caveat comme Dancing Script l'est aujourd'hui dans <code>layout.tsx</code>, pas ajouter un lien.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">4</span>
+      <div>
+        <strong>Une classe qui n'existe pas</strong>
+        <p>L'option 1 écrit <code>font-greatvibes</code>. Cette classe n'est déclarée nulle part dans ta configuration Tailwind, elle ne fait donc rien. Seul le <code>style</code> en dur fonctionne. Signe que le code n'a jamais tourné dans ton projet.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">5</span>
+      <div>
+        <strong>Le sous-titre vouvoie, ton appli tutoie</strong>
+        <p>« <em>Votre</em> assistant pédagogique IA ». Toute ton appli tutoie Cécile, c'est un choix assumé depuis le début. Ce serait la seule phrase de l'interface à la vouvoyer, et elle serait affichée sur tous les écrans.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">6</span>
+      <div>
+        <strong>Ce sous-titre n'a rien à faire dans une barre collante</strong>
+        <p>10 pixels, en violet clair sur violet : le contraste tombe à 4,6 pour 1, tout juste au minimum légal, et à cette taille c'est illisible pour beaucoup de gens. Surtout, une barre fixe suit l'utilisatrice sur tous les écrans toute la journée. Une phrase marketing y devient du bruit permanent. Sa place est sur la page de connexion, une seule fois.</p>
+      </div>
+    </li>
+    <li>
+      <span class="n">7</span>
+      <div>
+        <strong>Great Vibes ne survit pas à ton interface</strong>
+        <p>Traits très fins, boucles ornées, faite pour un faire-part de mariage en grand format. Dans une barre de 56 pixels, en blanc sur violet, elle bave et se lit mal. Regarde les deux exemples plus haut, la différence saute aux yeux.</p>
+      </div>
+    </li>
+  </ol>
+</div>
+</section>
+
+<!-- ============ LE TEST DES 16 PIXELS ============ -->
+<section>
+<div class="wrap">
+  <h2>Le test des 16 pixels</h2>
+  <p class="lede">C'est ici que meurent la plupart des logos. Ton appli n'a aujourd'hui aucune icône : l'onglet du navigateur affiche une page blanche, et si Cécile l'épingle sur son téléphone elle n'a rien à regarder. Un symbole doit rester reconnaissable à 16 pixels, la taille d'un favicon. Voici les candidats côte à côte, à 16 et à 32 pixels, sans tricher.</p>
+
+  <div class="favicons">
+    <div class="fav">
+      <div class="rangee">
+        <span class="u g s16"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 7.5 14.5 10 19 10C14.5 10 12 12.5 12 17C12 12.5 9.5 10 5 10C9.5 10 12 7.5 12 3Z" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/></svg></span>
+        <span class="u g s32"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M12 3C12 7.5 14.5 10 19 10C14.5 10 12 12.5 12 17C12 12.5 9.5 10 5 10C9.5 10 12 7.5 12 3Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="6.5" cy="16.5" r="1.5" fill="#fff"/><circle cx="17.5" cy="4.5" r="1" fill="#fff"/></svg></span>
+      </div>
+      <div class="nom-f">Étoile Gemini</div>
+      <div class="verdict ko">Lisible, mais anonyme</div>
+    </div>
+
+    <div class="fav">
+      <div class="rangee">
+        <span class="u s16"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 7.5h14v9.5a3.5 3.5 0 0 1-3.5 3.5h-7A3.5 3.5 0 0 1 5 17V7.5Z" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><path d="M14.6 3.2v6.4l1.9-1.5 1.9 1.5V3.2" fill="#fff"/></svg></span>
+        <span class="u s32"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M5 7.5h14v9.5a3.5 3.5 0 0 1-3.5 3.5h-7A3.5 3.5 0 0 1 5 17V7.5Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M14.6 3.2v6.4l1.9-1.5 1.9 1.5V3.2" fill="#fff"/></svg></span>
+      </div>
+      <div class="nom-f">Poche et signet</div>
+      <div class="verdict ok">Silhouette unique</div>
+    </div>
+
+    <div class="fav">
+      <div class="rangee">
+        <span class="u s16"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M4.5 8h15v9a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 17V8Z" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><rect x="15.1" y="2.6" width="3.4" height="8.2" rx="1.7" fill="#fff"/></svg></span>
+        <span class="u s32"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M4.5 8h15v9a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 17V8Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M4.5 11.4h15" stroke="#fff" stroke-width="1.5" opacity=".55"/><rect x="15.1" y="2.6" width="3.4" height="8.2" rx="1.7" fill="#fff"/></svg></span>
+      </div>
+      <div class="nom-f">Poche à stylo</div>
+      <div class="verdict ok">La plus parlante</div>
+    </div>
+
+    <div class="fav">
+      <div class="rangee">
+        <span class="u s16"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7.5 20V4.6h5.2a4.6 4.6 0 0 1 0 9.2H7.5" stroke="#fff" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="u s32"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M7.5 20V4.6h5.2a4.6 4.6 0 0 1 0 9.2H7.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 13.8h5.6" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+      </div>
+      <div class="nom-f">Monogramme P</div>
+      <div class="verdict ok">Le plus solide</div>
+    </div>
+
+    <div class="fav">
+      <div class="rangee">
+        <span class="u s16" style="background:#fff"><span style="font-family:'Great Vibes',cursive;color:#7c3aed;font-size:13px;line-height:1">P</span></span>
+        <span class="u s32" style="background:#fff"><span style="font-family:'Great Vibes',cursive;color:#7c3aed;font-size:26px;line-height:1">P</span></span>
+      </div>
+      <div class="nom-f">Great Vibes seul</div>
+      <div class="verdict ko">Se casse, traits trop fins</div>
+    </div>
+  </div>
+  <p class="legende" style="margin-top:1.2rem"><span class="tailles">à gauche 16 px, à droite 32 px</span></p>
+</div>
+</section>
+
+<!-- ============ MES PISTES ============ -->
+<section>
+<div class="wrap">
+  <h2>Mes trois pistes</h2>
+  <p class="lede">Un principe commun : ton nom contient déjà une image. « Poche » est un objet qu'on peut dessiner, que personne n'utilise dans le monde scolaire, et qui raconte exactement ta promesse, l'année entière prête à emporter. Aucune de ces pistes n'invente une couleur, elles reprennent le dégradé violet réel de ton appli.</p>
+
+  <!-- PISTE A -->
+  <div class="piste">
+    <div class="piste-tete">
+      <h3>Piste A · La poche et le signet</h3>
+      <span class="badge" style="color:var(--ink-faint)">Chaleureuse</span>
+    </div>
+    <p>Une poche d'où dépasse un signet. Le signet dit « tu sais où tu en es dans l'année », qui est très exactement ce que fait ton appli. On garde une écriture manuscrite pour le nom, mais Caveat au lieu de Great Vibes : mêmes intentions, deux fois plus lisible. Le sous-titre disparaît de la barre.</p>
+    <div class="banc">
+      <div class="barre">
+        <div class="marque">
+          <span class="sym pastille" style="display:grid;place-items:center">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 7.5h14v9.5a3.5 3.5 0 0 1-3.5 3.5h-7A3.5 3.5 0 0 1 5 17V7.5Z" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M14.6 3.2v6.4l1.9-1.5 1.9 1.5V3.2" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="nom wm-caveat">ProfEnPoche</span>
+        </div>
+        <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <!-- PISTE B -->
+  <div class="piste">
+    <div class="piste-tete">
+      <h3>Piste B · La poche à stylo</h3>
+      <span class="badge reco">Ma recommandation</span>
+    </div>
+    <p>La poche de blouse avec son stylo accroché. C'est le seul symbole de la série qui dit les deux moitiés du nom d'un coup : le stylo pour le prof, la poche pour la poche. Le nom passe en Quicksand gras, la police que ton appli charge déjà, donc zéro police supplémentaire à télécharger. Le parti pris est net : la barre reste calme toute la journée, et c'est le symbole qui porte la personnalité. C'est l'inverse exact de ce que fait Gemini.</p>
+    <div class="banc">
+      <div class="barre">
+        <div class="marque">
+          <span class="sym pastille" style="display:grid;place-items:center">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4.5 8h15v9a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 17V8Z" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M4.5 11.4h15" stroke="#fff" stroke-width="1.4" opacity=".6"/>
+              <rect x="15.1" y="2.6" width="3.4" height="8.2" rx="1.7" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="nom wm-quick">ProfEnPoche</span>
+        </div>
+        <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <!-- PISTE C -->
+  <div class="piste">
+    <div class="piste-tete">
+      <h3>Piste C · Le monogramme, et un nom en deux voix</h3>
+      <span class="badge" style="color:var(--ink-faint)">La plus « marque »</span>
+    </div>
+    <p>Un P dont la panse s'ouvre comme une poche. C'est la piste qui tient le mieux partout : en favicon, en icône d'application sur le téléphone de Cécile, en tampon sur un document exporté. Le nom joue sur deux voix, « Prof » posé en Quicksand gras et « EnPoche » manuscrit, ce qui met l'accent sur la partie qui fait sourire. Plus audacieux, donc plus engageant.</p>
+    <div class="banc">
+      <div class="barre">
+        <div class="marque">
+          <span class="sym pastille" style="display:grid;place-items:center">
+            <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7.5 20V4.6h5.2a4.6 4.6 0 0 1 0 9.2H7.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7.5 13.8h5.6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="nom wm-mixte"><b>Prof</b><em>EnPoche</em></span>
+        </div>
+        <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Le témoin :</strong> voilà ta barre actuelle, avec Dancing Script et sans aucun symbole. C'est ce que voit Cécile aujourd'hui.
+  </div>
+  <div class="banc" style="margin-top:1.2rem;max-width:640px">
+    <div class="barre">
+      <span class="nom wm-dancing">Ma Progression CP</span>
+      <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+    </div>
+    <div class="corps"><i></i><i></i><i></i></div>
+  </div>
+</div>
+</section>
+
+<!-- ============ COMPARATIF ============ -->
+<section>
+<div class="wrap">
+  <h2>Ce qui les départage</h2>
+  <p class="lede">Six critères, dont trois que Gemini n'a pas traités du tout parce qu'il ne voyait que la barre du haut.</p>
+
+  <div class="tablo">
+  <table>
+    <thead>
+      <tr>
+        <th>Critère</th>
+        <th>Gemini 1<br><span style="font-weight:400;text-transform:none;letter-spacing:0">Great Vibes</span></th>
+        <th>Gemini 2<br><span style="font-weight:400;text-transform:none;letter-spacing:0">Caveat</span></th>
+        <th>A<br><span style="font-weight:400;text-transform:none;letter-spacing:0">Poche, signet</span></th>
+        <th>B<br><span style="font-weight:400;text-transform:none;letter-spacing:0">Poche à stylo</span></th>
+        <th>C<br><span style="font-weight:400;text-transform:none;letter-spacing:0">Monogramme</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Lisible dans la barre</strong></td>
+        <td class="non">Non</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td>
+      </tr>
+      <tr>
+        <td><strong>Tient à 16 pixels</strong><br><span style="color:var(--ink-faint);font-size:.86em">le favicon, l'onglet</span></td>
+        <td class="non">Non</td><td class="non">Non</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td>
+      </tr>
+      <tr>
+        <td><strong>Dit quelque chose du produit</strong></td>
+        <td class="non">Non</td><td class="non">Non</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="bof">Un peu</td>
+      </tr>
+      <tr>
+        <td><strong>Te distingue des autres</strong></td>
+        <td class="non">Non</td><td class="non">Non</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="bof">Moyen</td>
+      </tr>
+      <tr>
+        <td><strong>Police en plus à charger</strong></td>
+        <td class="non">Oui, une</td><td class="non">Oui, une</td><td class="bof">Oui, une</td><td class="oui">Aucune</td><td class="bof">Oui, une</td>
+      </tr>
+      <tr>
+        <td><strong>Cohérent avec ton violet actuel</strong></td>
+        <td class="bof">Violet plus dur, à plat</td><td class="bof">Violet plus dur, à plat</td><td class="oui">Oui</td><td class="oui">Oui</td><td class="oui">Oui</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <strong>Si je devais trancher seul :</strong> la piste B. Elle est la seule à ne rien coûter en performance, elle donne enfin une icône à ton appli, et elle repose sur le seul principe qui vaille ici, un symbole qui travaille et un nom qui se lit. Mais la piste A est la plus proche de l'âme actuelle de ton appli, celle des confettis et des bulles sur la page de connexion, et ça compte aussi.
+  </div>
+
+  <div class="note" style="border-color:var(--warn)">
+    <strong>Ce qu'aucune de ces pistes ne règle encore :</strong> ce que voit Cécile ailleurs que dans la barre. Le grand nom sur la page de connexion, l'icône quand elle épingle l'appli sur son téléphone, et la façon dont l'assistant IA se présente par son nom dans ses réponses. On les traite une fois la direction choisie.
+  </div>
+</div>
+</section>
+
+<footer>
+<div class="wrap">
+  Atelier d'identité ProfEnPoche · 9 août 2026 · Les propositions de Gemini sont dans <code>docs/identite/propositions-gemini/</code>, celle-ci dans <code>docs/identite/propositions-claude/</code>.
+</div>
+</footer>
+
+</body>
+</html>

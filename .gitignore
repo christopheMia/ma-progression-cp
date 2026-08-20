@@ -52,3 +52,10 @@ backups/
 # Guide d'essai Cécile (contient un mot de passe — ne jamais commiter)
 GUIDE-ESSAI-CECILE.*
 graphify-out/cache/
+
+# Documents de travail partages avec Cecile (PDF, LSU, sauvegardes d'eleves
+# nominatives) : restent en local, jamais dans le depot
+partage/
+
+# Profils de navigateur laisses par les captures d'ecran de verification
+.verif/

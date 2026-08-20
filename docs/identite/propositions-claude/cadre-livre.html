@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfEnPoche, le cadre devient un livre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600;700&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --studio:#14121a; --studio-2:#1c1926; --rule:#2e2a3c;
+    --ink:#f4f2f8; --ink-soft:#b9b2cc; --ink-faint:#8a83a0;
+    --violet-600:#7c3aed; --purple-600:#9333ea;
+    --violet-300:#c4b5fd; --purple-200:#e9d5ff; --fuchsia-200:#f5d0fe;
+    --violet-50:#f5f3ff; --violet-200:#ddd6fe;
+    --ok:#6ee7a8; --warn:#fbbf6e; --bad:#fb8ea0;
+  }
+
+  body {
+    margin:0; background:var(--studio); color:var(--ink);
+    font-family:'Quicksand',system-ui,sans-serif; font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem); }
+
+  .hero { padding:clamp(3.5rem,10vh,6.5rem) 0 clamp(1.8rem,5vh,3rem); }
+  .hero h1 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(2.2rem,6vw,3.8rem); line-height:1.04;
+    letter-spacing:-.025em; margin:0 0 1rem; text-wrap:balance;
+  }
+  .hero p { max-width:64ch; margin:0; color:var(--ink-soft); font-size:clamp(1rem,2vw,1.14rem); }
+
+  section { padding:clamp(2.6rem,7vh,4.6rem) 0; border-top:1px solid var(--rule); }
+  section > .wrap > h2 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(1.65rem,4vw,2.4rem); letter-spacing:-.02em;
+    line-height:1.1; margin:0 0 .7rem; text-wrap:balance;
+  }
+  section > .wrap > .lede { max-width:66ch; margin:0 0 2.4rem; color:var(--ink-soft); }
+
+  /* ---------- Barre reelle de l'appli ---------- */
+  .banc {
+    border-radius:18px; overflow:hidden;
+    background:linear-gradient(to bottom right,var(--violet-300),var(--purple-200) 55%,var(--fuchsia-200));
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6), 0 2px 5px rgba(0,0,0,.32);
+  }
+  .barre {
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    color:#fff; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 1.15rem; --sym-bg:#8338ee;
+  }
+  .corps { padding:1rem 1.15rem 1.25rem; display:flex; gap:.55rem; flex-wrap:wrap; }
+  .corps i { display:block; height:9px; border-radius:999px; background:rgba(255,255,255,.72); }
+  .corps i:nth-child(1){width:46%} .corps i:nth-child(2){width:26%} .corps i:nth-child(3){width:62%}
+  .nav-faux { display:flex; gap:1rem; font-size:.78rem; font-weight:600; color:rgba(255,255,255,.9); }
+  @media (max-width:700px){ .nav-faux{display:none} }
+
+  /* Great Vibes deborde vers le haut de 0,041 em. Mesure faite au tour precedent. */
+  .gv, .cv { line-height:1; white-space:nowrap; display:inline-block; }
+  .gv { font-family:'Great Vibes',cursive; }
+  .cv { font-family:'Caveat',cursive; font-weight:700; }
+  .gv-barre { font-size:2.45rem; letter-spacing:.012em; transform:translateY(.041em); }
+  .cv-barre { font-size:1.95rem; letter-spacing:.005em; }
+
+  .marque { display:flex; align-items:center; gap:.62rem; min-width:0; }
+  .sym { flex:none; display:grid; place-items:center; }
+  .sym svg { display:block; }
+
+  /* L'ancien cadre carre, garde pour la comparaison */
+  .cadre-carre {
+    width:40px; height:40px; border-radius:13px;
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+  }
+
+  /* ---------- Bouton flottant de l'assistant, d'apres AssistantFlottant.tsx ---------- */
+  .scene-appli {
+    position:relative; border-radius:18px; overflow:hidden; min-height:180px;
+    background:linear-gradient(to bottom,#fff,var(--violet-50));
+    border:1px solid var(--violet-200); padding:1.1rem 1.2rem;
+  }
+  .faux-texte i { display:block; height:9px; border-radius:999px; background:#e2e8f0; margin-bottom:.55rem; }
+  .faux-texte i:nth-child(1){width:52%} .faux-texte i:nth-child(2){width:74%}
+  .faux-texte i:nth-child(3){width:38%} .faux-texte i:nth-child(4){width:64%}
+  .flottant {
+    position:absolute; right:16px; bottom:16px;
+    width:44px; height:44px; border-radius:12px;
+    background:var(--violet-600); color:#fff;
+    display:grid; place-items:center;
+    box-shadow:0 10px 15px -3px rgba(139,92,246,.4);
+    --sym-bg:#7c3aed;
+  }
+  .flottant::before {
+    content:''; position:absolute; inset:-3px; border-radius:15px; z-index:-1;
+    background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#fde68a 300deg,#ffffff 335deg,#fef3c7 352deg,transparent 360deg);
+    animation:tourne 1.2s linear infinite;
+  }
+  @keyframes tourne { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ .flottant::before { animation:none; } }
+
+  .chat-tete {
+    display:flex; align-items:center; gap:.5rem;
+    background:var(--violet-600); color:#fff;
+    padding:.6rem .85rem; border-radius:12px 12px 0 0;
+    font-weight:600; font-size:.95rem; --sym-bg:#7c3aed;
+  }
+  .chat-corps {
+    background:#fff; border:1px solid #e2e8f0; border-top:0; border-radius:0 0 12px 12px; padding:.85rem;
+  }
+  .chat-corps i { display:block; height:8px; border-radius:999px; background:#e2e8f0; margin-bottom:.5rem; }
+  .chat-corps i:last-child { margin-bottom:0; }
+  .chat-corps i:nth-child(1){width:82%} .chat-corps i:nth-child(2){width:56%}
+
+  /* ---------- Bandes de tailles ---------- */
+  .tailles {
+    display:flex; align-items:flex-end; gap:1.35rem; flex-wrap:wrap;
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    border-radius:12px; padding:.95rem 1.1rem; --sym-bg:#8338ee;
+  }
+  .u { display:grid; place-items:center; color:#fff; }
+  .u b { display:block; font-size:.62rem; font-weight:600; color:rgba(255,255,255,.72); margin-top:.35rem; letter-spacing:.04em; }
+  .s16 svg{width:16px;height:16px} .s24 svg{width:24px;height:24px}
+  .s32 svg{width:32px;height:32px} .s48 svg{width:48px;height:48px}
+  .s64 svg{width:64px;height:64px} .s96 svg{width:96px;height:96px}
+  .s120 svg{width:120px;height:120px}
+
+  .inverse {
+    display:inline-grid; place-items:center; background:#fff; color:var(--violet-600);
+    --sym-bg:#fff; padding:13px; border-radius:14px;
+  }
+
+  /* ---------- Mise en page ---------- */
+  .grille { display:grid; gap:1.4rem; grid-template-columns:1fr; }
+  @media (min-width:900px){ .grille { grid-template-columns:1.15fr .85fr; align-items:start; } }
+
+  .cas { margin-bottom:3.2rem; padding-bottom:3.2rem; border-bottom:1px dashed var(--rule); }
+  .cas:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
+  .cas h3 {
+    font-family:'Playfair Display',serif; font-weight:600; font-size:1.35rem;
+    letter-spacing:-.01em; margin:0 0 .35rem;
+  }
+  .cas h3 .num { color:var(--violet-300); font-family:'Quicksand',sans-serif; font-weight:700; font-size:.9rem; margin-right:.5rem; vertical-align:.18em; }
+  .cas > p { max-width:68ch; color:var(--ink-soft); margin:0 0 1.3rem; font-size:.99rem; }
+
+  .colonne-droite > * + * { margin-top:1rem; }
+  .etiq { font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 .45rem; }
+  code { font-family:ui-monospace,'Cascadia Code',Consolas,monospace; font-size:.88em; background:rgba(255,255,255,.07); padding:.1em .35em; border-radius:5px; }
+
+  .verdict {
+    margin-top:1.3rem; padding:.85rem 1rem; border-radius:11px;
+    background:var(--studio-2); border:1px solid var(--rule);
+    font-size:.94rem; color:var(--ink-soft); max-width:70ch;
+  }
+  .verdict b { color:var(--ink); }
+  .verdict.oui { border-left:3px solid var(--ok); }
+  .verdict.bof { border-left:3px solid var(--warn); }
+  .verdict.non { border-left:3px solid var(--bad); }
+
+  .note {
+    background:var(--studio-2); border:1px solid var(--rule); border-radius:14px;
+    padding:1.15rem 1.3rem; max-width:74ch; color:var(--ink-soft); font-size:.97rem;
+  }
+  .note + .note { margin-top:1rem; }
+  .note b, .note strong { color:var(--ink); }
+
+  .duo { display:grid; gap:1.4rem; grid-template-columns:1fr; }
+  @media (min-width:760px){ .duo { grid-template-columns:1fr 1fr; } }
+
+  .legende { font-size:.85rem; color:var(--ink-faint); margin:.6rem 0 0; max-width:56ch; }
+  .legende.ok::before { content:'\2713\00a0'; color:var(--ok); }
+  .legende.ko::before { content:'\2715\00a0'; color:var(--bad); }
+
+  ol.decisions { max-width:70ch; padding-left:1.15rem; color:var(--ink-soft); }
+  ol.decisions li { margin-bottom:.9rem; }
+  ol.decisions b { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ============ LES PIECES, DEFINIES UNE SEULE FOIS ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Le livre ouvert : deux pages, une gouttiere de 1,3 au milieu.
+         Le haut de chaque page s'affaisse vers la reliure, comme du vrai papier. -->
+    <symbol id="livre" viewBox="0 0 24 24">
+      <path d="M2.4 5.6 C5.2 5.2 9.0 5.9 11.35 7.3 L11.35 20.1 C9.0 18.7 5.2 18.0 2.4 18.4 Z"/>
+      <path d="M21.6 5.6 C18.8 5.2 15.0 5.9 12.65 7.3 L12.65 20.1 C15.0 18.7 18.8 18.0 21.6 18.4 Z"/>
+    </symbol>
+
+    <!-- Les deux etincelles, geometrie inchangee depuis le tour precedent -->
+    <symbol id="gde" viewBox="0 0 24 24"><path d="M10.5 4.6 Q12.34 11.16 18.9 13 Q12.34 14.84 10.5 21.4 Q8.66 14.84 2.1 13 Q8.66 11.16 10.5 4.6 Z" fill="currentColor"/></symbol>
+    <symbol id="pte" viewBox="0 0 24 24"><path d="M18.6 1.7 Q19.41 4.59 22.3 5.4 Q19.41 6.21 18.6 9.1 Q17.79 6.21 14.9 5.4 Q17.79 4.59 18.6 1.7 Z" fill="currentColor"/></symbol>
+
+    <!-- 1. LE LIVRE VOILE : le cadre garde le traitement que tu as choisi,
+         il change juste de forme. Fond a 20 %, lisere a 42 %. -->
+    <symbol id="m1" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".42" stroke-width=".8"><use href="#livre"/></g>
+      <g transform="translate(4.51 5.66) scale(0.58)" fill="currentColor"><use href="#gde"/></g>
+      <g transform="translate(6.86 0.51) scale(0.72)" fill="currentColor"><use href="#pte"/></g>
+    </symbol>
+
+    <!-- 1b. Le meme, sans la petite etoile : la version de repli pour 16 px -->
+    <symbol id="m1b" viewBox="0 0 24 24">
+      <g fill="currentColor" fill-opacity=".24" stroke="currentColor" stroke-opacity=".5" stroke-width=".9"><use href="#livre"/></g>
+      <g transform="translate(4.51 5.66) scale(0.58)" fill="currentColor"><use href="#gde"/></g>
+    </symbol>
+
+    <!-- 2. LE LIVRE EN TRAIT : le cadre devient un contour, pas une surface -->
+    <symbol id="m2" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-opacity=".75" stroke-width="1.3" stroke-linejoin="round"><use href="#livre"/></g>
+      <g transform="translate(4.51 5.66) scale(0.58)" fill="currentColor"><use href="#gde"/></g>
+      <g transform="translate(6.86 0.51) scale(0.72)" fill="currentColor"><use href="#pte"/></g>
+    </symbol>
+
+    <!-- 3. LE LIVRE PORTEUR : il n'encadre plus, il est posé en bas et les
+         etincelles en jaillissent. Le livre est ecrase a 62 % en hauteur. -->
+    <symbol id="m3" viewBox="0 0 24 24">
+      <g transform="translate(0 5.6) scale(1 0.62)" fill="currentColor" fill-opacity=".95"><use href="#livre"/></g>
+      <g transform="translate(2.716 -0.9) scale(0.72)" fill="currentColor" stroke="var(--sym-bg,#7c3aed)" stroke-width="1.5" stroke-linejoin="round"><use href="#gde"/></g>
+      <g transform="translate(2.716 -0.9) scale(0.72)" fill="currentColor" fill-opacity=".9" stroke="var(--sym-bg,#7c3aed)" stroke-width="1.5" stroke-linejoin="round"><use href="#pte"/></g>
+    </symbol>
+
+    <!-- La ratee : livre plein, grande etoile evidee. Gardee pour montrer pourquoi. -->
+    <symbol id="rate" viewBox="0 0 24 24">
+      <mask id="trouRate">
+        <rect width="24" height="24" fill="#fff"/>
+        <g transform="translate(4.07 3.42) scale(0.66)" fill="#000"><use href="#gde"/></g>
+      </mask>
+      <g fill="currentColor" mask="url(#trouRate)"><use href="#livre"/></g>
+      <g transform="translate(8.068 0.852) scale(0.62)" fill="currentColor"><use href="#pte"/></g>
+    </symbol>
+
+    <!-- Le temoin : les deux etoiles seules, sans rien autour -->
+    <symbol id="temoin" viewBox="0 0 24 24">
+      <g fill="currentColor"><use href="#gde"/></g>
+      <g fill="currentColor" fill-opacity=".85"><use href="#pte"/></g>
+    </symbol>
+  </defs>
+</svg>
+
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Le cadre devient un livre</h1>
+    <p>Ton idée marche, et elle règle proprement le problème qui bloquait depuis ce matin. Voici les trois façons de la monter, ce que j'ai jeté en route, et la seule chose à savoir avant de trancher.</p>
+  </div>
+</header>
+
+
+<!-- ============ 1. POURQUOI TON IDEE MARCHE ============ -->
+<section>
+  <div class="wrap">
+    <h2>Pourquoi ton idée est la bonne</h2>
+    <p class="lede">Depuis ce matin on cherchait un seul dessin qui dise à la fois « école » et « IA ». Chaque tentative de fusion échouait : le crayon écrasait l'étincelle, ou l'étincelle avalait le crayon. Tu viens de casser le problème en deux.</p>
+
+    <div class="note">
+      <b>Le cadre porte l'école, le contenu porte l'IA.</b> Ce ne sont plus deux idées qui se disputent la même surface, ce sont deux couches qui ne se marchent pas dessus. Les deux étoiles restent exactement ce qu'elles sont, l'icône IA que tout le monde reconnaît, et le livre autour dit d'un coup dans quel métier on se trouve.
+    </div>
+    <div class="note">
+      <b>Et ça règle le reproche que je faisais aux deux étoiles seules.</b> Je te disais qu'elles ne t'appartenaient pas, que c'était l'étoile de Google Docs et de Notion. Mise dans un livre ouvert, la même étoile devient la tienne : personne d'autre n'a cette combinaison.
+    </div>
+
+    <div class="duo" style="margin-top:2rem">
+      <div>
+        <p class="etiq">Ce que ça donne, côte à côte</p>
+        <div class="tailles">
+          <span class="u s120"><svg><use href="#temoin"/></svg><b>SANS</b></span>
+          <span class="u s120"><svg><use href="#m1"/></svg><b>AVEC</b></span>
+        </div>
+        <p class="legende ok">Même étoile, même taille. À gauche, une fonction IA de logiciel. À droite, un produit qui parle d'école.</p>
+      </div>
+      <div>
+        <p class="etiq">L'ancien cadre carré, pour mémoire</p>
+        <div class="banc">
+          <div class="barre">
+            <span class="marque">
+              <span class="sym cadre-carre"><svg width="26" height="26"><use href="#temoin"/></svg></span>
+              <span class="gv gv-barre">ProfEnPoche</span>
+            </span>
+          </div>
+          <div class="corps"><i></i><i></i><i></i></div>
+        </div>
+        <p class="legende">Le carré arrondi ne disait rien. Il tenait la place du symbole, c'est tout. Le livre fait le même travail et dit quelque chose en plus.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 2. LES TROIS MONTAGES ============ -->
+<section>
+  <div class="wrap">
+    <h2>Trois façons de monter le livre</h2>
+    <p class="lede">Les deux premières gardent ton idée telle quelle : le livre est le cadre, les étoiles sont dedans. La troisième change de nature, le livre n'encadre plus, il porte. Chacune est montrée dans la barre, en bouton d'assistant, en en-tête de chat, aux quatre tailles, et en violet sur blanc.</p>
+
+    <!-- ---- 1 ---- -->
+    <div class="cas">
+      <h3><span class="num">1</span>Le livre voilé</h3>
+      <p>Le cadre garde exactement le traitement que tu as choisi ce matin, le voile, il change juste de forme : un livre ouvert au lieu d'un carré. Les pages sont à peine plus claires que la barre, les étoiles sont en blanc plein par-dessus. La petite étoile s'échappe au-dessus du coin droit du livre, ce qui évite qu'elle se noie dans la page.</p>
+      <div class="grille">
+        <div>
+          <div class="banc">
+            <div class="barre">
+              <span class="marque">
+                <span class="sym"><svg width="40" height="40"><use href="#m1"/></svg></span>
+                <span class="gv gv-barre">ProfEnPoche</span>
+              </span>
+              <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+            </div>
+            <div class="corps"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tailles" style="margin-top:1rem">
+            <span class="u s48"><svg><use href="#m1"/></svg><b>48</b></span>
+            <span class="u s32"><svg><use href="#m1"/></svg><b>32</b></span>
+            <span class="u s24"><svg><use href="#m1"/></svg><b>24</b></span>
+            <span class="u s16"><svg><use href="#m1"/></svg><b>16</b></span>
+            <span class="inverse s96" style="margin-left:auto"><svg><use href="#m1"/></svg></span>
+          </div>
+        </div>
+        <div class="colonne-droite">
+          <div>
+            <p class="etiq">Le bouton de l'assistant</p>
+            <div class="scene-appli">
+              <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+              <span class="flottant"><svg width="26" height="26"><use href="#m1"/></svg></span>
+            </div>
+          </div>
+          <div>
+            <p class="etiq">L'en-tête du chat</p>
+            <div class="chat-tete"><svg width="22" height="22"><use href="#m1"/></svg><span>Mon assistant</span></div>
+            <div class="chat-corps"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict oui">
+        <b>C'est celui que je te recommande</b>, parce qu'il est le plus fidèle à ce que tu as décidé : tu avais choisi le voile, tu le gardes, seule la forme change. Le livre se lit sans hésitation, les étoiles restent nettes dessus, et l'ensemble reste léger dans la barre au lieu de faire un pavé.
+      </div>
+    </div>
+
+    <!-- ---- 2 ---- -->
+    <div class="cas">
+      <h3><span class="num">2</span>Le livre en trait</h3>
+      <p>La même chose, mais le livre est dessiné au trait au lieu d'être une surface. Plus fin, plus graphique, plus proche des icônes du reste de ton application, qui sont toutes au trait.</p>
+      <div class="grille">
+        <div>
+          <div class="banc">
+            <div class="barre">
+              <span class="marque">
+                <span class="sym"><svg width="40" height="40"><use href="#m2"/></svg></span>
+                <span class="gv gv-barre">ProfEnPoche</span>
+              </span>
+              <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+            </div>
+            <div class="corps"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tailles" style="margin-top:1rem">
+            <span class="u s48"><svg><use href="#m2"/></svg><b>48</b></span>
+            <span class="u s32"><svg><use href="#m2"/></svg><b>32</b></span>
+            <span class="u s24"><svg><use href="#m2"/></svg><b>24</b></span>
+            <span class="u s16"><svg><use href="#m2"/></svg><b>16</b></span>
+            <span class="inverse s96" style="margin-left:auto"><svg><use href="#m2"/></svg></span>
+          </div>
+        </div>
+        <div class="colonne-droite">
+          <div>
+            <p class="etiq">Le bouton de l'assistant</p>
+            <div class="scene-appli">
+              <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+              <span class="flottant"><svg width="26" height="26"><use href="#m2"/></svg></span>
+            </div>
+          </div>
+          <div>
+            <p class="etiq">L'en-tête du chat</p>
+            <div class="chat-tete"><svg width="22" height="22"><use href="#m2"/></svg><span>Mon assistant</span></div>
+            <div class="chat-corps"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict bof">
+        <b>Une gêne, visible en grand :</b> l'étoile blanche pleine coupe le trait du livre là où elle le croise, et l'œil ne sait plus si l'étoile est devant ou dedans. Le voile n'a pas ce problème parce qu'une surface pâle passe sous une forme pleine sans se casser. Et le trait fin est le premier à disparaître en petit.
+      </div>
+    </div>
+
+    <!-- ---- 3 ---- -->
+    <div class="cas">
+      <h3><span class="num">3</span>Le livre porteur</h3>
+      <p>Celui-là s'écarte de ta consigne, et je te le montre quand même parce qu'il est le plus fort en petit. Le livre n'encadre plus rien : il est posé en bas, aplati, et les étoiles jaillissent de ses pages. On passe d'un contenant à une scène.</p>
+      <div class="grille">
+        <div>
+          <div class="banc">
+            <div class="barre">
+              <span class="marque">
+                <span class="sym"><svg width="40" height="40"><use href="#m3"/></svg></span>
+                <span class="gv gv-barre">ProfEnPoche</span>
+              </span>
+              <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+            </div>
+            <div class="corps"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tailles" style="margin-top:1rem">
+            <span class="u s48"><svg><use href="#m3"/></svg><b>48</b></span>
+            <span class="u s32"><svg><use href="#m3"/></svg><b>32</b></span>
+            <span class="u s24"><svg><use href="#m3"/></svg><b>24</b></span>
+            <span class="u s16"><svg><use href="#m3"/></svg><b>16</b></span>
+            <span class="inverse s96" style="margin-left:auto"><svg><use href="#m3"/></svg></span>
+          </div>
+        </div>
+        <div class="colonne-droite">
+          <div>
+            <p class="etiq">Le bouton de l'assistant</p>
+            <div class="scene-appli">
+              <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+              <span class="flottant"><svg width="26" height="26"><use href="#m3"/></svg></span>
+            </div>
+          </div>
+          <div>
+            <p class="etiq">L'en-tête du chat</p>
+            <div class="chat-tete"><svg width="22" height="22"><use href="#m3"/></svg><span>Mon assistant</span></div>
+            <div class="chat-corps"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict bof">
+        <b>Le plus lisible en petit, et le plus lourd en grand.</b> Compare les vignettes 16 px des trois : celle-ci est de loin la plus nette, parce que le livre y est une masse pleine. Mais dans la barre, ce bloc blanc pèse lourd à côté du nom en calligraphie, et il n'est plus un cadre, donc il ne répond plus à ce que tu as demandé.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============ 3. LA RATEE ============ -->
+<section>
+  <div class="wrap">
+    <h2>Celle que j'ai jetée</h2>
+    <p class="lede">Le livre plein en blanc, avec la grande étoile creusée dedans. Sur le papier c'était la plus élégante des cinq.</p>
+    <div class="duo">
+      <div>
+        <div class="tailles">
+          <span class="u s96"><svg><use href="#rate"/></svg></span>
+          <span class="u s32"><svg><use href="#rate"/></svg><b>32</b></span>
+          <span class="u s16"><svg><use href="#rate"/></svg><b>16</b></span>
+        </div>
+      </div>
+      <div>
+        <p class="legende ko"><b>Le trou n'apparaît pas.</b> La raison est bête et je ne l'avais pas anticipée : entre les deux pages il y a déjà un vide, la reliure. L'étoile creusée tombe pile dessus, ses branches se raccordent à ce vide, et au lieu d'une étoile on voit juste une reliure un peu large. Il resterait à la décaler entièrement sur une seule page, mais alors elle devient minuscule et le dessin perd son axe.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 4. LE 16 PX ============ -->
+<section>
+  <div class="wrap">
+    <h2>Ce qu'il faut savoir avant de trancher</h2>
+    <p class="lede">Un logo à deux niveaux, un cadre et un contenu, coûte quelque chose : en dessous d'une certaine taille, les deux niveaux ne tiennent plus ensemble. Ce n'est pas un défaut de ton idée, c'est une règle qui vaut pour toutes les marques.</p>
+
+    <div class="duo">
+      <div>
+        <p class="etiq">Le logo complet, réduit</p>
+        <div class="tailles">
+          <span class="u s64"><svg><use href="#m1"/></svg><b>64</b></span>
+          <span class="u s32"><svg><use href="#m1"/></svg><b>32</b></span>
+          <span class="u s16"><svg><use href="#m1"/></svg><b>16</b></span>
+        </div>
+        <p class="legende ko">À 16 px, la petite étoile ne fait plus que 2 px et le voile du livre devient une tache. Trois éléments dans un carré de la taille d'une lettre, c'est un de trop.</p>
+      </div>
+      <div>
+        <p class="etiq">La version de repli, même dessin en moins</p>
+        <div class="tailles">
+          <span class="u s64"><svg><use href="#m1b"/></svg><b>64</b></span>
+          <span class="u s32"><svg><use href="#m1b"/></svg><b>32</b></span>
+          <span class="u s16"><svg><use href="#m1b"/></svg><b>16</b></span>
+        </div>
+        <p class="legende ok">On enlève la petite étoile et on remonte un peu le contraste du livre. Ce n'est pas un autre logo, c'est le même dont on a retiré le détail que personne ne peut voir à cette taille.</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:1.8rem">
+      <b>Concrètement, ça donne deux fichiers, pas deux marques :</b> le dessin complet pour la barre du haut, la page de connexion et l'icône du téléphone, la version allégée pour le favicon de l'onglet. C'est le composant unique qui choisira, selon la taille demandée. Aucune décision de ta part là-dessus, je te le signale seulement pour que tu ne sois pas surpris de voir deux fichiers dans <code>public/</code>.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 5. LA TYPO ============ -->
+<section>
+  <div class="wrap">
+    <h2>Et le nom, à côté du livre</h2>
+    <p class="lede">La question de l'écriture reste ouverte, et le livre la change un peu : il apporte de la rondeur et du dessin à gauche, là où le carré n'apportait rien. Les deux, dans les mêmes conditions.</p>
+    <div class="banc" style="margin-bottom:1rem">
+      <div class="barre">
+        <span class="marque">
+          <span class="sym"><svg width="40" height="40"><use href="#m1"/></svg></span>
+          <span class="gv gv-barre">ProfEnPoche</span>
+        </span>
+        <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+    <p class="legende">Great Vibes. Fine et très inclinée, elle laisse le livre tenir tout le poids visuel.</p>
+    <div class="banc" style="margin-top:1.8rem;margin-bottom:1rem">
+      <div class="barre">
+        <span class="marque">
+          <span class="sym"><svg width="40" height="40"><use href="#m1"/></svg></span>
+          <span class="cv cv-barre">ProfEnPoche</span>
+        </span>
+        <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+    <p class="legende">Caveat. Plus épaisse, elle équilibre mieux la masse du livre, et elle reste lisible plus petit. Écriture de maîtresse au tableau plutôt que carte de mariage.</p>
+  </div>
+</section>
+
+
+<!-- ============ 6. LA SUITE ============ -->
+<section>
+  <div class="wrap">
+    <h2>Ce qu'il me faut de toi</h2>
+    <p class="lede">Deux phrases, et je passe au code.</p>
+    <ol class="decisions">
+      <li><b>Le montage : 1, 2 ou 3.</b> Je pousse le 1, le livre voilé. Il garde ta décision de ce matin, il reste léger dans la barre, et il est le seul des trois où l'étoile et le livre ne se gênent pas.</li>
+      <li><b>L'écriture du nom :</b> Great Vibes ou Caveat.</li>
+    </ol>
+    <div class="note" style="margin-top:1.8rem">
+      Ensuite j'écris la spec de renommage dans <code>docs/superpowers/specs/</code>, je fabrique le SVG définitif, le favicon et les icônes du téléphone, et je branche le composant <code>&lt;LogoProfEnPoche /&gt;</code> unique qui remplacera l'étoile générique aux trois endroits de l'application. Tout en code, à la main : aucune image générée, aucun crédit dépensé.
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

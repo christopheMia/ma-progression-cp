@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfEnPoche, ce qui va dans le cadre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600;700&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --studio:#14121a; --studio-2:#1c1926; --rule:#2e2a3c;
+    --ink:#f4f2f8; --ink-soft:#b9b2cc; --ink-faint:#8a83a0;
+    --violet-600:#7c3aed; --purple-600:#9333ea;
+    --violet-300:#c4b5fd; --purple-200:#e9d5ff; --fuchsia-200:#f5d0fe;
+    --violet-50:#f5f3ff; --violet-200:#ddd6fe;
+    --ok:#6ee7a8; --warn:#fbbf6e; --bad:#fb8ea0;
+  }
+
+  body {
+    margin:0; background:var(--studio); color:var(--ink);
+    font-family:'Quicksand',system-ui,sans-serif; font-size:17px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 clamp(1.1rem,4vw,2.5rem); }
+
+  .hero { padding:clamp(3.5rem,10vh,6.5rem) 0 clamp(1.8rem,5vh,3rem); }
+  .hero h1 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(2.2rem,6vw,3.8rem); line-height:1.04;
+    letter-spacing:-.025em; margin:0 0 1rem; text-wrap:balance;
+  }
+  .hero p { max-width:64ch; margin:0; color:var(--ink-soft); font-size:clamp(1rem,2vw,1.14rem); }
+
+  section { padding:clamp(2.6rem,7vh,4.6rem) 0; border-top:1px solid var(--rule); }
+  section > .wrap > h2 {
+    font-family:'Playfair Display',Georgia,serif; font-weight:600;
+    font-size:clamp(1.65rem,4vw,2.4rem); letter-spacing:-.02em;
+    line-height:1.1; margin:0 0 .7rem; text-wrap:balance;
+  }
+  section > .wrap > .lede { max-width:66ch; margin:0 0 2.4rem; color:var(--ink-soft); }
+
+  /* ---------- Barre reelle de l'appli ---------- */
+  .banc {
+    border-radius:18px; overflow:hidden;
+    background:linear-gradient(to bottom right,var(--violet-300),var(--purple-200) 55%,var(--fuchsia-200));
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6), 0 2px 5px rgba(0,0,0,.32);
+  }
+  .barre {
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    color:#fff; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 1.15rem;
+  }
+  .corps { padding:1rem 1.15rem 1.25rem; display:flex; gap:.55rem; flex-wrap:wrap; }
+  .corps i { display:block; height:9px; border-radius:999px; background:rgba(255,255,255,.72); }
+  .corps i:nth-child(1){width:46%} .corps i:nth-child(2){width:26%} .corps i:nth-child(3){width:62%}
+  .nav-faux { display:flex; gap:1rem; font-size:.78rem; font-weight:600; color:rgba(255,255,255,.9); }
+  @media (max-width:700px){ .nav-faux{display:none} }
+
+  /* ---------- Typo du nom ----------
+     Mesure faite au tour precedent : l'encre de Great Vibes deborde vers le haut,
+     le nom tombe 1,6 px trop haut, soit 0,041 em. On le redescend d'autant. */
+  .gv, .cv { line-height:1; white-space:nowrap; display:inline-block; }
+  .gv { font-family:'Great Vibes',cursive; }
+  .cv { font-family:'Caveat',cursive; font-weight:700; }
+  .gv-barre { font-size:2.45rem; letter-spacing:.012em; transform:translateY(.041em); }
+  .cv-barre { font-size:1.95rem; letter-spacing:.005em; }
+
+  /* ---------- Marque ---------- */
+  .marque { display:flex; align-items:center; gap:.62rem; min-width:0; }
+  .sym { flex:none; display:grid; place-items:center; }
+  .sym svg { display:block; }
+
+  /* Le cadre retenu : le voile. Fond blanc a 17 %, lisere a 30 %. */
+  .cadre-voile {
+    width:40px; height:40px; border-radius:13px;
+    background:rgba(255,255,255,.17); border:1px solid rgba(255,255,255,.3);
+    --sym-bg:#8338ee;
+  }
+
+  /* ---------- Le vrai bouton flottant de l'assistant ----------
+     Reproduit d'apres src/components/assistant/AssistantFlottant.tsx :
+     44 px, violet-600, ombre violette, et le halo conique qui tourne. */
+  .scene-appli {
+    position:relative; border-radius:18px; overflow:hidden; min-height:190px;
+    background:linear-gradient(to bottom,#fff,var(--violet-50));
+    border:1px solid var(--violet-200);
+    padding:1.1rem 1.2rem;
+  }
+  .faux-texte i { display:block; height:9px; border-radius:999px; background:#e2e8f0; margin-bottom:.55rem; }
+  .faux-texte i:nth-child(1){width:52%} .faux-texte i:nth-child(2){width:74%}
+  .faux-texte i:nth-child(3){width:38%} .faux-texte i:nth-child(4){width:64%}
+  .flottant {
+    position:absolute; right:16px; bottom:16px;
+    width:44px; height:44px; border-radius:12px;
+    background:var(--violet-600); color:#fff;
+    display:grid; place-items:center;
+    box-shadow:0 10px 15px -3px rgba(139,92,246,.4);
+    --sym-bg:#7c3aed;
+  }
+  .flottant::before {
+    content:''; position:absolute; inset:-3px; border-radius:15px; z-index:-1;
+    background:conic-gradient(from 0deg,transparent 0deg,transparent 240deg,#fde68a 300deg,#ffffff 335deg,#fef3c7 352deg,transparent 360deg);
+    animation:tourne 1.2s linear infinite;
+  }
+  @keyframes tourne { to { transform:rotate(360deg); } }
+  @media (prefers-reduced-motion:reduce){ .flottant::before { animation:none; } }
+
+  .chat-tete {
+    display:flex; align-items:center; gap:.5rem;
+    background:var(--violet-600); color:#fff;
+    padding:.6rem .85rem; border-radius:12px 12px 0 0;
+    font-weight:600; font-size:.95rem;
+    --sym-bg:#7c3aed;
+  }
+  .chat-corps {
+    background:#fff; border:1px solid #e2e8f0; border-top:0; border-radius:0 0 12px 12px;
+    padding:.85rem;
+  }
+  .chat-corps i { display:block; height:8px; border-radius:999px; background:#e2e8f0; margin-bottom:.5rem; }
+  .chat-corps i:last-child { margin-bottom:0; }
+  .chat-corps i:nth-child(1){width:82%} .chat-corps i:nth-child(2){width:56%}
+
+  /* ---------- La bande des petites tailles ---------- */
+  .tailles {
+    display:flex; align-items:flex-end; gap:1.35rem; flex-wrap:wrap;
+    background:linear-gradient(to right,var(--violet-600),var(--purple-600));
+    border-radius:12px; padding:.95rem 1.1rem; --sym-bg:#8338ee;
+  }
+  .u { display:grid; place-items:center; color:#fff; }
+  .u b { display:block; font-size:.62rem; font-weight:600; color:rgba(255,255,255,.72); margin-top:.35rem; letter-spacing:.04em; }
+  .s16 svg{width:16px;height:16px} .s24 svg{width:24px;height:24px}
+  .s32 svg{width:32px;height:32px} .s48 svg{width:48px;height:48px}
+  .s90 svg{width:90px;height:90px}
+
+  /* Le meme symbole en violet sur blanc, pour le favicon clair */
+  .inverse {
+    display:inline-grid; place-items:center; background:#fff; color:var(--violet-600);
+    --sym-bg:#fff; padding:14px; border-radius:14px;
+  }
+
+  /* ---------- Mise en page ---------- */
+  .grille { display:grid; gap:1.4rem; grid-template-columns:1fr; }
+  @media (min-width:900px){ .grille { grid-template-columns:1.15fr .85fr; align-items:start; } }
+
+  .cas { margin-bottom:3.2rem; padding-bottom:3.2rem; border-bottom:1px dashed var(--rule); }
+  .cas:last-child { margin-bottom:0; padding-bottom:0; border-bottom:0; }
+  .cas h3 {
+    font-family:'Playfair Display',serif; font-weight:600; font-size:1.35rem;
+    letter-spacing:-.01em; margin:0 0 .35rem;
+  }
+  .cas h3 .num { color:var(--violet-300); font-family:'Quicksand',sans-serif; font-weight:700; font-size:.9rem; margin-right:.5rem; vertical-align:.18em; }
+  .cas > p { max-width:68ch; color:var(--ink-soft); margin:0 0 1.3rem; font-size:.99rem; }
+
+  .colonne-droite > * + * { margin-top:1rem; }
+  .etiq { font-size:.72rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 .45rem; }
+
+  code { font-family:ui-monospace,'Cascadia Code',Consolas,monospace; font-size:.88em; background:rgba(255,255,255,.07); padding:.1em .35em; border-radius:5px; }
+
+  .verdict {
+    margin-top:1.3rem; padding:.85rem 1rem; border-radius:11px;
+    background:var(--studio-2); border:1px solid var(--rule);
+    font-size:.94rem; color:var(--ink-soft); max-width:70ch;
+  }
+  .verdict b { color:var(--ink); }
+  .verdict.oui { border-left:3px solid var(--ok); }
+  .verdict.bof { border-left:3px solid var(--warn); }
+  .verdict.non { border-left:3px solid var(--bad); }
+
+  .note {
+    background:var(--studio-2); border:1px solid var(--rule); border-radius:14px;
+    padding:1.15rem 1.3rem; max-width:74ch; color:var(--ink-soft); font-size:.97rem;
+  }
+  .note + .note { margin-top:1rem; }
+  .note b, .note strong { color:var(--ink); }
+
+  .duo { display:grid; gap:1.4rem; grid-template-columns:1fr; }
+  @media (min-width:760px){ .duo { grid-template-columns:1fr 1fr; } }
+
+  .legende { font-size:.85rem; color:var(--ink-faint); margin:.6rem 0 0; max-width:56ch; }
+  .legende.ok::before { content:'\2713\00a0'; color:var(--ok); }
+  .legende.ko::before { content:'\2715\00a0'; color:var(--bad); }
+
+  ol.decisions { max-width:70ch; padding-left:1.15rem; color:var(--ink-soft); }
+  ol.decisions li { margin-bottom:.9rem; }
+  ol.decisions b { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- ================= LES SYMBOLES, DEFINIS UNE SEULE FOIS ================= -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+
+    <!-- A. Le crayon et l'etincelle.
+         Hierarchie inversee par rapport au tour precedent : l'etincelle n'est
+         plus un satellite, elle pese autant que le crayon. Le crayon porte un
+         lisere de la couleur du fond pour rester lisible la ou il la croise. -->
+    <symbol id="mA" viewBox="0 0 24 24">
+      <path d="M16.6 1.2 Q18.09 5.92 22.8 7.4 Q18.09 8.89 16.6 13.6 Q15.11 8.89 10.4 7.4 Q15.11 5.92 16.6 1.2 Z" fill="currentColor"/>
+      <path d="M2.6 21.4 L3.55 18.55 L11.2 10.7 L13.15 12.65 L5.45 20.45 Z"
+            fill="currentColor" stroke="var(--sym-bg,#7c3aed)" stroke-width="1.05" stroke-linejoin="round"/>
+    </symbol>
+
+    <!-- B. L'etincelle evidee dans la poche.
+         Silhouette pleine, etoile en negatif (regle de remplissage evenodd). -->
+    <symbol id="mB" viewBox="0 0 24 24">
+      <path fill-rule="evenodd" fill="currentColor" d="M4.6 4.4 L19.4 4.4 L19.4 15.2 C19.4 18.2 17.2 20.4 14.2 20.4 L9.8 20.4 C6.8 20.4 4.6 18.2 4.6 15.2 Z M12 7.7 Q13.20 11.40 16.9 12.6 Q13.20 13.80 12 17.5 Q10.80 13.80 7.1 12.6 Q10.80 11.40 12 7.7 Z"/>
+    </symbol>
+
+    <!-- C. L'etincelle seule. Exactement ce que porte l'assistant aujourd'hui. -->
+    <symbol id="mC" viewBox="0 0 24 24">
+      <path d="M10.5 4.6 Q12.34 11.16 18.9 13 Q12.34 14.84 10.5 21.4 Q8.66 14.84 2.1 13 Q8.66 11.16 10.5 4.6 Z" fill="currentColor"/>
+      <path d="M18.6 1.7 Q19.41 4.59 22.3 5.4 Q19.41 6.21 18.6 9.1 Q17.79 6.21 14.9 5.4 Q17.79 4.59 18.6 1.7 Z" fill="currentColor" fill-opacity=".85"/>
+    </symbol>
+
+    <!-- Le stylo du tour precedent, garde pour la demonstration du probleme -->
+    <symbol id="m0" viewBox="0 0 24 24">
+      <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="currentColor"/>
+      <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="currentColor" fill-opacity=".75"/>
+      <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="currentColor"/>
+    </symbol>
+
+    <!-- Les deux ratees, gardees pour que tu voies pourquoi elles sont ratees -->
+    <symbol id="rate1" viewBox="0 0 24 24">
+      <g transform="rotate(35 12 12) translate(0 -0.6)" fill="currentColor">
+        <path d="M12 2.6 Q13.591 8.409 19.4 10 Q13.591 11.591 13.3 20.2 L10.7 20.2 Q10.409 11.591 4.6 10 Q10.409 8.409 12 2.6 Z"/>
+        <path d="M13.3 20.2 L12 22.6 L10.7 20.2 Z" fill-opacity=".55"/>
+      </g>
+    </symbol>
+    <symbol id="rate2" viewBox="0 0 24 24">
+      <path d="M4.2 11 L19.8 11 L19.8 15.4 C19.8 18.6 17.4 21 14.2 21 L9.8 21 C6.6 21 4.2 18.6 4.2 15.4 Z" fill="currentColor"/>
+      <path d="M12 1.8 Q13.697 7.703 19.6 9.4 Q13.697 11.097 12 17 Q10.303 11.097 4.4 9.4 Q10.303 7.703 12 1.8 Z"
+            fill="currentColor" stroke="var(--sym-bg,#7c3aed)" stroke-width="1.4" stroke-linejoin="round"/>
+    </symbol>
+
+  </defs>
+</svg>
+
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Ce qui va dans le cadre</h1>
+    <p>Le cadre voile a gagne. Reste a savoir ce qu'il contient, et ton souci est le bon : un stylo dit « on ecrit », il ne dit pas « une IA t'aide ». Voici pourquoi, ce qui reste debout apres verification, et les deux idees que j'ai jetees en route.</p>
+  </div>
+</header>
+
+
+<!-- ============ 1. LE PROBLEME ============ -->
+<section>
+  <div class="wrap">
+    <h2>Ton souci, verifie</h2>
+    <p class="lede">Tu as raison, et la raison est mecanique. Dans les pistes du tour precedent, l'etincelle etait un <em>satellite</em> du stylo : petite, en haut a droite, accessoire. L'oeil lit toujours la plus grosse forme en premier, donc il lit « stylo » et range l'etincelle au rayon decoration. Aux petites tailles, elle ne survit meme pas.</p>
+
+    <div class="duo">
+      <div>
+        <p class="etiq">La piste 1 du tour precedent, aux tailles reelles</p>
+        <div class="tailles">
+          <span class="u s48"><svg><use href="#m0"/></svg><b>48</b></span>
+          <span class="u s32"><svg><use href="#m0"/></svg><b>32</b></span>
+          <span class="u s24"><svg><use href="#m0"/></svg><b>24</b></span>
+          <span class="u s16"><svg><use href="#m0"/></svg><b>16</b></span>
+        </div>
+        <p class="legende ko">A 16 px, l'etincelle fait 4 px de cote. Il ne reste qu'un trait oblique, c'est-a-dire un stylo. Le signal IA a disparu.</p>
+      </div>
+      <div>
+        <p class="etiq">Et le vrai probleme est la</p>
+        <div class="chat-tete">
+          <svg width="20" height="20"><use href="#m0"/></svg>
+          <span>Mon assistant</span>
+        </div>
+        <div class="chat-corps"><i></i><i></i></div>
+        <p class="legende ko">Ton assistant porte aujourd'hui l'etincelle, pas le stylo. Si la marque devient un stylo, la marque et l'assistant racontent deux histoires differentes dans la meme appli.</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:1.8rem">
+      <b>Donc la regle pour ce tour :</b> l'etincelle ne peut plus etre un accessoire. Elle doit porter la silhouette, c'est-a-dire etre ce qu'on reconnait encore quand tout est devenu trop petit pour etre vu. Le stylo, lui, devient la signature qui dit de quel metier on parle. C'est l'inverse exact du tour precedent.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 2. LES TROIS QUI TIENNENT ============ -->
+<section>
+  <div class="wrap">
+    <h2>Les trois qui tiennent</h2>
+    <p class="lede">Chacun est montre dans la barre reelle avec le cadre voile, en bouton flottant de l'assistant (le halo dore qui tourne vient de ton code, ce n'est pas une invention), en en-tete de chat, aux quatre tailles sur le violet, et en violet sur blanc pour le favicon clair. Le meme symbole partout : c'est exactement la coherence que tu demandes.</p>
+
+    <!-- ---- A ---- -->
+    <div class="cas">
+      <h3><span class="num">A</span>Le crayon et l'etincelle</h3>
+      <p>Ta narration, avec la hierarchie remise a l'endroit. L'etincelle n'est plus une petite etoile posee en coin, elle pese autant que le crayon. Le crayon monte de la gauche, l'etincelle eclot en haut a droite. C'est la lecture la plus litterale de ce que fait ton produit : l'enseignante ecrit, l'IA prolonge.</p>
+      <div class="grille">
+        <div>
+          <div class="banc">
+            <div class="barre">
+              <span class="marque">
+                <span class="sym cadre-voile"><svg width="26" height="26"><use href="#mA"/></svg></span>
+                <span class="gv gv-barre">ProfEnPoche</span>
+              </span>
+              <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+            </div>
+            <div class="corps"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tailles" style="margin-top:1rem">
+            <span class="u s48"><svg><use href="#mA"/></svg><b>48</b></span>
+            <span class="u s32"><svg><use href="#mA"/></svg><b>32</b></span>
+            <span class="u s24"><svg><use href="#mA"/></svg><b>24</b></span>
+            <span class="u s16"><svg><use href="#mA"/></svg><b>16</b></span>
+            <span class="inverse s90" style="margin-left:auto"><svg><use href="#mA"/></svg></span>
+          </div>
+        </div>
+        <div class="colonne-droite">
+          <div>
+            <p class="etiq">Le bouton de l'assistant</p>
+            <div class="scene-appli">
+              <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+              <span class="flottant"><svg width="22" height="22"><use href="#mA"/></svg></span>
+            </div>
+          </div>
+          <div>
+            <p class="etiq">L'en-tete du chat</p>
+            <div class="chat-tete"><svg width="20" height="20"><use href="#mA"/></svg><span>Mon assistant</span></div>
+            <div class="chat-corps"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict oui">
+        <b>C'est celui que je te recommande, et je l'ai verifie en image avant de te le dire.</b> Il tient a toutes les tailles, il tient en blanc sur violet comme en violet sur blanc, il garde ton crayon, et l'etoile est assez grosse pour que « IA » se lise en premier. C'est aussi le seul des trois qui raconte une action plutot qu'un objet.
+      </div>
+    </div>
+
+    <!-- ---- B ---- -->
+    <div class="cas">
+      <h3><span class="num">B</span>L'etincelle evidee dans la poche</h3>
+      <p>La piste dictee par le nom, sans crayon du tout. La silhouette est pleine, et l'etincelle est un trou dedans : on voit le violet de la barre au travers de l'etoile.</p>
+      <div class="grille">
+        <div>
+          <div class="banc">
+            <div class="barre">
+              <span class="marque">
+                <span class="sym cadre-voile"><svg width="26" height="26"><use href="#mB"/></svg></span>
+                <span class="gv gv-barre">ProfEnPoche</span>
+              </span>
+              <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+            </div>
+            <div class="corps"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tailles" style="margin-top:1rem">
+            <span class="u s48"><svg><use href="#mB"/></svg><b>48</b></span>
+            <span class="u s32"><svg><use href="#mB"/></svg><b>32</b></span>
+            <span class="u s24"><svg><use href="#mB"/></svg><b>24</b></span>
+            <span class="u s16"><svg><use href="#mB"/></svg><b>16</b></span>
+            <span class="inverse s90" style="margin-left:auto"><svg><use href="#mB"/></svg></span>
+          </div>
+        </div>
+        <div class="colonne-droite">
+          <div>
+            <p class="etiq">Le bouton de l'assistant</p>
+            <div class="scene-appli">
+              <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+              <span class="flottant"><svg width="22" height="22"><use href="#mB"/></svg></span>
+            </div>
+          </div>
+          <div>
+            <p class="etiq">L'en-tete du chat</p>
+            <div class="chat-tete"><svg width="20" height="20"><use href="#mB"/></svg><span>Mon assistant</span></div>
+            <div class="chat-corps"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict bof">
+        <b>Deux reserves, et je prefere te les dire :</b> d'une part la forme lit « ecusson » ou « blason » plus que « poche », je l'ai voulue poche mais ce n'est pas ce que l'oeil voit. D'autre part, posee dans le cadre voile, elle fait un carre arrondi dans un carre arrondi, et le cadre que tu viens de choisir ne sert plus a rien. Cette piste demande de renoncer au cadre, ou de renoncer a elle.
+      </div>
+    </div>
+
+    <!-- ---- C ---- -->
+    <div class="cas">
+      <h3><span class="num">C</span>L'etincelle seule</h3>
+      <p>Le temoin. C'est exactement ce que porte ton assistant aujourd'hui dans <code>AssistantFlottant.tsx</code>. Aucun crayon, aucune poche : la grande etincelle et la petite. Je le montre pour que tu voies ce que tu abandonnes en choisissant A ou B.</p>
+      <div class="grille">
+        <div>
+          <div class="banc">
+            <div class="barre">
+              <span class="marque">
+                <span class="sym cadre-voile"><svg width="26" height="26"><use href="#mC"/></svg></span>
+                <span class="gv gv-barre">ProfEnPoche</span>
+              </span>
+              <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+            </div>
+            <div class="corps"><i></i><i></i><i></i></div>
+          </div>
+          <div class="tailles" style="margin-top:1rem">
+            <span class="u s48"><svg><use href="#mC"/></svg><b>48</b></span>
+            <span class="u s32"><svg><use href="#mC"/></svg><b>32</b></span>
+            <span class="u s24"><svg><use href="#mC"/></svg><b>24</b></span>
+            <span class="u s16"><svg><use href="#mC"/></svg><b>16</b></span>
+            <span class="inverse s90" style="margin-left:auto"><svg><use href="#mC"/></svg></span>
+          </div>
+        </div>
+        <div class="colonne-droite">
+          <div>
+            <p class="etiq">Le bouton de l'assistant</p>
+            <div class="scene-appli">
+              <div class="faux-texte"><i></i><i></i><i></i><i></i></div>
+              <span class="flottant"><svg width="22" height="22"><use href="#mC"/></svg></span>
+            </div>
+          </div>
+          <div>
+            <p class="etiq">L'en-tete du chat</p>
+            <div class="chat-tete"><svg width="20" height="20"><use href="#mC"/></svg><span>Mon assistant</span></div>
+            <div class="chat-corps"><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict non">
+        <b>Le defaut est facile a rater :</b> il dit « IA » parfaitement, et rien d'autre. Cette etoile est l'icone IA par defaut de tout le monde, le meme dessin que dans Google Docs, Notion, Canva, Word. Ta marque deviendrait indiscernable de n'importe quelle fonction IA de n'importe quel logiciel. C'est le seul des trois qui ne t'appartient pas.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============ 3. LES DEUX RATEES ============ -->
+<section id="ratees">
+  <div class="wrap">
+    <h2>Les deux idees que j'ai jetees</h2>
+    <p class="lede">Je te les montre parce que la premiere etait ma preferee sur le papier, et qu'elle s'est effondree au rendu. Mieux vaut que tu voies pourquoi, plutot que je te la vende.</p>
+    <div class="duo">
+      <div>
+        <p class="etiq">L'etincelle taillee en crayon</p>
+        <div class="tailles">
+          <span class="u s90"><svg><use href="#rate1"/></svg></span>
+          <span class="u s40" style="margin-left:1rem"><svg width="40" height="40"><use href="#rate1"/></svg><b>40</b></span>
+          <span class="u s16"><svg><use href="#rate1"/></svg><b>16</b></span>
+        </div>
+        <p class="legende ko">L'idee : une seule forme, une etoile a quatre branches dont celle du bas s'allonge en crayon taille. Le probleme : des qu'une des quatre pointes devient une queue, il n'en reste que trois, et une etoile a trois lobes gras ne lit plus comme une etoile. Ca fait une feuille, ou une virgule. Deux reglages differents, meme resultat.</p>
+      </div>
+      <div>
+        <p class="etiq">L'etincelle qui sort de la poche</p>
+        <div class="tailles">
+          <span class="u s90"><svg><use href="#rate2"/></svg></span>
+          <span class="u s40" style="margin-left:1rem"><svg width="40" height="40"><use href="#rate2"/></svg><b>40</b></span>
+          <span class="u s16"><svg><use href="#rate2"/></svg><b>16</b></span>
+        </div>
+        <p class="legende ko">L'idee : la poche en bas, l'etincelle qui en emerge, donc le nom et l'IA dans une seule image. Le probleme : la pointe basse de l'etoile qui plonge dans la coupe fabrique deux petales. Ca lit tulipe, ou lotus de application de meditation. Rien a voir avec une classe de CP.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 4. GREAT VIBES OU CAVEAT ============ -->
+<section>
+  <div class="wrap">
+    <h2>Great Vibes ou Caveat, cette fois avec un symbole a gauche</h2>
+    <p class="lede">Tu ne les as jamais comparees dans leur vraie situation : un cadre voile, un symbole dedans, le nom a cote. Le symbole change la donne, parce qu'il apporte deja de la geometrie a gauche, et que les deux ecritures ne se comportent pas pareil face a ca.</p>
+    <div class="banc" style="margin-bottom:1rem">
+      <div class="barre">
+        <span class="marque">
+          <span class="sym cadre-voile"><svg width="26" height="26"><use href="#mA"/></svg></span>
+          <span class="gv gv-barre">ProfEnPoche</span>
+        </span>
+        <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+    <p class="legende">Great Vibes. Deliee, tres inclinee, elle contraste fort avec le symbole geometrique. Elegante, un peu fragile.</p>
+    <div class="banc" style="margin-top:1.8rem;margin-bottom:1rem">
+      <div class="barre">
+        <span class="marque">
+          <span class="sym cadre-voile"><svg width="26" height="26"><use href="#mA"/></svg></span>
+          <span class="cv cv-barre">ProfEnPoche</span>
+        </span>
+        <span class="nav-faux"><span>Accueil</span><span>Semaine</span><span>Programme</span></span>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+    <p class="legende">Caveat. Plus epaisse, plus proche d'une ecriture au feutre. Elle fait bloc avec le symbole au lieu de contraster avec lui, et elle reste lisible plus petit.</p>
+  </div>
+</section>
+
+
+<!-- ============ 5. MARQUE ET ASSISTANT ============ -->
+<section>
+  <div class="wrap">
+    <h2>Une question que ta demande fait apparaitre</h2>
+    <p class="lede">Tu veux que le logo de la marque et l'icone de l'assistant soient le meme. Je suis d'accord, et pour une raison plus forte que la coherence graphique : dans ton produit, la marque <em>est</em> l'assistant. ProfEnPoche ne vend pas un tableur avec une IA dedans, il vend l'assistant lui-meme. Deux symboles differents mentiraient sur le produit.</p>
+
+    <div class="note">
+      <b>Mais il y a un piege, et autant le regler maintenant.</b> Si le bouton flottant en bas a droite porte exactement le logo de l'appli, l'enseignante peut le lire comme un bouton « retour a l'accueil ». Le meme dessin a deux endroits doit quand meme vouloir dire deux choses.
+    </div>
+    <div class="note">
+      <b>Ce qui les separe est deja dans ton code, et ca suffit :</b> le logo de la barre est <em>pose</em> dans le cadre voile, immobile, a gauche, colle au nom. Le bouton de l'assistant est <em>vivant</em> : fond violet plein, ombre portee, et surtout le halo dore qui tourne autour, celui que tu vois s'animer plus haut. Meme forme, deux etats. Aucune ligne de code en plus, le halo existe deja.
+    </div>
+    <div class="note">
+      <b>Une consequence pratique, a savoir avant de choisir :</b> quel que soit le gagnant, le symbole retenu remplace <code>Sparkles</code> de lucide a trois endroits au moins (<code>AssistantFlottant.tsx</code>, l'en-tete de <code>ChatAssistant.tsx</code>, et le bandeau du panneau). Ce sera un composant <code>&lt;LogoProfEnPoche /&gt;</code> unique, pour qu'il n'y ait jamais deux versions du dessin a maintenir dans le depot. C'est du travail simple, mais il faut le prevoir dans la spec de renommage.
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ 6. CE QUI TE RESTE A DIRE ============ -->
+<section>
+  <div class="wrap">
+    <h2>Ce qu'il me faut de toi</h2>
+    <p class="lede">Deux phrases suffisent.</p>
+    <ol class="decisions">
+      <li><b>A, B ou C.</b> Je pousse le A, le crayon et l'etincelle : c'est le seul qui garde ton crayon, qui dit l'IA du premier coup d'oeil, qui survit a 16 px, et qui n'appartient qu'a toi.</li>
+      <li><b>L'ecriture du nom :</b> Great Vibes ou Caveat, maintenant que tu les vois avec un symbole a gauche.</li>
+    </ol>
+    <div class="note" style="margin-top:1.8rem">
+      Des que c'est dit, j'ecris la spec de renommage dans <code>docs/superpowers/specs/</code>, puis je fabrique le SVG definitif, le favicon et les icones du telephone, et je branche le composant unique. Le tout en code, a la main : aucune image generee, donc aucun credit depense.
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
