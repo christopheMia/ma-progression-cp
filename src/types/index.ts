@@ -143,7 +143,14 @@ export type JourJournal = {
 export type SeanceProgression = {
   /** Rang du jour d'ECOLE (1..n), `null` quand le document ne montre pas de jours. */
   jour: number | null
-  /** Domaine tel qu'écrit ("LC", "Vocabulaire"), "" si le document n'en donne pas. */
+  /**
+   * Domaine tel qu'écrit ("LC", "Vocabulaire"), "" si le document n'en donne pas.
+   * DÉRIVÉ de `libelle`, jamais resérialisé : une séance rendue par l'IA avec
+   * `domaine: 'Lecture'` et `libelle: 'La petite poule'` (sans ":" dans le
+   * libellé) repasse par `itemsDepuisSeances` puis `seancesDepuisItems` et
+   * revient avec `domaine: ''`. Ne pas s'appuyer sur ce champ pour retrouver
+   * une valeur posée à la main hors du texte du libellé.
+   */
   domaine: string
   /** Texte de la puce, préfixe de jour retiré et espaces superflus enlevés, "(séance 3)" compris s'il était écrit. */
   libelle: string

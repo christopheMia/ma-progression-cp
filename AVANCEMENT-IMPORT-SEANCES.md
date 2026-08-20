@@ -1,5 +1,39 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## Point de reprise du 20/08/2026 — LIRE EN PREMIER
+
+Chantier repris ce jour après deux semaines d'arrêt (dernier commit réel : le
+6 août, tâche 1 approuvée avec 5 restes mineurs). Christophe : « c'est le
+bordel et pas normal, il faut me rappeler ce genre de chose ». Un chantier
+oublié se signale désormais tout seul, voir
+`.claude/rules/signaler-chantiers-abandonnes.md` dans le dépôt MON AIOS.
+
+**Fait aujourd'hui** : les 5 restes mineurs de la tâche 1 (détail plus bas,
+section devenue « TOUS TRAITÉS »). 71 suites, 698 tests verts, `tsc --noEmit`
+muet. **Pas encore commité** sur cette branche : la session a été coupée pour
+raison de contexte avant de committer.
+
+**À faire au tout prochain démarrage, dans l'ordre :**
+1. Vérifier l'état : `npx jest` (71 suites, 698 tests) et `npx tsc --noEmit`
+   (muet). Si différent, quelqu'un a touché le code entre-temps, investiguer
+   avant de continuer.
+2. Committer les 5 restes mineurs (fichiers touchés : `src/lib/progression-seances.ts`,
+   `src/lib/cahier-journal.ts`, `src/types/index.ts`,
+   `src/lib/__tests__/progression-seances.test.ts`).
+3. Enchaîner sur la **tâche 2** du plan (« L'IA rend des séances »), méthode
+   sous-agents : un implémenteur, puis relecture conformité spec, puis
+   relecture qualité, boucle jusqu'à approbation des deux.
+4. Modèle recommandé pour l'orchestration et les deux relectures : le plus
+   capable disponible (Opus), pas seulement Sonnet — ce chantier a un
+   historique de bugs subtils trouvés seulement en relecture qualité.
+
+Un doublon sans conséquence traîne sur cette branche : un commit "Installe
+Graphify" (`baf7fd0`) qui aurait dû rester sur `main` uniquement. Il a été
+recopié proprement sur `main` (`fc4c017`), celui-ci peut être ignoré ou
+nettoyé à l'occasion, ça ne bloque rien.
+
+---
+
 Point de reprise du chantier lancé le 03/08/2026. Branche `import-seances-un-creneau`.
 
 - Spec : `docs/superpowers/specs/2026-08-03-import-seances-un-creneau-design.md`
@@ -80,30 +114,26 @@ La leçon de la tâche 1 vaut consigne : **ne pas faire confiance au texte du pl
 comme s'il était juste.** Ses blocs de code sont des propositions relues par
 personne au moment où ils ont été écrits.
 
-## Restes mineurs de la tâche 1, approuvés mais non traités
+## Restes mineurs de la tâche 1 — TOUS TRAITÉS le 20/08/2026
 
-Aucun ne bloque. Les deux premiers sont à faire AVANT la tâche 3.
+Les cinq points ci-dessous sont faits, vérifiés (71 suites, 698 tests verts,
+`tsc --noEmit` muet), pas encore commités. Voir la section « Point de reprise
+du 20/08 » plus bas avant de continuer.
 
-1. `progression-seances.ts:82` : `String(item)` s'applique à tout ce qui n'est ni
-   chaîne ni nullish. Un objet ou un tableau venu du JSONB donnerait
-   `'[object Object]'` affiché tel quel dans un cahier journal, ce que la règle du
-   `null` filtré cherchait justement à éviter. Restreindre la conversion aux
-   `number`, `boolean`, `bigint`, et filtrer le reste.
-2. Écrire quelque part, dans `types/index.ts:146` ou dans la docstring de
-   `itemsDepuisSeances`, que `domaine` est **dérivé et jamais resérialisé** : une
-   séance rendue par l'IA avec `domaine: 'Lecture'` et `libelle: 'La petite poule'`
-   repassera par `items` et reviendra avec `domaine: ''`.
-3. `progression-seances.ts:139` : quand `jour` et le préfixe du libellé désignent
-   des jours différents, le champ gagne en silence. Choix défendable, mais c'est
-   le seul endroit du module où du texte peut encore se perdre : à écrire dans la
-   docstring.
-4. La règle du jour valide existe en trois exemplaires (`jourValide`, la condition
-   inline de `seancesDepuisItems`, et `numeroJourItem` dans `cahier-journal.ts`).
-   Même dérive à trois branches que celle qu'on vient de fermer sur la regex.
-5. Le test de l'espace insécable le place en tête d'item, donc il passe grâce au
-   seul `trim()` sans jamais éprouver que `\s` couvre U+00A0. Un cas avec
-   l'insécable ENTRE le mot et le numéro pinnerait vraiment la propriété dont
-   dépend le contrat SQL.
+1. ✅ `aTexte` (`progression-seances.ts`) ne convertit plus que `number`,
+   `boolean`, `bigint` en texte ; un objet ou un tableau devient `''` au lieu
+   de `'[object Object]'`.
+2. ✅ Docstring de `domaine` (`types/index.ts`, type `SeanceProgression`) :
+   dit maintenant explicitement que le champ est dérivé et jamais resérialisé.
+3. ✅ Docstring de `itemsDepuisSeances` : dit que `jour` gagne toujours en
+   silence sur un préfixe texte contradictoire.
+4. ✅ Nouvelle fonction exportée `estJourValide(n: number): boolean` dans
+   `progression-seances.ts`, seule définition de la règle. `jourValide`,
+   l'inline de `seancesDepuisItems`, et `numeroJourItem` (`cahier-journal.ts`)
+   s'appuient dessus au lieu de la redéfinir chacun.
+5. ✅ Nouveau test dans `progression-seances.test.ts` : l'espace insécable
+   est placé ENTRE "Jour" et le numéro, pas seulement en tête (l'ancien test
+   ne prouvait rien au-delà de `trim()`). L'ancien test reste, inchangé.
 
 ## Point d'attention pour la tâche 7
 

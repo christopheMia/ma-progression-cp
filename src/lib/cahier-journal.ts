@@ -1,6 +1,6 @@
 import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '@/types'
 import { trouverProgressionMatiere } from '@/lib/matieres'
-import { PREFIXE_JOUR } from '@/lib/progression-seances'
+import { PREFIXE_JOUR, estJourValide } from '@/lib/progression-seances'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
@@ -23,7 +23,7 @@ export function numeroJourItem(item: string): number | null {
   const trouve = item.match(PREFIXE_JOUR)
   if (!trouve) return null
   const numero = Number(trouve[1])
-  return Number.isInteger(numero) && numero > 0 ? numero : null
+  return estJourValide(numero) ? numero : null
 }
 
 /**

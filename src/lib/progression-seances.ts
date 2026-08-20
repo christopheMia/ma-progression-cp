@@ -59,27 +59,42 @@ function domaineDe(libelle: string): string {
   return libelle.slice(0, coupe).trim()
 }
 
+/**
+ * Numéro de jour valide au sens de la convention : un entier strictement
+ * positif, pas seulement une valeur "vraie" (donc ni `0`, ni `NaN`, ni
+ * négatif, ni décimal). Seule définition du dépôt : `jourValide`,
+ * `seancesDepuisItems` et `numeroJourItem` (`cahier-journal.ts`) s'en
+ * servaient chacun à sa façon avant, la même dérive à trois branches que
+ * celle déjà fermée sur la regex `PREFIXE_JOUR`.
+ */
+export function estJourValide(n: number): boolean {
+  return Number.isInteger(n) && n > 0
+}
+
 /** Jour valide au sens de la convention : un entier strictement positif, pas seulement une valeur "vraie". */
 function jourValide(jour: number | null): jour is number {
-  return jour !== null && Number.isInteger(jour) && jour > 0
+  return jour !== null && estJourValide(jour)
 }
 
 /**
  * Convertit un élément potentiellement non-string en texte, sans jamais
- * supprimer du contenu. `items` peut venir tel quel d'une colonne JSONB
- * Supabase, où un nombre, un booléen ou un `null` isolé dans le tableau est
- * possible.
+ * supprimer du contenu écrit par l'enseignante. `items` peut venir tel quel
+ * d'une colonne JSONB Supabase, où un nombre, un booléen, un `null` isolé,
+ * ou même un objet ou un tableau mal formé, sont possibles.
  *
- * Le critère est le sens, pas la littéralité : un nombre ou un booléen EST
- * du contenu, il devient sa représentation texte ("42", "true"). Un `null`
- * ou un `undefined` n'est PAS du contenu écrit par l'enseignante, c'est une
- * absence : il devient "" pour être filtré comme une entrée vide, plutôt que
- * de s'afficher en toutes lettres ("null") dans un cahier journal.
+ * Le critère est le sens, pas la littéralité : un nombre, un booléen ou un
+ * `bigint` EST du contenu, il devient sa représentation texte ("42",
+ * "true"). Un `null`, un `undefined`, ou un objet/tableau ne sont PAS du
+ * texte écrit par l'enseignante : ils deviennent "" pour être filtrés comme
+ * une entrée vide, plutôt que de s'afficher tels quels ("null",
+ * "[object Object]") dans un cahier journal.
  */
 function aTexte(item: unknown): string {
   if (typeof item === 'string') return item
-  if (item === null || item === undefined) return ''
-  return String(item)
+  if (typeof item === 'number' || typeof item === 'boolean' || typeof item === 'bigint') {
+    return String(item)
+  }
+  return ''
 }
 
 /**
@@ -112,7 +127,7 @@ export function seancesDepuisItems(items: unknown[] | null | undefined): SeanceP
     .map(item => {
       const trouve = item.match(PREFIXE_JOUR)
       const numero = trouve ? Number(trouve[1]) : NaN
-      const jour = Number.isInteger(numero) && numero > 0 ? numero : null
+      const jour = estJourValide(numero) ? numero : null
       const libelle = jour !== null && trouve ? item.slice(trouve[0].length).trim() : item
       return { jour, domaine: domaineDe(libelle), libelle }
     })
@@ -132,6 +147,13 @@ export function seancesDepuisItems(items: unknown[] | null | undefined): SeanceP
  * valeur négative ou non entière comme `2.5`), le libellé est rendu tel
  * quel, préfixe éventuel compris : on ne touche pas à du texte qu'on ne
  * peut pas réattribuer avec certitude à un jour.
+ *
+ * Le champ `jour` gagne TOUJOURS en silence sur un préfixe texte
+ * contradictoire : si `libelle` porte "Jour 5 :" mais que `jour` vaut `3`,
+ * le rendu dit "Jour 3 :", le "5" du texte disparaît sans avertissement.
+ * C'est le seul endroit du module où du texte peut encore se perdre ainsi ;
+ * en pratique le cas ne devrait pas se produire, `jour` et le préfixe de
+ * `libelle` étant censés être posés ensemble.
  */
 export function itemsDepuisSeances(seances: SeanceProgression[]): string[] {
   return seances.map(s => {

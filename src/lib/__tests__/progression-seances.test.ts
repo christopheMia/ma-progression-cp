@@ -79,6 +79,12 @@ describe('seancesDepuisItems', () => {
     expect(seancesDepuisItems([' Jour 2 : x'])).toEqual([{ jour: 2, domaine: '', libelle: 'x' }])
   })
 
+  it('reconnaît un espace insécable (U+00A0) entre le mot et le numéro, pas seulement en tête', () => {
+    // trim() en tête ne prouve rien sur s : ce cas place l'insécable A L'INTERIEUR du prefixe,
+    // la ou seule la regex peut le reconnaitre.
+    expect(seancesDepuisItems(['Jour 2 : x'])).toEqual([{ jour: 2, domaine: '', libelle: 'x' }])
+  })
+
   it('accepte un domaine de 30 caractères, la borne haute', () => {
     const domaine = 'A'.repeat(30)
     expect(seancesDepuisItems([`${domaine}: x`])).toEqual([
