@@ -517,6 +517,33 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-08-20 - Claude - Graphify installé : une carte du code, à consulter avant d'explorer à l'aveugle.**
+  Outil externe (github.com/Graphify-Labs/graphify, vérifié fiable : 108k étoiles,
+  soutenu par Y Combinator). Construit une carte du projet (fichiers, fonctions,
+  qui appelle quoi) pour éviter de tout relire à chaque reprise.
+
+  **Avant de chercher où se trouve quelque chose dans ce projet, lire
+  `graphify-out/GRAPH_REPORT.md` ou lancer `graphify query "ta question"` /
+  `graphify explain "NomDeFonction"` / `graphify god-nodes` depuis la racine du
+  projet, plutôt que de partir à l'aveugle avec grep ou une lecture fichier par
+  fichier.** La carte contient 2958 nœuds, 5672 liens, construite sur le vrai
+  code (pas les dépendances).
+
+  **Piège déjà payé, à ne pas refaire.** Le premier essai comptait 6259 nœuds,
+  la plupart illisibles (`bo()`, `co()`, `Xn()`...) : `public/pdf.worker.min.mjs`,
+  une librairie PDF minifiée, polluait tout le graphe. Exclue via
+  `.graphifyignore` à la racine (contient aussi `node_modules/`). Si la carte
+  redevient bruyante après une reconstruction, vérifier d'abord ce fichier avant
+  de chercher ailleurs.
+
+  Pas de hook installé (aucune redirection automatique forcée avant de lire un
+  fichier) : volontairement, on teste juste la carte pour l'instant, sans rien
+  changer au comportement habituel de lecture des fichiers.
+
+  Pour reconstruire après un gros changement de code : `graphify extract . --code-only --force`
+  puis `graphify cluster-only . --no-label` (le `--no-label` évite un appel LLM
+  externe pour nommer les groupes, pas nécessaire pour s'en servir).
+
 - **2026-07-31 (soir) - Claude - CAHIER JOURNAL : quatre défauts trouvés en tirant un seul fil.**
   Commits `5a910de`, `d494191`, `b25c1ed`, `96d45f7`. 668 tests verts, `tsc`
   propre, build vert. Point de départ : Christophe, « comment on peut avoir des
