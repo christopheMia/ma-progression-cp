@@ -60,9 +60,16 @@ export const PREFIXE_JOUR = /^\s*jours?\s*(\d+)\s*[:.\-–—]\s*/i
  * et l'enseignante voit ce que dit son document.
  *
  * Les liaisons acceptées sont les QUATRE séparateurs de `PREFIXE_JOUR` sauf
- * les deux points, plus la virgule et les mots « et », « à », « a ». Le point
- * en fait donc partie depuis le 21/08 : « Jours 3.4 : révisions » et
- * « Jour 3. 4 : révisions » sortaient encore en « Jour 3 : 4 : révisions ».
+ * les deux points, plus la virgule, l'esperluette, la barre oblique et les mots
+ * « et », « à », « a », « ou », « puis ». Le point en fait partie depuis le
+ * 21/08 : « Jours 3.4 : révisions » et « Jour 3. 4 : révisions » sortaient
+ * encore en « Jour 3 : 4 : révisions ». L'esperluette, la barre oblique,
+ * « ou », « puis » et les liaisons COLLÉES aux chiffres (« Jours 3et4 ») ont
+ * suivi le même chemin : chacune faisait poser le jour du modèle et un préfixe
+ * devant le texte entier. Les mots n'exigent donc plus d'espace autour d'eux,
+ * ce qui ne déborde pas : la liaison doit suivre immédiatement les chiffres du
+ * premier jour et être immédiatement suivie de ceux du second, si bien que
+ * « Jour 3 : 4 opérations » ou « Jour 3 avril » n'en sont pas.
  * Les deux points sont volontairement exclus, sinon « Jour 3 : 4 opérations »
  * cesserait d'être daté au jour 3, ce qui est le cas le plus courant des deux.
  *
@@ -77,18 +84,20 @@ export const PREFIXE_JOUR = /^\s*jours?\s*(\d+)\s*[:.\-–—]\s*/i
  * puce. Les tirets sont écrits par leur code point (U+2013, U+2014) pour ne
  * pas faire figurer un tiret cadratin en toutes lettres dans le dépôt.
  *
- * LIMITE CONNUE, non refermée ici. `cahier-journal.ts` lit encore `items` avec
+ * LIMITE REFERMÉE LE 21/08. `cahier-journal.ts` lisait encore `items` avec
  * `PREFIXE_JOUR` seul (`numeroJourItem`, `itemsDuJour`) : un item d'intervalle
- * y est donc toujours daté au premier des deux jours et affiché amputé de son
- * début. Le corriger demande de faire passer ce module-là par
- * `lirePrefixeJour`, ce que la tâche 5 du plan (« Une séance par créneau »)
- * refait de toute façon. Tant qu'elle n'est pas faite, l'import ne fabrique
- * plus d'item déformé, mais l'affichage peut encore en déformer un venu d'une
- * ligne enregistrée avant cette correction.
+ * y était daté au premier des deux jours et affiché amputé de son début
+ * (« Jours 3-4 : révisions » devenait « 4 : révisions »). L'import ne
+ * fabriquait plus d'item déformé, mais l'affichage en déformait encore un venu
+ * d'une ligne enregistrée avant la correction. Ce module-là passe maintenant
+ * par `lirePrefixeJour`, comme tout le monde ; attendre la tâche 5 du plan
+ * (« Une séance par créneau ») aurait laissé le défaut visible à l'écran entre
+ * temps.
  */
-const LIAISONS_INTERVALLE = `[-.,${String.fromCharCode(0x2013, 0x2014)}]`
+const LIAISONS_INTERVALLE = `[-.,&/${String.fromCharCode(0x2013, 0x2014)}]`
+const MOTS_INTERVALLE = 'puis|ou|et|à|a'
 const INTERVALLE_JOURS = new RegExp(
-  `^\\s*jours?\\s*\\d+\\s*(?:${LIAISONS_INTERVALLE}\\s*|\\s+(?:et|à|a)\\s+)\\d+`,
+  `^\\s*jours?\\s*\\d+\\s*(?:${LIAISONS_INTERVALLE}|${MOTS_INTERVALLE})\\s*\\d+`,
   'i',
 )
 
@@ -124,6 +133,12 @@ function domaineDe(libelle: string): string {
  * `seancesDepuisItems` et `numeroJourItem` (`cahier-journal.ts`) s'en
  * servaient chacun à sa façon avant, la même dérive à trois branches que
  * celle déjà fermée sur la regex `PREFIXE_JOUR`.
+ *
+ * Plus AUCUN module ne l'importe depuis le 21/08 : `cahier-journal.ts`, son
+ * dernier lecteur, passe désormais par `lirePrefixeJour`, qui l'applique pour
+ * lui. L'export reste comme définition de référence de la convention, à
+ * reproduire à l'identique le jour où une migration SQL datera les séances en
+ * base ; ce n'est pas un point d'extension à rebrancher ailleurs.
  */
 export function estJourValide(n: number): boolean {
   return Number.isInteger(n) && n > 0
@@ -162,8 +177,11 @@ type LecturePrefixeJour = {
  * quand même effacé), ce qui casserait l'aller-retour avec
  * `itemsDepuisSeances` que la future migration SQL doit pouvoir reproduire à
  * l'identique.
+ *
+ * Exportée depuis le 21/08 pour `cahier-journal.ts`, qui appliquait encore
+ * `PREFIXE_JOUR` brute et déformait donc les intervalles à l'affichage.
  */
-function lirePrefixeJour(texte: string): LecturePrefixeJour {
+export function lirePrefixeJour(texte: string): LecturePrefixeJour {
   const brut = texte.trim()
   // Un intervalle de jours n'est pas un rang de jour : on ne lit aucun préfixe.
   if (INTERVALLE_JOURS.test(brut)) return { jour: null, libelle: brut, ambigu: true }
@@ -238,7 +256,10 @@ export function seancesDepuisItems(items: unknown[] | null | undefined): SeanceP
  *   ce qui reste le cas courant (il a lu une colonne du tableau que le texte
  *   de la puce ne porte pas). Jamais de jour deviné.
  * - `domaine` : celui du modèle s'il en donne un (il a pu le lire dans un
- *   en-tête de colonne absent du libellé), sinon il est dérivé du libellé.
+ *   en-tête de colonne absent du libellé), sinon il est dérivé du libellé. Et
+ *   s'il en donne un que le texte de la puce ne porte pas, ce domaine est
+ *   RÉÉCRIT DEVANT le libellé (voir `avecDomaine`) : c'est ce qui le fait
+ *   arriver jusqu'à l'écran.
  *
  * POURQUOI LE TEXTE GAGNE (21/08/2026, correction du point 6 de la relecture).
  * Avant, `jour` du modèle écrasait le préfixe en silence : une séance
@@ -271,11 +292,86 @@ export function seanceDepuisTexte(
   // Le jour du modèle ne sert QUE si le texte ne dit rien de la journée : ni
   // rang lisible, ni mention ambiguë qui interdirait de trancher.
   const jour = lu.jour === null && !lu.ambigu && jourValide(jourModele) ? jourModele : lu.jour
+  const domaine = domaineModele.trim()
+  const libelle = avecDomaine(lu.libelle, domaine)
   return {
     jour,
-    domaine: domaineModele.trim() || domaineDe(lu.libelle),
-    libelle: lu.libelle,
+    domaine: domaine || domaineDe(libelle),
+    libelle,
   }
+}
+
+/**
+ * Le texte d'une puce, son domaine devant.
+ *
+ * LA DÉCISION DE CHRISTOPHE (21/08/2026), qui commande tout ce qui suit : le
+ * domaine reste VISIBLE dans le cahier journal. On garde « LC : La petite poule
+ * (séance 1) », pas « La petite poule (séance 1) ».
+ *
+ * Sa raison, décisive : dans son planning réel
+ * (`partage/exemple de planning p1.pdf`), deux séances portent le même texte de
+ * Rimbaud, l'une en langage oral, l'autre en production d'écrits. Sans le
+ * préfixe de domaine, les deux lignes sont identiques à l'écran et l'enseignante
+ * ne sait plus laquelle est laquelle. « LC » = lecture compréhension, « PDE » =
+ * production d'écrits, ce sont les abréviations du manuel.
+ *
+ * POURQUOI ICI, ET PAS DANS LE PROMPT. La consigne inverse existait : le prompt
+ * demandait au modèle de ne PAS recopier le domaine devant le texte, pour éviter
+ * les doublons. Elle est retirée, et la protection contre le doublon vient
+ * maintenant du code (`memePuceAuDomainePres`, comparaison tolérante). C'est le
+ * principe qui a débloqué ce chantier : le code ne doit jamais exiger de l'IA
+ * une perfection au caractère près. Et une consigne suivie à la lettre faisait
+ * DISPARAÎTRE du texte : sur « Vocabulaire (séance 3) », dont le domaine n'est
+ * pas séparé par des deux points, l'écran affichait « (séance 3) ».
+ *
+ * POURQUOI DANS LE LIBELLÉ, ET PAS SEULEMENT DANS `items`. Le champ `domaine`
+ * ne survit pas à un aller-retour par le texte : le cahier journal ne lit que
+ * `items`, et `ia-chat` renvoie des semaines sans leur champ `seances`. Écrire
+ * le domaine dans le libellé, c'est le mettre là où il se relit tout seul. La
+ * conversion reste donc idempotente dès le premier passage, au lieu de converger
+ * seulement au second.
+ *
+ * Le domaine n'est PAS réécrit dans trois cas, chacun pour ne rien abîmer :
+ *
+ * - la puce annonce déjà un domaine dans son texte (`domaineDe` en trouve un) :
+ *   en empiler un second devant serait du bruit, et le texte du document dit
+ *   déjà ce qu'il a à dire ;
+ * - le texte COMMENCE par le domaine sans deux points (« Vocabulaire (séance 3) »
+ *   pour un domaine « Vocabulaire ») : la comparaison est faite sur la forme
+ *   normalisée, et sur un mot entier, pour qu'un domaine « Le » ne se croie pas
+ *   déjà présent dans « Lecture offerte » ;
+ * - le domaine est trop long pour être relu comme tel (au-delà de
+ *   `MAX_LONGUEUR_DOMAINE`), ou contient lui-même des deux points. Le réécrire
+ *   fabriquerait un texte que `domaineDe` ne redécouperait pas pareil, donc une
+ *   puce que `memePuceAuDomainePres` cesserait de reconnaître : elle
+ *   ressortirait EN DOUBLE. Un domaine trop long reste alors dans son champ, et
+ *   n'atteint pas l'écran ; c'est la limite connue, bornée, de cette réécriture.
+ */
+function avecDomaine(libelle: string, domaine: string): string {
+  if (!domaine) return libelle
+  if (domaine.length > MAX_LONGUEUR_DOMAINE || domaine.includes(':')) return libelle
+  if (domaineDe(libelle)) return libelle
+  if (commencePar(libelle, domaine)) return libelle
+  return `${domaine} : ${libelle}`
+}
+
+/**
+ * Le texte commence-t-il par ce domaine, au mot entier près ?
+ *
+ * La comparaison se fait sur la forme normalisée (casse, accents, apostrophes,
+ * espaces), et la suite doit être autre chose qu'une lettre ou un chiffre :
+ * sans cette dernière condition, un domaine « Le » se croirait déjà écrit dans
+ * « Lecture offerte ». `normaliserTexte` ayant retiré accents et ligatures et
+ * tout mis en minuscules, `[a-z0-9]` suffit à décrire « une lettre ou un
+ * chiffre » ici.
+ */
+function commencePar(libelle: string, domaine: string): boolean {
+  const tete = normaliserTexte(domaine)
+  if (!tete) return true
+  const texte = normaliserTexte(libelle)
+  if (!texte.startsWith(tete)) return false
+  const suite = texte.slice(tete.length)
+  return suite === '' || !/[a-z0-9]/.test(suite[0])
 }
 
 /**
@@ -290,7 +386,14 @@ export function seanceDepuisTexte(
  * - les accents (« Ecriture » et « Écriture ») : décomposition NFD puis
  *   retrait des diacritiques ;
  * - les espaces, y compris l'insécable d'un copier-coller Word ;
- * - la ponctuation FINALE (« Découverte du son [a]. » et « … [a] »).
+ * - la ponctuation FINALE (« Découverte du son [a]. » et « … [a] ») ;
+ * - les VARIANTES TYPOGRAPHIQUES d'un même signe (voir `EQUIVALENCES_TYPO`) :
+ *   apostrophe droite et apostrophe courbe, ligatures, points de suspension,
+ *   guillemets, tirets. Ajoutées le 21/08 : le document de référence écrit
+ *   « Geste d’écriture » avec l'apostrophe courbe SIX fois pendant que le
+ *   prompt mélange les deux formes, et chaque occurrence produisait un doublon.
+ *   Ce sont bien des différences de FORME : les deux écritures se lisent
+ *   pareil à voix haute et désignent la même puce.
  *
  * S'y ajoute UNE tolérance de structure, qui ne passe pas par cette fonction
  * mais par `memePuceAuDomainePres` : le domaine écrit devant le texte d'un
@@ -324,8 +427,51 @@ const DIACRITIQUES = new RegExp(
   'g',
 )
 
+/**
+ * Les signes que deux lectures d'un même document écrivent différemment, ramenés
+ * chacun à une forme unique AVANT la décomposition NFD (qui ne touche ni aux
+ * ligatures ni aux apostrophes).
+ *
+ * Écrits par leurs points de code plutôt qu'en toutes lettres : la moitié de ces
+ * caractères se distinguent mal de leur équivalent ASCII dans un diff, et le
+ * tiret cadratin U+2014 est banni du dépôt en tant que caractère. Même raison
+ * que `DIACRITIQUES` et `LIAISONS_INTERVALLE`.
+ *
+ * Ce sont des équivalences de FORME, jamais de contenu : aucune n'efface un
+ * signe, chacune en choisit une écriture. Un caractère supprimé, lui, ferait
+ * tomber la frontière du côté du contenu.
+ */
+const EQUIVALENCES_TYPO: [RegExp, string][] = [
+  // Apostrophes : U+2018, U+2019, U+02BC, U+2032.
+  [/[‘’ʼ′]/g, "'"],
+  // Guillemets : U+201C, U+201D, U+2033, puis les chevrons français U+00AB et
+  // U+00BB avec l'espace que la typographie française colle à l'intérieur
+  // (souvent une insécable) : « la poule » doit se lire comme "la poule".
+  [/[“”″]/g, '"'],
+  [/«\s*/g, '"'],
+  [/\s*»/g, '"'],
+  // Points de suspension U+2026.
+  [/…/g, '...'],
+  // Ligatures U+0153, U+0152, U+00E6, U+00C6.
+  [/œ/g, 'oe'],
+  [/Œ/g, 'OE'],
+  [/æ/g, 'ae'],
+  [/Æ/g, 'AE'],
+  // Tirets U+2010 à U+2014, plus le signe moins U+2212, écrits par leurs points
+  // de code : le cadratin U+2014 ne doit pas figurer en toutes lettres ici.
+  [
+    new RegExp(
+      `[${String.fromCharCode(0x2010)}-${String.fromCharCode(0x2014)}${String.fromCharCode(0x2212)}]`,
+      'g',
+    ),
+    '-',
+  ],
+]
+
 function normaliserTexte(texte: string): string {
-  const base = texte
+  let plie = texte
+  for (const [motif, remplacement] of EQUIVALENCES_TYPO) plie = plie.replace(motif, remplacement)
+  const base = plie
     .normalize('NFD')
     .replace(DIACRITIQUES, '')
     .toLowerCase()
@@ -348,38 +494,70 @@ function normaliserTexte(texte: string): string {
  * deux puces. La contradiction est levée dans le prompt (21/08), mais le code
  * ne doit plus dépendre de la perfection du modèle.
  *
- * La condition est volontairement étroite : le préfixe retiré doit être
- * exactement le domaine que porte l'AUTRE séance, celle qui ne l'écrit pas
- * dans son texte. Sans cette exigence, « Jours 3-4 : révisions » et
- * « Jours 5-6 : révisions » se confondraient (leur queue est la même), et
- * « Geste d'écriture : a » avalerait une puce « a ». Retirer de chaque côté son
- * PROPRE domaine, dérivé du texte, aurait exactement ces deux défauts : le
- * domaine dérivé n'est qu'un morceau du texte pris avant les deux points, il ne
- * prouve rien.
+ * COMMENT LA COMPARAISON EST ANCRÉE. On ne retire pas « ce qui ressemble à un
+ * domaine » : on retire un domaine RÉELLEMENT DÉCLARÉ par l'une des deux
+ * séances, et on le retire DES DEUX CÔTÉS. Une tête n'est donc jamais coupée au
+ * jugé, et deux puces ne se confondent que si elles disent la même chose une
+ * fois le même mot retiré devant. C'est ce qui garde distinctes
+ * « LC : Voyelles, de Rimbaud » et « PDE : Voyelles, de Rimbaud » : retirer
+ * « LC » ne change rien à la seconde, retirer « PDE » ne change rien à la
+ * première, et les restes diffèrent dans les deux essais.
+ *
+ * Le séparateur entre le domaine et le texte est OPTIONNEL, parce que le
+ * document de référence écrit les deux formes : « LC : La petite poule » avec
+ * deux points, « Vocabulaire (séance 1) » sans. Sans cela, une séance
+ * `{ domaine: 'Vocabulaire', libelle: '(séance 1)' }` face à l'item
+ * « Vocabulaire (séance 1) » ressortait EN DOUBLE, défaut mesuré le 21/08 en
+ * exécutant la chaîne complète sur une réponse mêlant les deux formats.
+ *
+ * CE QUI N'EST PLUS EXIGÉ (points 1 et 2 de la relecture). La condition
+ * précédente réclamait un `domaine` non vide du côté COURT, et rien du côté
+ * long. C'était exiger du modèle une perfection que le prompt ne demande pas :
+ * une puce « LC : Décodage » face à une séance « Décodage » au `domaine` vide
+ * ressortait en double, indéfiniment. Or ce champ est souvent vide, puisqu'il
+ * est dérivé du texte dès qu'une conversion passe par ici, et qu'une puce sans
+ * deux points n'en dérive aucun.
+ *
+ * PRIX ASSUMÉ : « Geste d'écriture : a » avale désormais une puce « a » écrite
+ * seule à côté dans la même semaine, puisque « Geste d'écriture » est un domaine
+ * déclaré (dérivé) de la première. Les deux situations sont structurellement
+ * indiscernables, il fallait choisir laquelle payer. Le doublon, lui, frappe
+ * TOUTES les puces d'un document dont le modèle range le domaine à part ;
+ * l'autre suppose qu'une enseignante écrive dans la même semaine une puce
+ * réduite à la fin d'une autre.
  */
-function memePuceAuDomainePres(longue: SeanceProgression, courte: SeanceProgression): boolean {
-  const domaine = normaliserTexte(courte.domaine)
-  if (!domaine) return false
-  const coupe = longue.libelle.indexOf(':')
-  if (coupe < 1) return false
-  if (normaliserTexte(longue.libelle.slice(0, coupe)) !== domaine) return false
-  return normaliserTexte(longue.libelle.slice(coupe + 1)) === normaliserTexte(courte.libelle)
+function sansTeteNormalisee(libelle: string, domaine: string): string {
+  if (!domaine || !libelle.startsWith(domaine)) return libelle
+  const suite = libelle.slice(domaine.length)
+  // Le domaine doit être un mot entier : « Le » n'est pas la tête de
+  // « Lecture offerte ». `normaliserTexte` ayant déjà retiré accents et
+  // ligatures et tout mis en minuscules, `[a-z0-9]` décrit ici « une lettre ou
+  // un chiffre ».
+  if (suite && /[a-z0-9]/.test(suite[0])) return libelle
+  return suite.replace(/^\s*:?\s*/, '')
 }
 
 /**
  * Deux séances décrivent-elles la MÊME puce du document ?
  *
  * Même libellé une fois normalisé (voir `normaliserTexte` pour la frontière
- * exacte de la tolérance), ou même libellé au domaine près, dans un sens ou
- * dans l'autre (voir `memePuceAuDomainePres`).
+ * exacte de la tolérance), ou même libellé une fois retiré des deux côtés un
+ * domaine que l'une des deux déclare (voir `sansTeteNormalisee`).
  *
  * Le jour ne fait PAS partie de l'identité d'une puce : c'est `completerSeances`
  * qui s'en sert pour départager deux séances candidates, pas pour décider si
  * deux textes parlent de la même chose.
  */
 function memePuce(a: SeanceProgression, b: SeanceProgression): boolean {
-  if (normaliserTexte(a.libelle) === normaliserTexte(b.libelle)) return true
-  return memePuceAuDomainePres(a, b) || memePuceAuDomainePres(b, a)
+  const texteA = normaliserTexte(a.libelle)
+  const texteB = normaliserTexte(b.libelle)
+  if (texteA === texteB) return true
+  for (const declare of [a.domaine, b.domaine]) {
+    const domaine = normaliserTexte(declare)
+    if (!domaine) continue
+    if (sansTeteNormalisee(texteA, domaine) === sansTeteNormalisee(texteB, domaine)) return true
+  }
+  return false
 }
 
 /** Longueur du texte utile, espaces normalisés : sert à choisir laquelle de deux
@@ -399,22 +577,56 @@ function longueurUtile(texte: string): number {
  *   faisant disparaître le « Jour 2 » écrit par l'enseignante. Quand l'item ne
  *   dit rien de la journée, la séance garde la sienne (le modèle a pu lire une
  *   colonne du tableau que le texte ne porte pas).
- * - LE LIBELLÉ : la version la plus longue gagne, à espaces normalisés, la
- *   séance l'emportant à égalité. C'est ce qui évite de perdre le « LC : » d'un
- *   item « LC : Décodage » en faveur du « Décodage » de la séance : le domaine
- *   survit dans le champ `domaine`, mais `itemsDepuisSeances` ne le réécrit
- *   pas, donc il aurait disparu de l'écran au premier enregistrement.
+ * - LE LIBELLÉ : voir `libelleRetenu`.
  *
  * Le résultat repasse par `seanceDepuisTexte` pour que la séance fusionnée
  * obéisse aux mêmes règles que toutes les autres (préfixe, intervalle, domaine
- * dérivé).
+ * dérivé, domaine réécrit devant le texte).
  */
 function fusionner(seance: SeanceProgression, item: SeanceProgression): SeanceProgression {
   const jour = jourValide(item.jour) ? item.jour : seance.jour
-  const libelle = longueurUtile(item.libelle) > longueurUtile(seance.libelle)
-    ? item.libelle
-    : seance.libelle
+  const libelle = libelleRetenu(seance.libelle, item.libelle)
   return seanceDepuisTexte(libelle, jour, seance.domaine || item.domaine) ?? seance
+}
+
+/**
+ * Des deux écritures d'une même puce, celle qui est gardée.
+ *
+ * LE DÉFAUT CORRIGÉ LE 21/08 (BLOQUANT 2 de la relecture). La règle était « la
+ * plus longue gagne, la séance l'emportant à égalité ». Or une différence
+ * d'accent, de casse ou d'apostrophe ne change PAS la longueur : la séance
+ * gagnait, donc le texte du modèle remplaçait celui de l'item. Mesuré :
+ * `items: ['Le graphème où']` face à une séance « Le graphème ou » ressortait
+ * en « Le graphème ou ». « ou » et « où » sont deux graphèmes distincts au
+ * programme de CP : une puce du document disparaissait, remplacée par une
+ * autre. Pareil pour « Le son [é] » réécrit « Le son [e] », et « Dictée »
+ * réécrit « DICTEE ».
+ *
+ * Trois cas, dans cet ordre :
+ *
+ * 1. les deux textes ne diffèrent que par leurs ESPACES : il n'y a rien à
+ *    arbitrer, ils disent exactement la même chose. On garde la forme de la
+ *    séance, déjà nettoyée, plutôt que les espaces doubles ou insécables d'un
+ *    copier-coller ;
+ * 2. la séance CONTIENT l'item une fois normalisée et en dit plus long : elle
+ *    gagne. C'est le seul cas où une différence de longueur est une différence
+ *    de contenu, et c'est celui du domaine (« LC : Décodage » face à
+ *    « Décodage ») ;
+ * 3. sinon L'ITEM gagne, y compris à longueur égale. C'est le texte que
+ *    l'enseignante voit et que la base enregistre : entre deux écritures que la
+ *    tolérance a déclarées équivalentes, c'est la sienne qui reste.
+ */
+function libelleRetenu(libelleSeance: string, libelleItem: string): string {
+  const espacesSeance = libelleSeance.replace(/\s+/g, ' ').trim()
+  const espacesItem = libelleItem.replace(/\s+/g, ' ').trim()
+  if (espacesSeance === espacesItem) return libelleSeance
+
+  const normaliseeSeance = normaliserTexte(libelleSeance)
+  const normaliseeItem = normaliserTexte(libelleItem)
+  const seanceEnDitPlus = normaliseeSeance !== normaliseeItem
+    && normaliseeSeance.includes(normaliseeItem)
+    && longueurUtile(libelleSeance) > longueurUtile(libelleItem)
+  return seanceEnDitPlus ? libelleSeance : libelleItem
 }
 
 /**
@@ -428,10 +640,17 @@ function fusionner(seance: SeanceProgression, item: SeanceProgression): SeancePr
  * jamais pouvoir effacer le document de l'enseignante. C'est « signaler,
  * jamais deviner » appliqué aux données : au pire, une séance sans jour.
  *
- * En sortie, `items` est réécrit depuis le résultat sans rien perdre : chaque
- * puce reçue a sa séance, et chaque séance son item. Un libellé peut y avoir
- * changé de FORME (celle des deux écritures qui portait le plus de texte, voir
- * `fusionner`), jamais de contenu.
+ * EN SORTIE, `items` PEUT ÊTRE RÉÉCRIT DEPUIS LE RÉSULTAT, mais pas « sans rien
+ * perdre » comme il était écrit ici jusqu'au 21/08. Ce qui est vrai : chaque
+ * puce reçue a sa séance, et chaque séance son item, donc aucune LIGNE ne
+ * disparaît. Ce qui est faux : les deux écritures d'une même puce n'en donnent
+ * qu'une seule en sortie, celle que `libelleRetenu` garde, et la tolérance de
+ * `normaliserTexte` fait qu'elles peuvent différer par une casse, un accent, une
+ * apostrophe ou une ponctuation finale. La perte est bornée à ce que la
+ * tolérance couvre, elle n'est pas nulle. Et deux autres cas, documentés là où
+ * ils vivent, réécrivent vraiment le texte : un préfixe de jour qui en cache un
+ * second (`itemsDepuisSeances`) et un domaine trop long pour être reposé devant
+ * la puce (`avecDomaine`).
  *
  * L'ORDRE DE SORTIE suit l'ordre de lecture du document, c'est-à-dire l'ordre
  * de `items` : une séance prend le rang de l'item qu'elle couvre, un item
@@ -527,16 +746,28 @@ export function completerSeances(
  * - le texte porte un préfixe de jour DIFFÉRENT de `jour`. Le champ `jour`
  *   gagnait ici en silence : « Jour 5 : Fluence » avec `jour: 3` ressortait en
  *   « Jour 3 : Fluence » et le 5 du document disparaissait. C'est le texte qui
- *   tranche, comme dans `seanceDepuisTexte`. Une séance passée par ce module
- *   ne peut de toute façon plus se contredire ainsi ; le cas ne subsiste que
- *   pour une séance fabriquée ailleurs.
+ *   tranche, comme dans `seanceDepuisTexte`. Contrairement à ce qui était écrit
+ *   ici jusqu'au 21/08, ce cas n'est PAS réservé aux séances fabriquées
+ *   ailleurs : une séance passée par ce module peut très bien se contredire
+ *   ainsi, `seanceDepuisTexte('Jour 3 : Jour 4 : Fluence')` rendant
+ *   `{ jour: 3, libelle: 'Jour 4 : Fluence' }`. Le texte tranche donc pour de
+ *   bon, et le « Jour 3 » du document ne se voit plus. Signalé plutôt que
+ *   deviné : les deux rangs restent lisibles dans la puce d'origine.
+ *
+ * LE DOMAINE, LUI, EST ÉCRIT (21/08, décision de Christophe). `avecDomaine` le
+ * repose devant le texte quand le libellé ne le porte pas. Dans la chaîne
+ * normale c'est déjà fait par `seanceDepuisTexte` et l'appel ne change rien ;
+ * il sert aux séances qui arrivent d'ailleurs (une ligne enregistrée en base
+ * avant cette correction, par exemple), pour que le domaine atteigne l'écran
+ * quel que soit le chemin emprunté.
  */
 export function itemsDepuisSeances(seances: SeanceProgression[]): string[] {
   return seances.map(s => {
-    const lu = lirePrefixeJour(s.libelle)
-    if (lu.ambigu) return s.libelle
-    if (lu.jour !== null && lu.jour !== s.jour) return s.libelle
-    if (!jourValide(s.jour)) return s.libelle
+    const texte = avecDomaine(s.libelle, s.domaine.trim())
+    const lu = lirePrefixeJour(texte)
+    if (lu.ambigu) return texte
+    if (lu.jour !== null && lu.jour !== s.jour) return texte
+    if (!jourValide(s.jour)) return texte
     return `Jour ${s.jour} : ${lu.libelle}`
   })
 }

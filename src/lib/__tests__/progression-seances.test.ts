@@ -363,6 +363,11 @@ describe('frontière de tolérance : ce qui est la même puce', () => {
     ])
   })
 
+  // ATTENTE MODIFIÉE le 21/08 : « Écriture » devient « Ecriture ». Des deux
+  // écritures que la tolérance a déclarées équivalentes, c'est celle de l'ITEM
+  // qui est gardée, y compris à longueur égale (voir `libelleRetenu`). L'ancienne
+  // règle gardait la plus longue, la séance l'emportant à égalité : c'est elle
+  // qui remplaçait « Le graphème où » par « Le graphème ou ».
   it('reconnaît la même puce à un accent ou à un point final près', () => {
     const seances = [
       { jour: 1, domaine: '', libelle: 'Découverte du son [a]' },
@@ -370,12 +375,17 @@ describe('frontière de tolérance : ce qui est la même puce', () => {
     ]
     const out = completerSeances(seances, ['Découverte du son [a].', 'Ecriture'])
     expect(out).toHaveLength(2)
-    expect(out.map(s => s.libelle)).toEqual(['Découverte du son [a].', 'Écriture'])
+    expect(out.map(s => s.libelle)).toEqual(['Découverte du son [a].', 'Ecriture'])
   })
 
+  // ATTENTE MODIFIÉE le 21/08, même raison : la casse vient de l'item. Les
+  // espaces, eux, ne sont pas une différence à arbitrer, donc la forme déjà
+  // propre survit à l'intérieur du texte.
   it('reconnaît la même puce à la casse et aux espaces près', () => {
     const seances = [{ jour: 1, domaine: '', libelle: 'Geste d’écriture' }]
-    expect(completerSeances(seances, ['  GESTE  D’ÉCRITURE '])).toEqual(seances)
+    expect(completerSeances(seances, ['  GESTE D’ÉCRITURE '])).toEqual([
+      { jour: 1, domaine: '', libelle: 'GESTE D’ÉCRITURE' },
+    ])
   })
 })
 
@@ -402,12 +412,30 @@ describe('frontière de tolérance : ce qui reste deux puces différentes', () =
     expect(completerSeances(seances, ['Vocabulaire : la poule'])).toHaveLength(2)
   })
 
-  // Le domaine dérivé n'est qu'un morceau de texte pris avant les deux points :
-  // il ne prouve rien. Sans la condition étroite de `memePuceAuDomainePres`,
-  // « Geste d’écriture : a » avalerait une puce « a ».
-  it('ne fusionne pas une puce courte avec la queue d’une puce plus longue', () => {
+  // ATTENTE MODIFIÉE le 21/08, et c'est le PRIX ASSUMÉ des points 1 et 2 de la
+  // relecture. La condition exigeait un `domaine` non vide du côté COURT : elle
+  // protégeait ce cas-ci, mais elle laissait « LC : Décodage » et « Décodage »
+  // ressortir en double dès que ce champ était vide, ce qui est le cas courant
+  // puisqu'il est dérivé du texte. Les deux situations sont structurellement
+  // indiscernables : dans les deux, le domaine de la puce longue vient de son
+  // propre texte et ne prouve rien. On paie donc celle-ci, qui suppose qu'une
+  // enseignante écrive dans la même semaine une puce réduite à la fin d'une
+  // autre, plutôt que le doublon, qui frappait toutes les puces du document.
+  it('avale une puce courte égale à la queue d’une puce plus longue', () => {
     const seances = [{ jour: 1, domaine: '', libelle: 'a' }]
-    expect(completerSeances(seances, ['Geste d’écriture : a'])).toHaveLength(2)
+    expect(completerSeances(seances, ['Geste d’écriture : a'])).toHaveLength(1)
+  })
+
+  // Ce qui protège vraiment, et qui n'a pas bougé : la QUEUE doit être égale.
+  it('ne fusionne pas une puce et la même précisée, même à domaine vide', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: '', libelle: 'Fluence' }],
+      ['Fluence : syllabes'],
+    )).toHaveLength(2)
+    expect(completerSeances(
+      [{ jour: null, domaine: 'Jours 3-4', libelle: 'Jours 3-4 : révisions' }],
+      ['Jours 5-6 : révisions'],
+    )).toHaveLength(2)
   })
 
   it('reconnaît en revanche la même puce à deux points, écrite deux fois pareil', () => {
@@ -473,5 +501,221 @@ describe('le jour écrit dans le document', () => {
   it('laisse le texte trancher quand le préfixe et le champ jour se contredisent', () => {
     expect(itemsDepuisSeances([{ jour: 2, domaine: '', libelle: 'Jour 5 : Fluence' }]))
       .toEqual(['Jour 5 : Fluence'])
+  })
+})
+
+// BLOQUANT 2 de la relecture du 21/08. `fusionner` gardait le libellé LE PLUS
+// LONG, la séance l'emportant à égalité. Or un accent, une casse ou une
+// apostrophe ne changent pas la longueur : le texte correct de l'enseignante
+// était remplacé par la version fautive du modèle, et une puce du document
+// disparaissait. « ou » et « où » sont deux graphèmes distincts au programme
+// de CP.
+describe('des deux écritures, laquelle est gardée', () => {
+  it('garde le texte de l’item quand seule la forme diffère', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: '', libelle: 'Le graphème ou' }],
+      ['Le graphème où'],
+    )).toEqual([{ jour: 1, domaine: '', libelle: 'Le graphème où' }])
+  })
+
+  it('ne remplace pas [é] par [e] au prétexte que les deux font la même longueur', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: '', libelle: 'Le son [e]' }],
+      ['Le son [é]'],
+    )).toEqual([{ jour: 1, domaine: '', libelle: 'Le son [é]' }])
+  })
+
+  it('garde la casse écrite dans l’item', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: '', libelle: 'DICTEE' }],
+      ['Dictée'],
+    )).toEqual([{ jour: 1, domaine: '', libelle: 'Dictée' }])
+  })
+
+  it('ne garde le texte le plus long que s’il contient l’autre', () => {
+    // Là, la séance en dit vraiment plus : elle porte le domaine.
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'LC', libelle: 'LC : Décodage' }],
+      ['Décodage'],
+    )).toEqual([{ jour: 1, domaine: 'LC', libelle: 'LC : Décodage' }])
+  })
+
+  it('ne compte pas l’espacement comme une différence à arbitrer', () => {
+    // Deux écritures qui ne diffèrent que par leurs espaces disent exactement
+    // la même chose : rien à choisir, on garde la forme déjà propre.
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'LC', libelle: 'LC : la poule' }],
+      ['  LC :  la poule  '],
+    )).toEqual([{ jour: 1, domaine: 'LC', libelle: 'LC : la poule' }])
+  })
+})
+
+// À CORRIGER 1 et 2 : la tolérance au domaine ne marchait que dans un sens
+// (elle exigeait un `domaine` non vide du côté COURT), donc une puce écrite
+// « LC : Décodage » d'un côté et « Décodage » de l'autre ressortait en double
+// dès que le champ `domaine` du côté court était vide.
+describe('tolérance au domaine, dans les deux sens', () => {
+  it('reconnaît la puce quand c’est la séance qui porte le domaine devant', () => {
+    expect(completerSeances(
+      [{ jour: null, domaine: 'LC', libelle: 'LC : Décodage' }],
+      ['Décodage'],
+    )).toHaveLength(1)
+  })
+
+  it('reconnaît la puce quand aucun des deux côtés ne remplit le champ domaine', () => {
+    expect(completerSeances(
+      [{ jour: null, domaine: '', libelle: 'Décodage' }],
+      ['LC : Décodage'],
+    )).toHaveLength(1)
+  })
+
+  it('refuse encore deux domaines différents portant le même texte', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'LC', libelle: 'Décodage' }],
+      ['Vocabulaire : Décodage'],
+    )).toHaveLength(2)
+  })
+
+  // DÉFAUT TROUVÉ EN EXÉCUTANT LA CHAÎNE le 21/08, sur une réponse mêlant les
+  // deux formats. Le document écrit « Vocabulaire (séance 1) » SANS deux points.
+  // Un modèle qui range ce domaine à part rend `libelle: '(séance 1)'` d'un côté
+  // et l'item entier de l'autre : la comparaison ne reconnaissait pas la même
+  // puce, et l'enseignante la voyait deux fois. Le séparateur entre le domaine
+  // et le texte doit donc être optionnel.
+  it('reconnaît la même puce quand le domaine est collé au texte, sans deux points', () => {
+    const out = completerSeances(
+      [{ jour: 3, domaine: 'Vocabulaire', libelle: '(séance 1)' }],
+      ['Vocabulaire (séance 1)'],
+    )
+    expect(out).toHaveLength(1)
+    // Et c'est le texte du document qui reste, pas le « : » que le code aurait
+    // inventé en reposant le domaine.
+    expect(out[0].libelle).toBe('Vocabulaire (séance 1)')
+  })
+
+  it('ne confond pas deux puces du même domaine collé', () => {
+    expect(completerSeances(
+      [{ jour: 3, domaine: 'Vocabulaire', libelle: '(séance 1)' }],
+      ['Vocabulaire (séance 2)'],
+    )).toHaveLength(2)
+  })
+})
+
+// À CORRIGER 3 : le document de référence écrit « Geste d’écriture » avec
+// l'apostrophe typographique U+2019 six fois, et le prompt mélange les deux
+// formes. Chaque occurrence produisait un doublon.
+describe('caractères typographiques équivalents', () => {
+  it.each([
+    ['apostrophe droite contre U+2019', "Geste d'écriture", 'Geste d’écriture'],
+    ['ligature oe', 'Le son coeur', 'Le son cœur'],
+    ['points de suspension U+2026', 'Le loup qui...', 'Le loup qui…'],
+    ['guillemets français', '"la poule"', '« la poule »'],
+    ['tiret demi-cadratin', 'Séances 1-2', 'Séances 1–2'],
+  ])('reconnaît la même puce malgré %s', (_nom, cote, autre) => {
+    expect(completerSeances([{ jour: 1, domaine: '', libelle: cote }], [autre])).toHaveLength(1)
+  })
+
+  it('garde bien le texte de l’item, pas celui du modèle', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: '', libelle: "Geste d'écriture" }],
+      ['Geste d’écriture'],
+    )).toEqual([{ jour: 1, domaine: '', libelle: 'Geste d’écriture' }])
+  })
+})
+
+// À CORRIGER 9 : formes d'intervalle non couvertes. Chacune faisait poser le
+// jour rendu par le modèle et un préfixe devant le texte entier.
+describe('autres formes d’intervalle de jours', () => {
+  it.each([
+    ['esperluette', 'Jours 3&4 : révisions'],
+    ['barre oblique', 'Jours 3/4 : révisions'],
+    ['« ou »', 'Jours 3 ou 4 : révisions'],
+    ['« puis »', 'Jour 3 puis 4 : révisions'],
+    ['« et » sans espaces', 'Jours 3et4 : révisions'],
+    ['barre oblique espacée', 'Jour 3 / 4 : révisions'],
+  ])('ne date pas et ne déforme pas la forme %s', (_nom, item) => {
+    const [seance] = seancesDepuisItems([item])
+    expect(seance.jour).toBeNull()
+    expect(seance.libelle).toBe(item)
+    expect(itemsDepuisSeances([{ ...seance, jour: 3 }])).toEqual([item])
+  })
+
+  it('ne prend toujours pas « Jour 3 : 4 opérations » pour un intervalle', () => {
+    expect(seancesDepuisItems(['Jour 3 : 4 opérations'])).toEqual([
+      { jour: 3, domaine: '', libelle: '4 opérations' },
+    ])
+  })
+})
+
+// BLOQUANT 1 : le domaine ne survivait pas jusqu'à `items`, donc pas jusqu'à
+// l'écran, puisque le cahier journal ne lit que `items`.
+describe('le domaine survit dans items', () => {
+  it('écrit le domaine devant le texte quand le libellé ne le porte pas', () => {
+    expect(itemsDepuisSeances([
+      { jour: 4, domaine: 'LC', libelle: 'La petite poule (séance 4)' },
+    ])).toEqual(['Jour 4 : LC : La petite poule (séance 4)'])
+  })
+
+  it('ne le double pas quand le libellé le porte déjà', () => {
+    expect(itemsDepuisSeances([
+      { jour: 4, domaine: 'LC', libelle: 'LC : La petite poule (séance 4)' },
+    ])).toEqual(['Jour 4 : LC : La petite poule (séance 4)'])
+  })
+
+  it('ne le double pas non plus quand le document l’écrit sans deux points', () => {
+    expect(itemsDepuisSeances([
+      { jour: 1, domaine: 'Vocabulaire', libelle: 'Vocabulaire (séance 3)' },
+    ])).toEqual(['Jour 1 : Vocabulaire (séance 3)'])
+  })
+
+  it('ne confond pas un domaine avec le début d’un mot', () => {
+    expect(itemsDepuisSeances([
+      { jour: null, domaine: 'Le', libelle: 'Lecture offerte' },
+    ])).toEqual(['Le : Lecture offerte'])
+  })
+
+  it('refuse d’écrire un domaine trop long pour être relu comme tel', () => {
+    // Au-delà de la borne du domaine, le texte réécrit ne se relirait plus
+    // comme « domaine : contenu » et la puce ressortirait en double.
+    const domaine = 'A'.repeat(31)
+    expect(itemsDepuisSeances([{ jour: null, domaine, libelle: 'Fluence' }]))
+      .toEqual(['Fluence'])
+  })
+
+  it('fait l’aller-retour sans rien perdre ni rien doubler', () => {
+    const seances = [
+      { jour: 4, domaine: 'LC', libelle: 'LC : La petite poule (séance 4)' },
+      { jour: 1, domaine: 'Vocabulaire', libelle: 'Vocabulaire (séance 3)' },
+    ]
+    const items = itemsDepuisSeances(seances)
+    expect(itemsDepuisSeances(completerSeances(seances, items))).toEqual(items)
+  })
+})
+
+// À CORRIGER 8 : quand deux puces se ressemblent au sens tolérant et que le
+// modèle les rend dans un ordre différent d'`items`, la sortie inversait leur
+// ordre. La tâche 5 posant la séance i dans le créneau i, elles atterriraient
+// au mauvais jour.
+describe('ordre de sortie quand deux puces se ressemblent', () => {
+  it('suit l’ordre du document, pas celui du modèle', () => {
+    const seances = [
+      { jour: null, domaine: '', libelle: 'Le son [ou]' },
+      { jour: null, domaine: '', libelle: 'Le son [où]' },
+    ]
+    const items = ['Le son [où]', 'Le son [ou]']
+    expect(itemsDepuisSeances(completerSeances(seances, items))).toEqual(items)
+  })
+})
+
+// À CORRIGER 5 : un intervalle dans `items` et un jour rendu par le modèle à
+// côté faisaient ressortir la puce EN DOUBLE, l'une datée, l'autre intacte.
+describe('intervalle dans items et jour rendu par le modèle', () => {
+  it('ne fabrique pas une puce de plus', () => {
+    const seances = [
+      { jour: 3, domaine: '', libelle: 'révisions' },
+      { jour: 1, domaine: '', libelle: 'Fluence' },
+    ]
+    const items = ['Jours 3-4 : révisions', 'Jour 1 : Fluence']
+    expect(itemsDepuisSeances(completerSeances(seances, items))).toEqual(items)
   })
 })

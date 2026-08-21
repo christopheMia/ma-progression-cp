@@ -44,11 +44,11 @@ export const PROGRESSION_JSON_SCHEMA = {
                 },
                 domaine: {
                   type: 'string',
-                  description: 'Domaine tel que le document l’écrit, lu dans l’en-tête de colonne ou de ligne (« LC », « Vocabulaire », « Calcul mental »). "" si le document n’en donne pas. Ne le recopie pas en plus devant le libellé.',
+                  description: 'Domaine tel que le document l’écrit, lu dans l’en-tête de colonne ou de ligne (« LC », « Vocabulaire », « Calcul mental »). "" si le document n’en donne pas. Quand la puce l’écrit déjà devant son texte, garde-le AUSSI dans le libellé : le domaine doit rester visible pour l’enseignante.',
                 },
                 libelle: {
                   type: 'string',
-                  description: 'Texte exact de la puce, sans le préfixe « Jour N : » quand il désigne un seul jour (le jour se dit dans "jour", jamais deux fois) et sans le domaine devant. Une puce qui vise plusieurs jours garde son texte entier, « Jours 3-4 » compris. Une puce = une séance : ne fusionne pas deux puces et n’en découpe aucune. L’entrée correspondante de "items" reprend ce texte mot pour mot.',
+                  description: 'Texte exact de la puce, domaine compris quand le document l’écrit devant (« LC : La petite poule (séance 1) »), et sans le préfixe « Jour N : » quand il désigne un seul jour (le jour se dit dans "jour", jamais deux fois). Une puce qui vise plusieurs jours garde son texte entier, « Jours 3-4 » compris. Une puce = une séance : ne fusionne pas deux puces et n’en découpe aucune. L’entrée correspondante de "items" reprend ce texte mot pour mot.',
                 },
               },
               required: ['jour', 'domaine', 'libelle'],
@@ -87,19 +87,18 @@ function toStringArray(v: unknown): string[] {
  *
  * Ce que la délégation apporte, en plus de l'unicité :
  *
- * - le `jour` du modèle gagne quand il est valide (il a pu lire une colonne du
- *   tableau que le texte de la puce ne porte pas), celui du préfixe sinon,
- *   `null` en dernier recours. Jamais de jour deviné ;
+ * - le `jour` du TEXTE de la puce gagne quand elle en porte un (« Jour 3 : »),
+ *   celui du modèle ne servant que là où le texte se tait, `null` en dernier
+ *   recours. Jamais de jour deviné. Cette phrase disait l'inverse jusqu'au
+ *   21/08, contredisant à la fois le code et le paragraphe suivant du même
+ *   commentaire ;
  * - le `domaine` du modèle gagne quand il en donne un (il a pu le lire dans un
- *   en-tête de colonne absent du libellé), sinon il est dérivé du libellé.
- *   Ne pas surestimer ce gain : il ne survit pas à un aller-retour par `items`.
- *   Un `domaine: 'Lecture'` posé sur un libellé « La petite poule » qui ne
- *   contient pas de deux-points est perdu dès que la semaine est réécrite en
- *   texte puis relue (`itemsDepuisSeances` n'écrit pas le domaine, et
- *   `seancesDepuisItems` le redérive du libellé, donc `''`). Il tient le temps
- *   d'un affichage, pas d'un enregistrement suivi d'une relecture. Le contrat du
- *   type le dit déjà (`src/types/index.ts`, « DÉRIVÉ de `libelle`, jamais
- *   resérialisé ») : ce champ ne doit jamais servir de support de placement ;
+ *   en-tête de colonne absent du libellé), sinon il est dérivé du libellé. Et
+ *   depuis la décision de Christophe du 21/08, il est RÉÉCRIT DEVANT le texte
+ *   de la puce quand celle-ci ne le porte pas (`avecDomaine`), pour qu'il
+ *   atteigne l'écran : le cahier journal ne lit que `items`. C'est aussi ce qui
+ *   le fait survivre à un aller-retour par le texte, ce que ce commentaire
+ *   donnait auparavant pour impossible ;
  * - un intervalle (« Jours 3-4 : révisions ») n'est pas un rang de jour et
  *   ressort intact, non daté, même quand le modèle a rempli `jour` lui-même ;
  * - un `jour` du modèle qui contredit le préfixe écrit dans le libellé perd :
@@ -151,15 +150,28 @@ function nettoyerSemainesBrutes(brut: unknown[]): ProgressionSemaine[] {
     return {
       numero: typeof o.numero === 'number' ? o.numero : 0,
       // `items` redevient l'écriture texte des séances retenues : les deux
-      // champs disent alors la même chose, et rien ne se perd puisque
+      // champs disent alors la même chose, et aucune ligne ne se perd puisque
       // `completerSeances` a garanti que chaque item a sa séance.
       //
       // Ce n'est pas un champ de compatibilité en sursis : `items` est ce que
       // le cahier journal lit aujourd'hui, et la seule chose qu'il lit (voir
       // `itemsDuJour` dans `src/lib/cahier-journal.ts`, qui retrouve le jour
       // dans le préfixe « Jour N : » de chaque item). Le préfixe reposé ici est
-      // donc ce qui date réellement une séance à l'écran.
-      items: retenues.length ? itemsDepuisSeances(retenues) : itemsPropres,
+      // donc ce qui date réellement une séance à l'écran, et le domaine reposé
+      // devant le texte ce qui distingue deux séances homonymes.
+      //
+      // SANS REPLI SUR `itemsPropres` (correction du 21/08, point 4 de la
+      // relecture). Il y en avait un, pour le cas où aucune séance ne survivait.
+      // Il ne protégeait rien : quand le modèle retombe sur l'ancien format,
+      // `completerSeances` refait des séances depuis les items eux-mêmes, donc
+      // `retenues` n'est vide que si AUCUNE puce n'avait de texte. Le repli
+      // rendait alors les rebuts tels quels, et la chaîne complète était :
+      // `items: ['Jour 4 :']`, puis `itemsDuJour` rendait `['']`, puis le cahier
+      // journal affichait un créneau VIDE au lieu du nom de sa matière (le repli
+      // sur `creneau.matiere` ne se déclenche que sur une liste vide). Les tests
+      // d'alors mettaient toujours une séance valide à côté, ce qui masquait la
+      // branche.
+      items: itemsDepuisSeances(retenues),
       pages: typeof o.pages === 'string' ? o.pages.trim() : '',
       mots_exemple: toStringArray(o.mots_exemple),
       seances: retenues,

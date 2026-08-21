@@ -105,13 +105,28 @@ describe('consignes de séances (systemImportAutomatique)', () => {
     expect(prompt).toMatch(/ne dépasse jamais le nombre de jours de classe/i)
   })
 
-  // La règle "periode" demandait « Préfixe chaque contenu par son domaine »
-  // pendant que les règles "seances" demandaient le texte de la puce dans
-  // "libelle" et l'en-tête dans "domaine". Un modèle qui obéissait aux deux
-  // écrivait deux formes de la même puce, et la semaine ressortait doublée.
-  it('ne demande plus de préfixer les items par leur domaine', () => {
-    expect(prompt).not.toMatch(/Préfixe chaque contenu par son domaine/i)
-    expect(prompt).toMatch(/Ne préfixe pas les contenus de "items" par leur domaine/i)
+  // ATTENTE MODIFIÉE le 21/08, DÉCISION DE CHRISTOPHE : le domaine reste
+  // VISIBLE dans le cahier journal. Dans son planning réel, deux séances portent
+  // le même texte de Rimbaud, l'une en langage oral, l'autre en production
+  // d'écrits ; sans « LC : » et « PDE : » devant, les deux lignes sont
+  // identiques à l'écran.
+  //
+  // La consigne inverse existait pour supprimer les doublons. Elle est retirée,
+  // et la protection contre le doublon vient désormais du CODE (comparaison
+  // tolérante, `memePuceAuDomainePres`). C'est le principe qui a débloqué ce
+  // chantier : le code ne doit jamais exiger de l'IA une perfection au caractère
+  // près. Suivie à la lettre, cette consigne faisait d'ailleurs disparaître du
+  // texte : « Vocabulaire (séance 3) », dont le domaine n'est pas séparé par des
+  // deux points, arrivait à l'écran en « (séance 3) ».
+  it('demande de garder le domaine devant le texte de la puce', () => {
+    expect(prompt).not.toMatch(/Ne préfixe pas les contenus de "items" par leur domaine/i)
+    expect(prompt).not.toMatch(/Ne recopie pas non plus le domaine devant le texte/i)
+    expect(prompt).toMatch(/GARDE le domaine devant le texte/)
+    expect(prompt).toMatch(/Garde le domaine devant le contenu dans "items"/)
+  })
+
+  it('dit pourquoi le domaine doit rester lisible', () => {
+    expect(prompt).toMatch(/distingue deux séances portant le même texte/i)
   })
 })
 
@@ -126,9 +141,13 @@ describe('le format promis par le prompt traverse le code sans être déformé',
 
   // Une réponse de modèle qui obéit à la lettre aux consignes de
   // systemImportAutomatique : une puce = une séance, "libelle" = le texte exact
-  // de la puce sans préfixe de jour ni domaine devant, "items" reprenant mot
-  // pour mot ces libellés dans le même ordre, intervalle non daté et gardé
-  // entier, case vide ignorée.
+  // de la puce sans préfixe de jour, "items" reprenant mot pour mot ces libellés
+  // dans le même ordre, intervalle non daté et gardé entier, case vide ignorée.
+  //
+  // Deux des quatre puces ci-dessous portent un "domaine" que leur texte
+  // n'écrit pas : le document le donnait dans un en-tête de colonne. C'est le
+  // cas que la décision du 21/08 vise, et le code repose ce domaine devant le
+  // texte pour qu'il atteigne l'écran (`avecDomaine`).
   const reponseConforme = [{
     numero: 1,
     pages: 'p.12',
@@ -151,18 +170,23 @@ describe('le format promis par le prompt traverse le code sans être déformé',
     expect(normalizeProgression(reponseConforme)[0].seances).toHaveLength(4)
   })
 
+  // ATTENTES MODIFIÉES le 21/08 (décision de Christophe) : les deux puces dont
+  // le domaine vient d'un en-tête de colonne le portent maintenant devant leur
+  // texte, dans le libellé comme dans l'item, donc à l'écran. Les deux autres ne
+  // bougent pas : « Geste d’écriture : a » annonce déjà un domaine dans son
+  // texte (on n'en empile pas un second devant), et l'intervalle n'en a aucun.
   it('garde le texte de chaque puce et l’ordre de lecture', () => {
     const [semaine] = normalizeProgression(reponseConforme)
     expect(semaine.seances?.map(s => s.libelle)).toEqual([
-      'Découverte du son [a]',
+      'LC : Découverte du son [a]',
       'Geste d’écriture : a',
-      'La petite poule (séance 1)',
+      'LC : La petite poule (séance 1)',
       'Jours 3-4 : révisions',
     ])
     expect(semaine.items).toEqual([
-      'Jour 1 : Découverte du son [a]',
+      'Jour 1 : LC : Découverte du son [a]',
       'Jour 1 : Geste d’écriture : a',
-      'Jour 2 : La petite poule (séance 1)',
+      'Jour 2 : LC : La petite poule (séance 1)',
       'Jours 3-4 : révisions',
     ])
   })

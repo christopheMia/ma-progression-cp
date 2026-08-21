@@ -34,6 +34,31 @@ export const MODELE_COURT = 'claude-haiku-4-5'
  */
 export const REFLEXION_ETEINTE = { type: 'disabled' } as const
 
+/**
+ * Plafond de sortie des routes qui rendent une PROGRESSION ENTIÈRE.
+ *
+ * Relevé de 16000 à 32000 le 21/08 (point 11 de la relecture). Mesure faite sur
+ * le vrai document (`partage/exemple de planning p1.pdf`) : ses deux premières
+ * semaines portent 26 puces, soit environ 13 par semaine, et chaque puce est
+ * écrite DEUX fois dans la réponse, une fois dans "items" et une fois dans
+ * "seances". Le champ "seances", ajouté par ce chantier, multiplie ainsi la
+ * sortie par près de trois, et la décision du 21/08 (garder le domaine devant
+ * le texte) allonge encore chaque puce. Une année complète à cette densité
+ * demande de l'ordre de 27 000 tokens : l'ancien plafond était franchi bien
+ * avant la fin, et l'enseignante ne pouvait plus importer son année.
+ *
+ * L'échec était BRUYANT (`stop_reason: 'max_tokens'` traduit en 422 explicite
+ * par `messageReponseIncomplete`), jamais silencieux, mais il restait un échec.
+ *
+ * LIMITE QUI RESTE, et qui n'est pas celle-ci : `maxDuration = 60` sur les
+ * routes. Au-delà d'une quinzaine de semaines à cette densité, c'est le temps
+ * de la fonction serverless qui arrête la génération avant le plafond de
+ * tokens. Monter ce nombre plus haut ne repousserait donc rien de réel ; le
+ * jour où un document d'année entière devra passer, c'est le découpage de la
+ * requête qu'il faudra revoir, pas ce plafond.
+ */
+export const PLAFOND_SORTIE_PROGRESSION = 32000
+
 /** Crée un client Anthropic côté serveur. La clé NE doit JAMAIS être exposée au navigateur. */
 export function getAnthropicClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY

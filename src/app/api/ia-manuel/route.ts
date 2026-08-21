@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import type Anthropic from '@anthropic-ai/sdk'
-import { getAnthropicClient, MODELE_IMPORT, REFLEXION_ETEINTE } from '@/lib/ia/anthropic'
+import {
+  getAnthropicClient,
+  MODELE_IMPORT,
+  PLAFOND_SORTIE_PROGRESSION,
+  REFLEXION_ETEINTE,
+} from '@/lib/ia/anthropic'
 import { normalizeProgression, numerosSemainesFiables } from '@/lib/ia/schema'
 import { systemImportAutomatique, userImport, userImportDocument } from '@/lib/ia/prompts'
 import { normalizeProgrammation } from '@/lib/ia/schema-programmation'
@@ -101,7 +106,9 @@ export async function POST(request: Request) {
     const client = getAnthropicClient()
     const message = await client.messages.create({
       model: MODELE_IMPORT,
-      max_tokens: 16000,
+      // Voir `PLAFOND_SORTIE_PROGRESSION` : le champ "seances" a presque triplé
+      // la taille de la réponse, et 16000 coupait l'année d'une enseignante.
+      max_tokens: PLAFOND_SORTIE_PROGRESSION,
       // Réflexion éteinte EXPLICITEMENT : depuis Sonnet 5, ne rien passer
       // l'active au lieu de l'éteindre. Extraire un sommaire n'en a pas besoin,
       // ça dépasserait le temps max des fonctions serverless Vercel, et surtout

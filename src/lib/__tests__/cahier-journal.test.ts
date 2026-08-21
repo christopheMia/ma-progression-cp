@@ -1,4 +1,5 @@
 import { genererCahierJournal, itemsDuJour, numeroJourItem } from '../cahier-journal'
+import { normalizeProgression } from '@/lib/ia/schema'
 import type { CreneauHoraire } from '@/types'
 
 const creneau = (over: Partial<CreneauHoraire>): CreneauHoraire => ({
@@ -159,6 +160,55 @@ describe('genererCahierJournal (lien par méthode)', () => {
       expect(numeroJourItem('Journal de bord')).toBeNull()
       expect(numeroJourItem('Lecture du jour 1')).toBeNull()
     })
+
+    // À CORRIGER 6 de la relecture du 21/08. Ce module appliquait la regex de
+    // préfixe BRUTE, sans le garde-fou d'intervalle : « Jours 3-4 : révisions »
+    // y était lu comme le jour 3, et affiché amputé de son début, en
+    // « 4 : révisions ». L'import ne fabriquait plus d'item déformé, mais
+    // l'affichage en déformait encore un venu d'une ligne déjà enregistrée.
+    describe('intervalle de jours à l’affichage', () => {
+      const items = ['Jours 3-4 : révisions', 'Jour 1 : Fluence']
+
+      test('ne coupe pas le texte d’un intervalle', () => {
+        expect(itemsDuJour(items, 1, 4)).toEqual(['Jours 3-4 : révisions'])
+      })
+
+      test('un intervalle n’est daté d’aucun jour', () => {
+        expect(numeroJourItem('Jours 3-4 : révisions')).toBeNull()
+        expect(numeroJourItem('Jour 0 : Rentrée')).toBeNull()
+      })
+
+      test('reste visible tous les jours, entier, comme tout item non daté', () => {
+        for (let i = 0; i < 4; i++) {
+          expect(itemsDuJour(items, i, 4)).toContain('Jours 3-4 : révisions')
+        }
+        expect(itemsDuJour(items, 0, 4)).toContain('Fluence')
+      })
+    })
+
+    // BLOQUANT 1 : le domaine doit rester lisible à l'écran. « LC » et « PDE »
+    // sont ce qui distingue deux séances portant le même texte de Rimbaud.
+    test('le domaine écrit devant le texte survit au retrait du préfixe', () => {
+      expect(itemsDuJour(['Jour 2 : PDE : Voyelles, de Rimbaud (séance 2)'], 1, 4))
+        .toEqual(['PDE : Voyelles, de Rimbaud (séance 2)'])
+    })
+  })
+
+  // À CORRIGER 4 : la chaîne complète du créneau vide, de la réponse du modèle
+  // jusqu'à l'écran. Le modèle recopie l'en-tête d'une case vide, l'import
+  // laissait passer `items: ['Jour 4 :']`, `itemsDuJour` rendait [''], donc
+  // `retenus.length` valait 1 et le repli sur le nom de la matière ne se
+  // déclenchait pas : le créneau s'affichait VIDE.
+  test('une case vide dont le modèle recopie l’en-tête laisse le nom de la matière', () => {
+    const brut = [{ numero: 1, items: ['Jour 4 :'], pages: '', mots_exemple: [], seances: [] }]
+    const [semaine] = normalizeProgression(brut)
+    const progressionVide = [{
+      methode_id: 'm-fr', matiere: 'francais',
+      items: semaine.items, pages: null, mots_exemple: [],
+    }]
+    const edt = [creneau({ matiere: 'Lecture', methode_id: 'm-fr' })]
+    const s = genererCahierJournal(edt, progressionVide)[0].seances[0]
+    expect(s.deroulement).toBe('Lecture')
   })
 
   test('un créneau masqué (visible_journal=false) n’apparaît pas', () => {

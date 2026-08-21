@@ -426,4 +426,68 @@ describe('séances rendues par l’IA', () => {
     expect(trois).toEqual(deux)
     expect(normalizeProgression(trois)).toEqual(deux)
   })
+
+  // À CORRIGER 4 : la branche de repli sur `items` bruts était encore
+  // atteignable. Quand TOUS les items d'une semaine se réduisent à un préfixe,
+  // aucune séance ne survit et `items` ressortait tel quel. Le cahier journal
+  // affichait alors un créneau VIDE au lieu du nom de sa matière : `itemsDuJour`
+  // rendait [''], donc `retenus.length` valait 1 et le repli ne se déclenchait
+  // pas. Les tests d'alors mettaient toujours une séance valide à côté, ce qui
+  // masquait la branche.
+  it('ne laisse pas passer un item réduit à son seul préfixe de jour', () => {
+    const brut = [{ numero: 1, items: ['Jour 4 :'], pages: '', mots_exemple: [], seances: [] }]
+    const [semaine] = normalizeProgression(brut)
+    expect(semaine.seances).toEqual([])
+    expect(semaine.items).toEqual([])
+  })
+
+  it('ne garde aucun item quand aucune puce de la semaine n’a de texte', () => {
+    const brut = [{
+      numero: 1, pages: '', mots_exemple: [],
+      items: ['Jour 1 :', 'Jour 2 :  '],
+      seances: [{ jour: null, domaine: 'LC', libelle: 'Jour 3 :' }],
+    }]
+    expect(normalizeProgression(brut)[0].items).toEqual([])
+  })
+
+  // À CORRIGER 7 : `CHAT_SCHEMA` (src/app/api/ia-chat/route.ts) ne connaît pas
+  // le champ `seances`, et la route rappelle `normalizeProgression` sur une
+  // progression déjà normalisée. Un tour de chat reconstruit donc les séances
+  // depuis `items` SEULS. Vu la décision de Christophe sur le domaine, cet
+  // aller-retour doit être sans perte : le jour, le domaine, le texte et
+  // l'ordre des puces vivent tous dans `items` et se relisent.
+  it('survit à un aller-retour par ia-chat, qui ne rend que les items', () => {
+    const brut = [{
+      numero: 1, pages: 'p.4', mots_exemple: ['ami'],
+      items: [],
+      seances: [
+        { jour: 1, domaine: 'LC', libelle: 'La petite poule (séance 1)' },
+        { jour: 1, domaine: '', libelle: 'Geste d’écriture' },
+        { jour: 2, domaine: 'PDE', libelle: 'Voyelles, de Rimbaud (séance 1)' },
+        { jour: null, domaine: 'Vocabulaire', libelle: 'Vocabulaire (séance 3)' },
+      ],
+    }]
+    const avant = normalizeProgression(brut)
+    // Ce que le modèle du chat peut rendre : le schéma ne l'autorise pas à
+    // reprendre `seances`, il ne renvoie que `items` (ici inchangés).
+    const rendu = avant.map(({ seances: _seances, ...reste }) => reste)
+    const apres = normalizeProgression(rendu)
+
+    expect(apres[0].items).toEqual(avant[0].items)
+    expect(apres[0].seances?.map(s => s.jour)).toEqual(avant[0].seances?.map(s => s.jour))
+    // Le texte de chaque puce, domaine compris, traverse l'aller-retour entier :
+    // c'est lui que l'enseignante lit, et c'est lui qui ne doit rien perdre.
+    expect(apres[0].seances?.map(s => s.libelle)).toEqual(avant[0].seances?.map(s => s.libelle))
+    // Le CHAMP `domaine`, lui, ne se redérive que si le document écrit son
+    // domaine avant des deux points. « Vocabulaire (séance 3) » n'en met pas :
+    // le mot reste dans le texte, donc à l'écran, mais le champ retombe à "".
+    // Limite connue de `domaineDe`, sans conséquence sur ce qui est affiché.
+    expect(apres[0].seances?.map(s => s.domaine)).toEqual(['LC', '', 'PDE', ''])
+    expect(apres[0].items).toEqual([
+      'Jour 1 : LC : La petite poule (séance 1)',
+      'Jour 1 : Geste d’écriture',
+      'Jour 2 : PDE : Voyelles, de Rimbaud (séance 1)',
+      'Vocabulaire (séance 3)',
+    ])
+  })
 })

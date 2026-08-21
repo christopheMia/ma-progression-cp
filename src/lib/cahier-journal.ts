@@ -1,6 +1,6 @@
 import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '@/types'
 import { trouverProgressionMatiere } from '@/lib/matieres'
-import { PREFIXE_JOUR, estJourValide } from '@/lib/progression-seances'
+import { lirePrefixeJour } from '@/lib/progression-seances'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
@@ -18,12 +18,21 @@ function progressionPourCreneau(
   return trouverProgressionMatiere(progression, creneau.matiere) ?? null
 }
 
-/** Numéro de jour porté par un item, ou `null` s'il vaut pour toute la semaine. */
+/**
+ * Numéro de jour porté par un item, ou `null` s'il vaut pour toute la semaine.
+ *
+ * DÉLÉGUÉ à `lirePrefixeJour` depuis le 21/08 (point 6 de la relecture). Ce
+ * module appliquait `PREFIXE_JOUR` BRUTE, la seule regex que ce dépôt interdit
+ * d'appliquer directement, parce qu'elle ne sait refuser ni un intervalle ni un
+ * « Jour 0 ». Conséquence mesurée à l'écran :
+ * `itemsDuJour(['Jours 3-4 : révisions', 'Jour 1 : Fluence'], 2, 4)` rendait
+ * `['4 : révisions']`. La puce était datée d'un jour que l'enseignante n'avait
+ * pas choisi ET amputée de son début. La passe précédente avait laissé le
+ * fichier en comptant sur la tâche 5 du plan pour le réécrire ; le défaut se
+ * voyait entre temps, sur toute ligne enregistrée avant la correction d'import.
+ */
 export function numeroJourItem(item: string): number | null {
-  const trouve = item.match(PREFIXE_JOUR)
-  if (!trouve) return null
-  const numero = Number(trouve[1])
-  return estJourValide(numero) ? numero : null
+  return lirePrefixeJour(item).jour
 }
 
 /**
@@ -45,16 +54,27 @@ export function numeroJourItem(item: string): number | null {
  *    semaine de quatre jours) atterrit sur le dernier jour EN GARDANT son
  *    préfixe. Le perdre en silence serait pire : l'enseignante doit voir
  *    qu'une ligne de son document ne tombe nulle part.
+ *
+ * Une puce qui parle de plusieurs jours (« Jours 3-4 : révisions ») n'est datée
+ * d'aucun : elle relève de la règle 2, donc reste visible tous les jours, texte
+ * ENTIER. C'est « signaler, jamais deviner » : l'application ne choisit pas
+ * entre le jeudi et le vendredi à la place de l'enseignante.
+ *
+ * Le texte affiché vient de `lirePrefixeJour`, qui ne retire le préfixe que
+ * lorsqu'il a retenu son numéro. Le domaine écrit devant la puce
+ * (« Jour 2 : PDE : Voyelles, de Rimbaud »), lui, reste : c'est ce qui distingue
+ * deux séances portant le même texte.
  */
 export function itemsDuJour(items: string[], indexJour: number, nbJours: number): string[] {
-  if (!items.some(item => numeroJourItem(item) !== null)) return items
+  const lus = items.map(item => lirePrefixeJour(item))
+  if (!lus.some(lu => lu.jour !== null)) return items
 
   const dernierJour = indexJour === nbJours - 1
-  return items.flatMap(item => {
-    const numero = numeroJourItem(item)
-    if (numero === null) return [item]
-    if (numero === indexJour + 1) return [item.replace(PREFIXE_JOUR, '')]
-    if (numero > nbJours && dernierJour) return [item]
+  return items.flatMap((item, i) => {
+    const { jour, libelle } = lus[i]
+    if (jour === null) return [item]
+    if (jour === indexJour + 1) return [libelle]
+    if (jour > nbJours && dernierJour) return [item]
     return []
   })
 }

@@ -34,9 +34,11 @@
 
 Chaque fichier de tests voyage avec le fichier qu'il couvre, dans le même commit : `src/lib/__tests__/progression-seances.test.ts` avec `progression-seances.ts`, `src/lib/ia/__tests__/schema.test.ts` avec `schema.ts`, `src/lib/ia/__tests__/prompts.test.ts` avec `prompts.ts`.
 
-Le préfixe « Jour N : » n'est connu que de `progression-seances.ts` : `cahier-journal.ts` en importe la regex au lieu de la redéfinir. Il lit encore `items` et rien d'autre, et c'est la tâche 5 qui le fera lire `seances` ; tant qu'elle n'est pas faite, `items` reste le seul champ affiché, ce qui explique pourquoi l'import doit le garder complet (tâche 2).
+Le préfixe « Jour N : » n'est connu que de `progression-seances.ts` : `cahier-journal.ts` passe par `lirePrefixeJour` au lieu de le relire lui-même. Il lit encore `items` et rien d'autre, et c'est la tâche 5 qui le fera lire `seances` ; tant qu'elle n'est pas faite, `items` reste le seul champ affiché, ce qui explique pourquoi l'import doit le garder complet (tâche 2).
 
-Une réserve pour la tâche 5 : `cahier-journal.ts` applique encore `PREFIXE_JOUR` directement (`numeroJourItem`, `itemsDuJour`), donc sans le garde-fou d'intervalle. Un item « Jours 3-4 : révisions » enregistré avant la correction du 21/08 y est toujours daté au jour 3 et affiché amputé de son début. L'import ne fabrique plus de tels items ; l'affichage, lui, doit passer par `lirePrefixeJour` quand la tâche 5 le reprendra.
+La réserve qui figurait ici pour la tâche 5 est LEVÉE (21/08). `cahier-journal.ts` appliquait `PREFIXE_JOUR` directement (`numeroJourItem`, `itemsDuJour`), donc sans le garde-fou d'intervalle : un item « Jours 3-4 : révisions » y était daté au jour 3 et affiché amputé de son début. Attendre la tâche 5 laissait le défaut visible à l'écran sur toute ligne enregistrée avant la correction d'import, alors que le correctif tenait en un appel à `lirePrefixeJour`. C'est fait.
+
+DÉCISION DE CHRISTOPHE (21/08), qui recadre les tâches 2, 3 et 5 : **le domaine reste visible dans le cahier journal.** On garde « LC : La petite poule (séance 1) », pas « La petite poule (séance 1) ». Dans son planning réel (`partage/exemple de planning p1.pdf`), deux séances portent le même texte de Rimbaud, l'une en langage oral, l'autre en production d'écrits ; sans le préfixe de domaine, les deux lignes sont identiques à l'écran. Le domaine est donc réécrit devant le texte de la puce (`avecDomaine`, dans `progression-seances.ts`), et la consigne du prompt qui demandait au modèle de ne PAS le recopier est retirée. La protection contre le doublon vient désormais du code, par comparaison tolérante : **le code ne doit jamais exiger de l'IA une perfection au caractère près.**
 
 ---
 
@@ -513,6 +515,14 @@ Règles pour "seances", à remplir dans CHAQUE entrée de "semaines", "manuel" c
 Chaque règle tient sur UNE ligne : deux des tests cherchent un motif à
 l'intérieur d'une même ligne (`[^\n]*`), et un retour à la ligne de confort les
 casserait.
+
+Le bloc ci-dessus est celui du 3 août. Ce qui est réellement en place a deux
+règles de plus, ajoutées le 21/08 : le rang de jour ne dépasse jamais le nombre
+de jours de classe de la semaine, et surtout **le domaine reste écrit devant le
+texte de la puce** (décision de Christophe, voir l'en-tête de ce plan). Une
+consigne intermédiaire demandait l'inverse, pour supprimer les doublons : elle a
+été retirée, parce qu'elle faisait disparaître du texte à l'écran et que la
+protection contre le doublon appartient au code, pas au modèle.
 
 Ajouter en parallèle les `description` correspondantes sur `jour`, `domaine` et
 `libelle` dans `PROGRESSION_JSON_SCHEMA` (`src/lib/ia/schema.ts`), au même texte.
