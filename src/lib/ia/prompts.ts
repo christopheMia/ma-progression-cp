@@ -308,10 +308,23 @@ Règles pour "manuel" :
 - Pour le français, conserve les graphèmes et sons exacts. Pour les autres matières, conserve toutes les notions.
 - "pages" contient les pages présentes, sinon "". "mots_exemple" contient les mots présents, sinon [].
 
+Règles pour "seances", à remplir dans CHAQUE entrée de "semaines", "manuel" comme "periode" :
+- Une puce du document = UNE séance = un créneau de la classe. "seances" reprend ces puces une par une, dans l'ordre de lecture du tableau.
+- Ne fusionne jamais deux puces en une seule séance, et ne découpe jamais une puce en plusieurs séances, même si elle est longue ou qu'elle cite plusieurs notions.
+- "jour" = le rang du jour de classe dans la semaine (1 pour le premier jour de classe, 2 pour le deuxième, et ainsi de suite), et UNIQUEMENT quand le document le dit vraiment : une colonne « Jour 2 », « J2 », « lundi », « mardi ». N'invente aucun jour : quand le document ne montre pas de jours, mets null pour toutes ses séances.
+- "jour" ne dépasse jamais le nombre de jours de classe de la semaine : sur une semaine de 4 jours d'école, « Jour 5 » n'est pas un rang de jour valide. Mets null et signale-le dans "avertissements" avec le numéro de la semaine.
+- Une puce qui vise PLUSIEURS jours (« Jours 3-4 », « Jours 3 et 4 », « Jours 3, 4 ») ne désigne aucun jour : mets "jour" à null et garde son texte ENTIER dans "libelle", « Jours 3-4 » compris. Ne choisis pas l'un des deux jours et ne coupe pas la puce en deux.
+- Un « (séance 1) », « (séance 2) » écrit dans un libellé numérote les séances d'une même notion, ce n'est pas un numéro de jour. Laisse-le dans le libellé et ne t'en sers jamais pour remplir "jour".
+- "domaine" = l'en-tête de colonne ou de ligne d'où vient la puce (« LC », « Vocabulaire », « Calcul mental »), sinon "".
+- "libelle" = le texte exact de la puce, sans le préfixe « Jour N : » quand il désigne UN seul jour : le jour se dit dans "jour", et jamais deux fois. Ne recopie pas non plus le domaine devant le texte, il se dit dans "domaine".
+- Une case vide du tableau ne produit aucune séance : n'ajoute aucune entrée pour la combler et n'invente aucun libellé. Une case vide dont tu ne recopierais que l'en-tête (« Jour 4 : » seul, un domaine seul) n'est pas une séance non plus.
+- "seances" et "items" décrivent les MÊMES puces : chacune doit figurer dans les deux, aucune ne doit exister dans l'un et manquer dans l'autre.
+- Chaque entrée de "items" reprend MOT POUR MOT le "libelle" de la séance correspondante, dans le même ordre : mêmes mots, mêmes accents, même ponctuation. Le même contenu écrit autrement compte pour une puce de plus, et l'enseignante la verrait en double.
+
 Règles pour "periode" :
 - Une entrée par semaine du document, en repartant de 1, et une seule par numéro.
-- "items" contient TOUTES les séances et tous les domaines de la semaine.
-- Préfixe chaque contenu par son domaine quand il est indiqué, sous la forme "Domaine : contenu".
+- "items" contient TOUTES les séances et tous les domaines de la semaine, dans l'ordre de lecture.
+- Ne préfixe pas les contenus de "items" par leur domaine : le domaine se dit une seule fois, dans le champ "domaine" de la séance. Une puce écrite « Domaine : contenu » dans "items" et « contenu » dans "seances" serait comptée deux fois.
 - Ne perds pas les séances répétées d'une semaine à l'autre.
 
 Règles pour "programmation" :

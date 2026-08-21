@@ -91,7 +91,13 @@ describe('POST /api/ia-manuel', () => {
       ],
       type_document: 'manuel',
       // La semaine 4 reste la semaine 4 : renumeroter decalait toute l'annee.
-      progression: [{ numero: 4, items: ['a'], pages: 'p. 3', mots_exemple: ['ami'] }],
+      // Le modele a repondu a l'ancien format (items seuls, aucune seance) : les
+      // seances sont relues depuis les items, ici sans prefixe de jour, donc
+      // sans journee. Rien n'est invente, rien n'est perdu.
+      progression: [{
+        numero: 4, items: ['a'], pages: 'p. 3', mots_exemple: ['ami'],
+        seances: [{ jour: null, domaine: '', libelle: 'a' }],
+      }],
       periodes: [],
       base_calage: 'numeros',
     })
@@ -128,7 +134,10 @@ describe('POST /api/ia-manuel', () => {
       confiance_detection: 0,
       avertissements: [{ semaine: null, message: 'manque une page' }],
       type_document: 'periode',
-      progression: [{ numero: 9, items: ['Compter jusqu a 10'], pages: '', mots_exemple: [] }],
+      progression: [{
+        numero: 9, items: ['Compter jusqu a 10'], pages: '', mots_exemple: [],
+        seances: [{ jour: null, domaine: '', libelle: 'Compter jusqu a 10' }],
+      }],
       periodes: [],
       // L'IA n'a rien declare : on retombe sur le calage par ordre.
       base_calage: 'ordre',

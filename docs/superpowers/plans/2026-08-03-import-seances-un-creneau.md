@@ -17,10 +17,14 @@
 | Fichier | Responsabilité |
 |---|---|
 | `src/types/index.ts` | types `SeanceProgression`, `SeancePlacer`, champs ajoutés à `ProgressionMatiere` et `JourJournal` |
-| `src/lib/progression-seances.ts` (créé) | conversions séances <-> items, seul endroit qui connaît le préfixe « Jour N : » |
+| `src/lib/progression-seances.ts` (créé) | conversions séances <-> items, seul endroit qui connaît le préfixe « Jour N : ». Créé par la tâche 1, COMPLÉTÉ par la tâche 2 (`seanceDepuisTexte`, `completerSeances`) : il fait donc partie du commit de la tâche 2, sans quoi `schema.ts`, qui les importe, ne compile pas |
 | `src/lib/ia/schema.ts` | sortie IA : accepte et conserve les séances |
-| `src/lib/ia/prompts.ts` | consignes « une puce = une séance » |
+| `src/app/api/ia-manuel/route.test.ts` | fixtures de la route : deux réponses de modèle attendent désormais le champ `seances` (tâche 2) |
+| `src/lib/ia/prompts.ts` | consignes « une puce = une séance », dans `systemImportAutomatique` et non dans `systemImportPeriode`, qui n'a plus aucun appelant (voir tâche 3) |
 | `src/lib/progression.ts` | `genererProgressionFrancais` transporte les séances jusqu'à la base |
+| `src/components/methodes/SourceImporter.tsx` | laisse passer les séances au lieu de les jeter au nettoyage (tâche 4b) |
+| `src/lib/actions/progression-matiere.ts` et `progression-periode.ts` | envoient les séances dans les lignes écrites en base (tâche 4b) |
+| `supabase/migrations/029_remplacer_progression_seances.sql` (créé) | la fonction d'écriture accepte et pose la colonne `seances` (tâche 4b) |
 | `supabase/migrations/028_progression_seances.sql` (créé) | colonne `seances` + backfill depuis `items` |
 | `src/lib/actions/journal.ts` | lit la colonne `seances` |
 | `src/lib/cahier-journal.ts` | placement une séance par créneau + surplus |
@@ -28,7 +32,11 @@
 | `src/components/semaine/CahierJournalEditor.tsx` | affiche « à placer » et pose une séance dans un créneau |
 | `src/components/methodes/SourceContentPreview.tsx` | vérification par jour avant enregistrement |
 
-Le préfixe « Jour N : » n'est connu que de `progression-seances.ts`. `cahier-journal.ts` ne le relit plus lui-même : il lit `seances`.
+Chaque fichier de tests voyage avec le fichier qu'il couvre, dans le même commit : `src/lib/__tests__/progression-seances.test.ts` avec `progression-seances.ts`, `src/lib/ia/__tests__/schema.test.ts` avec `schema.ts`, `src/lib/ia/__tests__/prompts.test.ts` avec `prompts.ts`.
+
+Le préfixe « Jour N : » n'est connu que de `progression-seances.ts` : `cahier-journal.ts` en importe la regex au lieu de la redéfinir. Il lit encore `items` et rien d'autre, et c'est la tâche 5 qui le fera lire `seances` ; tant qu'elle n'est pas faite, `items` reste le seul champ affiché, ce qui explique pourquoi l'import doit le garder complet (tâche 2).
+
+Une réserve pour la tâche 5 : `cahier-journal.ts` applique encore `PREFIXE_JOUR` directement (`numeroJourItem`, `itemsDuJour`), donc sans le garde-fou d'intervalle. Un item « Jours 3-4 : révisions » enregistré avant la correction du 21/08 y est toujours daté au jour 3 et affiché amputé de son début. L'import ne fabrique plus de tels items ; l'affichage, lui, doit passer par `lirePrefixeJour` quand la tâche 5 le reprendra.
 
 ---
 
@@ -39,7 +47,7 @@ Le préfixe « Jour N : » n'est connu que de `progression-seances.ts`. `cahier-
 - Modify: `src/types/index.ts`
 - Test: `src/lib/__tests__/progression-seances.test.ts`
 
-- [ ] **Step 1: Ajouter les types**
+- [x] **Step 1: Ajouter les types**
 
 Dans `src/types/index.ts`, après `ProgressionMatiere` :
 
@@ -75,7 +83,7 @@ export type ProgressionMatiere = {
 }
 ```
 
-- [ ] **Step 2: Écrire le test qui échoue**
+- [x] **Step 2: Écrire le test qui échoue**
 
 Créer `src/lib/__tests__/progression-seances.test.ts` :
 
@@ -127,12 +135,12 @@ describe('itemsDepuisSeances', () => {
 })
 ```
 
-- [ ] **Step 3: Lancer le test et vérifier qu'il échoue**
+- [x] **Step 3: Lancer le test et vérifier qu'il échoue**
 
 Run: `npx jest src/lib/__tests__/progression-seances.test.ts`
 Expected: FAIL, `Cannot find module '../progression-seances'`
 
-- [ ] **Step 4: Écrire l'implémentation minimale**
+- [x] **Step 4: Écrire l'implémentation minimale**
 
 Créer `src/lib/progression-seances.ts` :
 
@@ -185,12 +193,14 @@ export function itemsDepuisSeances(seances: SeanceProgression[]): string[] {
 }
 ```
 
-- [ ] **Step 5: Lancer le test et vérifier qu'il passe**
+- [x] **Step 5: Lancer le test et vérifier qu'il passe**
 
 Run: `npx jest src/lib/__tests__/progression-seances.test.ts`
 Expected: PASS, 7 tests
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
+
+Fait : commit `99684c7`.
 
 ```bash
 git add src/types/index.ts src/lib/progression-seances.ts src/lib/__tests__/progression-seances.test.ts
@@ -202,10 +212,54 @@ git commit -m "Conversions seances et items, seul endroit qui connait le prefixe
 ### Task 2: L'IA rend des séances
 
 **Files:**
-- Modify: `src/lib/ia/schema.ts`
+- Modify: `src/lib/ia/schema.ts`, `src/data/manuels/index.ts`
 - Test: `src/lib/ia/__tests__/schema.test.ts`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+**Faite le 20 août 2026, avec quatre écarts assumés sur le code d'exemple
+ci-dessous.** Les étapes sont cochées, mais le code réellement écrit est celui
+de `src/lib/ia/schema.ts`, pas ces extraits :
+
+1. `jour` s'écrit `anyOf: [{ type: 'integer' }, { type: 'null' }]` et non
+   `type: ['integer', 'null']` : c'est la forme des autres champs nullables du
+   dépôt (`periode_numero` dans `schema-import-auto.ts`), et la seule dont on
+   sache qu'elle passe la validation stricte des sorties structurées.
+2. `toSeances` ne relit rien lui-même : il délègue à `seanceDepuisTexte`, une
+   fonction que la tâche 1 n'avait PAS écrite et que cette tâche-ci crée dans
+   `src/lib/progression-seances.ts` (c'est pour cela que ce fichier fait partie
+   du commit de la tâche 2). Sans elle, une séance rendue
+   `{ jour: null, libelle: 'Jour 3 : Fluence' }`
+   ressortait non datée et préfixée, alors que le même contenu arrivé par `items`
+   ressortait daté et nettoyé. Deux champs du même objet se contredisaient, et le
+   contrat du type (`src/types/index.ts`, « préfixe de jour retiré ») était faux
+   une fois sur deux.
+3. `retenues` vaut `completerSeances(seances, items)` et non
+   `seances.length ? seances : seancesDepuisItems(items)`. Le code d'exemple
+   effaçait des données : une SEULE séance rendue par le modèle suffisait à faire
+   régénérer `items` en entier depuis les séances, donc à supprimer les autres
+   apprentissages de la semaine, de l'écran et de la base, sans un mot. Quatre
+   puces en entrée ressortaient à une.
+4. Les trois champs d'une séance portent une `description` dans le schéma JSON :
+   c'est le second endroit que le modèle lit, et il doit y trouver le même texte
+   que dans le prompt (tâche 3).
+
+**Limite connue, laissée ouverte volontairement.** `normalizeProgression` n'est
+pas idempotente dans un cas précis : deux lignes de la même semaine dont les
+séances produisent le MÊME texte d'item (même libellé et même jour). `items` se
+dédoublonne à la fusion (comportement du 26/07, à ne pas défaire), `seances` non
+(règle de cette tâche, à ne pas défaire non plus), donc le premier passage rend
+un `items` plus court que `seances` et le second le rallonge.
+
+Mesure refaite le 21/08, après correction des deux défauts qui, eux,
+divergeaient sans borne : la conversion est stable à partir du DEUXIÈME
+passage, elle n'oscille pas, mais elle s'y stabilise **en ajoutant le
+doublon**, si bien qu'au second passage l'enseignante voit la séance deux fois.
+C'est la règle du 26/07 défaite avec un tour de retard. Le point fixe n'est
+donc pas la première sortie. Le cas est documenté dans `fusionnerParNumero` et
+mesuré en test (« se stabilise au second passage EN AJOUTANT le doublon ») ; il
+ne se voit nulle part à l'écran tant que `cahier-journal.ts` ne lit que `items`
+(tâche 5).
+
+- [x] **Step 1: Écrire les tests qui échouent**
 
 Ajouter à la fin de `src/lib/ia/__tests__/schema.test.ts` :
 
@@ -255,12 +309,12 @@ describe('séances rendues par l’IA', () => {
 })
 ```
 
-- [ ] **Step 2: Lancer les tests et vérifier qu'ils échouent**
+- [x] **Step 2: Lancer les tests et vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/ia/__tests__/schema.test.ts`
 Expected: FAIL, `semaine.seances` vaut `undefined`
 
-- [ ] **Step 3: Écrire l'implémentation**
+- [x] **Step 3: Écrire l'implémentation**
 
 Dans `src/lib/ia/schema.ts`, ajouter `seances` au schéma JSON, à l'intérieur de `properties` de l'objet semaine, avant `pages` :
 
@@ -342,15 +396,21 @@ export type ProgressionSemaine = {
 
 avec `import type { SeanceProgression } from '@/types'` en tête du fichier.
 
-- [ ] **Step 4: Lancer toute la suite du schéma**
+- [x] **Step 4: Lancer toute la suite du schéma**
 
 Run: `npx jest src/lib/ia/__tests__/schema.test.ts`
 Expected: PASS, y compris les tests existants sur la fusion et le calage
 
 - [ ] **Step 5: Commit**
 
+La commande d'origine oubliait `src/lib/progression-seances.ts` (où cette tâche
+crée `seanceDepuisTexte` et `completerSeances`), son fichier de tests, et
+`src/app/api/ia-manuel/route.test.ts` (dont deux fixtures attendent désormais le
+champ `seances`). Comme `schema.ts` importe ces deux fonctions, la commiter sans
+elles produisait un état qui **ne compile pas**.
+
 ```bash
-git add src/lib/ia/schema.ts src/lib/ia/__tests__/schema.test.ts src/data/manuels/index.ts
+git add src/lib/ia/schema.ts src/lib/ia/__tests__/schema.test.ts src/data/manuels/index.ts src/lib/progression-seances.ts src/lib/__tests__/progression-seances.test.ts src/app/api/ia-manuel/route.test.ts
 git commit -m "L IA rend des seances datees, items reste alimente pour l affichage"
 ```
 
@@ -358,73 +418,122 @@ git commit -m "L IA rend des seances datees, items reste alimente pour l afficha
 
 ### Task 3: Les consignes d'import
 
+**Corrigé le 20 août 2026 : la fonction visée était morte.** Le plan d'origine
+écrivait ces consignes dans `systemImportPeriode` (`src/lib/ia/prompts.ts:68`).
+**`systemImportPeriode` n'a plus aucun appelant dans tout `src/`** : seul un
+commentaire la mentionne encore (`prompts.ts:234`). Les consignes y auraient été
+écrites pour personne, et le modèle aurait continué à remplir un champ `seances`
+que le schéma exige (tâche 2) sans qu'aucune phrase ne lui dise quoi y mettre.
+
+La fonction vivante est **`systemImportAutomatique`** (`prompts.ts:262`), appelée
+par `src/app/api/ia-manuel/route.ts:111`, seule route d'import de l'application.
+C'est la porte d'entrée unique : elle reconnaît le type de document ("manuel",
+"periode", "programmation") avant d'extraire, donc les consignes de séances y
+valent pour tous les documents qui remplissent `semaines`, pas seulement pour un
+planning de période.
+
+Règle à ne pas rouvrir : **ne jamais demander au modèle un format que `toSeances`
+(`src/lib/ia/schema.ts`) ne sait pas relire.** Le prompt et le code doivent dire
+la même chose, sinon la sortie du modèle est nettoyée en silence. Les
+`description` du schéma JSON (tâche 2) sont le second endroit que le modèle lit
+et doivent porter le même texte.
+
 **Files:**
-- Modify: `src/lib/ia/prompts.ts`
+- Modify: `src/lib/ia/prompts.ts` (fonction `systemImportAutomatique`, PAS `systemImportPeriode`)
 - Test: `src/lib/ia/__tests__/prompts.test.ts`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
-Ajouter à `src/lib/ia/__tests__/prompts.test.ts` :
+Ajouter à `src/lib/ia/__tests__/prompts.test.ts`, en important
+`systemImportAutomatique` :
 
 ```ts
-import { systemImportPeriode } from '../prompts'
+describe('consignes de séances (systemImportAutomatique)', () => {
+  const prompt = systemImportAutomatique()
 
-describe('consignes de séances', () => {
-  const prompt = systemImportPeriode('francais')
+  it('nomme les trois champs d’une séance', () => {
+    expect(prompt).toContain('"seances"')
+    expect(prompt).toContain('"jour"')
+    expect(prompt).toContain('"domaine"')
+    expect(prompt).toContain('"libelle"')
+  })
+
+  it('dit qu’une puce est une séance', () => {
+    expect(prompt).toMatch(/une puce[^\n]*= UNE séance/i)
+  })
 
   it('interdit de fusionner ou de découper une puce', () => {
     expect(prompt).toMatch(/ne fusionne jamais deux puces/i)
     expect(prompt).toMatch(/ne découpe jamais une puce/i)
   })
 
-  it('interdit d’inventer un jour', () => {
-    expect(prompt).toMatch(/n’invente aucun jour|n'invente aucun jour/i)
+  it('interdit d’inventer un jour et impose null quand il est inconnu', () => {
+    expect(prompt).toMatch(/n['’]invente aucun jour/i)
+    expect(prompt).toMatch(/mets null/i)
   })
 
   it('dit que le « (séance N) » du document n’est pas un jour', () => {
     expect(prompt).toMatch(/\(séance/i)
     expect(prompt).toMatch(/pas un numéro de jour/i)
   })
+
+  it('demande un libellé sans préfixe de jour, la forme que le code sait relire', () => {
+    expect(prompt).toMatch(/sans le préfixe/i)
+  })
+
+  it('dit qu’une case vide ne produit aucune séance', () => {
+    expect(prompt).toMatch(/case vide[^\n]*aucune séance/i)
+  })
 })
 ```
 
-- [ ] **Step 2: Lancer le test et vérifier qu'il échoue**
+- [x] **Step 2: Lancer le test et vérifier qu'il échoue**
 
 Run: `npx jest src/lib/ia/__tests__/prompts.test.ts`
-Expected: FAIL sur les trois attentes
+Expected: FAIL sur les sept attentes
 
-- [ ] **Step 3: Écrire les consignes**
+- [x] **Step 3: Écrire les consignes**
 
-Dans `src/lib/ia/prompts.ts`, dans `systemImportPeriode`, remplacer la règle
-`- "items" = TOUTES les séances de la semaine, une par entrée. N'en omets aucune, même si elle se répète d'une semaine à l'autre.`
-par :
+Dans `src/lib/ia/prompts.ts`, dans `systemImportAutomatique`, insérer un bloc de
+règles avant `Règles pour "periode" :` (il vaut pour "manuel" comme pour
+"periode", les deux remplissent `semaines`) :
 
 ```
-- "seances" = TOUTES les séances de la semaine, une par entrée, dans l'ordre de
-  lecture. Une puce, une case élémentaire, une ligne de liste = UNE séance.
-  Ne fusionne jamais deux puces en une entrée, et ne découpe jamais une puce en
-  deux entrées. N'en omets aucune, même si elle se répète d'une semaine à l'autre.
-- "jour" = le rang de la colonne-jour où se trouve la puce : 1 pour "JOUR 1",
-  2 pour "JOUR 2", et ainsi de suite. Si le document ne montre pas de colonnes de
-  jours, mets null : n’invente aucun jour.
-- Attention : un "(séance 3)" écrit DANS le libellé est le compteur de cette
-  activité sur toute la période, ce n'est PAS un numéro de jour. Laisse-le dans
-  le libellé et ne t'en sers jamais pour remplir "jour".
-- "domaine" = ce qui précède les deux points dans la puce ("LC", "Vocabulaire",
-  "Geste d'écriture"), sinon "".
-- "libelle" = le texte EXACT de la puce, sans reformulation ni résumé.
-- "items" = reprends les mêmes séances, une par entrée, sans le rang de jour.
+Règles pour "seances", à remplir dans CHAQUE entrée de "semaines", "manuel" comme "periode" :
+- Une puce du document = UNE séance = un créneau de la classe. "seances" reprend ces puces une par une, dans l'ordre de lecture du tableau.
+- Ne fusionne jamais deux puces en une seule séance, et ne découpe jamais une puce en plusieurs séances, même si elle est longue ou qu'elle cite plusieurs notions.
+- "jour" = le rang du jour de classe dans la semaine (1 pour le premier jour de classe, 2 pour le deuxième, et ainsi de suite), et UNIQUEMENT quand le document le dit vraiment : une colonne « Jour 2 », « J2 », « lundi », « mardi ». N'invente aucun jour : quand le document ne montre pas de jours, mets null pour toutes ses séances.
+- Un « (séance 1) », « (séance 2) » écrit dans un libellé numérote les séances d'une même notion, ce n'est pas un numéro de jour. Laisse-le dans le libellé et ne t'en sers jamais pour remplir "jour".
+- "domaine" = l'intitulé de la colonne ou de la ligne d'où vient la puce (« LC », « Vocabulaire », « Calcul mental »), sinon "".
+- "libelle" = le texte exact de la puce, sans le préfixe « Jour N : » s'il y en a un : le jour se dit dans "jour", et jamais deux fois.
+- Une case vide du tableau ne produit aucune séance : n'ajoute aucune entrée pour la combler et n'invente aucun libellé.
+- "seances" et "items" décrivent les MÊMES puces : chacune doit figurer dans les deux, aucune ne doit exister dans l'un et manquer dans l'autre.
 ```
 
-- [ ] **Step 4: Lancer le test et vérifier qu'il passe**
+Chaque règle tient sur UNE ligne : deux des tests cherchent un motif à
+l'intérieur d'une même ligne (`[^\n]*`), et un retour à la ligne de confort les
+casserait.
+
+Ajouter en parallèle les `description` correspondantes sur `jour`, `domaine` et
+`libelle` dans `PROGRESSION_JSON_SCHEMA` (`src/lib/ia/schema.ts`), au même texte.
+Piège : l'objet est déclaré `as const` et le test lit ces `description` par leur
+chemin typé ; vérifier que `npx tsc --noEmit` reste muet après l'ajout.
+
+- [x] **Step 4: Lancer le test et vérifier qu'il passe**
 
 Run: `npx jest src/lib/ia/__tests__/prompts.test.ts`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
+`schema.ts` et son test reviennent ici parce que cette tâche modifie les
+`description` du schéma JSON et le test qui les vérifie ; `progression-seances.ts`
+et son test aussi, parce que le prompt et le code doivent dire le même format
+(intervalle non daté, item identique au libellé) et que la correction du 21/08 a
+touché les deux en même temps.
+
 ```bash
-git add src/lib/ia/prompts.ts src/lib/ia/__tests__/prompts.test.ts
+git add src/lib/ia/prompts.ts src/lib/ia/__tests__/prompts.test.ts src/lib/ia/schema.ts src/lib/ia/__tests__/schema.test.ts src/lib/progression-seances.ts src/lib/__tests__/progression-seances.test.ts docs/superpowers/plans/2026-08-03-import-seances-un-creneau.md
 git commit -m "Consignes d import : une puce est une seance, le (seance N) n est pas un jour"
 ```
 
@@ -550,6 +659,109 @@ Expected: `nb_seances` égal à `nb_items` sur chaque ligne.
 ```bash
 git add supabase/migrations/028_progression_seances.sql src/lib/progression.ts src/lib/actions/journal.ts src/lib/__tests__/progression-francais-seances.test.ts
 git commit -m "Colonne seances sur progression, remplie a l import et pour l existant"
+```
+
+---
+
+### Task 4b: Les trois portes fermées entre l'IA et la base
+
+**Pourquoi cette tâche existe.** Trouvée le 20 août 2026 par la relecture de
+conformité de la tâche 2, elle ne figurait pas au plan d'origine. Sans elle,
+tout le chantier est un tuyau bouché : l'IA produit des séances (tâche 2), la
+base a une colonne pour les recevoir (tâche 4), et **rien ne circule entre les
+deux**. Quatre endroits reconstruisent les semaines champ par champ, et chacun
+laisse tomber `seances` en silence, sans erreur ni test rouge.
+
+| Où | Ce qui se perd aujourd'hui |
+|---|---|
+| `src/components/methodes/SourceImporter.tsx`, `nettoyerSemaines` et `normaliserSemaines` | les séances n'arrivent jamais à l'écran de vérification (tâche 10) |
+| `src/lib/actions/progression-matiere.ts`, construction de `lignes` | les séances n'atteignent jamais l'appel d'écriture |
+| `src/lib/actions/progression-periode.ts`, construction de `lignes` | idem, pour l'import par période |
+| `remplacer_progression`, la fonction SQL (migration 014) | elle nomme ses colonnes une par une, donc même une ligne portant `seances` serait ignorée |
+
+Cette tâche vient **après la tâche 4** : la colonne doit exister avant qu'on
+essaie d'écrire dedans. Tant qu'elle n'est pas faite, les portes fermées jouent
+d'ailleurs un rôle utile, elles empêchent qu'un `seances` parte vers une base
+qui n'a pas encore la colonne.
+
+**Files:**
+- Create: `supabase/migrations/029_remplacer_progression_seances.sql`
+- Modify: `src/lib/progression-seances.ts`, `src/lib/actions/progression-matiere.ts`, `src/lib/actions/progression-periode.ts`, `src/components/methodes/SourceImporter.tsx`
+- Test: `src/lib/__tests__/progression-seances.test.ts`, `src/components/methodes/__tests__/SourceImporter.test.tsx`
+
+- [ ] **Step 1: Écrire les tests qui échouent**
+
+Deux points à couvrir, aucun des deux n'a de test aujourd'hui.
+
+1. Dans `src/lib/__tests__/progression-seances.test.ts`, une nouvelle fonction
+   `lignesDepuisSemaines` : elle rend les lignes à écrire en base, séances
+   comprises, avec `pages` vide devenue `''` et `mots_exemple` jamais
+   `undefined`. Vérifier aussi qu'une semaine sans séance donne `seances: []`
+   et non `undefined`, sinon PostgreSQL recevrait `null` sur une colonne
+   `not null`.
+2. Dans `src/components/methodes/__tests__/SourceImporter.test.tsx`, qu'une
+   semaine portant des séances traverse le nettoyage sans les perdre.
+
+- [ ] **Step 2: Lancer les tests et vérifier qu'ils échouent**
+
+Run: `npx jest src/lib/__tests__/progression-seances.test.ts src/components/methodes/__tests__/SourceImporter.test.tsx`
+Expected: FAIL, `lignesDepuisSemaines` n'existe pas et les séances ressortent `undefined`.
+
+- [ ] **Step 3: Écrire l'implémentation**
+
+**a. Une seule fonction pour construire les lignes.** `progression-matiere.ts`
+et `progression-periode.ts` portent aujourd'hui **la même** construction de
+`lignes`, recopiée. Ne pas ajouter `seances` deux fois : sortir la construction
+dans `progression-seances.ts` sous le nom `lignesDepuisSemaines`, et appeler
+cette fonction aux deux endroits. C'est la même raison qui a fait naître
+`estJourValide` en tâche 1 : une règle recopiée finit toujours par diverger.
+
+**b. Laisser passer les séances dans `SourceImporter.tsx`.** Reporter `seances`
+dans l'objet `propre` de `nettoyerSemaines` et dans celui de
+`normaliserSemaines`. Trois précautions :
+- nettoyer `libelle` et `domaine` avec `nettoyerTexte` comme le reste, mais
+  **laisser `jour` intact** ;
+- ajouter `propre.seances.length` à la condition qui décide si une semaine vide
+  est jetée, sinon une semaine qui n'aurait que des séances disparaîtrait ;
+- **à vérifier au passage** : `nettoyerTexte` fait `replace(/\s+/g, ' ')`, ce qui
+  transforme une espace insécable en espace ordinaire. Les `items` régénérés
+  portent le préfixe « Jour N : », dont la grammaire n'est pas identique en JS
+  et en PostgreSQL (voir le commentaire dans `progression-seances.ts`). Confirmer
+  par un test que le préfixe survit à ce nettoyage, dans les deux grammaires.
+
+**c. La fonction SQL.** Créer `029_remplacer_progression_seances.sql` avec un
+`create or replace function remplacer_progression(...)`, **signature identique**
+(uuid, uuid, text, integer[], jsonb, boolean), en repartant du corps de la
+migration 014 et en y ajoutant :
+- `seances` dans la liste des colonnes de l'`insert into progression (...)` ;
+- `coalesce(x.seances, '[]'::jsonb)` dans le `select` ;
+- `seances jsonb` dans la définition du `jsonb_to_recordset(p_lignes) as x(...)`.
+
+Ne pas toucher à la branche `p_sync_semaines` : elle écrit dans la table
+`semaines`, qui n'a pas de colonne `seances` et n'en veut pas.
+
+Ne pas modifier `enregistrer_source_progression` (migration 016) : elle se
+contente de passer `p_lignes` à `remplacer_progression`, elle n'en connaît pas
+le contenu.
+
+- [ ] **Step 4: Lancer toute la suite**
+
+Run: `npx jest` puis `npx tsc --noEmit`
+Expected: tout vert, `tsc` muet.
+
+- [ ] **Step 5: Appliquer la migration**
+
+Les migrations ne sont pas testables par Jest. Appliquer **028 puis 029** dans
+cet ordre sur Supabase, puis faire un import réel et vérifier en base qu'une
+ligne de `progression` porte bien ses séances. Voir
+`MARCHE-A-SUIVRE-CODEX-CLAUDE.md` pour la répartition : Codex écrit les
+migrations, Claude les applique.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/lib/progression-seances.ts src/lib/__tests__/progression-seances.test.ts src/lib/actions/progression-matiere.ts src/lib/actions/progression-periode.ts src/components/methodes/SourceImporter.tsx src/components/methodes/__tests__/SourceImporter.test.tsx supabase/migrations/029_remplacer_progression_seances.sql
+git commit -m "Les seances traversent enfin l import jusqu a la base"
 ```
 
 ---
