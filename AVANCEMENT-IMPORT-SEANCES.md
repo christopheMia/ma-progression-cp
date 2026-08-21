@@ -24,12 +24,25 @@ Le chantier s'arrête ici pour raison de quota. **Tout est commité sur la
 branche** (travail en cours, défauts connus listés ci-dessous), rien n'est
 poussé, `main` reste intact.
 
-### La question à lui poser en premier au redémarrage
+### QUESTION TRANCHÉE PAR CHRISTOPHE LE 21/08
 
-**Dans le cahier journal, veut-il voir « LC : La petite poule (séance 1) » ou
-juste « La petite poule (séance 1) » ?**
+**Le domaine reste visible dans le cahier journal.** On garde
+« LC : La petite poule (séance 1) », pas « La petite poule (séance 1) ».
 
-C'est un choix produit, pas technique, et il commande la correction. La
+Sa raison, et elle est décisive : dans son planning, deux séances portent le
+même texte de Rimbaud, l'une en langage oral, l'autre en production d'écrits.
+Sans le préfixe, les deux lignes sont identiques à l'écran et on ne sait plus
+laquelle est laquelle. `LC` = lecture compréhension, `PDE` = production
+d'écrits, ce sont les abréviations du manuel, pas des inventions du code.
+
+**Ce que ça implique pour la correction :** la consigne ajoutée au prompt qui
+demande à l'IA de ne pas recopier le domaine devant le texte des `items` doit
+être **retirée**. Le domaine doit survivre jusqu'à l'écran. Attention, c'est
+cette consigne qui avait été ajoutée pour supprimer les doublons : la
+protection contre le doublon doit donc venir du **code** (comparaison
+tolérante), pas d'une interdiction faite au modèle.
+
+C'était un choix produit, pas technique. La
 consigne actuelle demande à l'IA de ne plus écrire le domaine devant le texte.
 Conséquence mesurée sur son vrai `partage/exemple de planning p1.pdf` :
 « Langage oral : Voyelles de Rimbaud » et « PDE : Voyelles de Rimbaud »
