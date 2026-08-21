@@ -517,6 +517,45 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-08-21 - Claude - Import des séances : tâches 2 et 3 codées et commitées, une question produit bloque la suite.**
+  Branche `import-seances-un-creneau`, commit `034e54b`, **non poussée**, `main`
+  intact. 783 tests verts, `tsc` muet. L'IA rend désormais des séances datées et
+  les consignes qui vont avec.
+
+  **Lire `AVANCEMENT-IMPORT-SEANCES.md`, section « ARRÊT DU 21/08 », avant de
+  toucher à quoi que ce soit.** Le travail est commité mais porte des défauts
+  connus, et une question attend Christophe : dans le cahier journal, veut-il
+  voir « LC : La petite poule » ou juste « La petite poule » ? La réponse
+  commande la correction, ne pas trancher à sa place.
+
+  **Ce qui a été appris cette nuit, et qui vaut pour la suite du chantier :**
+  - Le plan `docs/superpowers/plans/2026-08-03-import-seances-un-creneau.md`
+    **n'est pas fiable**. En une soirée il lui manquait une tâche entière
+    (ajoutée sous le numéro **4b**, sans laquelle les séances n'atteignent ni
+    l'écran ni la base) et sa tâche 3 visait `systemImportPeriode`, une fonction
+    **morte** sans aucun appelant. Traiter ses blocs de code comme un brouillon
+    à vérifier, jamais comme une consigne.
+  - **Quatre relectures ont tourné, quatre ont trouvé du vrai.** À chaque fois
+    c'est la relecture QUALITÉ, celle qui **exécute** le code sur des dizaines
+    de cas, qui a trouvé ce que la relecture de conformité avait approuvé.
+    Garder les deux, et ne jamais confier la qualité à un relecteur qui ne peut
+    que lire.
+  - Le principe qui a débloqué la situation : **le code ne doit pas exiger de
+    l'IA une perfection au caractère près.** Il exigeait une identité exacte des
+    textes ; un accent ou un point final suffisait à dupliquer un apprentissage
+    à l'écran. Il est maintenant tolérant (casse, accents, espaces, ponctuation
+    finale). Ne pas revenir en arrière là-dessus.
+
+  **Pour Codex, quand la question sera tranchée** : la tâche **4b** demande une
+  migration `029_remplacer_progression_seances.sql`, un
+  `create or replace function remplacer_progression(...)` de **signature
+  identique** (uuid, uuid, text, integer[], jsonb, boolean), reprise du corps de
+  la migration 014, avec `seances` ajouté aux colonnes de l'`insert`,
+  `coalesce(x.seances, '[]'::jsonb)` dans le `select`, et `seances jsonb` dans
+  le `jsonb_to_recordset`. Ne pas toucher à la branche `p_sync_semaines` (la
+  table `semaines` n'a pas cette colonne). Elle vient **après** la migration 028
+  de la tâche 4, la colonne doit exister avant qu'on écrive dedans.
+
 - **2026-08-20 - Claude - Graphify installé : une carte du code, à consulter avant d'explorer à l'aveugle.**
   Outil externe (github.com/Graphify-Labs/graphify, vérifié fiable : 108k étoiles,
   soutenu par Y Combinator). Construit une carte du projet (fichiers, fonctions,
