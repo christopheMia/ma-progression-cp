@@ -517,6 +517,64 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-03 - Claude - Cécile travaille pour de vrai : base sauvegardée, anti-veille en ligne, données d'élèves protégées, branche enfin poussée.**
+  Quatre choses te concernent directement, Codex.
+
+  **1. La branche `import-seances-un-creneau` est maintenant SUR GITHUB.** Elle
+  ne l'avait jamais été. Ses 13 commits n'existaient que sur le PC de Christophe
+  depuis le 21 août. Tu peux donc la récupérer par un `git fetch` au lieu d'être
+  bloqué. Son état n'a pas changé depuis l'entrée du 21 août ci-dessous : les
+  deux défauts connus (le domaine qui disparaît de l'écran, la puce qui peut en
+  remplacer une autre) sont toujours là et restent à corriger.
+
+  **2. `main` a gagné un cron et une exclusion dans le portier (`2f70c0f`).**
+  `vercel.json` déclare un cron quotidien vers `/api/veille`, une route qui
+  interroge la base pour l'empêcher de s'endormir. Le projet Supabase est en
+  formule gratuite : sans trafic pendant 7 jours il se met en veille, et il se
+  réveille à la main depuis un tableau de bord auquel Cécile n'a pas accès.
+  Danger réel au retour des vacances scolaires, pas en semaine ordinaire.
+
+  **Le piège, trouvé en testant et pas en relisant :** `proxy.ts` interceptait
+  `/api/veille` et le renvoyait sur `/connexion` (HTTP 307). Le cron aurait été
+  vert tous les jours sans jamais toucher la base. D'où `api/veille` dans
+  `config.matcher`, gardé par trois tests dans `src/__tests__/proxy.test.ts`,
+  dont un qui échoue si l'exclusion disparaît. **Ne retire pas cette exclusion.**
+  Attention aussi : la branche `import-seances-un-creneau` est antérieure, un
+  `git diff main..branche` montre donc `vercel.json` comme supprimé. C'est un
+  artefact de l'écart entre les deux, pas une suppression. Elle le récupérera au
+  prochain merge de `main`.
+
+  **3. Le dépôt est PUBLIC et `partage/` contient des prénoms d'élèves.**
+  `partage/sauvegarde-eleves-20260721.md` porte les prénoms des 24 élèves de
+  Cécile. Les exclusions `partage/` et `.verif/` existaient sur `main` depuis le
+  20 août, mais **pas sur `import-seances-un-creneau`**, ouverte avant : un
+  `git add -A` y aurait publié des prénoms d'enfants, sans retour possible,
+  GitHub gardant l'historique. Corrigé le 3 septembre (`e7362f8`), plus une
+  exclusion dans `.git/info/exclude` qui couvre toutes les branches de la
+  machine. **Ne commite jamais `partage/` ni `.verif/`.**
+
+  **4. La question Supabase que tu posais le 22 juillet a sa réponse.** Tu avais
+  noté « l'authentification du compte christopheMia a réussi, mais le projet
+  affiche You do not have access to this project », et tu demandais un
+  `SUPABASE_ACCESS_TOKEN` du compte propriétaire. Le compte propriétaire est
+  **`youckyboy@gmail.com`**, et il est **rattaché à GitHub** : il n'a pas de mot
+  de passe, on n'y entre que par « Continue with GitHub » de ce compte là.
+  Confirmé par le mail de réinitialisation reçu le 3 septembre. `christopheMia`
+  est le compte du code, il n'a pas accès au projet. Christophe ne souhaite pas
+  basculer entre ses deux comptes : **la clé `service_role` reste donc hors de
+  portée, pour toi comme pour moi.** Ne relance pas cette piste, elle a déjà
+  coûté une matinée en juillet et une heure le 3 septembre.
+
+  **Ce que ça change pour toute intervention future.** Depuis le 26 juillet,
+  Cécile a une vraie année dans la base : 1 classe, 24 élèves, 90 créneaux,
+  154 semaines de progression, 5 manuels importés, et des observations qu'elle
+  ajoute tous les jours d'école. Ce n'est plus un bac à sable. Une migration
+  ratée détruit une année de travail d'une enseignante. **Sauvegarde d'abord,
+  migration ensuite.** La première sauvegarde existe depuis le 3 septembre
+  (22 tables, chaque bloc vérifié par empreinte md5), et la procédure pour en
+  refaire une sans aucune clé est dans
+  `Bureau\claude\_backups_ma-progression-cp\COMMENT-REFAIRE-UNE-SAUVEGARDE.md`.
+
 - **2026-08-20 - Claude - Graphify installé : une carte du code, à consulter avant d'explorer à l'aveugle.**
   Outil externe (github.com/Graphify-Labs/graphify, vérifié fiable : 108k étoiles,
   soutenu par Y Combinator). Construit une carte du projet (fichiers, fonctions,
