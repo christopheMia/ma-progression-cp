@@ -1,6 +1,99 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
-## Point de reprise du 20/08/2026 — LIRE EN PREMIER
+## Point de reprise du 03/09/2026 — LIRE EN PREMIER, LE RESTE EST PÉRIMÉ
+
+**Tout ce qui suit ce bloc décrit un état dépassé.** Les neuf corrections
+annoncées plus bas comme « à faire » ont toutes été traitées par le commit
+`ced1158` du 21 août au soir, que le fichier n'a jamais enregistré. Vérifié
+point par point dans le code le 3 septembre. Ne les refais pas.
+
+### Ce qui a changé le monde entre-temps
+
+**Cécile travaille pour de vrai dans l'application depuis le 26 juillet.**
+1 classe, 24 élèves, 90 créneaux d'emploi du temps, 154 semaines de progression
+importées, et des observations qu'elle ajoute tous les jours d'école. Ce projet
+n'est plus un bac à sable. Un défaut qui déforme une puce détruit son travail.
+
+Trois protections ont été posées le 3 septembre :
+
+| Protection | Où |
+|---|---|
+| Une sauvegarde complète de la base, vérifiée par empreinte | `Bureau\claude\_backups_ma-progression-cp\`, avec sa procédure |
+| Un ping quotidien qui empêche la base de s'endormir | `/api/veille` sur `main`, commit `2f70c0f` |
+| Une **classe de test**, copie fidèle de la sienne, élèves anonymisés | compte `christophe.mialon+test@gmail.com`, classe affichée « Bac a sable » |
+
+**Développe sur la classe de test, jamais sur la sienne.** Attention à la
+limite : la classe de test protège des bugs de code, **pas des migrations**. Le
+schéma est commun aux deux. Voir plus bas, tâche 4.
+
+### Les deux relectures de la tâche 2, enfin passées
+
+Le commit `ced1158` disait lui-même « les deux relectures ne sont pas passées
+dessus ». Elles ont été faites le 3 septembre.
+
+**Conformité : conforme.** La décision de Christophe du 21/08 (le domaine reste
+visible, la protection anti-doublon vient du code) est appliquée entièrement,
+avec un test sur les 26 puces réelles du planning, cas Rimbaud compris. Six des
+sept corrections obligatoires traitées, la septième l'était déjà avant.
+
+Un seul écart, mineur et probablement hors périmètre : la consigne de borne du
+jour met `jour` à null et signale dans `avertissements`, alors que la spec veut
+garder la provenance (« Jour 5 ») pour l'afficher dans « à placer ». La séance
+n'est pas perdue, seule l'étiquette d'origine l'est. **C'est le champ `origine`
+de la tâche 6**, pas un défaut de la tâche 2.
+
+**Qualité : deux défauts graves, tous deux REPRODUITS en exécutant le code.**
+
+| | Défaut | État |
+|---|---|---|
+| 1 | Le texte de l'enseignante écrasé par la variante fautive du modèle dès que la séance porte un domaine. « Le graphème **où** » ressortait en « LC : Le graphème **ou** », un autre graphème du programme de CP, sans rien d'anormal à l'écran | **CORRIGÉ** le 03/09, commit `0edcb2d` |
+| 2 | Une puce affichée **en double** quand le modèle nomme le domaine autrement dans `domaine` que dans `items` (« LC » contre « Lecture compréhension », ce que le document de référence fait d'une semaine à l'autre) | **OUVERT**, décision de conception en attente de Christophe |
+
+**Pourquoi les 830 tests ne voyaient rien.** Les cinq tests qui protégeaient
+cette zone utilisent tous un domaine **vide**, alors que le domaine rempli est
+le cas normal depuis la décision du 21/08. Le trou de couverture était
+exactement là où le commit avait changé le comportement. Trois tests à domaine
+rempli ont été ajoutés (accent, casse, apostrophe).
+
+**Leçon, la même qu'en août sous une autre forme :** un garde-fou peut cesser de
+protéger sans qu'une seule de ses lignes ne change, parce que ce qui l'entoure a
+bougé. Les tests qui le gardaient testaient un monde qui n'existait plus.
+
+### Le défaut 2, la décision qui attend Christophe
+
+Deux chemins, le relecteur penche pour le premier :
+
+1. **Ne plus coller le domaine au moment de la lecture**, seulement au moment de
+   l'écriture (retirer `avecDomaine` de `seanceDepuisTexte`, le garder dans
+   `itemsDepuisSeances`). La comparaison retrouve des libellés nus, le domaine
+   atteint quand même l'écran. Prix : l'idempotence stricte dès le premier
+   passage, dont le relecteur soutient vérification à l'appui qu'elle n'est pas
+   réellement perdue.
+2. **Rendre `memePuce` plus tolérante** : essayer aussi de retirer le domaine de
+   chaque côté séparément, sans casser la distinction « LC : Voyelles » contre
+   « PDE : Voyelles » qui est le cas de Christophe.
+
+Trois avertissements plus légers ont aussi été relevés et restent ouverts : un
+domaine qui serait lui-même un marqueur de jour (« Jour 2 ») contredit le champ
+`jour` ; une case vide dont le modèle recopie le seul domaine passe le filtre
+(« LC : » seul) ; et dans `itemsDepuisSeances` le domaine est posé avant la
+lecture du préfixe, donc jamais pour le cas que son commentaire vise.
+
+### La suite, dans l'ordre
+
+1. Trancher le défaut 2, puis le corriger.
+2. Essayer un vrai import sur la **classe de test**, avec un des PDF de Cécile.
+3. Tâche 4b, puis tâche 4.
+
+**Pour la tâche 4, une consigne qui n'était pas dans le plan :** sa migration
+prévoit un `update progression` **global**, qui toucherait les 154 semaines de
+Cécile. La couper en deux : la colonne d'abord, ce qui ne touche à rien, puis le
+remplissage **déclenché classe par classe**, essayé sur la classe de test avant
+d'atteindre la sienne. Et une sauvegarde juste avant, dans tous les cas.
+
+---
+
+## Point de reprise du 20/08/2026 (PÉRIMÉ, gardé pour l'historique)
 
 Chantier repris ce jour après deux semaines d'arrêt (dernier commit réel : le
 6 août, tâche 1 approuvée avec 5 restes mineurs). Christophe : « c'est le
@@ -143,7 +236,7 @@ tant qu'un relecteur a des réserves.
 | # | Tâche | État |
 |---|---|---|
 | 1 | Conversions séances et items | ✅ terminée et **approuvée** en relecture, `4f4ff70` |
-| 2 | L'IA rend des séances | codée, **en correction** après relecture qualité, non commitée |
+| 2 | L'IA rend des séances | codée et commitée (`ced1158`), **les deux relectures sont passées le 03/09** : conforme, un défaut grave corrigé (`0edcb2d`), un second **ouvert**, voir le point de reprise en tête |
 | 3 | Les consignes d'import | **avancée** au 20/08 : le schéma exige `seances` sans que le modèle sache quoi y mettre. Visait une fonction morte, corrigée sur `systemImportAutomatique` |
 | 4 | La colonne en base et son remplissage | à faire |
 | 4b | Les trois portes fermées entre l'IA et la base | **ajoutée le 20/08**, elle manquait au plan. Sans elle les séances n'atteignent ni l'écran de vérification ni la base |
@@ -194,17 +287,23 @@ la migration doit la copier, pas la réinventer.
 
 ## Comment reprendre
 
-1. Se placer sur la branche `import-seances-un-creneau` (elle n'est pas fusionnée
-   dans `main`, et `main` est intact).
-2. Vérifier l'état : `npx jest` doit donner 71 suites et 697 tests verts, et
+**Réécrit le 03/09. L'ancienne version envoyait refaire cinq restes traités
+depuis le 20 août et annonçait 697 tests là où il y en a 833.**
+
+1. Se placer sur la branche `import-seances-un-creneau`. Elle n'est pas fusionnée
+   dans `main`, `main` est intact, et depuis le 03/09 elle est **poussée sur
+   GitHub** : ses commits n'existent plus seulement sur le PC de Christophe.
+2. Vérifier l'état : `npx jest` doit donner **72 suites et 833 tests verts**, et
    `npx tsc --noEmit` doit être muet.
-3. Traiter les cinq restes mineurs de la tâche 1 ci-dessous. Les deux premiers
-   avant la tâche 3, parce que c'est elle qui fera remplir `domaine` et `libelle`
-   par l'IA.
-4. Enchaîner sur la tâche 2 du plan, en reprenant la même méthode : un
-   implémenteur par tâche, puis une relecture de conformité à la spec, puis une
-   relecture de qualité, avec boucle de correction tant qu'un relecteur a des
-   réserves.
+3. Lire le point de reprise du 03/09 en tête de ce fichier : il dit ce qui reste
+   réellement ouvert. Ne pas se fier aux sections d'août, elles sont périmées et
+   marquées comme telles.
+4. Se connecter à l'application avec le **compte de test**, jamais avec celui de
+   Cécile, et travailler sur la classe affichée « Bac a sable ».
+5. Garder la méthode qui a payé : un implémenteur par tâche, puis une relecture
+   de conformité à la spec, puis une relecture de qualité, avec boucle de
+   correction tant qu'un relecteur a des réserves. Le 03/09, c'est elle qui a
+   attrapé un défaut que 830 tests verts laissaient passer.
 
 La leçon de la tâche 1 vaut consigne : **ne pas faire confiance au texte du plan
 comme s'il était juste.** Ses blocs de code sont des propositions relues par
