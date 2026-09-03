@@ -76,5 +76,12 @@ export const config = {
   // filet. Avant, une police, un logo ou une image de `public/` déclenchaient
   // chacun leur propre appel au serveur d'authentification, alors qu'aucun
   // d'eux n'est protégé.
-  matcher: ['/((?!_next/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf|css|js|map|txt|xml|webmanifest)$).*)'],
+  //
+  // `api/veille` en sort aussi, et il le faut : c'est le ping quotidien de
+  // Vercel qui empêche la base de s'endormir, et il arrive sans session. Sans
+  // cette exclusion, le portier le renvoyait sur `/connexion` (constaté en
+  // local, HTTP 307) et la base n'était jamais touchée : la protection aurait
+  // existé sur le papier sans rien protéger. Bénéfice au passage, le ping ne
+  // paie pas l'aller-retour `getUser`.
+  matcher: ['/((?!_next/|api/veille|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf|css|js|map|txt|xml|webmanifest)$).*)'],
 }
