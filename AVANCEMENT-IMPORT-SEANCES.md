@@ -59,6 +59,15 @@ rempli ont été ajoutés (accent, casse, apostrophe).
 protéger sans qu'une seule de ses lignes ne change, parce que ce qui l'entoure a
 bougé. Les tests qui le gardaient testaient un monde qui n'existait plus.
 
+**Les deux défauts sont expliqués visuellement**, sur les vrais textes du
+planning, dans une page faite pour Christophe le 03/09 :
+https://claude.ai/code/artifact/9476d76e-0011-450f-9f75-880c3846cbff
+Elle présente les deux chemins ci-dessous côte à côte, avec leur prix. C'est là
+qu'il tranchera.
+
+**Reprise prévue le matin du 4 septembre 2026.** Rien n'est en attente d'être
+commité, tout est poussé.
+
 ### Le défaut 2, la décision qui attend Christophe
 
 Deux chemins, le relecteur penche pour le premier :

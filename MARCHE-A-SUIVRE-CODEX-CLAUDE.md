@@ -517,6 +517,71 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-03 (après-midi) - Claude - Tâche 2 relue enfin : un défaut grave corrigé, un second ouvert qui attend une décision de Christophe.**
+  Reprise à froid le matin du 4 septembre. Si tu passes avant, voilà l'état.
+
+  **Le fichier d'avancement mentait, il est réparé.** `AVANCEMENT-IMPORT-SEANCES.md`
+  annonçait neuf corrections à faire, toutes traitées depuis le 21 août au soir,
+  et une section « Comment reprendre » qui envoyait refaire cinq restes déjà
+  faits en annonçant 697 tests là où il y en a 833. **Lis son point de reprise du
+  03/09 en tête, et lui seul.** Les sections d'août sont marquées périmées.
+
+  **Les deux relectures de la tâche 2 sont passées.** Conformité : conforme, la
+  décision de Christophe du 21/08 est appliquée entièrement. Qualité : deux
+  défauts graves, tous deux **reproduits en exécutant le code**, pas seulement
+  supposés.
+
+  **Défaut 1, CORRIGÉ (`0edcb2d`).** `libelleRetenu` arbitrait entre l'écriture du
+  modèle et celle de l'enseignante. Son cas du domaine testait la containment sur
+  les formes NORMALISÉES (sans accents, sans casse, sans apostrophes
+  typographiques) tout en rendant le texte BRUT de la séance : la tolérance qui
+  sert à RECONNAÎTRE une paire débordait sur le choix du texte à GARDER. Mesuré :
+  `items: ['Le graphème où']` face à une séance « Le graphème ou » de domaine
+  « LC » ressortait en « LC : Le graphème ou ». Le mot de l'enseignante
+  disparaissait, remplacé par un AUTRE graphème du programme de CP, sans rien
+  d'anormal à l'écran. La comparaison se fait désormais sur le texte réel.
+
+  **Pourquoi ça vaut au-delà de ce bug.** Le garde-fou qui devait l'empêcher
+  existait, écrit le 21/08 exprès pour ce cas, et il n'a pas bougé d'une ligne.
+  Il a cessé de protéger parce que le monde autour de lui a changé : tant que le
+  domaine restait dans son champ, la séance n'était presque jamais plus longue
+  que l'item ; depuis que `seanceDepuisTexte` colle le domaine devant le libellé,
+  elle l'est TOUJOURS. Et les cinq tests qui gardaient cette zone utilisent tous
+  un domaine VIDE, c'est-à-dire le monde d'avant. 830 tests verts ne voyaient
+  rien. Trois tests à domaine rempli ont été ajoutés.
+
+  **Défaut 2, OUVERT, ne le corrige pas de ta propre initiative.** Une puce
+  s'affiche en double quand le modèle nomme le domaine autrement dans `domaine`
+  que dans `items` (« LC » contre « Lecture compréhension », ce que le document
+  de référence fait d'une semaine à l'autre). Le comportement de comparaison en
+  cause est VOLONTAIRE : c'est lui qui garde « LC : Voyelles » et
+  « PDE : Voyelles » distinctes, le cas Rimbaud de Christophe. Deux chemins sont
+  écrits dans le point de reprise, le relecteur penche pour le premier. **C'est
+  un choix de conception, il appartient à Christophe.** Une page visuelle lui a
+  été faite pour trancher :
+  https://claude.ai/code/artifact/9476d76e-0011-450f-9f75-880c3846cbff
+
+  Trois avertissements plus légers restent ouverts, listés dans le point de
+  reprise : un domaine qui serait lui-même un marqueur de jour, une case vide
+  dont le modèle recopie le seul en-tête, et un commentaire qui décrit un cas que
+  le code ne traite pas.
+
+  **Travaille sur la classe de test, pas sur celle de Cécile.** Créée le 03/09,
+  copie fidèle de la sienne (mêmes manuels, même emploi du temps, mêmes 154
+  semaines) avec les 24 élèves renommés « Eleve 01 » à « Eleve 24 ». Compte
+  `christophe.mialon+test@gmail.com`, la classe s'affiche « Bac a sable ». Les
+  règles de sécurité de la base garantissent qu'un compte ne voit que ses propres
+  classes : tu ne peux pas atteindre celle de Cécile par erreur.
+
+  **Limite à ne jamais oublier :** la classe de test protège des bugs de code,
+  **pas des migrations**. Le schéma est commun. La migration de la tâche 4
+  prévoit un `update progression` global qui toucherait les 154 semaines de
+  Cécile : la couper en deux, la colonne d'abord puis le remplissage déclenché
+  classe par classe, et une sauvegarde juste avant.
+
+  État vérifié à l'arrêt : **833 tests verts, 72 suites**, `tsc` muet, build de
+  production vert, tout poussé sur `origin/import-seances-un-creneau`.
+
 - **2026-09-03 - Claude - Cécile travaille pour de vrai : base sauvegardée, anti-veille en ligne, données d'élèves protégées, branche enfin poussée.**
   Quatre choses te concernent directement, Codex.
 
