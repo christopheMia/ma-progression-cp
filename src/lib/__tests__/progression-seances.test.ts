@@ -540,6 +540,39 @@ describe('des deux écritures, laquelle est gardée', () => {
     )).toEqual([{ jour: 1, domaine: 'LC', libelle: 'LC : Décodage' }])
   })
 
+
+  // LE TROU DE COUVERTURE DU 03/09. Les cinq tests ci-dessus utilisent tous un
+  // domaine VIDE, alors que depuis la décision de Christophe du 21/08 le domaine
+  // rempli est le cas NORMAL : le prompt le demande, et `seanceDepuisTexte` le
+  // colle devant le libellé. La séance est donc toujours plus longue que l'item,
+  // et le cas 2 de `libelleRetenu` se déclenchait systématiquement en faveur du
+  // texte du modèle. Le garde-fou du 21/08 existait, et ne protégeait plus rien
+  // dès que le modèle rendait un domaine.
+  //
+  // Trouvé le 03/09 en relecture qualité, puis reproduit en exécutant le code :
+  // « Le graphème où » ressortait en « LC : Le graphème ou ».
+  it('garde le texte de l’item même quand la séance porte un domaine', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'LC', libelle: 'Le graphème ou' }],
+      ['Le graphème où'],
+    )).toEqual([{ jour: 1, domaine: 'LC', libelle: 'LC : Le graphème où' }])
+  })
+
+  it('ne laisse pas un domaine rempli imposer la casse du modèle', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'Écriture', libelle: 'DICTEE' }],
+      ['Dictée'],
+    )).toEqual([{ jour: 1, domaine: 'Écriture', libelle: 'Écriture : Dictée' }])
+  })
+
+  it('ne laisse pas un domaine rempli imposer l’apostrophe du modèle', () => {
+    // Le document de référence écrit « Geste d’écriture » avec l'apostrophe
+    // courbe six fois ; le modèle rend souvent la droite.
+    expect(completerSeances(
+      [{ jour: 2, domaine: 'Écriture', libelle: "Geste d'écriture" }],
+      ['Geste d’écriture'],
+    )).toEqual([{ jour: 2, domaine: 'Écriture', libelle: 'Écriture : Geste d’écriture' }])
+  })
   it('ne compte pas l’espacement comme une différence à arbitrer', () => {
     // Deux écritures qui ne diffèrent que par leurs espaces disent exactement
     // la même chose : rien à choisir, on garde la forme déjà propre.

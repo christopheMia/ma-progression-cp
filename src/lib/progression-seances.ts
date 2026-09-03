@@ -560,12 +560,6 @@ function memePuce(a: SeanceProgression, b: SeanceProgression): boolean {
   return false
 }
 
-/** Longueur du texte utile, espaces normalisés : sert à choisir laquelle de deux
- *  écritures d'une même puce porte le plus de ce que l'enseignante a écrit. */
-function longueurUtile(texte: string): number {
-  return texte.replace(/\s+/g, ' ').trim().length
-}
-
 /**
  * Réunit une séance rendue par le modèle et l'item qui décrit la même puce.
  *
@@ -608,24 +602,45 @@ function fusionner(seance: SeanceProgression, item: SeanceProgression): SeancePr
  *    arbitrer, ils disent exactement la même chose. On garde la forme de la
  *    séance, déjà nettoyée, plutôt que les espaces doubles ou insécables d'un
  *    copier-coller ;
- * 2. la séance CONTIENT l'item une fois normalisée et en dit plus long : elle
- *    gagne. C'est le seul cas où une différence de longueur est une différence
- *    de contenu, et c'est celui du domaine (« LC : Décodage » face à
- *    « Décodage ») ;
+ * 2. la séance se TERMINE par l'item, au caractère près : elle gagne. C'est le
+ *    seul cas où une différence de longueur est une différence de contenu, et
+ *    c'est celui du domaine (« LC : Décodage » face à « Décodage ») ;
  * 3. sinon L'ITEM gagne, y compris à longueur égale. C'est le texte que
  *    l'enseignante voit et que la base enregistre : entre deux écritures que la
  *    tolérance a déclarées équivalentes, c'est la sienne qui reste.
+ *
+ * LE DÉFAUT DU 03/09, ET POURQUOI LE GARDE-FOU CI-DESSUS NE PROTÉGEAIT PLUS.
+ * Le cas 2 comparait les formes NORMALISÉES (`includes` sur du texte sans
+ * accents, sans casse, sans apostrophes typographiques) tout en rendant le
+ * texte BRUT de la séance. La tolérance qui sert à RECONNAÎTRE une paire
+ * débordait donc sur le choix du texte à GARDER.
+ *
+ * Tant que le domaine restait dans son champ, la séance n'était presque jamais
+ * plus longue que l'item et le cas 3 protégeait. Depuis la décision de
+ * Christophe du 21/08, `seanceDepuisTexte` colle le domaine devant le libellé :
+ * la séance est TOUJOURS plus longue dès que le modèle remplit `domaine`, ce
+ * que le prompt lui demande désormais. Le cas 2 se déclenchait donc à chaque
+ * fois, et le texte du modèle gagnait systématiquement.
+ *
+ * Mesuré en exécutant le code le 03/09 : `items: ['Le graphème où']` face à une
+ * séance « Le graphème ou » de domaine « LC » ressortait en
+ * « LC : Le graphème ou ». Le « où » de l'enseignante disparaissait, remplacé
+ * par un AUTRE graphème du programme de CP, sans rien d'anormal à l'écran.
+ *
+ * D'où la comparaison sur le texte réel. Elle est suffisante parce que
+ * `libelleRetenu` n'est appelée que sur une paire déjà reconnue par `memePuce`,
+ * donc sur deux écritures identiques au domaine près : l'écart de longueur ne
+ * peut venir que de cette tête, et une tête est un PRÉFIXE. Le domaine n'est
+ * pas perdu quand l'item gagne, `fusionner` repasse par `seanceDepuisTexte` qui
+ * le recolle.
  */
 function libelleRetenu(libelleSeance: string, libelleItem: string): string {
   const espacesSeance = libelleSeance.replace(/\s+/g, ' ').trim()
   const espacesItem = libelleItem.replace(/\s+/g, ' ').trim()
   if (espacesSeance === espacesItem) return libelleSeance
 
-  const normaliseeSeance = normaliserTexte(libelleSeance)
-  const normaliseeItem = normaliserTexte(libelleItem)
-  const seanceEnDitPlus = normaliseeSeance !== normaliseeItem
-    && normaliseeSeance.includes(normaliseeItem)
-    && longueurUtile(libelleSeance) > longueurUtile(libelleItem)
+  const seanceEnDitPlus = espacesItem.length > 0
+    && espacesSeance.endsWith(espacesItem)
   return seanceEnDitPlus ? libelleSeance : libelleItem
 }
 
