@@ -557,7 +557,57 @@ function memePuce(a: SeanceProgression, b: SeanceProgression): boolean {
     if (!domaine) continue
     if (sansTeteNormalisee(texteA, domaine) === sansTeteNormalisee(texteB, domaine)) return true
   }
+  // Dernier recours : chaque côté retire SON PROPRE domaine, et seulement quand
+  // les deux domaines désignent la même chose (voir `memeDomaineAbrege`). Sans
+  // cela, « LC : X » face à « Lecture compréhension : X » restait deux puces.
+  const domaineA = normaliserTexte(a.domaine)
+  const domaineB = normaliserTexte(b.domaine)
+  if (domaineA && domaineB && domaineA !== domaineB && memeDomaineAbrege(domaineA, domaineB)) {
+    if (sansTeteNormalisee(texteA, domaineA) === sansTeteNormalisee(texteB, domaineB)) return true
+  }
   return false
+}
+
+/**
+ * Ces deux domaines désignent-ils la même chose, l'un abrégeant l'autre ?
+ *
+ * POURQUOI CETTE FONCTION EXISTE. Le document de Cécile écrit « Lecture
+ * compréhension » une semaine et « LC » la suivante. Le modèle recopie ce qu'il
+ * lit : il range l'abréviation dans `domaine` et le nom entier devant le texte
+ * de `items`, ou l'inverse. Retirer un même domaine des deux côtés ne rattrape
+ * pas ce cas, et l'enseignante voyait la puce en double.
+ *
+ * OÙ S'ARRÊTE LA TOLÉRANCE, et pourquoi elle s'arrête là. On ne rapproche que
+ * si l'un est EXACTEMENT la suite des initiales de l'autre : « lc » pour
+ * « lecture compréhension », « pde » pour « production d'écrits », qui sont les
+ * abréviations du manuel, pas des inventions du code. « Langage oral » donne
+ * « lo », donc il ne rejoindra jamais « PDE » : la décision de Christophe du
+ * 21/08, où deux séances portent le même texte de Rimbaud dans deux domaines
+ * différents, tient toujours.
+ *
+ * L'abréviation doit être d'un seul tenant et faire deux à cinq lettres : sans
+ * cette borne, deux libellés longs pourraient se rejoindre par coïncidence
+ * d'initiales.
+ */
+function memeDomaineAbrege(unDomaine: string, autreDomaine: string): boolean {
+  const abrege = (court: string, long: string): boolean =>
+    LONGUEUR_ABREVIATION.test(court) && initiales(long) === court
+  return abrege(unDomaine, autreDomaine) || abrege(autreDomaine, unDomaine)
+}
+
+const LONGUEUR_ABREVIATION = /^[a-z]{2,5}$/
+
+/**
+ * Première lettre de chaque mot, l'apostrophe comptant comme une coupure :
+ * « production d'écrits » donne « pde », et non « pd ». Le texte reçu est
+ * déjà passé par `normaliserTexte`.
+ */
+function initiales(texte: string): string {
+  return texte
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .map(mot => mot[0])
+    .join('')
 }
 
 /**

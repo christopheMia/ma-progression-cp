@@ -626,6 +626,36 @@ describe('tolérance au domaine, dans les deux sens', () => {
     expect(out[0].libelle).toBe('Vocabulaire (séance 1)')
   })
 
+  // DÉFAUT 2, relevé le 03/09 et resté ouvert : le modèle nomme le domaine
+  // autrement dans `domaine` que dans `items`. Le document de Cécile écrit
+  // « Lecture compréhension » une semaine et « LC » la suivante, alors le
+  // modèle rend l'abréviation d'un côté et le nom entier de l'autre. Retirer
+  // un même domaine des deux côtés ne rattrape pas ce cas, et l'enseignante
+  // voyait la puce en double.
+  it('reconnaît la même puce quand le domaine est abrégé d’un seul côté', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'LC', libelle: 'LC : Le graphème ou' }],
+      ['Lecture compréhension : Le graphème ou'],
+    )).toHaveLength(1)
+  })
+
+  it('reconnaît aussi l’abréviation dans l’autre sens', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'Lecture compréhension', libelle: 'Lecture compréhension : Décodage' }],
+      ['LC : Décodage'],
+    )).toHaveLength(1)
+  })
+
+  // LE GARDE-FOU DE CHRISTOPHE, décision du 21/08 : deux séances portent le
+  // même texte de Rimbaud, l'une en langage oral, l'autre en production
+  // d'écrits. La tolérance aux abréviations ne doit PAS les confondre.
+  it('ne confond pas langage oral et production d’écrits sur le même texte', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'Langage oral', libelle: 'Langage oral : Voyelles de Rimbaud' }],
+      ['PDE : Voyelles de Rimbaud'],
+    )).toHaveLength(2)
+  })
+
   it('ne confond pas deux puces du même domaine collé', () => {
     expect(completerSeances(
       [{ jour: 3, domaine: 'Vocabulaire', libelle: '(séance 1)' }],
