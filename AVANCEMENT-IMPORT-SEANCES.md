@@ -47,7 +47,7 @@ de la tâche 6**, pas un défaut de la tâche 2.
 | | Défaut | État |
 |---|---|---|
 | 1 | Le texte de l'enseignante écrasé par la variante fautive du modèle dès que la séance porte un domaine. « Le graphème **où** » ressortait en « LC : Le graphème **ou** », un autre graphème du programme de CP, sans rien d'anormal à l'écran | **CORRIGÉ** le 03/09, commit `0edcb2d` |
-| 2 | Une puce affichée **en double** quand le modèle nomme le domaine autrement dans  que dans  (« LC » contre « Lecture compréhension », ce que le document de référence fait d’une semaine à l’autre) | **CORRIGÉ** le 06/09, commit . Chaque côté retire son propre domaine, mais seulement si l’un est exactement les initiales de l’autre. Le cas Rimbaud (Langage oral contre PDE) reste distinct, un test le verrouille. 836 tests verts|
+| 2 | Une puce affichée **en double** quand le modèle nomme le domaine autrement dans `domaine` que dans `items` (« LC » contre « Lecture compréhension », ce que le document de référence fait d'une semaine à l'autre) | **CORRIGÉ** le 06/09, commit `12aa015`. `memePuce` tente un dernier rapprochement où chaque côté retire son propre domaine, à la seule condition que l'un soit exactement les initiales de l'autre. La décision du 21/08 tient : « Langage oral » donne « lo », donc le cas Rimbaud reste deux séances distinctes, verrouillé par un test. 836 tests verts|
 
 **Pourquoi les 830 tests ne voyaient rien.** Les cinq tests qui protégeaient
 cette zone utilisent tous un domaine **vide**, alors que le domaine rempli est
