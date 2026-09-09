@@ -2,6 +2,7 @@ import { addWeeks, format } from 'date-fns'
 import { LECTURE_PIANO } from '@/data/manuels/lecture-piano'
 import { ProgressionSemaine } from '@/data/manuels'
 import { Semaine } from '@/types'
+import type { SeanceProgression } from '@/types'
 
 // Seule progression « écrite » conservée : sert UNIQUEMENT au mode démonstration
 // (les enseignants importent leur méthode via l'IA → manuelId 'custom').
@@ -54,7 +55,13 @@ export function genererProgression(
 export function genererProgressionFrancais(
   manuelId: string,
   customProgression?: ProgressionSemaine[],
-): Array<{ numero: number; items: string[]; pages: string | null; mots_exemple: string[] | null }> {
+): Array<{
+  numero: number
+  items: string[]
+  pages: string | null
+  mots_exemple: string[] | null
+  seances: SeanceProgression[]
+}> {
   const semaines = customProgression ?? MANUELS_DATA[manuelId as keyof typeof MANUELS_DATA]?.semaines
   if (!semaines) return []
   return semaines.slice(0, 36).map((s, i) => ({
@@ -62,5 +69,8 @@ export function genererProgressionFrancais(
     items: s.items,
     pages: s.pages || null,
     mots_exemple: s.mots_exemple ?? null,
+    // Jamais null : la colonne est `not null default '[]'`, et le reste du code
+    // fait `.length` dessus sans se demander si elle existe.
+    seances: s.seances ?? [],
   }))
 }

@@ -70,7 +70,7 @@ export async function genererOuChargerJournal(semaineId: string): Promise<Result
 
     const [{ data: edt, error: edtError }, { data: progression, error: progressionError }] = await Promise.all([
       supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
-      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
+      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
       .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
     ])
     if (edtError || progressionError) {
@@ -119,7 +119,7 @@ export async function regenererJournal(semaineId: string): Promise<Resultat<Jour
 
     const [{ data: edt, error: edtError }, { data: progression, error: progressionError }] = await Promise.all([
       supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
-      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
+      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
       .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
     ])
     if (edtError || progressionError) {
