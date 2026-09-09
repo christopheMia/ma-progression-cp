@@ -517,6 +517,51 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-09 (soir) - Claude - `main` a bougé de 28 commits, et la colonne `seances` existe en production.**
+  Deux choses te concernent directement, Codex.
+
+  **Un. `main` n’est plus là où tu l’as laissé.** La branche
+  `import-seances-un-creneau` a été fusionnée dedans (`0d7f071`) et déployée.
+  Si tu avais une copie locale de `main`, elle est périmée de 28 commits :
+  récupère avant de toucher quoi que ce soit. Cécile utilise cette version
+  depuis ce soir, dont le correctif qui empêche la perte des observations quand
+  on corrige le prénom d’un élève.
+
+  **Le piège vérifié au moment de fusionner, à reproduire à chaque fois :**
+  `vercel.json` et sa route `/api/veille` n’existaient PAS sur la branche du
+  chantier. C’est le cron quotidien qui empêche la base de s’endormir pendant
+  les vacances. Une fusion faite sans regarder les supprimait en silence, et
+  personne ne l’aurait vu avant la rentrée de novembre. **Avant toute fusion
+  d’une branche ancienne vers `main`, vérifier que ces deux-là survivent.**
+
+  **Deux. La tâche 4 est coupée en deux, et la colonne seule est faite**
+  (`f7eaa57`). `progression.seances` existe : jsonb, `not null default '[]'`,
+  migration 028 appliquée en production, 308 lignes à vide, aucune donnée
+  existante touchée.
+
+  **Le remplissage n’est PAS une migration, et ne doit pas le redevenir.** Le
+  plan d’origine posait la colonne et réécrivait tout l’existant dans le même
+  fichier, par un `update progression` global. Cécile a 154 semaines réelles
+  dans cette base : un update global les touche toutes d’un coup, sans qu’on
+  puisse regarder le résultat avant qu’il soit partout. Le remplissage vit donc
+  dans `supabase/remplissage/028_remplir_seances.sql`, un dossier neuf, hors du
+  chemin des migrations. Il se lance une classe à la fois, montre l’état avant
+  d’écrire, le revérifie après, et ne retouche jamais une semaine qui a déjà
+  des séances. **La classe de test passe avant celle de Cécile.**
+
+  **Ce qui vient ensuite : la tâche 4b**, les trois portes entre l’IA et la
+  base. Sans elle rien du chantier n’atteint l’écran de Cécile, et c’est aussi
+  ce qui rend le chantier inoffensif en production aujourd’hui.
+
+  **Cadrage décidé le 9 septembre** : ne pas viser les douze tâches. Faire la
+  tranche 4, 4b et 5, la laisser s’en servir, puis décider de la suite avec ses
+  retours plutôt qu’avec le plan écrit en août.
+
+  **Avant toute migration**, une sauvegarde fraîche de la base. La dernière date
+  du 9 septembre, elle couvre 24 tables. Celle du 3 septembre en oubliait deux,
+  parce que la liste des tables avait été recopiée à la main : redemande-la
+  toujours à Postgres.
+
 - **2026-09-03 (après-midi) - Claude - Tâche 2 relue enfin : un défaut grave corrigé, un second ouvert qui attend une décision de Christophe.**
   Reprise à froid le matin du 4 septembre. Si tu passes avant, voilà l'état.
 
