@@ -1,5 +1,36 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## Point de reprise du 09/09/2026 au soir : DÉPLOYÉ, et la colonne est posée
+
+Deux choses ont bougé le soir du 9 septembre.
+
+**Un. Les 27 commits sont en ligne** (fusion `0d7f071` sur `main`, build Vercel
+réussi). Cécile a le correctif du prénom, le bouton « Classer de A à Z », la
+puce qui ne double plus, et LC et PDE affichés. Un mail le lui a dit le soir
+même. Avant de déployer : sauvegarde complète de la base (24 tables, vérifiée),
+877 tests et build avant ET après la fusion, et vérification que `vercel.json`
+et sa route `/api/veille` survivaient à la fusion. Ils n’étaient pas sur la
+branche : une fusion faite sans regarder les aurait supprimés en silence.
+
+**Deux. La tâche 4 est coupée en deux, et la première moitié est faite**
+(`f7eaa57`). La colonne `progression.seances` existe en production : jsonb,
+`not null default '[]'`, 308 lignes à vide, aucune donnée existante touchée.
+Le remplissage n’est PAS une migration : il vit dans
+`supabase/remplissage/028_remplir_seances.sql`, se lance une classe à la fois,
+regarde avant d’écrire, vérifie après, et ne retouche jamais une semaine qui a
+déjà des séances. **La classe de test passe avant celle de Cécile.**
+
+**La suite immédiate : la tâche 4b**, les trois portes entre l’IA et la base.
+Sans elle, rien de ce chantier n’atteint l’écran de Cécile, et c’est aussi ce
+qui le rend inoffensif en production aujourd’hui.
+
+**Décision de cadrage prise le 9 septembre** : ne pas viser les douze tâches.
+Faire la tranche 4, 4b et 5, qui suffit pour que l’import remplisse vraiment
+ses créneaux, la laisser s’en servir, puis décider de la suite avec ses retours
+plutôt qu’avec le plan écrit en août.
+
+---
+
 ## Point de reprise du 09/09/2026, Cécile a répondu, LIRE EN PREMIER
 
 **Les trois questions qui bloquaient ce chantier depuis le 3 septembre sont
@@ -307,7 +338,7 @@ tant qu'un relecteur a des réserves.
 | 1 | Conversions séances et items | ✅ terminée et **approuvée** en relecture, `4f4ff70` |
 | 2 | L'IA rend des séances | codée et commitée (`ced1158`), **les deux relectures sont passées le 03/09** : conforme, un défaut grave corrigé (`0edcb2d`), un second **ouvert**, voir le point de reprise en tête |
 | 3 | Les consignes d'import | **avancée** au 20/08 : le schéma exige `seances` sans que le modèle sache quoi y mettre. Visait une fonction morte, corrigée sur `systemImportAutomatique` |
-| 4 | La colonne en base et son remplissage | à faire |
+| 4 | La colonne en base et son remplissage | **colonne POSÉE le 09/09** (`f7eaa57`, migration 028 appliquée en production, 308 lignes à vide, rien de modifié). Le **remplissage reste à lancer**, classe par classe, voir `supabase/remplissage/028_remplir_seances.sql` |
 | 4b | Les trois portes fermées entre l'IA et la base | **ajoutée le 20/08**, elle manquait au plan. Sans elle les séances n'atteignent ni l'écran de vérification ni la base |
 | 5 | Une séance par créneau | à faire |
 | 6 | La sauvegarde conserve « à placer » | à faire |
