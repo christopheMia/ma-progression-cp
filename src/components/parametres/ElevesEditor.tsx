@@ -1,8 +1,8 @@
 'use client'
 import { useState, useTransition } from 'react'
-import { Save, UserPlus } from 'lucide-react'
+import { ArrowDownAZ, Save, UserPlus } from 'lucide-react'
 import { updateEleves } from '@/lib/actions/parametres'
-import { decouperPrenoms } from '@/lib/prenoms'
+import { decouperPrenoms, trierPrenoms } from '@/lib/prenoms'
 import Bouton from '@/components/ui/Bouton'
 
 export default function ElevesEditor({ initial }: { initial: string[] }) {
@@ -34,6 +34,15 @@ export default function ElevesEditor({ initial }: { initial: string[] }) {
       e.preventDefault()
       ajouter(texte)
     }
+  }
+
+  // Demande de Cecile le 9 septembre 2026 : sa liste suit l'ordre d'import, pas
+  // l'alphabet, et elle y cherche un enfant plusieurs fois par jour. Le tri
+  // n'agit que sur l'affichage tant qu'elle n'a pas enregistre, et il ne touche
+  // a aucun prenom : son suivi ne peut donc pas changer d'enfant.
+  function classer() {
+    setSaved(false)
+    setEleves(prev => trierPrenoms(prev))
   }
 
   function enregistrer() {
@@ -72,10 +81,14 @@ export default function ElevesEditor({ initial }: { initial: string[] }) {
           onClick={enregistrer}>
           Enregistrer les élèves
         </Bouton>
+        <Bouton type="button" icon={ArrowDownAZ} onClick={classer}
+          disabled={eleves.length < 2}>
+          Classer de A à Z
+        </Bouton>
         {saved && !isPending && <span className="text-sm text-green-600">✓ Enregistré</span>}
       </div>
       <p className="text-xs text-gray-400">
-        Le suivi des élèves conservés est préservé. Supprimer un élève efface son suivi.
+        Le suivi des élèves conservés est préservé, y compris après un classement de A à Z. Supprimer un élève efface son suivi.
       </p>
     </div>
   )
