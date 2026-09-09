@@ -1,6 +1,7 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { genererProgression, genererProgressionFrancais } from '@/lib/progression'
+import { planifierMiseAJourEleves, type EleveSaisi } from '@/lib/eleves-mise-a-jour'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { supprimerClassesUtilisateur } from '@/lib/reset-classe'
@@ -77,35 +78,49 @@ export async function updatePrenomEnseignant(prenom: string) {
 }
 
 /**
- * Met à jour la liste des élèves en préservant le suivi des élèves conservés.
- * Identité par prénom : on garde ceux dont le prénom existe encore (donc leurs acquisitions),
- * on insère les nouveaux, on supprime ceux retirés (et leurs acquisitions).
+ * Met à jour la liste des élèves.
+ *
+ * L'identité d'un élève est son IDENTIFIANT, pas son prénom. Corriger une faute
+ * de frappe renomme donc l'enfant et lui laisse tout son suivi. Avant le
+ * 9 septembre 2026 l'identité se faisait par le prénom : changer une lettre
+ * supprimait l'enfant, effaçait ses observations et ses acquisitions, et en
+ * créait un autre, sans que rien ne le signale à l'écran.
+ *
+ * Ce qui reste destructeur, et doit le rester : retirer un élève de la liste
+ * efface son suivi. C'est écrit sous la liste, et l'écran demande confirmation.
+ *
+ * La décision de ce qu'il faut écrire vit dans `planifierMiseAJourEleves`,
+ * fonction pure testée à part.
  */
-export async function updateEleves(prenoms: string[]) {
+export async function updateEleves(saisis: EleveSaisi[]) {
   const { supabase, classe } = await getClasse()
-  const noms = prenoms.map(p => p.trim()).filter(Boolean)
 
-  const { data: existants } = await supabase.from('eleves').select('*').eq('class_id', classe.id)
-  const existingNames = new Set((existants ?? []).map(e => e.prenom))
+  const { data: existants } = await supabase
+    .from('eleves')
+    .select('id, prenom')
+    .eq('class_id', classe.id)
 
-  const supprimes = (existants ?? []).filter(e => !noms.includes(e.prenom))
-  if (supprimes.length) {
-    const ids = supprimes.map(e => e.id)
-    await supabase.from('acquisitions').delete().in('eleve_id', ids)
-    await supabase.from('eleves').delete().in('id', ids)
+  const plan = planifierMiseAJourEleves(existants ?? [], saisis)
+
+  // Les suppressions d'abord : sans cela, un prénom libéré par une suppression
+  // ne pourrait pas être repris par un nouvel élève dans le même enregistrement.
+  if (plan.aSupprimer.length) {
+    await supabase.from('acquisitions').delete().in('eleve_id', plan.aSupprimer)
+    await supabase.from('eleves').delete().in('id', plan.aSupprimer)
   }
 
-  const nouveaux = noms.filter(p => !existingNames.has(p))
-  if (nouveaux.length) {
-    await supabase.from('eleves').insert(nouveaux.map(prenom => ({ class_id: classe.id, prenom, ordre: 0 })))
+  for (const { id, prenom } of plan.aRenommer) {
+    await supabase.from('eleves').update({ prenom }).eq('id', id)
   }
 
-  // Réordonne selon l'ordre saisi
-  const { data: tous } = await supabase.from('eleves').select('*').eq('class_id', classe.id)
-  const byName = new Map((tous ?? []).map(e => [e.prenom, e]))
-  for (let i = 0; i < noms.length; i++) {
-    const e = byName.get(noms[i])
-    if (e && e.ordre !== i) await supabase.from('eleves').update({ ordre: i }).eq('id', e.id)
+  if (plan.aInserer.length) {
+    await supabase.from('eleves').insert(
+      plan.aInserer.map(({ prenom, ordre }) => ({ class_id: classe.id, prenom, ordre })),
+    )
+  }
+
+  for (const { id, ordre } of plan.aReordonner) {
+    await supabase.from('eleves').update({ ordre }).eq('id', id)
   }
 
   revalidatePath('/parametres')
