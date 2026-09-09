@@ -1,4 +1,4 @@
-import { Manuel } from '@/types'
+import { Manuel, SeanceProgression } from '@/types'
 
 // Liste des manuels proposés au choix : VIDE volontairement.
 // Les progressions « écrites » n'étaient pas fiables → l'enseignant importe la sienne
@@ -11,6 +11,14 @@ export type ProgressionSemaine = {
   items: string[]
   pages: string
   mots_exemple: string[]
+  /**
+   * La grille jours x puces du document, quand elle a pu être lue. Optionnel
+   * parce que les progressions écrites en dur et les fixtures de test n'en
+   * portent pas ; `normalizeProgression`, elle, en rend toujours une (au pire
+   * un tableau vide), pour qu'un lecteur n'ait jamais à distinguer « absent »
+   * de « vide ».
+   */
+  seances?: SeanceProgression[]
 }
 
 export type ProgressionManuel = {

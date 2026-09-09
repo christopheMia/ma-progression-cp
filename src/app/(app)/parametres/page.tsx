@@ -75,7 +75,7 @@ export default async function ParametresPage() {
       </Section>
 
       <Section id="eleves" titre="👧 Mes élèves" headerRight={<ResetBlockButton scope="eleves" message="Efface tous les élèves et leur suivi." />}>
-        <ElevesEditor initial={(eleves ?? []).map(e => e.prenom)} />
+        <ElevesEditor initial={(eleves ?? []).map(e => ({ id: e.id, prenom: e.prenom }))} />
       </Section>
 
       <Section id="edt" titre="🕐 Emploi du temps" headerRight={

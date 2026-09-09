@@ -53,9 +53,9 @@ backups/
 GUIDE-ESSAI-CECILE.*
 graphify-out/cache/
 
-# Documents de travail partages avec Cecile (PDF, LSU, sauvegardes d'eleves
-# nominatives) : restent en local, jamais dans le depot
+# Documents de travail partages avec Cecile (PDF, LSU, sauvegardes d eleves
+# nominatives) : restent en local, jamais dans le depot, qui est public.
 partage/
 
-# Profils de navigateur laisses par les captures d'ecran de verification
+# Profils de navigateur laisses par les captures d ecran de verification
 .verif/
