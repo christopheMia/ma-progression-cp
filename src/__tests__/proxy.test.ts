@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { NextRequest } from 'next/server'
-import { proxy } from '@/proxy'
+import { proxy, config } from '@/proxy'
 import { createServerClient } from '@supabase/ssr'
 
 const getUser = jest.fn()
@@ -75,5 +75,28 @@ describe('proxy', () => {
     getUser.mockResolvedValue({ data: { user: null } })
     const r = await proxy(requete('/livret'))
     expect(r.headers.get('location')).toContain('/connexion')
+  })
+})
+
+// Le filet du portier, pas sa logique : `config.matcher` décide QUI est
+// intercepté. Le 02/09, le ping quotidien qui empêche la base de s'endormir
+// est parti en production sans cette exclusion et le portier l'a renvoyé sur
+// `/connexion` (HTTP 307, constaté en local) : la base n'était jamais touchée,
+// et la protection contre la mise en veille ne protégeait rien, en silence.
+describe('config.matcher', () => {
+  const filet = new RegExp(`^${config.matcher[0]}$`)
+
+  test('laisse le ping de veille hors du filet', () => {
+    expect(filet.test('/api/veille')).toBe(false)
+  })
+
+  test('garde les pages de l’application dans le filet', () => {
+    expect(filet.test('/accueil')).toBe(true)
+    expect(filet.test('/livret')).toBe(true)
+  })
+
+  test('garde les autres routes d’API dans le filet', () => {
+    expect(filet.test('/api/ia-chat')).toBe(true)
+    expect(filet.test('/api/assistant')).toBe(true)
   })
 })

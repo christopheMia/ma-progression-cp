@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfEnPoche, l'étincelle et le stylo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Caveat:wght@600;700&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --studio:   #14121a;
+    --studio-2: #1c1926;
+    --rule:     #2e2a3c;
+    --ink:      #f4f2f8;
+    --ink-soft: #b9b2cc;
+    --ink-faint:#8a83a0;
+
+    --violet-600:  #7c3aed;
+    --purple-600:  #9333ea;
+    --violet-500:  #8b5cf6;
+    --violet-300:  #c4b5fd;
+    --purple-200:  #e9d5ff;
+    --fuchsia-200: #f5d0fe;
+
+    --ok:   #6ee7a8;
+    --warn: #fbbf6e;
+    --bad:  #fb8ea0;
+  }
+
+  body {
+    margin: 0; background: var(--studio); color: var(--ink);
+    font-family: 'Quicksand', system-ui, sans-serif;
+    font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 clamp(1.1rem, 4vw, 2.5rem); }
+
+  .hero { padding: clamp(3.5rem, 10vh, 7rem) 0 clamp(2rem, 5vh, 3.5rem); }
+  .hero h1 {
+    font-family: 'Playfair Display', Georgia, serif; font-weight: 600;
+    font-size: clamp(2.3rem, 6vw, 4rem); line-height: 1.04;
+    letter-spacing: -0.025em; margin: 0 0 1rem; text-wrap: balance;
+  }
+  .hero p { max-width: 64ch; margin: 0; color: var(--ink-soft); font-size: clamp(1rem, 2vw, 1.16rem); }
+
+  section { padding: clamp(2.8rem, 7vh, 5rem) 0; border-top: 1px solid var(--rule); }
+  section > .wrap > h2 {
+    font-family: 'Playfair Display', Georgia, serif; font-weight: 600;
+    font-size: clamp(1.7rem, 4vw, 2.5rem); letter-spacing: -0.02em;
+    line-height: 1.1; margin: 0 0 .7rem; text-wrap: balance;
+  }
+  section > .wrap > .lede { max-width: 66ch; margin: 0 0 2.6rem; color: var(--ink-soft); }
+
+  /* ---------- Banc d'essai : l'appli reelle ---------- */
+  .banc {
+    border-radius: 18px; overflow: hidden;
+    background: linear-gradient(to bottom right, var(--violet-300), var(--purple-200) 55%, var(--fuchsia-200));
+    box-shadow: 0 22px 44px -20px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3);
+  }
+  .barre {
+    background: linear-gradient(to right, var(--violet-600), var(--purple-600));
+    color: #fff; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1.15rem;
+  }
+  .corps { padding: 1.1rem 1.15rem 1.35rem; display: flex; gap: .55rem; flex-wrap: wrap; }
+  .corps i { display: block; height: 9px; border-radius: 999px; background: rgba(255,255,255,.72); }
+  .corps i:nth-child(1){width:46%} .corps i:nth-child(2){width:26%} .corps i:nth-child(3){width:62%}
+  .nav-faux { display: flex; gap: 1rem; font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.9); }
+  @media (max-width: 620px){ .nav-faux { display: none; } }
+
+  .marque { display: flex; align-items: center; gap: .6rem; min-width: 0; }
+  .sym { flex: none; display: grid; place-items: center; }
+  .sym svg { display: block; }
+
+  /* Great Vibes, calibre pour une barre de 56 px.
+     Sa hauteur d'x est minuscule : a taille egale elle parait deux fois plus
+     petite qu'une sans-serif. Elle a donc besoin de plus de pixels, pas moins. */
+  .gv { font-family: 'Great Vibes', cursive; line-height: 1; white-space: nowrap; }
+  .gv-petit  { font-size: 1.85rem; }            /* le reglage de Gemini */
+  .gv-juste  { font-size: 2.45rem; letter-spacing: .012em; padding-bottom: .12em; }
+  .gv-geant  { font-size: clamp(3.2rem, 9vw, 5.2rem); letter-spacing: .015em; }
+
+  /* Caveat, calibree pour la meme barre. Sa hauteur d'x est bien plus grande
+     que celle de Great Vibes : a presence egale il lui faut moins de pixels. */
+  .cv { font-family: 'Caveat', cursive; font-weight: 700; line-height: 1; white-space: nowrap; }
+  .cv-juste { font-size: 1.95rem; letter-spacing: .005em; }
+  .cv-geant { font-size: clamp(2.9rem, 8vw, 4.6rem); }
+
+  /* ---------- Grilles ---------- */
+  .duo { display: grid; gap: 1.5rem; grid-template-columns: 1fr; }
+  @media (min-width: 860px){ .duo { grid-template-columns: 1fr 1fr; } }
+
+  .piste { margin-bottom: 3rem; }
+  .piste:last-child { margin-bottom: 0; }
+  .piste-tete { display: flex; align-items: baseline; gap: .8rem; margin-bottom: .5rem; flex-wrap: wrap; }
+  .piste-tete h3 {
+    font-family: 'Playfair Display', serif; font-weight: 600;
+    font-size: 1.3rem; letter-spacing: -.01em; margin: 0;
+  }
+  .badge {
+    font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    border-radius: 999px; padding: .2rem .58rem; border: 1px solid currentColor;
+  }
+  .badge.reco { color: var(--ok); }
+  .piste > p { max-width: 68ch; color: var(--ink-soft); margin: 0 0 1.2rem; }
+
+  /* Le symbole en grand, sur son fond violet */
+  .vitrine {
+    display: flex; align-items: center; gap: 1.6rem; flex-wrap: wrap;
+    margin-bottom: 1.1rem;
+  }
+  .tuile {
+    width: 92px; height: 92px; border-radius: 24px; flex: none;
+    background: linear-gradient(135deg, var(--violet-600), var(--purple-600));
+    display: grid; place-items: center;
+    box-shadow: 0 12px 26px -10px rgba(0,0,0,.62), 0 2px 4px rgba(0,0,0,.35);
+  }
+  .tuile.clair { background: #fff; color: var(--violet-600); box-shadow: 0 12px 26px -12px rgba(0,0,0,.6), 0 2px 4px rgba(0,0,0,.3); }
+  .echelle { display: flex; align-items: flex-end; gap: 1.1rem; }
+  .u { display: grid; place-items: center; flex: none; background: linear-gradient(135deg, var(--violet-600), var(--purple-600)); }
+  .u.s16 { width: 16px; height: 16px; border-radius: 4px; }
+  .u.s24 { width: 24px; height: 24px; border-radius: 6px; }
+  .u.s32 { width: 32px; height: 32px; border-radius: 8px; }
+  .u.s48 { width: 48px; height: 48px; border-radius: 12px; }
+  .echelle-lab { font-size: .68rem; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase; margin-top: .5rem; }
+
+  .note {
+    border-left: 1px solid var(--violet-500); padding-left: 1.1rem;
+    margin: 2rem 0 0; color: var(--ink-soft); max-width: 68ch;
+  }
+  .note.attention { border-color: var(--warn); }
+  .note strong { color: var(--ink); }
+
+  .legende { font-size: .8rem; color: var(--ink-faint); margin: .65rem 0 0; }
+  .legende b { color: var(--ink); font-weight: 700; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em;
+    background: var(--studio-2); border: 1px solid var(--rule); border-radius: 5px; padding: .08em .38em;
+  }
+
+  .tablo { overflow-x: auto; border: 1px solid var(--rule); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: .93rem; }
+  th, td { text-align: left; padding: .8rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-weight: 700; font-size: .78rem; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-faint); }
+  tr:last-child td { border-bottom: 0; }
+  .oui { color: var(--ok); font-weight: 700; }
+  .non { color: var(--bad); font-weight: 700; }
+  .bof { color: var(--warn); font-weight: 700; }
+
+  /* Page de connexion, en reduction */
+  .login {
+    border-radius: 18px; overflow: hidden; position: relative;
+    background: linear-gradient(to bottom right, var(--violet-300), var(--purple-200) 55%, var(--fuchsia-200));
+    padding: 3rem 1.5rem 3.4rem; text-align: center;
+    box-shadow: 0 22px 44px -20px rgba(0,0,0,.55);
+  }
+  .login .tuile { margin: 0 auto 1.4rem; }
+  .login h4 { margin: 0 0 .5rem; color: #1e1b2e; }
+  .login .baseline { color: #4c1d95; font-size: .95rem; font-weight: 600; margin: 0; }
+  .login .champ {
+    max-width: 300px; margin: 1.8rem auto 0; height: 42px; border-radius: 11px;
+    background: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.9);
+  }
+  .login .champ + .champ { margin-top: .6rem; }
+  .login .bouton {
+    max-width: 300px; margin: .9rem auto 0; height: 42px; border-radius: 11px;
+    background: linear-gradient(to right, var(--violet-600), var(--purple-600));
+    color:#fff; display:grid; place-items:center; font-weight:700; font-size:.95rem;
+  }
+
+  footer { border-top: 1px solid var(--rule); padding: 2.2rem 0 4rem; color: var(--ink-faint); font-size: .88rem; }
+</style>
+</head>
+<body>
+
+<div class="wrap hero">
+  <h1>L'étincelle et le stylo</h1>
+  <p>Ta direction, exécutée. Great Vibes pour le nom, et un symbole bâti sur l'étincelle de ton assistant, celle que <code>AssistantFlottant.tsx</code> utilise déjà, à laquelle on ajoute un stylo. Trois façons de les marier, et le réglage de taille sans lequel Great Vibes ne tient pas dans une barre de 56 pixels.</p>
+</div>
+
+<!-- ============ LE REGLAGE DE GREAT VIBES ============ -->
+<section>
+<div class="wrap">
+  <h2>D'abord, faire tenir Great Vibes</h2>
+  <p class="lede">Great Vibes a une hauteur de lettres minuscule. À taille de police égale, elle paraît deux fois plus petite qu'une sans-serif. Le réglage de Gemini (1,85 rem) la rend fragile ; il lui faut <strong>plus</strong> de pixels, pas moins. Regarde les deux barres, c'est la même police au même endroit.</p>
+
+  <div class="duo">
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <span class="gv gv-petit">ProfEnPoche</span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><b>Le réglage de Gemini</b> · 1,85 rem · les boucles se referment, les liaisons disparaissent</p>
+    </div>
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <span class="gv gv-juste">ProfEnPoche</span>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><b>Réglage corrigé</b> · 2,45 rem, interlettrage ouvert de 0,012 em · même barre, même hauteur</p>
+    </div>
+  </div>
+
+  <div class="note attention">
+    <strong>Le piège à ne pas reproduire :</strong> le code de Gemini contient une règle qui fait tomber le nom à 0,9 rem sur les petits écrans. Sur le téléphone de Cécile, Great Vibes à cette taille devient un trait illisible. Sur mobile, le nom ne doit jamais descendre sous 2 rem, quitte à masquer autre chose.
+  </div>
+</div>
+</section>
+
+<!-- ============ LE DUEL DES DEUX TYPOS ============ -->
+<section>
+<div class="wrap">
+  <h2>Great Vibes ou Caveat</h2>
+  <p class="lede">Tu hésitais en les comparant dans deux contextes différents, à des tailles mal réglées. Les voilà dans des conditions strictement identiques : même symbole, même barre, même dégradé, chacune à la taille qui lui convient vraiment. Ce n'est plus la même question.</p>
+
+  <div class="duo">
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque">
+            <span class="sym">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+                <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/>
+                <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="gv gv-juste">ProfEnPoche</span>
+          </div>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><b>Great Vibes</b> · calligraphie anglaise à plume · 2,45 rem</p>
+    </div>
+
+    <div>
+      <div class="banc">
+        <div class="barre">
+          <div class="marque">
+            <span class="sym">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+                <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/>
+                <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+              </svg>
+            </span>
+            <span class="cv cv-juste">ProfEnPoche</span>
+          </div>
+          <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+        </div>
+        <div class="corps"><i></i><i></i><i></i></div>
+      </div>
+      <p class="legende"><b>Caveat</b> · écriture au feutre · 1,95 rem</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Ce que tu as senti est juste, et ça se nomme.</strong> Great Vibes est une calligraphie anglaise tracée à la plume : elle évoque le faire-part, le diplôme, la papeterie soignée. Caveat imite l'écriture au feutre : elle évoque le cahier, le tableau, la main qui annote. L'une dit « c'est une belle chose », l'autre dit « c'est fait à la main, par quelqu'un comme toi ».
+  </div>
+
+  <div class="note">
+    <strong>Sur le « trop féminin » :</strong> en France, le professorat des écoles est féminin à plus de huit sur dix, et davantage encore en CP. Ta première utilisatrice est Cécile, ta landing parle déjà aux maîtresses. Une marque perçue comme féminine n'est pas un accident ici, c'est du ciblage. Le vrai risque n'est pas là : il est de te fermer la porte des autres niveaux et des directions d'école plus tard, puisque le nouveau nom est justement fait pour sortir du seul CP.
+  </div>
+
+  <div class="note attention">
+    <strong>Le point qui devrait trancher pour toi :</strong> Great Vibes n'existe qu'en un seul poids, très fin. Elle sera belle en grand sur la page de connexion, et fragile partout ailleurs : dans un bouton, dans un mail, dans un document exporté, sur une facture. Caveat existe en plusieurs graisses et reste lisible du grand titre au petit format. Ce n'est pas une question de goût, c'est une question de ce que la marque devra encaisser.
+  </div>
+
+  <h3 style="font-family:'Playfair Display',serif;font-weight:600;font-size:1.3rem;margin:3rem 0 1.2rem">Et en grand, là où Great Vibes brille</h3>
+  <div class="duo">
+    <div>
+      <div class="login" style="padding:2.4rem 1.2rem 2.6rem">
+        <h4 class="gv gv-geant" style="color:#3b1a78;margin:0 0 .4rem">ProfEnPoche</h4>
+        <p class="baseline">Ton assistant qui prépare l'année avec toi</p>
+      </div>
+      <p class="legende"><b>Great Vibes</b> · c'est ici son meilleur terrain</p>
+    </div>
+    <div>
+      <div class="login" style="padding:2.4rem 1.2rem 2.6rem">
+        <h4 class="cv cv-geant" style="color:#3b1a78;margin:0 0 .4rem">ProfEnPoche</h4>
+        <p class="baseline">Ton assistant qui prépare l'année avec toi</p>
+      </div>
+      <p class="legende"><b>Caveat</b> · moins spectaculaire, mais tient partout</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ LES TROIS MARIAGES ============ -->
+<section>
+<div class="wrap">
+  <h2>Trois façons de marier l'étincelle et le stylo</h2>
+  <p class="lede">Toutes partent du tracé exact de <code>Sparkles</code>, l'icône que ton assistant utilise déjà. Aucune n'invente de couleur : c'est ton dégradé violet, celui de <code>globals.css</code>.</p>
+
+  <!-- PISTE 1 -->
+  <div class="piste">
+    <div class="piste-tete">
+      <h3>1 · Le stylo qui fait naître l'étincelle</h3>
+      <span class="badge reco">Ma recommandation</span>
+    </div>
+    <p>Le stylo écrit, et l'étincelle jaillit de sa pointe. C'est la lecture la plus directe de ce que fait ton produit : <strong>une IA qui rédige à la place de la maîtresse</strong>. Le stylo est massif, donc il survit à 16 pixels ; l'étincelle est petite et signe l'IA sans crier.</p>
+    <div class="vitrine">
+      <span class="tuile">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+          <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/>
+          <path d="M18.4 2.2c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff" transform="translate(-1.2 -0.4)"/>
+        </svg>
+      </span>
+      <span class="tuile clair">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="currentColor"/>
+          <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="currentColor" fill-opacity=".55"/>
+          <path d="M18.4 2.2c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="currentColor" transform="translate(-1.2 -0.4)"/>
+        </svg>
+      </span>
+      <span>
+        <span class="echelle">
+          <span class="u s16"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/><path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/></svg></span>
+          <span class="u s24"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/><path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/></svg></span>
+          <span class="u s32"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/><path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/><path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/></svg></span>
+          <span class="u s48"><svg width="33" height="33" viewBox="0 0 24 24" fill="none"><path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/><path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/><path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/></svg></span>
+        </span>
+        <div class="echelle-lab">16 · 24 · 32 · 48 px</div>
+      </span>
+    </div>
+    <div class="banc">
+      <div class="barre">
+        <div class="marque">
+          <span class="sym">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+              <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/>
+              <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="gv gv-juste">ProfEnPoche</span>
+        </div>
+        <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <!-- PISTE 2 -->
+  <div class="piste">
+    <div class="piste-tete">
+      <h3>2 · L'étincelle entière, le stylo en travers</h3>
+      <span class="badge" style="color:var(--ink-faint)">La plus fidèle à l'assistant</span>
+    </div>
+    <p>Ici on garde <strong>le tracé lucide au complet</strong>, celui que Cécile voit déjà sur le bouton flottant, et le stylo passe devant. La continuité avec l'appli est totale : c'est le même objet, il a juste pris un stylo. En revanche les deux formes se disputent la place, et ça se sent en petit.</p>
+    <div class="vitrine">
+      <span class="tuile">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="#fff" fill-opacity=".92"/>
+          <path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="#fff" stroke="#7c3aed" stroke-width="1.05" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="tuile clair">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="currentColor" fill-opacity=".28"/>
+          <path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="currentColor" stroke="#fff" stroke-width="1.05" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span>
+        <span class="echelle">
+          <span class="u s16"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="#fff"/><path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="#fff" stroke="#7c3aed" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <span class="u s24"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="#fff"/><path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="#fff" stroke="#7c3aed" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+          <span class="u s32"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="#fff" fill-opacity=".92"/><path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="#fff" stroke="#7c3aed" stroke-width="1.05" stroke-linejoin="round"/></svg></span>
+          <span class="u s48"><svg width="33" height="33" viewBox="0 0 24 24" fill="none"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="#fff" fill-opacity=".92"/><path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="#fff" stroke="#7c3aed" stroke-width="1.05" stroke-linejoin="round"/></svg></span>
+        </span>
+        <div class="echelle-lab">16 · 24 · 32 · 48 px</div>
+      </span>
+    </div>
+    <div class="banc">
+      <div class="barre">
+        <div class="marque">
+          <span class="sym">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" fill="#fff" fill-opacity=".92"/>
+              <path d="M2.4 21.6l1.15-3.45 10.4-10.4 2.3 2.3-10.4 10.4-3.45 1.15Z" fill="#fff" stroke="#7c3aed" stroke-width="1.05" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="gv gv-juste">ProfEnPoche</span>
+        </div>
+        <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <!-- PISTE 3 -->
+  <div class="piste">
+    <div class="piste-tete">
+      <h3>3 · Le stylo dans la poche, et l'étincelle au-dessus</h3>
+      <span class="badge" style="color:var(--ink-faint)">Celle qui dit le nom en entier</span>
+    </div>
+    <p>La seule des trois qui raconte <strong>les trois mots du nom</strong> : la poche, le stylo du prof qui y est glissé, et l'étincelle de l'IA qui en sort. C'est la plus riche, et c'est aussi celle qui demande le plus de place. À 16 pixels elle commence à se refermer, regarde par toi-même.</p>
+    <div class="vitrine">
+      <span class="tuile">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M4.2 12.5h15.6" stroke="#fff" stroke-width="1.3" opacity=".6"/>
+          <rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="#fff"/>
+          <path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="#fff"/>
+        </svg>
+      </span>
+      <span class="tuile clair">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M4.2 12.5h15.6" stroke="currentColor" stroke-width="1.3" opacity=".6"/>
+          <rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="currentColor"/>
+          <path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="currentColor"/>
+        </svg>
+      </span>
+      <span>
+        <span class="echelle">
+          <span class="u s16"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="#fff"/><path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="#fff"/></svg></span>
+          <span class="u s24"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="#fff"/><path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="#fff"/></svg></span>
+          <span class="u s32"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="#fff" stroke-width="1.9" stroke-linejoin="round"/><path d="M4.2 12.5h15.6" stroke="#fff" stroke-width="1.3" opacity=".6"/><rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="#fff"/><path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="#fff"/></svg></span>
+          <span class="u s48"><svg width="33" height="33" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M4.2 12.5h15.6" stroke="#fff" stroke-width="1.3" opacity=".6"/><rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="#fff"/><path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="#fff"/></svg></span>
+        </span>
+        <div class="echelle-lab">16 · 24 · 32 · 48 px</div>
+      </span>
+    </div>
+    <div class="banc">
+      <div class="barre">
+        <div class="marque">
+          <span class="sym">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4.2 9.2h15.6v8.4a3.4 3.4 0 0 1-3.4 3.4H7.6a3.4 3.4 0 0 1-3.4-3.4V9.2Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M4.2 12.5h15.6" stroke="#fff" stroke-width="1.3" opacity=".6"/>
+              <rect x="13.5" y="4.6" width="3.1" height="7.4" rx="1.55" fill="#fff"/>
+              <path d="M8.6 1.6c0 2.15 1.2 3.35 3.35 3.35-2.15 0-3.35 1.2-3.35 3.35 0-2.15-1.2-3.35-3.35-3.35 2.15 0 3.35-1.2 3.35-3.35Z" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="gv gv-juste">ProfEnPoche</span>
+        </div>
+        <nav class="nav-faux"><span>Programme</span><span>Semaine</span><span>Élèves</span></nav>
+      </div>
+      <div class="corps"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============ COMPARATIF ============ -->
+<section>
+<div class="wrap">
+  <h2>Ce qui les départage</h2>
+  <p class="lede">Le seul critère qui tranche vraiment est celui du bas : ce qui reste visible quand le symbole devient un favicon de 16 pixels.</p>
+  <div class="tablo">
+  <table>
+    <thead><tr>
+      <th>Critère</th>
+      <th>1 · Stylo et étincelle</th>
+      <th>2 · Étincelle entière</th>
+      <th>3 · Poche complète</th>
+    </tr></thead>
+    <tbody>
+      <tr><td><strong>Dit l'IA</strong></td><td class="oui">Oui</td><td class="oui">Oui, franchement</td><td class="oui">Oui</td></tr>
+      <tr><td><strong>Dit le métier</strong><br><span style="color:var(--ink-faint);font-size:.86em">l'écriture, la prépa</span></td><td class="oui">Oui</td><td class="bof">Le stylo est noyé</td><td class="oui">Oui</td></tr>
+      <tr><td><strong>Dit le nom</strong><br><span style="color:var(--ink-faint);font-size:.86em">la poche</span></td><td class="non">Non</td><td class="non">Non</td><td class="oui">Oui</td></tr>
+      <tr><td><strong>Continuité avec l'assistant</strong></td><td class="bof">Étincelle simplifiée</td><td class="oui">Tracé identique</td><td class="bof">Étincelle simplifiée</td></tr>
+      <tr><td><strong>Tient à 16 pixels</strong></td><td class="oui">Oui, nettement</td><td class="bof">Ça se bouscule</td><td class="bof">Ça se referme</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <strong>Si je devais trancher :</strong> la piste 1. Elle est la seule dont la silhouette reste lisible partout, et le stylo qui fait jaillir l'étincelle raconte ton produit en une image. La piste 2 est plus fidèle à ce que Cécile connaît déjà, mais deux formes complexes qui se superposent, c'est exactement ce qui casse en petit. La 3 est la plus complète et ferait un très beau grand format, sur la page de connexion par exemple.
+  </div>
+  <div class="note">
+    <strong>Rien n'interdit d'en garder deux :</strong> le symbole de la barre n'est pas forcément celui de la page de connexion. Beaucoup de marques ont une version simple pour les petits formats et une version riche pour les grands.
+  </div>
+</div>
+</section>
+
+<!-- ============ EN SITUATION ============ -->
+<section>
+<div class="wrap">
+  <h2>Le grand format</h2>
+  <p class="lede">C'est là que Great Vibes donne tout ce qu'elle a, et c'est le seul écran où le sous-titre a sa place. Une fois, à la connexion, pas sur tous les écrans.</p>
+
+  <div class="login">
+    <span class="tuile">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3.1 20.9l1.35-4.05 8.9-8.9 2.7 2.7-8.9 8.9-4.05 1.35Z" fill="#fff"/>
+        <path d="M14.25 6.85l1.5-1.5a1.91 1.91 0 0 1 2.7 2.7l-1.5 1.5-2.7-2.7Z" fill="#fff" fill-opacity=".75"/>
+        <path d="M17.2 1.8c0 2.6 1.45 4.05 4.05 4.05-2.6 0-4.05 1.45-4.05 4.05 0-2.6-1.45-4.05-4.05-4.05 2.6 0 4.05-1.45 4.05-4.05Z" fill="#fff"/>
+      </svg>
+    </span>
+    <h4 class="gv gv-geant" style="color:#3b1a78">ProfEnPoche</h4>
+    <p class="baseline">Ton assistant qui prépare l'année avec toi</p>
+    <div class="champ"></div>
+    <div class="champ"></div>
+    <div class="bouton">Se connecter</div>
+  </div>
+  <p class="legende">Sous-titre en tutoiement, comme le reste de l'appli. La proposition de Gemini vouvoyait.</p>
+</div>
+</section>
+
+<footer>
+<div class="wrap">
+  ProfEnPoche · direction retenue le 9 août 2026 · symbole bâti sur <code>lucide-react</code> <code>Sparkles</code>, l'icône de <code>AssistantFlottant.tsx</code>
+</div>
+</footer>
+
+</body>
+</html>
