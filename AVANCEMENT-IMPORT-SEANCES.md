@@ -34,7 +34,7 @@ confirmation.
 | `12aa015` | La puce n'est plus affichée en double quand le domaine est abrégé d'un seul côté (défaut 2, enfin fermé) |
 | `15692e3` | Le bouton « Classer de A à Z » |
 | `6e87700` | Corriger un prénom n'efface plus le suivi de l'élève |
-| le suivant | L'écran affiche LC et PDE |
+| `75f8b40` | L'écran affiche LC et PDE |
 
 **Rien n'est déployé, et c'est volontaire :** le quota Vercel de Christophe est
 à 75 % et ne se remet à zéro qu'en octobre. On groupe, et on déploiera une
