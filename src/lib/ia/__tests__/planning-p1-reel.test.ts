@@ -101,6 +101,24 @@ function reponseDomaineAPart(puces: typeof SEMAINE_1, numero: number) {
   }
 }
 
+/**
+ * Le texte du document, tel qu'il s'affiche après le choix de Cécile.
+ *
+ * Elle a tranché le 9 septembre 2026 : « LC c'est bien lecture compréhension, tu
+ * peux laisser LC tout le temps », et « PDE, c'est production d'écrits ». Son
+ * document écrit le domaine en entier une semaine et en abrégé la suivante ;
+ * l'écran, lui, affiche désormais toujours l'abréviation, pour qu'elle retrouve
+ * ses repères d'une semaine à l'autre.
+ *
+ * Ce test compare donc l'écran au document PASSÉ PAR CE FILTRE, et non au
+ * document brut : c'est la seule différence voulue entre les deux.
+ */
+function commeALEcran(texte: string): string {
+  return texte
+    .replace(/^Lecture compr\u00e9hension\s*:/i, 'LC :')
+    .replace(/^Production d[\u2019']\u00e9crits\s*:/i, 'PDE :')
+}
+
 /** Ce que l'enseignante lit dans son cahier journal, jour après jour. */
 function ecran(items: string[]): string[] {
   return Array.from({ length: NB_JOURS }, (_, i) => itemsDuJour(items, i, NB_JOURS)).flat()
@@ -113,8 +131,8 @@ describe('semaines 1 et 2 du planning de période réel', () => {
 
     expect(s1.seances).toHaveLength(SEMAINE_1.length)
     expect(s2.seances).toHaveLength(SEMAINE_2.length)
-    expect(ecran(s1.items)).toEqual(SEMAINE_1.map(p => p.texte))
-    expect(ecran(s2.items)).toEqual(SEMAINE_2.map(p => p.texte))
+    expect(ecran(s1.items)).toEqual(SEMAINE_1.map(p => commeALEcran(p.texte)))
+    expect(ecran(s2.items)).toEqual(SEMAINE_2.map(p => commeALEcran(p.texte)))
   })
 
   it('rend le même écran quand le modèle range le domaine dans son champ', () => {
@@ -123,8 +141,8 @@ describe('semaines 1 et 2 du planning de période réel', () => {
 
     expect(s1.seances).toHaveLength(SEMAINE_1.length)
     expect(s2.seances).toHaveLength(SEMAINE_2.length)
-    expect(ecran(s1.items)).toEqual(SEMAINE_1.map(p => p.texte))
-    expect(ecran(s2.items)).toEqual(SEMAINE_2.map(p => p.texte))
+    expect(ecran(s1.items)).toEqual(SEMAINE_1.map(p => commeALEcran(p.texte)))
+    expect(ecran(s2.items)).toEqual(SEMAINE_2.map(p => commeALEcran(p.texte)))
   })
 
   // LE CAS DE CHRISTOPHE : deux lignes que rien ne distinguerait sans domaine.
@@ -135,7 +153,7 @@ describe('semaines 1 et 2 du planning de période réel', () => {
     ]
     const [semaine] = normalizeProgression([reponseDomaineAPart(rimbaud, 1)])
     expect(semaine.seances).toHaveLength(2)
-    expect(ecran(semaine.items)).toEqual(rimbaud.map(p => p.texte))
+    expect(ecran(semaine.items)).toEqual(rimbaud.map(p => commeALEcran(p.texte)))
   })
 
   it('garde les 26 puces stables au deuxième et au troisième passage', () => {

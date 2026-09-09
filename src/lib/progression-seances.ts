@@ -236,6 +236,54 @@ export function seancesDepuisItems(items: unknown[] | null | undefined): SeanceP
 }
 
 /**
+ * Les abréviations que Cécile emploie, et la forme qu'elle veut voir.
+ *
+ * SA DÉCISION, le 9 septembre 2026, mot pour mot : « LC c'est bien lecture
+ * compréhension, tu peux laisser LC tout le temps » et « PDE, c'est production
+ * d'écrits, on peut écrire PDE. Je crois qu'il n'y a pas d'autres abréviations
+ * dans le manuel ».
+ *
+ * POURQUOI UNE LISTE EXPLICITE ET NON UNE RÈGLE. On pourrait fabriquer une
+ * abréviation à partir des initiales de n'importe quel domaine, mais
+ * « Vocabulaire » deviendrait « V », que personne n'écrit ni ne lit. On
+ * n'abrège donc que ce qu'elle a nommé. Un domaine inconnu reste écrit tel
+ * qu'elle l'a écrit.
+ *
+ * C'est différent de `memeDomaineAbrege`, qui sert à RECONNAÎTRE deux écritures
+ * de la même puce. Ici on choisit ce qui s'AFFICHE.
+ */
+const ABREVIATIONS: ReadonlyArray<readonly [string, string]> = [
+  ['lecture comprehension', 'LC'],
+  ['production d ecrits', 'PDE'],
+]
+
+/**
+ * Le domaine dans la forme que Cécile veut lire. Rendu tel quel s'il ne fait
+ * pas partie de ceux qu'elle a nommés.
+ */
+function domaineAbrege(domaine: string): string {
+  const cle = normaliserTexte(domaine).replace(/['\u2019]/g, ' ').replace(/\s+/g, ' ').trim()
+  for (const [entier, court] of ABREVIATIONS) {
+    if (cle === entier || cle === court.toLowerCase()) return court
+  }
+  return domaine
+}
+
+/**
+ * Le même texte, avec son domaine de tête réécrit dans la forme courte.
+ * « Lecture compréhension : Le graphème ou » devient « Le graphème ou », que
+ * `avecDomaine` repréfixera ensuite avec l'abréviation. Un texte sans domaine
+ * en tête, ou avec un domaine qu'elle n'a pas nommé, ressort intact.
+ */
+function teteAbregee(libelle: string): string {
+  const tete = domaineDe(libelle)
+  if (!tete) return libelle
+  const court = domaineAbrege(tete)
+  if (court === tete) return libelle
+  return `${court} : ${libelle.slice(libelle.indexOf(':') + 1).trim()}`
+}
+
+/**
  * Fabrique UNE séance à partir du texte d'une puce, plus ce que le modèle a
  * éventuellement rendu à côté du texte.
  *
@@ -292,8 +340,12 @@ export function seanceDepuisTexte(
   // Le jour du modèle ne sert QUE si le texte ne dit rien de la journée : ni
   // rang lisible, ni mention ambiguë qui interdirait de trancher.
   const jour = lu.jour === null && !lu.ambigu && jourValide(jourModele) ? jourModele : lu.jour
-  const domaine = domaineModele.trim()
-  const libelle = avecDomaine(lu.libelle, domaine)
+  const domaine = domaineAbrege(domaineModele.trim())
+  // Le domaine peut aussi être écrit devant le texte de la puce, dans sa forme
+  // longue. On l'abrège là aussi, sinon la même séance s'afficherait tantôt
+  // « LC : ... », tantôt « Lecture compréhension : ... », d'une semaine à l'autre.
+  const nu = teteAbregee(lu.libelle)
+  const libelle = avecDomaine(nu, domaine)
   return {
     jour,
     domaine: domaine || domaineDe(libelle),

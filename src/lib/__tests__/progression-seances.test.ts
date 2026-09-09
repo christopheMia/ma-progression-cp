@@ -782,3 +782,72 @@ describe('intervalle dans items et jour rendu par le modèle', () => {
     expect(itemsDepuisSeances(completerSeances(seances, items))).toEqual(items)
   })
 })
+
+// LA DÉCISION DE CÉCILE, le 9 septembre 2026, en réponse à « LC et Lecture
+// compréhension, c'est la même chose ? » :
+//
+//   « LC c'est bien lecture compréhension, tu peux laisser LC tout le temps. »
+//   « PDE, c'est production d'écrits, on peut écrire PDE. Je crois qu'il n'y a
+//     pas d'autres abréviations dans le manuel. »
+//
+// Son document écrit le domaine en entier une semaine et en abrégé la suivante.
+// Le modèle recopie ce qu'il lit, donc les deux formes arrivent. C'est
+// l'abréviation qui doit s'afficher, toujours la même, pour qu'elle retrouve ses
+// repères d'une semaine à l'autre.
+describe('les domaines s’affichent dans la forme choisie par Cécile', () => {
+  it('écrit LC quand le modèle rend le domaine en entier', () => {
+    const seance = seanceDepuisTexte('Le graphème ou', null, 'Lecture compréhension')
+    expect(seance?.domaine).toBe('LC')
+    expect(seance?.libelle).toBe('LC : Le graphème ou')
+  })
+
+  it('écrit PDE pour production d’écrits', () => {
+    const seance = seanceDepuisTexte('La carte postale', null, "Production d'écrits")
+    expect(seance?.domaine).toBe('PDE')
+    expect(seance?.libelle).toBe('PDE : La carte postale')
+  })
+
+  it('abrège aussi quand le domaine est écrit devant le texte de la puce', () => {
+    const seance = seanceDepuisTexte('Lecture compréhension : Le graphème ou')
+    expect(seance?.domaine).toBe('LC')
+    expect(seance?.libelle).toBe('LC : Le graphème ou')
+  })
+
+  it('ne se laisse pas arrêter par la casse ni par les accents', () => {
+    expect(seanceDepuisTexte('Décodage', null, 'LECTURE COMPREHENSION')?.domaine).toBe('LC')
+  })
+
+  it('laisse l’abréviation telle quelle quand elle est déjà écrite', () => {
+    const seance = seanceDepuisTexte('Décodage', null, 'LC')
+    expect(seance?.domaine).toBe('LC')
+    expect(seance?.libelle).toBe('LC : Décodage')
+  })
+
+  // Cécile dit qu'il n'y a pas d'autres abréviations dans son manuel. On
+  // n'invente donc rien : un domaine inconnu s'écrit tel qu'elle l'a écrit.
+  it('ne fabrique pas d’abréviation pour un domaine qu’elle n’a pas nommé', () => {
+    const seance = seanceDepuisTexte('Les contraires', null, 'Vocabulaire')
+    expect(seance?.domaine).toBe('Vocabulaire')
+    expect(seance?.libelle).toBe('Vocabulaire : Les contraires')
+  })
+
+  // Le garde-fou de Christophe (21/08) tient toujours : ses deux séances sur le
+  // même texte de Rimbaud restent distinctes.
+  it('ne confond pas langage oral et production d’écrits après abréviation', () => {
+    expect(completerSeances(
+      [{ jour: 1, domaine: 'Langage oral', libelle: 'Voyelles de Rimbaud' }],
+      ["Production d'écrits : Voyelles de Rimbaud"],
+    )).toHaveLength(2)
+  })
+
+  // Et la correction du 6 septembre reste vraie : une même puce écrite dans les
+  // deux formes ne fait toujours qu'une ligne.
+  it('reconnaît toujours la même puce écrite dans les deux formes', () => {
+    const sorties = completerSeances(
+      [{ jour: 1, domaine: 'LC', libelle: 'LC : Le graphème ou' }],
+      ['Lecture compréhension : Le graphème ou'],
+    )
+    expect(sorties).toHaveLength(1)
+    expect(sorties[0].libelle).toBe('LC : Le graphème ou')
+  })
+})
