@@ -1,5 +1,65 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## Point de reprise du 09/09/2026, Cécile a répondu, LIRE EN PREMIER
+
+**Les trois questions qui bloquaient ce chantier depuis le 3 septembre sont
+tranchées.** Cécile a répondu le 9 septembre, après que le premier envoi soit
+parti à une mauvaise adresse et se soit perdu trois jours.
+
+| Sa question | Sa réponse | État |
+|---|---|---|
+| LC = Lecture compréhension ? | « tu peux laisser **LC** tout le temps », et **PDE** pour production d'écrits. Pas d'autres abréviations dans son manuel | **FAIT**, l'écran affiche toujours l'abréviation |
+| Le domaine devant chaque séance ? | « **oui, sur chaque ligne** stp » | **RIEN À FAIRE**, c'est déjà le comportement, et ça confirme la décision de Christophe du 21/08 |
+| Une séance « Jour 5 » dans une semaine à 4 jours ? | Option **a** : la mettre de côté dans une liste « à placer », elle la pose elle-même | **À FAIRE**, c'est le champ `origine` et les tâches 4, 5, 6, 9 et 12 |
+
+### Sa demande spontanée, la plus précieuse, et elle est FAITE
+
+> « Il faudrait pouvoir classer la liste des élèves par ordre alphabétique sans
+> perdre les éléments déjà notés »
+
+C'est le seul point qu'elle a soulevé d'elle-même, donc le seul dont on sait
+qu'il la gêne vraiment. Ses 24 élèves suivaient l'ordre d'import.
+
+En le traitant, **un défaut bien plus grave est apparu à côté** : l'identité
+d'un élève était son PRÉNOM, et l'écran ne permettait pas de le corriger. Pour
+réparer une faute de frappe, il fallait supprimer l'enfant et le retaper, ce qui
+effaçait toutes ses observations, en silence. Corrigé : l'identité passe à
+l'identifiant, le prénom se corrige d'un clic, et retirer un élève demande
+confirmation.
+
+### Ce qui est commité et poussé, et PAS déployé
+
+| Commit | Ce qu'il apporte |
+|---|---|
+| `12aa015` | La puce n'est plus affichée en double quand le domaine est abrégé d'un seul côté (défaut 2, enfin fermé) |
+| `15692e3` | Le bouton « Classer de A à Z » |
+| `6e87700` | Corriger un prénom n'efface plus le suivi de l'élève |
+| le suivant | L'écran affiche LC et PDE |
+
+**Rien n'est déployé, et c'est volontaire :** le quota Vercel de Christophe est
+à 75 % et ne se remet à zéro qu'en octobre. On groupe, et on déploiera une
+seule fois, quand le lot sera complet.
+
+### OÙ LE CHANTIER S'ARRÊTE, et pourquoi
+
+La suite, c'est la liste « à placer ». Elle n'est pas une tâche isolée : elle
+se joue dans les tâches **4, 5, 6, 9 et 12**, et la tâche 4 est **une migration
+de la base**.
+
+**Cette migration ne doit pas partir avant une sauvegarde fraîche.** La
+dernière date du 3 septembre, et Cécile travaille dedans tous les jours d'école
+depuis. Christophe la refait dans une conversation dédiée : la base pèse
+désormais 592 Ko une fois encodée, ce qui ne passe plus dans une session
+entamée.
+
+Et la consigne du 3 septembre tient toujours : la migration de la tâche 4
+prévoyait un `update progression` **global**, qui toucherait les 154 semaines de
+Cécile d'un seul coup. **La couper en deux** : la colonne d'abord, ce qui ne
+touche à rien, puis le remplissage déclenché **classe par classe**, essayé sur
+la classe de test avant d'atteindre la sienne.
+
+---
+
 ## Point de reprise du 03/09/2026 — LIRE EN PREMIER, LE RESTE EST PÉRIMÉ
 
 **Tout ce qui suit ce bloc décrit un état dépassé.** Les neuf corrections
