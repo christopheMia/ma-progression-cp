@@ -1,5 +1,46 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## Point de reprise du 20/09/2026 : le correctif date/semaine est terminé et poussé
+
+Le bug signalé par Cécile est corrigé. Quand une observation est créée depuis
+une semaine mais que sa date appartient à une autre semaine scolaire,
+l'interface ne la range plus silencieusement au mauvais endroit. Elle affiche
+un choix clair : la ranger dans la semaine de la date, ou la conserver
+volontairement dans la semaine ouverte.
+
+Ce qui est terminé :
+
+| Fait | Preuve |
+|---|---|
+| Migration `030_page_semaine_date_debut.sql` écrite | Elle recrée `page_semaine` avec la même signature et ajoute seulement `date_debut` dans `semaines_classe` |
+| Régression SQL verrouillée | Le test compare la fonction 030 à la fonction 025 et n'accepte que cet ajout |
+| Cas de Cécile verrouillé | Deux tests couvrent le choix S3 et le maintien volontaire en S4 |
+| Suite complète | `npm test -- --runInBand` : **891 tests, 76 suites, tout vert** |
+| Contrôles de production | `npx tsc --noEmit` et `npm run build` réussis |
+| Branche distante | `origin/import-seances-un-creneau` reçoit le correctif et les migrations 029 et 030 |
+
+**Rien n'est appliqué à Supabase et rien n'est fusionné dans `main`.** La
+migration 030 doit être appliquée avant de pouvoir valider ce choix avec les
+données réelles. Le push peut déclencher un aperçu Vercel, mais cet aperçu ne
+recevra pas encore `date_debut` tant que la migration n'est pas appliquée.
+
+**Vercel vérifié en direct le 20 septembre dans le tableau de bord du compte :
+aucun blocage de quota n'est affiché.** Le compte est en formule Hobby. Sur les
+30 derniers jours : 20 builds terminés, 0 en erreur, 14 minutes de build plus
+1 minute d'attente, 1 h 20 de CPU de build classée « Included », et 0 seconde de
+minutes facturables. La production affichée date toujours du 9 septembre. Aucun
+déploiement n'a été lancé pour ce contrôle.
+
+Ordre de reprise :
+
+1. Faire une sauvegarde fraîche.
+2. Faire appliquer les migrations 029 et 030 par Claude.
+3. Essayer le cas S4 / 18 septembre / S3 sur la classe de test.
+4. Contrôler l'aperçu Vercel et le rendu sur ordinateur et téléphone.
+5. Demander le feu vert de Christophe avant toute fusion ou publication en production.
+
+La question séparée sur l'empreinte des documents reste ouverte avant la tâche 5.
+
 ## Point de reprise du 20/09/2026 : la tâche 4b est codée, la migration attend
 
 Chantier repris après **11 jours d'arrêt** (dernier commit réel : le 9 septembre
@@ -54,8 +95,8 @@ déjà en base. C'est un choix, pas un oubli : à trancher avant la tâche 5.
 4. Trancher la question de l'empreinte ci-dessus.
 5. Tâche 5, une séance par créneau.
 
-**Pas déployable pour l'instant** : le quota Vercel est saturé jusqu'en octobre.
-Coder et committer ne coûte rien, déployer si.
+**Note historique corrigée par le contrôle du 20 septembre ci-dessus** : le quota
+Vercel n'affiche plus de blocage. Aucun déploiement n'a été tenté pendant ce contrôle.
 
 ---
 

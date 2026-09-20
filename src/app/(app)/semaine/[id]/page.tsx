@@ -91,6 +91,7 @@ export default async function SemainePage({ params }: { params: Promise<{ id: st
           id: s.id as string,
           numero: s.numero as number,
           periode: (s.periode_numero as number | null) ?? null,
+          dateDebut: s.date_debut as string,
         }))}
         comportements={Object.fromEntries(
           (comportements ?? []).map(c => [

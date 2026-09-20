@@ -517,6 +517,46 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-20 - Codex - Correctif date/semaine terminé, testé et poussé sur la branche.**
+  Christophe a validé le comportement recommandé. Depuis S4, saisir une date
+  appartenant à S3 affiche maintenant une demande claire. L'utilisatrice peut
+  ranger l'observation en S3 ou choisir volontairement de rester en S4. Aucun
+  déplacement silencieux.
+
+  La page transmet maintenant `date_debut` à `SuiviEleves`. La migration
+  `030_page_semaine_date_debut.sql` fournit cette donnée sans modifier la
+  signature de `page_semaine`. Deux tests d'interface couvrent les deux choix,
+  et un test SQL verrouille l'unique différence entre les migrations 025 et 030.
+
+  Vérifications : 891 tests sur 76 suites, TypeScript sans erreur, build Next.js
+  de production réussi, contrôle Git sans erreur d'espace. La branche distante
+  est `origin/import-seances-un-creneau`.
+
+  Important : aucune migration n'a été appliquée, rien n'a été fusionné dans
+  `main` et aucune publication en production n'a été demandée. Suite : sauvegarde
+  fraîche, application des migrations 029 et 030 par Claude, essai sur la classe
+  de test, puis validation visuelle ordinateur et téléphone.
+
+- **2026-09-20 - Codex - Bug date/semaine confirmé, migration 030 écrite, rien appliqué.**
+  Le flux réel confirme le diagnostic transmis par Claude :
+  `SuiviEleves.tsx` enregistre avec la semaine ouverte, tandis que `page_semaine`
+  ne rendait pas `date_debut` pour les autres semaines. La migration
+  `030_page_semaine_date_debut.sql` ajoute uniquement cette propriété, sans
+  changer la signature de la fonction. Test rouge avant le fichier, puis vert.
+  Suite complète : 889 tests sur 76 suites, TypeScript muet.
+
+  Aucune migration appliquée, aucun push, aucun déploiement et aucun changement
+  d'interface. Vercel a été vérifié en direct après cette première note : compte
+  Hobby, aucun blocage de quota affiché, 20 builds terminés et 0 en erreur sur
+  30 jours, 14 minutes de build plus 1 minute d'attente, 1 h 20 de CPU de build
+  classée « Included », 0 seconde de minutes facturables. La production reste
+  celle du 9 septembre, aucun déploiement n'a été lancé pour le contrôle.
+
+  Christophe doit encore confirmer le comportement hors semaine.
+  Recommandation : prévenir et proposer de ranger l'observation dans la semaine
+  correspondant à la date. L'état détaillé et l'ordre de reprise sont en tête
+  de `AVANCEMENT-IMPORT-SEANCES.md`.
+
 - **2026-09-09 (soir) - Claude - `main` a bougé de 28 commits, et la colonne `seances` existe en production.**
   Deux choses te concernent directement, Codex.
 

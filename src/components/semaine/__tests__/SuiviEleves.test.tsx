@@ -118,6 +118,51 @@ describe('SuiviEleves', () => {
     expect(screen.getAllByLabelText(/^observation du/i)).toHaveLength(2)
   })
 
+  test('propose la semaine de la date avant de ranger une observation ailleurs', async () => {
+    const user = userEvent.setup()
+    afficher({
+      semaineId: 's4',
+      numeroSemaine: 4,
+      periode: 1,
+      dateParDefaut: '2026-09-21',
+      semainesClasse: [
+        { id: 's3', numero: 3, periode: 1, dateDebut: '2026-09-14' },
+        { id: 's4', numero: 4, periode: 1, dateDebut: '2026-09-21' },
+      ],
+    })
+
+    await user.clear(screen.getByLabelText(/date de la nouvelle observation/i))
+    await user.type(screen.getByLabelText(/date de la nouvelle observation/i), '2026-09-18')
+    await user.click(screen.getByRole('button', { name: /ajouter une observation/i }))
+
+    expect(ajouterObservation).not.toHaveBeenCalled()
+    expect(screen.getByRole('alertdialog').textContent).toMatch(/18\/09\/2026 appartient à la semaine 3/i)
+
+    await user.click(screen.getByRole('button', { name: /oui, ranger en s3/i }))
+    await waitFor(() => expect(ajouterObservation).toHaveBeenCalledWith('e1', 's3', '2026-09-18'))
+  })
+
+  test('permet de garder volontairement la semaine ouverte', async () => {
+    const user = userEvent.setup()
+    afficher({
+      semaineId: 's4',
+      numeroSemaine: 4,
+      periode: 1,
+      dateParDefaut: '2026-09-21',
+      semainesClasse: [
+        { id: 's3', numero: 3, periode: 1, dateDebut: '2026-09-14' },
+        { id: 's4', numero: 4, periode: 1, dateDebut: '2026-09-21' },
+      ],
+    })
+
+    await user.clear(screen.getByLabelText(/date de la nouvelle observation/i))
+    await user.type(screen.getByLabelText(/date de la nouvelle observation/i), '2026-09-18')
+    await user.click(screen.getByRole('button', { name: /ajouter une observation/i }))
+    await user.click(screen.getByRole('button', { name: /non, rester en s4/i }))
+
+    await waitFor(() => expect(ajouterObservation).toHaveBeenCalledWith('e1', 's4', '2026-09-18'))
+  })
+
   test('enregistre le texte d’une observation', async () => {
     const user = userEvent.setup()
     afficher()
