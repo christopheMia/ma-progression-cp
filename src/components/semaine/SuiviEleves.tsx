@@ -116,12 +116,11 @@ export default function SuiviEleves({
   const [comportements, setComportements] = useState(comportementsInitiaux)
   const [observations, setObservations] = useState(observationsInitiales)
   const [dateSaisie, setDateSaisie] = useState(dateParDefaut)
-  const [propositionSemaine, setPropositionSemaine] = useState<{
-    id: string
-    numero: number
-    eleveId: string
-    date: string
-  } | null>(null)
+  // Choix de Cecile (20/09) : la note part toute seule dans la semaine de sa
+  // date. On ne lui demande rien, mais on lui DIT ou c'est parti : la note
+  // disparait de l'ecran ou elle vient de l'ecrire, et une faute de frappe sur
+  // la date l'enverrait ailleurs sans un mot.
+  const [rangeeAilleurs, setRangeeAilleurs] = useState<{ numero: number; date: string } | null>(null)
   const [bilans, setBilans] = useState(bilansInitiaux)
   const [copie, setCopie] = useState('')
   const [vue, setVue] = useState('semaine')
@@ -207,7 +206,6 @@ export default function SuiviEleves({
 
   function enregistrerObservation(eleveId: string, cibleSemaineId: string, date: string) {
     setErreur('')
-    setPropositionSemaine(null)
     startTransition(async () => {
       const r = await ajouterObservation(eleveId, cibleSemaineId, date)
       if (!r.ok) {
@@ -221,19 +219,10 @@ export default function SuiviEleves({
   }
 
   function ajouter() {
-    setErreur('')
     const cible = semaineDeLaDate(dateSaisie, semainesClasse)
-    if (cible && cible.id !== semaineId) {
-      setPropositionSemaine({
-        id: cible.id,
-        numero: cible.numero,
-        eleveId: eleve.id,
-        date: dateSaisie,
-      })
-      return
-    }
-
-    enregistrerObservation(eleve.id, semaineId, dateSaisie)
+    const ailleurs = cible && cible.id !== semaineId
+    setRangeeAilleurs(ailleurs ? { numero: cible.numero, date: dateSaisie } : null)
+    enregistrerObservation(eleve.id, ailleurs ? cible.id : semaineId, dateSaisie)
   }
 
   function modifier(id: string, changement: Partial<Observation>) {
@@ -355,7 +344,7 @@ export default function SuiviEleves({
           <select
             value={iEleve}
             onChange={e => {
-              setPropositionSemaine(null)
+              setRangeeAilleurs(null)
               setIEleve(Number(e.target.value))
             }}
             aria-label="Élève"
@@ -401,7 +390,7 @@ export default function SuiviEleves({
           <button
             type="button"
             onClick={() => {
-              setPropositionSemaine(null)
+              setRangeeAilleurs(null)
               setIEleve((iEleve - 1 + eleves.length) % eleves.length)
             }}
             className="rounded-lg border px-2 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-50"
@@ -411,7 +400,7 @@ export default function SuiviEleves({
           <button
             type="button"
             onClick={() => {
-              setPropositionSemaine(null)
+              setRangeeAilleurs(null)
               setIEleve((iEleve + 1) % eleves.length)
             }}
             className="rounded-lg border px-2 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-50"
@@ -568,7 +557,7 @@ export default function SuiviEleves({
               type="date"
               value={dateSaisie}
               onChange={e => {
-                setPropositionSemaine(null)
+                setRangeeAilleurs(null)
                 setDateSaisie(e.target.value)
               }}
               aria-label="Date de la nouvelle observation"
@@ -590,43 +579,10 @@ export default function SuiviEleves({
           ce que tu vois le jeudi ne se mélangent pas.
         </p>
 
-        {propositionSemaine && (
-          <div
-            role="alertdialog"
-            aria-labelledby="proposition-semaine-observation"
-            className="mt-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"
-          >
-            <p id="proposition-semaine-observation" className="font-semibold">
-              Le {enFrancais(propositionSemaine.date)} appartient à la semaine{' '}
-              {propositionSemaine.numero}. Ranger cette observation en S{propositionSemaine.numero} ?
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => enregistrerObservation(
-                  propositionSemaine.eleveId,
-                  propositionSemaine.id,
-                  propositionSemaine.date,
-                )}
-                disabled={isPending}
-                className="rounded-lg bg-amber-700 px-3 py-1.5 font-semibold text-white disabled:opacity-50"
-              >
-                Oui, ranger en S{propositionSemaine.numero}
-              </button>
-              <button
-                type="button"
-                onClick={() => enregistrerObservation(
-                  propositionSemaine.eleveId,
-                  semaineId,
-                  propositionSemaine.date,
-                )}
-                disabled={isPending}
-                className="rounded-lg border border-amber-700 bg-white px-3 py-1.5 font-semibold text-amber-900 disabled:opacity-50"
-              >
-                Non, rester en S{numeroSemaine}
-              </button>
-            </div>
-          </div>
+        {rangeeAilleurs && (
+          <p role="status" className="mt-2 text-xs font-semibold text-violet-800">
+            {`Rangée en semaine ${rangeeAilleurs.numero}, celle du ${enFrancais(rangeeAilleurs.date)}.`}
+          </p>
         )}
 
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
