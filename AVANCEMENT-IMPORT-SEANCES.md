@@ -1,5 +1,45 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## Point de reprise du 20/09/2026, après-midi : tout est fusionné et poussé, reste le déploiement
+
+| Fait | La preuve |
+|---|---|
+| Sauvegarde de la base AVANT les migrations | `backup-2026-09-20.json`, 24 tables, 658 Ko, les 3 empreintes md5 recalculées localement correspondent. Prise à 11h35, donc après le travail de Cécile du jour (181 observations, contre 113 le 09/09) |
+| Migration **029** appliquée en production | `pg_get_functiondef(remplacer_progression)` contient `seances jsonb` |
+| Migration **030** appliquée en production | `pg_get_functiondef(page_semaine)` contient `date_debut` |
+| Aucune donnée touchée | 308 lignes de progression, 181 observations, 48 élèves avant ET après |
+| Comportement date/semaine repris selon le choix de Cécile | 3 tests réécrits, 29 verts sur le fichier |
+| Fusion dans `main` et push | `92723e3`, poussé (`0d7f071..92723e3`) |
+| Le piège du 09/09 revérifié | `vercel.json` et `src/app/api/veille/route.ts` présents sur les deux branches AVANT fusion, et toujours là après |
+| L'ensemble | **892 tests sur 76 suites**, `tsc --noEmit` muet, sur `main` après fusion |
+
+### Ce qui bloque le déploiement, et ce n'est pas le quota
+
+Le forfait Vercel n'est **pas** saturé : compte Hobby, 20 builds sur 30 jours,
+aucune erreur, temps de build classé « Included », zéro minute facturable.
+L'information « saturé jusqu'en octobre » est périmée.
+
+Le vrai blocage : **le projet Vercel n'est plus relié à GitHub.** La page du
+projet propose « Connect Git Repository ». Un push sur `main` ne déclenche donc
+plus aucun déploiement. La CLI Vercel fonctionne (59.23.2, projet lié dans
+`.vercel/project.json`) mais **n'est pas authentifiée** : `vercel whoami` répond
+`login_required`, et `vercel login` est interactif.
+
+**Donc la production est toujours celle du 9 septembre.** Deux chemins, au choix
+de Christophe : rebrancher le dépôt dans l'interface Vercel, ou lancer
+`npx vercel login` puis `npx vercel --prod` depuis le dossier du projet.
+
+### Ce qui reste après le déploiement
+
+1. Essai réel sur la **classe de test** : importer un document et vérifier en
+   base qu'une ligne de `progression` porte enfin ses séances.
+2. Lancer le remplissage de l'existant, `supabase/remplissage/028_remplir_seances.sql`,
+   classe de test d'abord. **Toujours pas lancé.**
+3. Trancher la question de l'empreinte des sources (voir plus bas).
+4. Prévenir Cécile que son signalement est corrigé.
+
+---
+
 ## Point de reprise du 20/09/2026 : le correctif date/semaine est terminé et poussé
 
 Le bug signalé par Cécile est corrigé. Quand une observation est créée depuis

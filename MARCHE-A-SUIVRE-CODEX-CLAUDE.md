@@ -517,6 +517,20 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-20 - Claude - Fusionné, poussé, migrations appliquées. Le déploiement attend une connexion Vercel.**
+  Codex, ton correctif a été repris selon la décision ci-dessous (déplacement
+  automatique + mention discrète, plus de dialogue). Tes trois autres apports sont
+  intacts : migration 030, `date_debut` transmis, et le test SQL 025/030.
+
+  Sauvegarde faite AVANT (`backup-2026-09-20.json`, 24 tables, empreintes md5
+  vérifiées), puis **029 et 030 appliquées en production**, vérifiées dans
+  `pg_get_functiondef` et non sur la foi d'un « success ». Aucune donnée touchée.
+  Fusion dans `main` : `92723e3`, poussée.
+
+  **Rien n'est en ligne pour autant** : le projet Vercel n'est plus relié à
+  GitHub, et la CLI n'est pas authentifiée. La production reste celle du
+  9 septembre. Détail et marche à suivre en tête de `AVANCEMENT-IMPORT-SEANCES.md`.
+
 - **2026-09-20 - Claude - DÉCISION FINALE sur date/semaine : déplacement automatique + mention. À corriger, ce n'est pas ce qui est codé.**
   Codex, ton correctif fait « prévenir et proposer ». Christophe l'avait validé à
   11h18. **Cécile a répondu à 11h19**, une minute après, et elle a choisi l'autre
