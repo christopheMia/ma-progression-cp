@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { ensureMethode } from '@/lib/methodes-db'
+import { lignesDepuisSemaines } from '@/lib/progression-seances'
 
 export type PeriodeDispo = {
   numero: number
@@ -112,12 +113,7 @@ export async function enregistrerProgressionPeriode(
   // On remplace uniquement l'intervalle reecrit dans une transaction : les
   // autres periodes sont preservees et un echec restaure l'ancien contenu.
   const numerosEcrases = recalees.map(s => s.numero)
-  const lignes = recalees.map(s => ({
-    numero: s.numero,
-    items: s.items,
-    pages: s.pages || '',
-    mots_exemple: s.mots_exemple ?? [],
-  }))
+  const lignes = lignesDepuisSemaines(recalees)
   const { error } = await supabase.rpc('remplacer_progression', {
     p_class_id: classeId,
     p_methode_id: methodeId,

@@ -17,6 +17,7 @@ import {
   type AvertissementImport,
 } from '@/lib/ia/schema-import-auto'
 import type { ProgressionSemaine } from '@/data/manuels'
+import type { SeanceProgression } from '@/types'
 import { extractPdfText } from '@/lib/ia/pdf-client'
 import {
   estFormatAncien,
@@ -115,8 +116,21 @@ function nettoyerSemaines(semaines: ProgressionSemaine[]): ProgressionSemaine[] 
       items: semaine.items.map(nettoyerTexte).filter(Boolean),
       pages: nettoyerTexte(semaine.pages),
       mots_exemple: semaine.mots_exemple.map(nettoyerTexte).filter(Boolean),
+      // Tache 4b : les seances passaient a la trappe ici, en silence. `jour`
+      // reste INTACT, ce n'est pas du texte : le nettoyer n'aurait aucun sens et
+      // `nettoyerTexte` le transformerait en chaine.
+      seances: (semaine.seances ?? []).flatMap(seance => {
+        const libelle = nettoyerTexte(seance.libelle)
+        return libelle
+          ? [{ jour: seance.jour, domaine: nettoyerTexte(seance.domaine), libelle }]
+          : []
+      }),
     }
-    return propre.items.length || propre.pages || propre.mots_exemple.length ? [propre] : []
+    // `propre.seances.length` compte : une semaine qui ne porte QUE des seances
+    // etait jetee comme si elle etait vide.
+    return propre.items.length || propre.pages || propre.mots_exemple.length || propre.seances.length
+      ? [propre]
+      : []
   })
 }
 
@@ -130,6 +144,23 @@ function nettoyerPeriodes(periodes: PeriodeProgrammation[]): PeriodeProgrammatio
       }] : []
     })
     return domaines.length ? [{ numero: periode.numero, domaines }] : []
+  })
+}
+
+/**
+ * Tache 4b. L'IA rend du JSON libre : une seance dont le libelle n'est pas une
+ * chaine est jetee, un `jour` qui n'est pas un entier retombe a `null` (le
+ * document ne montrait pas de jours), et le domaine absent devient "".
+ */
+function normaliserSeances(valeur: unknown): SeanceProgression[] {
+  if (!Array.isArray(valeur)) return []
+  return valeur.flatMap(brute => {
+    if (!estObjet(brute) || typeof brute.libelle !== 'string' || !brute.libelle) return []
+    return [{
+      jour: typeof brute.jour === 'number' && Number.isInteger(brute.jour) ? brute.jour : null,
+      domaine: typeof brute.domaine === 'string' ? brute.domaine : '',
+      libelle: brute.libelle,
+    }]
   })
 }
 
@@ -148,6 +179,7 @@ function normaliserSemaines(valeur: unknown): ProgressionSemaine[] {
       mots_exemple: Array.isArray(brute.mots_exemple)
         ? brute.mots_exemple.filter((mot): mot is string => typeof mot === 'string')
         : [],
+      seances: normaliserSeances(brute.seances),
     }]
   })
 }
@@ -178,6 +210,12 @@ function aContenuSemaines(semaines: ProgressionSemaine[]): boolean {
     semaine.items.some(item => item.trim())
     || Boolean(semaine.pages.trim())
     || semaine.mots_exemple.some(mot => mot.trim())
+    // Cinquieme porte, trouvee le 20/09 en faisant la tache 4b : elle n'etait
+    // pas dans le plan. Sans ce test, un document dont les semaines ne portent
+    // QUE des seances est declare vide, le bouton reste bloque et l'enseignante
+    // lit « Ajoute au moins une notion dans le contenu » alors que l'IA a rendu
+    // son travail.
+    || (semaine.seances ?? []).some(seance => seance.libelle.trim())
   )
 }
 

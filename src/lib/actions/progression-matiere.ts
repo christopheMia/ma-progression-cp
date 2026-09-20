@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { ProgressionSemaine } from '@/data/manuels'
 import { ensureMethode } from '@/lib/methodes-db'
+import { lignesDepuisSemaines } from '@/lib/progression-seances'
 
 /**
  * Enregistre la progression pour UNE matière, en remplaçant UNIQUEMENT
@@ -33,12 +34,7 @@ export async function enregistrerProgressionMatiere(
 
   const methodeId = await ensureMethode(supabase, classe.id, matiere, nomManuel)
 
-  const lignes = semaines.map(s => ({
-    numero: s.numero,
-    items: s.items,
-    pages: s.pages || '',
-    mots_exemple: s.mots_exemple ?? [],
-  }))
+  const lignes = lignesDepuisSemaines(semaines)
   const { error } = await supabase.rpc('remplacer_progression', {
     p_class_id: classe.id,
     p_methode_id: methodeId,

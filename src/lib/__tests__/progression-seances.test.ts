@@ -3,6 +3,7 @@ import {
   itemsDepuisSeances,
   seanceDepuisTexte,
   completerSeances,
+  lignesDepuisSemaines,
 } from '../progression-seances'
 
 describe('seancesDepuisItems', () => {
@@ -849,5 +850,91 @@ describe('les domaines s’affichent dans la forme choisie par Cécile', () => {
     )
     expect(sorties).toHaveLength(1)
     expect(sorties[0].libelle).toBe('LC : Le graphème ou')
+  })
+})
+
+// Tache 4b : la porte entre l'ecran et la base. Les deux actions d'import
+// construisaient ces lignes chacune de leur cote, a l'identique, et laissaient
+// tomber `seances` en silence. Une seule fonction desormais, testee ici.
+describe('lignesDepuisSemaines', () => {
+  it('emporte les séances jusqu’aux lignes écrites en base', () => {
+    expect(lignesDepuisSemaines([{
+      numero: 3,
+      items: ['Jour 1 : LC : La petite poule'],
+      pages: '12-13',
+      mots_exemple: ['poule'],
+      seances: [{ jour: 1, domaine: 'LC', libelle: 'LC : La petite poule' }],
+    }])).toEqual([{
+      numero: 3,
+      items: ['Jour 1 : LC : La petite poule'],
+      pages: '12-13',
+      mots_exemple: ['poule'],
+      seances: [{ jour: 1, domaine: 'LC', libelle: 'LC : La petite poule' }],
+    }])
+  })
+
+  // La colonne est `not null default '[]'` : un `undefined` serait envoye comme
+  // `null` et Postgres refuserait la ligne entiere.
+  it('rend un tableau vide, jamais undefined, pour une semaine sans séance', () => {
+    const lignes = lignesDepuisSemaines([{
+      numero: 1,
+      items: ['Découvrir le son ou'],
+      pages: '',
+      mots_exemple: [],
+    }])
+    expect(lignes[0].seances).toEqual([])
+    expect('seances' in lignes[0]).toBe(true)
+  })
+
+  it('remplace des pages absentes par une chaîne vide', () => {
+    expect(lignesDepuisSemaines([
+      { numero: 1, items: [], pages: '', mots_exemple: [], seances: [] },
+    ])[0].pages).toBe('')
+  })
+
+  it('ne rend jamais mots_exemple undefined', () => {
+    const semaine = { numero: 1, items: [], pages: '' } as unknown as Parameters<
+      typeof lignesDepuisSemaines
+    >[0][number]
+    expect(lignesDepuisSemaines([semaine])[0].mots_exemple).toEqual([])
+  })
+
+  it('conserve le numéro de chaque semaine, dans l’ordre reçu', () => {
+    expect(lignesDepuisSemaines([
+      { numero: 5, items: [], pages: '', mots_exemple: [] },
+      { numero: 2, items: [], pages: '', mots_exemple: [] },
+    ]).map(l => l.numero)).toEqual([5, 2])
+  })
+})
+
+// Le contrat JS / SQL du prefixe, verifie ici parce que `nettoyerTexte` du
+// SourceImporter fait `replace(/\s+/g, ' ')` : une espace insecable collee
+// depuis Word devient une espace ordinaire. Apres ce passage, la ligne doit
+// rester lisible par les DEUX grammaires, celle de JavaScript et celle de
+// Postgres, dont les classes d'espaces ne couvrent pas les memes caracteres.
+describe('le préfixe « Jour N : » survit au nettoyage des espaces', () => {
+  // Copie volontaire de `nettoyerTexte` du SourceImporter, qui n'est pas
+  // exporte. Si l'original change, ce test ne le verra pas : c'est le prix,
+  // et la traversee reelle est couverte par le test du composant.
+  const nettoyerTexte = (valeur: string) =>
+    valeur.normalize('NFC').trim().replace(/\s+/g, ' ')
+
+  const INSECABLE = '\u00a0'
+
+  it('lit encore le jour après des espaces insécables collées depuis Word', () => {
+    const colleDepuisWord = `${INSECABLE}Jour${INSECABLE}2${INSECABLE}: Grammaire`
+    expect(seancesDepuisItems([nettoyerTexte(colleDepuisWord)])).toEqual([
+      { jour: 2, domaine: '', libelle: 'Grammaire' },
+    ])
+  })
+
+  // `[[:space:]]` cote Postgres ne couvre en general pas U+00A0. Le nettoyage
+  // est donc ce qui garantit que la migration lira la meme chose que l'appli :
+  // il ne doit plus rester une seule insecable en sortie.
+  it('ne laisse plus aucune espace insécable que Postgres ne saurait lire', () => {
+    const propre = nettoyerTexte(`Jour${INSECABLE}3${INSECABLE}: Les contraires`)
+    expect(propre).not.toContain(INSECABLE)
+    expect(propre).toBe('Jour 3 : Les contraires')
+    expect(propre).toMatch(/^\s*jours?\s*\d+\s*:\s*/i)
   })
 })

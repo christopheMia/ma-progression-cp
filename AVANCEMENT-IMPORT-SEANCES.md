@@ -1,5 +1,64 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## Point de reprise du 20/09/2026 : la tâche 4b est codée, la migration attend
+
+Chantier repris après **11 jours d'arrêt** (dernier commit réel : le 9 septembre
+au soir).
+
+**Les portes sont ouvertes, sauf la dernière.** Les séances circulent maintenant
+de l'IA jusqu'aux lignes prêtes à écrire en base. Ce qui a été fait, et comment
+on sait que c'est vrai :
+
+| Fait | La preuve |
+|---|---|
+| `lignesDepuisSemaines` dans `progression-seances.ts`, une seule construction pour les deux actions d'import | 5 tests neufs, `progression-seances.test.ts` : 127 verts |
+| `progression-matiere.ts` et `progression-periode.ts` appellent cette fonction au lieu de recopier la construction | la construction dupliquée a disparu des deux fichiers |
+| `nettoyerSemaines` et `normaliserSemaines` laissent passer les séances | 2 tests neufs dans `SourceImporter.test.tsx` : 28 verts |
+| `aContenuSemaines` compte les séances (cinquième porte, voir plus bas) | le test « ne jette pas une semaine qui ne porte que des séances » passe |
+| Toute la suite et TypeScript | `npx jest` : **888 tests, 75 suites, tout vert**. `npx tsc --noEmit` : muet |
+| `029_remplacer_progression_seances.sql` écrite | `diff` du corps de fonction contre la migration 014 : **exactement les 3 ajouts prévus**, rien d'autre, branche `p_sync_semaines` intacte |
+
+### Une cinquième porte, que le plan n'avait pas vue
+
+Le plan listait quatre endroits. Il y en avait cinq. `aContenuSemaines`, dans
+`SourceImporter.tsx`, décide si le document a du contenu **du tout** et ignorait
+les séances. Conséquence concrète : un document dont les semaines ne portent que
+des séances était déclaré vide, le bouton restait bloqué, et Cécile lisait
+« Ajoute au moins une notion dans le contenu » alors que l'IA avait bien
+travaillé. Trouvée parce que le test écrit pour la deuxième porte échouait en
+n'enregistrant **rien**, au lieu d'enregistrer une semaine sans séances.
+
+### Une conséquence vérifiée, et une question ouverte
+
+La source enregistrée porte désormais `seances: []` sur chaque semaine. J'ai
+vérifié que **cela n'invalide aucune empreinte existante** : `semainesPourEmpreinte`
+dans `progression-sources.ts` projette explicitement `numero/items/pages/mots_exemple`
+et ignore le reste. Quatre assertions de test ont été mises à jour en conséquence.
+
+**Question laissée à Christophe** : du coup, l'empreinte d'une source ne tient
+PAS compte des séances. Deux documents qui ne diffèrent que par leurs séances
+ont la même empreinte, donc le second serait refusé comme doublon. Le corriger
+veut dire changer la formule de l'empreinte, donc invalider toutes les empreintes
+déjà en base. C'est un choix, pas un oubli : à trancher avant la tâche 5.
+
+### Ce qui reste, dans l'ordre
+
+1. **Appliquer la migration 029 en production** (étape 5 du plan). Écrite, pas
+   appliquée : elle touche la base réelle, elle attend le feu vert de Christophe.
+   Elle est compatible avec l'application actuellement déployée, qui n'envoie pas
+   encore de séances (`coalesce` couvre le champ absent).
+2. Faire un import réel sur la **classe de test** et vérifier en base qu'une
+   ligne de `progression` porte enfin ses séances.
+3. Lancer le remplissage de l'existant, `supabase/remplissage/028_remplir_seances.sql`,
+   classe de test d'abord. **Toujours pas lancé.**
+4. Trancher la question de l'empreinte ci-dessus.
+5. Tâche 5, une séance par créneau.
+
+**Pas déployable pour l'instant** : le quota Vercel est saturé jusqu'en octobre.
+Coder et committer ne coûte rien, déployer si.
+
+---
+
 ## Point de reprise du 09/09/2026 au soir : DÉPLOYÉ, et la colonne est posée
 
 Deux choses ont bougé le soir du 9 septembre.
@@ -339,7 +398,7 @@ tant qu'un relecteur a des réserves.
 | 2 | L'IA rend des séances | codée et commitée (`ced1158`), **les deux relectures sont passées le 03/09** : conforme, un défaut grave corrigé (`0edcb2d`), un second **ouvert**, voir le point de reprise en tête |
 | 3 | Les consignes d'import | **avancée** au 20/08 : le schéma exige `seances` sans que le modèle sache quoi y mettre. Visait une fonction morte, corrigée sur `systemImportAutomatique` |
 | 4 | La colonne en base et son remplissage | **colonne POSÉE le 09/09** (`f7eaa57`, migration 028 appliquée en production, 308 lignes à vide, rien de modifié). Le **remplissage reste à lancer**, classe par classe, voir `supabase/remplissage/028_remplir_seances.sql` |
-| 4b | Les trois portes fermées entre l'IA et la base | **ajoutée le 20/08**, elle manquait au plan. Sans elle les séances n'atteignent ni l'écran de vérification ni la base |
+| 4b | Les trois portes fermées entre l'IA et la base | **CODÉE le 20/09** : il y avait en fait CINQ portes. Tests, suite complète et `tsc` verts. La migration **029 est écrite mais PAS appliquée**, voir le point de reprise en tête |
 | 5 | Une séance par créneau | à faire |
 | 6 | La sauvegarde conserve « à placer » | à faire |
 | 7 | Les deux garanties sur le lundi réel | à faire, **valeurs à valider par Christophe** |

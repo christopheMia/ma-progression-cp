@@ -187,7 +187,7 @@ describe('SourceImporter', () => {
 
     // Stockage compact, mais le numéro 2 est conservé : l'année n'est plus décalée.
     expect(onSourceReady.mock.calls[0][0].semaines).toEqual([
-      { numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [] },
+      { numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [], seances: [] },
     ])
   })
 
@@ -211,7 +211,7 @@ describe('SourceImporter', () => {
     await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
 
     expect(onSourceReady.mock.calls[0][0].semaines).toEqual([
-      { numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [] },
+      { numero: 2, items: ['Découvrir le son a'], pages: '', mots_exemple: [], seances: [] },
     ])
   })
 
@@ -708,6 +708,7 @@ describe('SourceImporter', () => {
       items: ['nombres jusqu’à 10'],
       pages: '10-12',
       mots_exemple: ['dix objets'],
+      seances: [],
     })
   })
 
@@ -836,8 +837,63 @@ describe('SourceImporter', () => {
         items: ['Mesurer une longueur avec une unité'],
         pages: '',
         mots_exemple: [],
+        seances: [],
       }],
       periodes: [],
     }))
+  })
+  // Tache 4b, premiere porte. Le nettoyage reconstruisait chaque semaine champ
+  // par champ et laissait tomber `seances` sans erreur ni test rouge : l'IA les
+  // produisait, personne ne les voyait jamais.
+  test('les séances rendues par l’IA traversent le nettoyage jusqu’à la source', async () => {
+    const onSourceReady = await analyserAvecCalage({
+      ...REPONSE_MANUEL,
+      avertissements: [],
+      base_calage: 'numeros',
+      progression: [{
+        numero: 1,
+        items: ['Jour 1 : LC : La petite poule'],
+        pages: '',
+        mots_exemple: [],
+        seances: [{ jour: 1, domaine: 'LC', libelle: '  LC :  La petite poule  ' }],
+      }],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
+
+    expect(onSourceReady.mock.calls[0][0].semaines).toEqual([{
+      numero: 1,
+      items: ['Jour 1 : LC : La petite poule'],
+      pages: '',
+      mots_exemple: [],
+      // Le libelle est nettoye comme le reste du texte, le jour reste intact.
+      seances: [{ jour: 1, domaine: 'LC', libelle: 'LC : La petite poule' }],
+    }])
+  })
+
+  // Sans `propre.seances.length` dans la condition, une semaine qui ne porte que
+  // des seances est jetee comme si elle etait vide.
+  test('ne jette pas une semaine qui ne porte que des séances', async () => {
+    const onSourceReady = await analyserAvecCalage({
+      ...REPONSE_MANUEL,
+      avertissements: [],
+      base_calage: 'numeros',
+      progression: [{
+        numero: 1,
+        items: [],
+        pages: '',
+        mots_exemple: [],
+        seances: [{ jour: 2, domaine: '', libelle: 'Les contraires' }],
+      }],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
+
+    expect(onSourceReady.mock.calls[0][0].semaines).toHaveLength(1)
+    expect(onSourceReady.mock.calls[0][0].semaines[0].seances).toEqual([
+      { jour: 2, domaine: '', libelle: 'Les contraires' },
+    ])
   })
 })
