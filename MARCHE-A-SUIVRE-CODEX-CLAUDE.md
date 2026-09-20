@@ -532,6 +532,11 @@ l'historique.)
   de production réussi, contrôle Git sans erreur d'espace. La branche distante
   est `origin/import-seances-un-creneau`.
 
+  Anomalie Vercel détectée après le push : aucun aperçu n'a démarré. La page du
+  projet propose « Connect Git Repository », donc la connexion automatique au
+  dépôt n'est plus active. Le quota Hobby n'est pas bloqué, mais un push GitHub
+  seul ne déploie plus ce projet. L'outil Vercel n'est pas installé localement.
+
   Important : aucune migration n'a été appliquée, rien n'a été fusionné dans
   `main` et aucune publication en production n'a été demandée. Suite : sauvegarde
   fraîche, application des migrations 029 et 030 par Claude, essai sur la classe

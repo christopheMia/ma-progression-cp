@@ -21,8 +21,9 @@ Ce qui est terminé :
 
 **Rien n'est appliqué à Supabase et rien n'est fusionné dans `main`.** La
 migration 030 doit être appliquée avant de pouvoir valider ce choix avec les
-données réelles. Le push peut déclencher un aperçu Vercel, mais cet aperçu ne
-recevra pas encore `date_debut` tant que la migration n'est pas appliquée.
+données réelles. Le push GitHub n'a déclenché aucun aperçu Vercel : le tableau
+de bord propose actuellement « Connect Git Repository ». L'ancien déploiement
+automatique n'est donc plus actif, malgré ce qu'indique encore l'historique.
 
 **Vercel vérifié en direct le 20 septembre dans le tableau de bord du compte :
 aucun blocage de quota n'est affiché.** Le compte est en formule Hobby. Sur les
@@ -36,7 +37,8 @@ Ordre de reprise :
 1. Faire une sauvegarde fraîche.
 2. Faire appliquer les migrations 029 et 030 par Claude.
 3. Essayer le cas S4 / 18 septembre / S3 sur la classe de test.
-4. Contrôler l'aperçu Vercel et le rendu sur ordinateur et téléphone.
+4. Rétablir la connexion Git de Vercel ou lancer un aperçu manuel, puis contrôler
+   le rendu sur ordinateur et téléphone.
 5. Demander le feu vert de Christophe avant toute fusion ou publication en production.
 
 La question séparée sur l'empreinte des documents reste ouverte avant la tâche 5.
