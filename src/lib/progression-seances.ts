@@ -1,4 +1,5 @@
 import type { SeanceProgression } from '@/types'
+import type { ProgressionSemaine } from '@/data/manuels'
 
 /**
  * Marqueur de jour en tête d'un item : « Jour 2 : Grammaire ».
@@ -887,4 +888,41 @@ export function itemsDepuisSeances(seances: SeanceProgression[]): string[] {
     if (!jourValide(s.jour)) return texte
     return `Jour ${s.jour} : ${lu.libelle}`
   })
+}
+
+/** Une ligne de la table `progression`, telle que `remplacer_progression` l'attend. */
+export type LigneProgression = {
+  numero: number
+  items: string[]
+  pages: string
+  mots_exemple: string[]
+  seances: SeanceProgression[]
+}
+
+/**
+ * Construit les lignes à écrire en base depuis les semaines de l'écran.
+ *
+ * Pourquoi cette fonction existe (tâche 4b, 20/08/2026) :
+ * `progression-matiere.ts` et `progression-periode.ts` portaient la MÊME
+ * construction, recopiée mot pour mot, et toutes deux laissaient tomber
+ * `seances`. Ajouter le champ deux fois aurait reconduit le problème d'origine :
+ * une règle recopiée finit toujours par diverger. Même raison qui a fait naître
+ * `estJourValide`.
+ *
+ * Deux garanties que la base exige :
+ * - `pages` est une chaîne, jamais `null` : la colonne accepte le vide, pas
+ *   l'absence de valeur attendue ;
+ * - `seances` est TOUJOURS un tableau. La colonne est `not null default '[]'` :
+ *   un `undefined` traverserait la sérialisation JSON comme un champ absent, et
+ *   `jsonb_to_recordset` rendrait `null`, que la contrainte refuse. C'est une
+ *   erreur qui n'apparaîtrait qu'en production, sur une semaine sans séance.
+ */
+export function lignesDepuisSemaines(semaines: ProgressionSemaine[]): LigneProgression[] {
+  return semaines.map(semaine => ({
+    numero: semaine.numero,
+    items: semaine.items ?? [],
+    pages: semaine.pages || '',
+    mots_exemple: semaine.mots_exemple ?? [],
+    seances: semaine.seances ?? [],
+  }))
 }

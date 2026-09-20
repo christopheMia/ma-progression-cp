@@ -22,6 +22,12 @@ import {
 
 export type EleveSuivi = { id: string; prenom: string; genre: 'f' | 'm' | null }
 export type SemainePeriode = { id: string; numero: number }
+type SemaineClasse = {
+  id: string
+  numero: number
+  periode: number | null
+  dateDebut?: string
+}
 export type Observation = {
   id: string
   eleveId: string
@@ -33,6 +39,17 @@ export type Observation = {
 function enFrancais(iso: string) {
   const [a, m, j] = iso.split('-')
   return `${j}/${m}/${a}`
+}
+
+function semaineDeLaDate(date: string, semaines: SemaineClasse[]) {
+  const jour = Date.parse(`${date}T00:00:00Z`)
+  if (Number.isNaN(jour)) return undefined
+
+  return semaines.find(semaine => {
+    if (!semaine.dateDebut) return false
+    const debut = Date.parse(`${semaine.dateDebut}T00:00:00Z`)
+    return !Number.isNaN(debut) && jour >= debut && jour < debut + 7 * 24 * 60 * 60 * 1000
+  })
 }
 
 /**
@@ -86,7 +103,7 @@ export default function SuiviEleves({
   /** Les semaines de la période en cours, pour la frise. */
   semainesPeriode: SemainePeriode[]
   /** Toute l'année, pour retrouver une note écrite une autre période. */
-  semainesClasse?: { id: string; numero: number; periode: number | null }[]
+  semainesClasse?: SemaineClasse[]
   /** Clé `eleveId|semaineId`. */
   comportements: Record<string, EtatComportement>
   observations: Observation[]
@@ -99,6 +116,11 @@ export default function SuiviEleves({
   const [comportements, setComportements] = useState(comportementsInitiaux)
   const [observations, setObservations] = useState(observationsInitiales)
   const [dateSaisie, setDateSaisie] = useState(dateParDefaut)
+  // Choix de Cecile (20/09) : la note part toute seule dans la semaine de sa
+  // date. On ne lui demande rien, mais on lui DIT ou c'est parti : la note
+  // disparait de l'ecran ou elle vient de l'ecrire, et une faute de frappe sur
+  // la date l'enverrait ailleurs sans un mot.
+  const [rangeeAilleurs, setRangeeAilleurs] = useState<{ numero: number; date: string } | null>(null)
   const [bilans, setBilans] = useState(bilansInitiaux)
   const [copie, setCopie] = useState('')
   const [vue, setVue] = useState('semaine')
@@ -182,18 +204,25 @@ export default function SuiviEleves({
     })
   }
 
-  function ajouter() {
+  function enregistrerObservation(eleveId: string, cibleSemaineId: string, date: string) {
     setErreur('')
     startTransition(async () => {
-      const r = await ajouterObservation(eleve.id, semaineId, dateSaisie)
+      const r = await ajouterObservation(eleveId, cibleSemaineId, date)
       if (!r.ok) {
         setErreur(r.message)
         return
       }
       setObservations(liste => [...liste, {
-        id: r.valeur, eleveId: eleve.id, semaineId, observeeLe: dateSaisie, texte: '',
+        id: r.valeur, eleveId, semaineId: cibleSemaineId, observeeLe: date, texte: '',
       }])
     })
+  }
+
+  function ajouter() {
+    const cible = semaineDeLaDate(dateSaisie, semainesClasse)
+    const ailleurs = cible && cible.id !== semaineId
+    setRangeeAilleurs(ailleurs ? { numero: cible.numero, date: dateSaisie } : null)
+    enregistrerObservation(eleve.id, ailleurs ? cible.id : semaineId, dateSaisie)
   }
 
   function modifier(id: string, changement: Partial<Observation>) {
@@ -314,7 +343,10 @@ export default function SuiviEleves({
           <span className="sr-only">Élève</span>
           <select
             value={iEleve}
-            onChange={e => setIEleve(Number(e.target.value))}
+            onChange={e => {
+              setRangeeAilleurs(null)
+              setIEleve(Number(e.target.value))
+            }}
             aria-label="Élève"
             className="rounded-lg border px-2 py-1 font-semibold text-gray-900"
           >
@@ -357,14 +389,20 @@ export default function SuiviEleves({
         <div className="ml-auto flex gap-2">
           <button
             type="button"
-            onClick={() => setIEleve((iEleve - 1 + eleves.length) % eleves.length)}
+            onClick={() => {
+              setRangeeAilleurs(null)
+              setIEleve((iEleve - 1 + eleves.length) % eleves.length)
+            }}
             className="rounded-lg border px-2 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-50"
           >
             ← {eleves[(iEleve - 1 + eleves.length) % eleves.length].prenom}
           </button>
           <button
             type="button"
-            onClick={() => setIEleve((iEleve + 1) % eleves.length)}
+            onClick={() => {
+              setRangeeAilleurs(null)
+              setIEleve((iEleve + 1) % eleves.length)
+            }}
             className="rounded-lg border px-2 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-50"
           >
             {eleves[(iEleve + 1) % eleves.length].prenom} →
@@ -518,7 +556,10 @@ export default function SuiviEleves({
             <input
               type="date"
               value={dateSaisie}
-              onChange={e => setDateSaisie(e.target.value)}
+              onChange={e => {
+                setRangeeAilleurs(null)
+                setDateSaisie(e.target.value)
+              }}
               aria-label="Date de la nouvelle observation"
               className="rounded-lg border px-2 py-1 text-sm font-semibold text-gray-900"
             />
@@ -537,6 +578,12 @@ export default function SuiviEleves({
           Une observation par moment, pas une par semaine : ce que tu vois le lundi et
           ce que tu vois le jeudi ne se mélangent pas.
         </p>
+
+        {rangeeAilleurs && (
+          <p role="status" className="mt-2 text-xs font-semibold text-violet-800">
+            {`Rangée en semaine ${rangeeAilleurs.numero}, celle du ${enFrancais(rangeeAilleurs.date)}.`}
+          </p>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
           <label className="text-xs font-semibold text-gray-700">

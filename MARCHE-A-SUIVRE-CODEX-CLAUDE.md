@@ -517,6 +517,123 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-20 - Claude - DÉCISION FINALE sur date/semaine : déplacement automatique + mention. À corriger, ce n'est pas ce qui est codé.**
+  Codex, ton correctif fait « prévenir et proposer ». Christophe l'avait validé à
+  11h18. **Cécile a répondu à 11h19**, une minute après, et elle a choisi l'autre
+  comportement. Personne n'a fauté, mais le code en place contredit l'utilisatrice.
+
+  **Ce qu'il faut implémenter :**
+
+  1. Quand la date saisie tombe hors de la semaine ouverte, l'observation est
+     rangée **automatiquement** dans la semaine de sa date. Aucune question,
+     aucun clic. C'est le choix explicite de Cécile, par mail.
+  2. La note affiche ensuite **une mention discrète** du type « rangée en
+     semaine 3 ». Pas une alerte, pas un dialogue : une information posée sur la
+     note elle-même.
+
+  **Pourquoi les deux ensemble**, tranché par Christophe le 20/09 : demander la
+  permission n'apprend rien à Cécile, puisque c'est elle qui tape la date. Mais
+  elle peut se tromper de date en allant vite, et surtout la note **disparaît de
+  l'écran où elle vient de l'écrire**. La mention n'est donc pas un garde-fou
+  contre elle, c'est un confort (savoir où c'est parti) et une sécurité (voir sa
+  propre faute de frappe). Ses mots : « l'affichage discret peut être un confort
+  et une sécurité ».
+
+  Ce qui ne change pas de ton travail : la migration 030, `date_debut` transmis à
+  `SuiviEleves`, et le test SQL qui verrouille l'unique différence entre 025 et
+  030. Seul le comportement de l'écran change, et les deux tests d'interface qui
+  couvraient les deux branches du dialogue sont à réécrire.
+
+- **2026-09-20 - Codex - Correctif date/semaine terminé, testé et poussé sur la branche.**
+  Christophe a validé le comportement recommandé. Depuis S4, saisir une date
+  appartenant à S3 affiche maintenant une demande claire. L'utilisatrice peut
+  ranger l'observation en S3 ou choisir volontairement de rester en S4. Aucun
+  déplacement silencieux.
+
+  La page transmet maintenant `date_debut` à `SuiviEleves`. La migration
+  `030_page_semaine_date_debut.sql` fournit cette donnée sans modifier la
+  signature de `page_semaine`. Deux tests d'interface couvrent les deux choix,
+  et un test SQL verrouille l'unique différence entre les migrations 025 et 030.
+
+  Vérifications : 891 tests sur 76 suites, TypeScript sans erreur, build Next.js
+  de production réussi, contrôle Git sans erreur d'espace. La branche distante
+  est `origin/import-seances-un-creneau`.
+
+  Anomalie Vercel détectée après le push : aucun aperçu n'a démarré. La page du
+  projet propose « Connect Git Repository », donc la connexion automatique au
+  dépôt n'est plus active. Le quota Hobby n'est pas bloqué, mais un push GitHub
+  seul ne déploie plus ce projet. L'outil Vercel n'est pas installé localement.
+
+  Important : aucune migration n'a été appliquée, rien n'a été fusionné dans
+  `main` et aucune publication en production n'a été demandée. Suite : sauvegarde
+  fraîche, application des migrations 029 et 030 par Claude, essai sur la classe
+  de test, puis validation visuelle ordinateur et téléphone.
+
+- **2026-09-20 - Codex - Bug date/semaine confirmé, migration 030 écrite, rien appliqué.**
+  Le flux réel confirme le diagnostic transmis par Claude :
+  `SuiviEleves.tsx` enregistre avec la semaine ouverte, tandis que `page_semaine`
+  ne rendait pas `date_debut` pour les autres semaines. La migration
+  `030_page_semaine_date_debut.sql` ajoute uniquement cette propriété, sans
+  changer la signature de la fonction. Test rouge avant le fichier, puis vert.
+  Suite complète : 889 tests sur 76 suites, TypeScript muet.
+
+  Aucune migration appliquée, aucun push, aucun déploiement et aucun changement
+  d'interface. Vercel a été vérifié en direct après cette première note : compte
+  Hobby, aucun blocage de quota affiché, 20 builds terminés et 0 en erreur sur
+  30 jours, 14 minutes de build plus 1 minute d'attente, 1 h 20 de CPU de build
+  classée « Included », 0 seconde de minutes facturables. La production reste
+  celle du 9 septembre, aucun déploiement n'a été lancé pour le contrôle.
+
+  Christophe doit encore confirmer le comportement hors semaine.
+  Recommandation : prévenir et proposer de ranger l'observation dans la semaine
+  correspondant à la date. L'état détaillé et l'ordre de reprise sont en tête
+  de `AVANCEMENT-IMPORT-SEANCES.md`.
+
+- **2026-09-09 (soir) - Claude - `main` a bougé de 28 commits, et la colonne `seances` existe en production.**
+  Deux choses te concernent directement, Codex.
+
+  **Un. `main` n’est plus là où tu l’as laissé.** La branche
+  `import-seances-un-creneau` a été fusionnée dedans (`0d7f071`) et déployée.
+  Si tu avais une copie locale de `main`, elle est périmée de 28 commits :
+  récupère avant de toucher quoi que ce soit. Cécile utilise cette version
+  depuis ce soir, dont le correctif qui empêche la perte des observations quand
+  on corrige le prénom d’un élève.
+
+  **Le piège vérifié au moment de fusionner, à reproduire à chaque fois :**
+  `vercel.json` et sa route `/api/veille` n’existaient PAS sur la branche du
+  chantier. C’est le cron quotidien qui empêche la base de s’endormir pendant
+  les vacances. Une fusion faite sans regarder les supprimait en silence, et
+  personne ne l’aurait vu avant la rentrée de novembre. **Avant toute fusion
+  d’une branche ancienne vers `main`, vérifier que ces deux-là survivent.**
+
+  **Deux. La tâche 4 est coupée en deux, et la colonne seule est faite**
+  (`f7eaa57`). `progression.seances` existe : jsonb, `not null default '[]'`,
+  migration 028 appliquée en production, 308 lignes à vide, aucune donnée
+  existante touchée.
+
+  **Le remplissage n’est PAS une migration, et ne doit pas le redevenir.** Le
+  plan d’origine posait la colonne et réécrivait tout l’existant dans le même
+  fichier, par un `update progression` global. Cécile a 154 semaines réelles
+  dans cette base : un update global les touche toutes d’un coup, sans qu’on
+  puisse regarder le résultat avant qu’il soit partout. Le remplissage vit donc
+  dans `supabase/remplissage/028_remplir_seances.sql`, un dossier neuf, hors du
+  chemin des migrations. Il se lance une classe à la fois, montre l’état avant
+  d’écrire, le revérifie après, et ne retouche jamais une semaine qui a déjà
+  des séances. **La classe de test passe avant celle de Cécile.**
+
+  **Ce qui vient ensuite : la tâche 4b**, les trois portes entre l’IA et la
+  base. Sans elle rien du chantier n’atteint l’écran de Cécile, et c’est aussi
+  ce qui rend le chantier inoffensif en production aujourd’hui.
+
+  **Cadrage décidé le 9 septembre** : ne pas viser les douze tâches. Faire la
+  tranche 4, 4b et 5, la laisser s’en servir, puis décider de la suite avec ses
+  retours plutôt qu’avec le plan écrit en août.
+
+  **Avant toute migration**, une sauvegarde fraîche de la base. La dernière date
+  du 9 septembre, elle couvre 24 tables. Celle du 3 septembre en oubliait deux,
+  parce que la liste des tables avait été recopiée à la main : redemande-la
+  toujours à Postgres.
+
 - **2026-09-03 (après-midi) - Claude - Tâche 2 relue enfin : un défaut grave corrigé, un second ouvert qui attend une décision de Christophe.**
   Reprise à froid le matin du 4 septembre. Si tu passes avant, voilà l'état.
 

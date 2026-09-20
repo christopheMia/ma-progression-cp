@@ -699,7 +699,7 @@ qui n'a pas encore la colonne.
 - Modify: `src/lib/progression-seances.ts`, `src/lib/actions/progression-matiere.ts`, `src/lib/actions/progression-periode.ts`, `src/components/methodes/SourceImporter.tsx`
 - Test: `src/lib/__tests__/progression-seances.test.ts`, `src/components/methodes/__tests__/SourceImporter.test.tsx`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 Deux points à couvrir, aucun des deux n'a de test aujourd'hui.
 
@@ -712,12 +712,12 @@ Deux points à couvrir, aucun des deux n'a de test aujourd'hui.
 2. Dans `src/components/methodes/__tests__/SourceImporter.test.tsx`, qu'une
    semaine portant des séances traverse le nettoyage sans les perdre.
 
-- [ ] **Step 2: Lancer les tests et vérifier qu'ils échouent**
+- [x] **Step 2: Lancer les tests et vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/__tests__/progression-seances.test.ts src/components/methodes/__tests__/SourceImporter.test.tsx`
 Expected: FAIL, `lignesDepuisSemaines` n'existe pas et les séances ressortent `undefined`.
 
-- [ ] **Step 3: Écrire l'implémentation**
+- [x] **Step 3: Écrire l'implémentation**
 
 **a. Une seule fonction pour construire les lignes.** `progression-matiere.ts`
 et `progression-periode.ts` portent aujourd'hui **la même** construction de
@@ -754,12 +754,12 @@ Ne pas modifier `enregistrer_source_progression` (migration 016) : elle se
 contente de passer `p_lignes` à `remplacer_progression`, elle n'en connaît pas
 le contenu.
 
-- [ ] **Step 4: Lancer toute la suite**
+- [x] **Step 4: Lancer toute la suite**
 
 Run: `npx jest` puis `npx tsc --noEmit`
 Expected: tout vert, `tsc` muet.
 
-- [ ] **Step 5: Appliquer la migration**
+- [ ] **Step 5: Appliquer la migration** (EN ATTENTE : 029 ecrite, PAS appliquee, voir plus bas)
 
 Les migrations ne sont pas testables par Jest. Appliquer **028 puis 029** dans
 cet ordre sur Supabase, puis faire un import réel et vérifier en base qu'une
@@ -767,7 +767,7 @@ ligne de `progression` porte bien ses séances. Voir
 `MARCHE-A-SUIVRE-CODEX-CLAUDE.md` pour la répartition : Codex écrit les
 migrations, Claude les applique.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/progression-seances.ts src/lib/__tests__/progression-seances.test.ts src/lib/actions/progression-matiere.ts src/lib/actions/progression-periode.ts src/components/methodes/SourceImporter.tsx src/components/methodes/__tests__/SourceImporter.test.tsx supabase/migrations/029_remplacer_progression_seances.sql

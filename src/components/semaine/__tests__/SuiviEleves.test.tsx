@@ -118,6 +118,73 @@ describe('SuiviEleves', () => {
     expect(screen.getAllByLabelText(/^observation du/i)).toHaveLength(2)
   })
 
+  // Choix de Cecile, par mail le 20/09 : elle veut que la note parte toute seule
+  // dans la semaine de sa date, sans qu'on lui demande quoi que ce soit. Elle
+  // tape la date exprès, la question ne lui apprend rien.
+  test('range l’observation dans la semaine de sa date, sans rien demander', async () => {
+    const user = userEvent.setup()
+    afficher({
+      semaineId: 's4',
+      numeroSemaine: 4,
+      periode: 1,
+      dateParDefaut: '2026-09-21',
+      semainesClasse: [
+        { id: 's3', numero: 3, periode: 1, dateDebut: '2026-09-14' },
+        { id: 's4', numero: 4, periode: 1, dateDebut: '2026-09-21' },
+      ],
+    })
+
+    await user.clear(screen.getByLabelText(/date de la nouvelle observation/i))
+    await user.type(screen.getByLabelText(/date de la nouvelle observation/i), '2026-09-18')
+    await user.click(screen.getByRole('button', { name: /ajouter une observation/i }))
+
+    // Aucun dialogue : on enregistre directement au bon endroit.
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+    await waitFor(() => expect(ajouterObservation).toHaveBeenCalledWith('e1', 's3', '2026-09-18'))
+  })
+
+  // Le garde-fou decide par Christophe le 20/09 : la note disparait de l'ecran
+  // ou elle vient d'etre ecrite, et une faute de frappe sur la date l'enverrait
+  // ailleurs sans rien dire. On ne demande pas la permission, on dit ou c'est parti.
+  test('dit où la note a été rangée quand ce n’est pas la semaine ouverte', async () => {
+    const user = userEvent.setup()
+    afficher({
+      semaineId: 's4',
+      numeroSemaine: 4,
+      periode: 1,
+      dateParDefaut: '2026-09-21',
+      semainesClasse: [
+        { id: 's3', numero: 3, periode: 1, dateDebut: '2026-09-14' },
+        { id: 's4', numero: 4, periode: 1, dateDebut: '2026-09-21' },
+      ],
+    })
+
+    await user.clear(screen.getByLabelText(/date de la nouvelle observation/i))
+    await user.type(screen.getByLabelText(/date de la nouvelle observation/i), '2026-09-18')
+    await user.click(screen.getByRole('button', { name: /ajouter une observation/i }))
+
+    await screen.findByText(/rangée en semaine 3/i)
+  })
+
+  test('ne dit rien de spécial quand la date tombe dans la semaine ouverte', async () => {
+    const user = userEvent.setup()
+    afficher({
+      semaineId: 's4',
+      numeroSemaine: 4,
+      periode: 1,
+      dateParDefaut: '2026-09-21',
+      semainesClasse: [
+        { id: 's3', numero: 3, periode: 1, dateDebut: '2026-09-14' },
+        { id: 's4', numero: 4, periode: 1, dateDebut: '2026-09-21' },
+      ],
+    })
+
+    await user.click(screen.getByRole('button', { name: /ajouter une observation/i }))
+
+    await waitFor(() => expect(ajouterObservation).toHaveBeenCalledWith('e1', 's4', '2026-09-21'))
+    expect(screen.queryByText(/rangée en semaine/i)).toBeNull()
+  })
+
   test('enregistre le texte d’une observation', async () => {
     const user = userEvent.setup()
     afficher()
