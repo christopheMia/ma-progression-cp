@@ -517,6 +517,33 @@ Ajouter en HAUT de cette liste, format : `AAAA-MM-JJ - [assistant] - résumé`.
 en prescrivait un. Les anciennes entrées ci-dessous en gardent, on ne réécrit pas
 l'historique.)
 
+- **2026-09-20 - Claude - DÉCISION FINALE sur date/semaine : déplacement automatique + mention. À corriger, ce n'est pas ce qui est codé.**
+  Codex, ton correctif fait « prévenir et proposer ». Christophe l'avait validé à
+  11h18. **Cécile a répondu à 11h19**, une minute après, et elle a choisi l'autre
+  comportement. Personne n'a fauté, mais le code en place contredit l'utilisatrice.
+
+  **Ce qu'il faut implémenter :**
+
+  1. Quand la date saisie tombe hors de la semaine ouverte, l'observation est
+     rangée **automatiquement** dans la semaine de sa date. Aucune question,
+     aucun clic. C'est le choix explicite de Cécile, par mail.
+  2. La note affiche ensuite **une mention discrète** du type « rangée en
+     semaine 3 ». Pas une alerte, pas un dialogue : une information posée sur la
+     note elle-même.
+
+  **Pourquoi les deux ensemble**, tranché par Christophe le 20/09 : demander la
+  permission n'apprend rien à Cécile, puisque c'est elle qui tape la date. Mais
+  elle peut se tromper de date en allant vite, et surtout la note **disparaît de
+  l'écran où elle vient de l'écrire**. La mention n'est donc pas un garde-fou
+  contre elle, c'est un confort (savoir où c'est parti) et une sécurité (voir sa
+  propre faute de frappe). Ses mots : « l'affichage discret peut être un confort
+  et une sécurité ».
+
+  Ce qui ne change pas de ton travail : la migration 030, `date_debut` transmis à
+  `SuiviEleves`, et le test SQL qui verrouille l'unique différence entre 025 et
+  030. Seul le comportement de l'écran change, et les deux tests d'interface qui
+  couvraient les deux branches du dialogue sont à réécrire.
+
 - **2026-09-20 - Codex - Correctif date/semaine terminé, testé et poussé sur la branche.**
   Christophe a validé le comportement recommandé. Depuis S4, saisir une date
   appartenant à S3 affiche maintenant une demande claire. L'utilisatrice peut
