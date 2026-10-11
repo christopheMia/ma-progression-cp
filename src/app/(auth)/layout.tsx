@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <BookOpenText size={32} aria-hidden="true" />
           <Pencil size={24} aria-hidden="true" />
         </div>
-        <h1 className="font-logo text-4xl text-center text-slate-900 mb-1">Ma Progression CP</h1>
+        <h1 className="font-logo text-4xl text-center text-slate-900 mb-1">ProfEnPoche</h1>
         <p className="text-center text-slate-400 text-sm mb-8">L&apos;outil de Cécile</p>
         {children}
       </div>

@@ -37,7 +37,7 @@ h1, h2, h3, h4 {
 }
 
 /* Logo / nom de l'appli : calligraphie (Dancing Script). Reserve au wordmark
-   "Ma Progression CP", pas au texte courant. */
+   "ProfEnPoche", pas au texte courant. */
 .font-logo {
   font-family: var(--font-logo), "Playfair Display", cursive;
   font-weight: 500;

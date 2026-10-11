@@ -44,7 +44,7 @@ export default function PolicesPage() {
           <p className="text-xs text-gray-400 mb-4" style={{ fontFamily: 'system-ui, sans-serif' }}>{p.desc}</p>
 
           {/* Echantillon : titres, texte, liste et bouton, comme dans l'appli. */}
-          <h2 className="text-xl font-bold text-gray-900">Ma Progression CP</h2>
+          <h2 className="text-xl font-bold text-gray-900">ProfEnPoche</h2>
           <h3 className="text-base font-semibold text-violet-700 mt-2">Semaine 3 · Période 1</h3>
           <p className="text-sm text-gray-700 mt-1">
             Cette semaine, on travaille les graphèmes et les premiers nombres. L&apos;IA lit ta

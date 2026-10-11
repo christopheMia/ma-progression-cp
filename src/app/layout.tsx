@@ -15,7 +15,7 @@ const playfair = Playfair_Display({
 });
 
 // Logo / nom de l'appli : Dancing Script (calligraphie elegante et lisible).
-// Utilisee uniquement pour le wordmark "Ma Progression CP", via .font-logo.
+// Utilisee uniquement pour le wordmark "ProfEnPoche", via .font-logo.
 const dancingScript = Dancing_Script({
   variable: "--font-logo",
   subsets: ["latin"],
@@ -28,7 +28,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ma Progression CP",
+  title: "ProfEnPoche",
   description:
     "L'appli qui prépare ton année de CP : progression, suivi des élèves et cahier journal, avec l'IA qui lit ta méthode.",
 };

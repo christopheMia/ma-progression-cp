@@ -48,7 +48,7 @@ export default async function AccueilPage() {
             <Pencil size={30} aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2 flex items-center justify-center gap-2">
-            Bienvenue sur Ma Progression CP
+            Bienvenue sur ProfEnPoche
             <Hand size={22} className="text-amber-500" aria-hidden="true" />
           </h1>
           <p className="text-slate-600 mb-6 leading-relaxed max-w-xl mx-auto">

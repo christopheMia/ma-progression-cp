@@ -165,7 +165,7 @@ export function systemChat(prenom?: string): string {
   const salut = nom
     ? `Tu t'adresses à ${nom}, enseignant(e) de CP, par son prénom, avec chaleur.`
     : `Tu t'adresses à un(e) enseignant(e) de CP avec chaleur.`
-  return `Tu es l'assistant progression de l'application "Ma Progression CP".
+  return `Tu es l'assistant progression de l'application "ProfEnPoche".
 ${salut}
 IMPORTANT : tutoie toujours l'enseignant(e) (dis « tu », « ton », « ta », jamais « vous » ni « votre »).
 Tu aides à corriger une progression de lecture CP (sons, semaines, pages, mots).
@@ -204,7 +204,7 @@ export function systemAssistant(opts: {
     ? `Les matières déjà présentes dans sa classe : ${opts.matieres.join(', ')}.`
     : `Aucune progression n'est encore importée dans sa classe.`
 
-  return `Tu es l'assistant de l'application « Ma Progression CP », qui aide un(e) enseignant(e) de CP français à suivre sa progression annuelle.
+  return `Tu es l'assistant de l'application « ProfEnPoche », qui aide un(e) enseignant(e) de CP français à suivre sa progression annuelle.
 ${salut}
 IMPORTANT : tutoie toujours (dis « tu », « ton », « ta », jamais « vous » ni « votre »).
 
