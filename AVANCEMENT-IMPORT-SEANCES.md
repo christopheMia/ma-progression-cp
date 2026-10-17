@@ -8,6 +8,8 @@
 | Textes renommés en ProfEnPoche (onglet, connexion, barre du haut, accueil, assistant IA) | commit `3c51980`, 892 tests verts, `tsc` muet ; `<title>ProfEnPoche</title>` lu sur la production |
 | Nouvelle adresse | `profenpoche.vercel.app` ajoutée au projet ; l'ancienne `ma-progression-cp.vercel.app` marche toujours (raccourci de Cécile à changer plus tard) |
 
+**COMMENT REPRENDRE (17/10 soir)** : session neuve (le connecteur claude.ai Supabase n'était pas chargé dans la session du 17/10 alors qu'il est connecté sur claude.ai). Vérifier d'abord que les outils `mcp__claude_ai_Supabase__*` sont là. Puis : (1) Christophe importe un PDF de Cécile dans la classe de test, Claude vérifie en base les `seances` ; (2) sauvegarde de la base puis remplissage 028 classe de test, puis classe de Cécile ; (3) tâches 5 à 12. Deux décisions proposées à Christophe, réponse attendue : empreinte des sources = ne rien changer (avis de Claude) ; domaine en double = garder « Lecture compréhension » (avis de Claude, à confirmer avec Cécile).
+
 **17/10 : réglages Supabase faits par Christophe** (accès retrouvé par le compte GitHub de youckyboy@gmail.com) : Site URL passée de `http://localhost:3000` à `https://profenpoche.vercel.app`, Redirect URLs `https://profenpoche.vercel.app/**` et `https://ma-progression-cp.vercel.app/**`, mots de passe 8 caractères minimum.
 
 Reste : Vercel toujours pas relié à GitHub (un push ne déploie pas, passer par la CLI) ; logo plus tard ; puis les points 1 à 4 ci-dessous (essai d'import sur la classe de test, remplissage 028, empreinte des sources, prévenir Cécile).
