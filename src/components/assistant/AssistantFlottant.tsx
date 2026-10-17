@@ -319,6 +319,11 @@ export default function AssistantFlottant({
             <p className="text-sm leading-6 text-slate-800">
               Hey ! Si tu as besoin d’aide, ton assistant préféré est là !
             </p>
+            {/* Demande de Christophe du 17/10/2026 : dire qu'on peut le déplacer,
+                sinon personne ne le devine. */}
+            <p className="mt-1 text-sm leading-6 text-slate-800">
+              Tu peux me déplacer et me mettre où tu veux !
+            </p>
             <button
               type="button"
               onClick={masquerBulle}

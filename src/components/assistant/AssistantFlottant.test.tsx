@@ -84,6 +84,7 @@ describe('AssistantFlottant', () => {
 
     act(() => { jest.advanceTimersByTime(1500) })
     expect(screen.getByText(/ton assistant préféré est là/)).toBeInTheDocument()
+    expect(screen.getByText(/Tu peux me déplacer et me mettre où tu veux/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Merci, j’ai compris' }))
     expect(screen.queryByText(/ton assistant préféré est là/)).toBeNull()
