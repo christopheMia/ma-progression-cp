@@ -1,4 +1,5 @@
 import { genererCahierJournal } from '../cahier-journal'
+import { TRAME_EDT_CP } from '@/data/trame-edt'
 import type { CreneauHoraire, JourJournal, ProgressionMatiere } from '@/types'
 
 /**
@@ -246,11 +247,91 @@ describe('placer par le sens : cas particuliers', () => {
     } as unknown as ProgressionMatiere
     const [lundi] = journal(LUNDI, [brut])
     expect(dans(lundi, 'Etude de la langue : vocabulaire ou grammaire')).toBe('Vocabulaire (S7)')
-    // Le jour écrit en texte n'est pas un jour lisible : la séance n'est datée
-    // d'aucun, et paraît une fois, le premier jour, à placer.
+    // Le jour écrit en texte (« 1 ») est lu comme le jour 1 par `lireSeances`.
+    expect(dans(lundi, 'Phonologie encodage décodage')).toBe('Graphème L (phono, encodage, décodage)')
+    expect(lundi.aPlacer ?? []).toEqual([])
+    for (const s of lundi.seances) expect(s.deroulement).not.toBe('')
+  })
+
+  it('un jour illisible rend la séance non datée, montrée une fois à placer', () => {
+    const brut = {
+      ...FRANCAIS_S3,
+      seances: [
+        { jour: 1, domaine: '', libelle: 'Vocabulaire (S7)' },
+        { jour: 'lundi', domaine: '', libelle: 'Graphème L (phono, encodage, décodage)' },
+      ],
+    } as unknown as ProgressionMatiere
+    const [lundi] = journal(LUNDI, [brut])
     expect(lundi.aPlacer).toEqual([
       { libelle: 'Graphème L (phono, encodage, décodage)', origine: 'semaine' },
     ])
-    for (const s of lundi.seances) expect(s.deroulement).not.toBe('')
+  })
+
+  it('une séance ambiguë part à placer même s’il y a un créneau « Français »', () => {
+    const edt = [
+      c('lundi', 0, 'Français'),
+      c('lundi', 1, 'Compréhension écrite'),
+      c('lundi', 2, "Compréhension ou production d'écrits"),
+    ]
+    const prog: ProgressionMatiere = {
+      ...FRANCAIS_S3, seances: [{ jour: 1, domaine: 'LC', libelle: 'LC : Texte' }],
+    }
+    const [lundi] = journal(edt, [prog])
+    expect(lundi.seances.map(s => s.deroulement))
+      .toEqual(['Français', 'Compréhension écrite', "Compréhension ou production d'écrits"])
+    expect(lundi.aPlacer).toEqual([{ libelle: 'LC : Texte', origine: null }])
+  })
+
+  it('l’affichage passe par la lecture commune des séances (domaine abrégé, domaine écrit devant)', () => {
+    const prog: ProgressionMatiere = {
+      ...FRANCAIS_S3,
+      seances: [
+        { jour: 1, domaine: '', libelle: 'Lecture compréhension : Le loup' },
+        { jour: 1, domaine: 'Vocabulaire', libelle: 'Les fruits (S2)' },
+      ],
+    }
+    const [lundi] = journal(LUNDI, [prog])
+    expect(dans(lundi, "Compréhension écrite ou production d'cérits")).toBe('LC : Le loup')
+    expect(dans(lundi, 'Etude de la langue : vocabulaire ou grammaire')).toBe('Vocabulaire : Les fruits (S2)')
+  })
+})
+
+describe('placer par le sens : la trame par défaut', () => {
+  // Le mardi de la trame a « Appropriation des graphèmes » ET « Phonologie » :
+  // deux noms pour la même famille. Le créneau qui écrit le mot de la séance
+  // l'emporte ; sinon, rien n'est deviné.
+  const edt: CreneauHoraire[] = TRAME_EDT_CP.map((t, i) => ({
+    ...t, id: `t-${i}`, class_id: 'classe', jour: t.jour as Jour,
+    methode_id: null, visible_journal: t.type === 'cours',
+  }))
+  const prog: ProgressionMatiere = {
+    ...FRANCAIS_S3,
+    seances: [
+      { jour: 2, domaine: '', libelle: 'Graphème L (phono, encodage, décodage)' },
+      { jour: 2, domaine: 'Phonologie', libelle: 'Phonologie : le son [l]' },
+      { jour: 2, domaine: '', libelle: 'Vocabulaire (S9)' },
+      { jour: 2, domaine: 'PDE', libelle: 'PDE (S5)' },
+      { jour: 2, domaine: '', libelle: 'Geste d’écriture' },
+      { jour: 2, domaine: '', libelle: 'Encodage de syllabes' },
+    ],
+  }
+  const mardi = jour(journal(edt, [prog, MATHS]), 'mardi')
+
+  it('le graphème va dans « Appropriation des graphèmes », la phonologie dans « Phonologie »', () => {
+    expect(dans(mardi, 'Appropriation des graphèmes')).toBe('Graphème L (phono, encodage, décodage)')
+    expect(dans(mardi, 'Phonologie')).toBe('Phonologie : le son [l]')
+  })
+
+  it('le vocabulaire et la PDE trouvent leur créneau', () => {
+    expect(dans(mardi, 'Vocabulaire')).toBe('Vocabulaire (S9)')
+    expect(dans(mardi, "Production d'écrits")).toBe('PDE (S5)')
+  })
+
+  it('« Lecture-écriture » ne reçoit rien, et ce qui n’a pas de créneau sûr part à placer', () => {
+    expect(dans(mardi, 'Lecture-écriture')).toBe('Lecture-écriture')
+    expect(mardi.aPlacer).toEqual([
+      { libelle: 'Geste d’écriture', origine: null },
+      { libelle: 'Encodage de syllabes', origine: null },
+    ])
   })
 })

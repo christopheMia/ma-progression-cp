@@ -4,7 +4,8 @@ import {
 } from '@/types'
 import { libelleMatiereCanonique, trouverProgressionMatiere } from '@/lib/matieres'
 import { lirePrefixeJour, lireSeances } from '@/lib/progression-seances'
-import { normaliserIntitule, repartirSeances } from '@/lib/familles-seances'
+import { repartirSeances } from '@/lib/familles-seances'
+import { sansAccents } from '@/data/trame-edt'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
@@ -98,9 +99,9 @@ function porteDesSeancesDatees(seances: SeanceProgression[]): boolean {
  * qui dit autre chose (« Ateliers de français ») n'est pas générique.
  */
 function estCreneauGenerique(nom: string, p: ProgressionMatiere): boolean {
-  const n = normaliserIntitule(nom)
-  return n === normaliserIntitule(p.matiere)
-    || n === normaliserIntitule(libelleMatiereCanonique(p.matiere))
+  const n = sansAccents(nom)
+  return n === sansAccents(p.matiere)
+    || n === sansAccents(libelleMatiereCanonique(p.matiere))
 }
 
 /**
@@ -141,9 +142,12 @@ function notions(p: ProgressionMatiere, indexJour: number, nbJours: number): str
  * porte que le nom de la matière (« Français ») prend ensuite le reste, dans
  * l'ordre. Plus de concaténation : « une puce, une séance, un créneau ».
  *
- * Les séances passent d'abord par `lireSeances` : une ligne jsonb mal formée
- * (jour écrit en texte, libellé vide) ne fait ni planter le journal ni
- * disparaître un vrai texte. Un jour illisible rend la séance non datée.
+ * Les séances passent d'abord par `lireSeances`, la lecture commune à l'import :
+ * une ligne jsonb mal formée ne fait ni planter le journal ni disparaître un
+ * vrai texte. Un jour écrit « 1 » vaut le jour 1, un jour illisible rend la
+ * séance non datée, un libellé vide n'est pas une séance. L'affichage en
+ * hérite aussi : un domaine long s'écrit « LC », un domaine absent du libellé
+ * est écrit devant.
  *
  * Ce qui ne trouve aucun créneau n'est ni empilé ni perdu, il part dans
  * `aPlacer` et l'enseignante le pose elle-même (pas de placement au jugé) :

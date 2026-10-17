@@ -4,6 +4,7 @@ import {
   seanceDepuisTexte,
   completerSeances,
   lignesDepuisSemaines,
+  lireSeances,
 } from '../progression-seances'
 
 describe('seancesDepuisItems', () => {
@@ -936,5 +937,24 @@ describe('le préfixe « Jour N : » survit au nettoyage des espaces', () => {
     expect(propre).not.toContain(INSECABLE)
     expect(propre).toBe('Jour 3 : Les contraires')
     expect(propre).toMatch(/^\s*jours?\s*\d+\s*:\s*/i)
+  })
+})
+
+// Relecture du 17/10 : une ligne jsonb peut porter le jour en texte (« 1 »).
+// Le perdre rendait la séance non datée, donc absente de son vrai jour.
+describe('lireSeances, jour écrit en texte', () => {
+  it('lit « 1 » comme le jour 1', () => {
+    expect(lireSeances([{ jour: '1', domaine: '', libelle: 'Vocabulaire (S7)' }]))
+      .toEqual([{ jour: 1, domaine: '', libelle: 'Vocabulaire (S7)' }])
+  })
+
+  it('laisse non daté ce qui n’est pas un nombre de jour lisible', () => {
+    for (const jour of ['0', '1.5', '-1', ' 1', 'lundi', '', '1a']) {
+      expect(lireSeances([{ jour, domaine: '', libelle: 'X' }])[0].jour).toBeNull()
+    }
+  })
+
+  it('le jour écrit dans le libellé garde la priorité', () => {
+    expect(lireSeances([{ jour: '1', domaine: '', libelle: 'Jour 3 : X' }])[0].jour).toBe(3)
   })
 })

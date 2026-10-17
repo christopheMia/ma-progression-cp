@@ -34,10 +34,10 @@ export type Famille = keyof typeof COULEURS_FAMILLE
  * sans que rien ne le signale. Les libellés viennent de PDF et de saisies
  * manuelles : ils portent des virgules, des points, des barres obliques.
  */
-function sansAccents(s: string): string {
+export function sansAccents(s: string): string {
   return s
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()

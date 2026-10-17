@@ -1,4 +1,5 @@
 import type { SeanceProgression } from '@/types'
+import { sansAccents } from '@/data/trame-edt'
 
 /**
  * Familles de séance : placer une séance de français PAR LE SENS.
@@ -18,17 +19,23 @@ import type { SeanceProgression } from '@/types'
  * que « Ecriture » restait vide. Un cahier journal faux qui a l'air juste est
  * pire qu'un cahier journal vide : personne ne le relit.
  *
- * LA MÊME TABLE sert aux deux côtés : appliquée au libellé d'une séance, elle
- * dit de quoi parle la séance ; appliquée au nom d'un créneau, elle dit ce que
- * le créneau accueille (« Compréhension écrite ou production d'écrits » en
- * accueille deux). Les mots se comparent ENTIERS, sur un texte sans accents ni
- * ponctuation, pour que « LC » ne se trouve pas dans « calcul ».
+ * DEUX LECTURES, UNE PAR CÔTÉ. Le libellé d'une séance dit de quoi elle parle ;
+ * le nom d'un créneau dit ce qu'il accueille (« Compréhension écrite ou
+ * production d'écrits » en accueille deux). Les deux tables se ressemblent mais
+ * ne sont pas la même : « Ecriture » comme nom de créneau désigne le geste
+ * d'écriture, alors que dans un libellé « Écriture d'une phrase » est de la
+ * production d'écrits. Les mots se comparent ENTIERS, sans accents, sans
+ * ponctuation et sans la marque du pluriel, pour que « LC » ne se trouve pas
+ * dans « calcul » et que « graphèmes » rejoigne « graphème ».
  *
- * Ce qui n'est volontairement PAS dans la table :
+ * Ce qui n'est volontairement dans AUCUNE table :
  * - « lecture » seule : elle figure dans « Graphèmes e et é (phono, lecture) »,
  *   qui est de la phonologie, pas de la compréhension ;
- * - « dictée », « fluence », « lettres muettes » : chacune pourrait aller dans
- *   deux créneaux de Cécile. Plutôt « à placer » qu'un mauvais créneau.
+ * - « oral » seul : « Lecture orale » n'est pas du langage oral. Et une
+ *   compréhension ou une production suivie de « oral(e) » ne vaut ni LC ni PDE ;
+ * - fluence, lettres muettes, prénoms de la classe, dictée : Christophe a
+ *   confirmé le 17/10 que ces séances n'ont pas de créneau chez Cécile et
+ *   restent à placer.
  */
 export type FamilleSeance =
   | 'phonologie'
@@ -38,52 +45,93 @@ export type FamilleSeance =
   | 'productionEcrits'
   | 'langageOral'
 
-const MOTS_PAR_FAMILLE: ReadonlyArray<readonly [FamilleSeance, readonly string[]]> = [
-  ['phonologie', ['phonologie', 'phono', 'phoneme', 'phonemes', 'grapheme', 'graphemes', 'encodage', 'decodage']],
-  ['etudeLangue', ['etude de la langue', 'vocabulaire', 'grammaire', 'orthographe', 'conjugaison']],
+type Table = ReadonlyArray<readonly [FamilleSeance, readonly string[]]>
+
+// Les mots sont écrits comme `mots` les rend : sans accents, au singulier.
+const PHONOLOGIE = ['phonologie', 'phono', 'phoneme', 'grapheme', 'encodage', 'decodage']
+const ETUDE_LANGUE = ['etude de la langue', 'vocabulaire', 'grammaire', 'orthographe', 'conjugaison']
+
+/** Ce dont parle le libellé d'une séance. */
+const TABLE_SEANCE: Table = [
+  ['phonologie', PHONOLOGIE],
+  ['etudeLangue', ETUDE_LANGUE],
+  // Pas « écriture » seule : voir `estEcritureSeule`.
+  ['ecriture', ['geste d ecriture', 'graphisme', 'copie']],
+  ['comprehension', ['comprehension', 'lc']],
+  ['productionEcrits', ['production', 'pde']],
+  ['langageOral', ['langage oral']],
+]
+
+/** Ce qu'accueille un créneau, d'après son nom. */
+const TABLE_CRENEAU: Table = [
+  ['phonologie', PHONOLOGIE],
+  ['etudeLangue', ETUDE_LANGUE],
   ['ecriture', ['ecriture', 'graphisme', 'copie']],
   ['comprehension', ['comprehension', 'lc']],
   // « production » seul suffit : il couvre la faute de frappe réelle
-  // « production d'cérits » d'un créneau de Cécile. Une « production orale »
-  // porterait aussi la famille du langage oral, donc deux familles : à placer.
+  // « production d'cérits » d'un créneau de Cécile.
   ['productionEcrits', ['production', 'pde']],
-  ['langageOral', ['langage oral', 'oral', 'orale']],
+  ['langageOral', ['langage oral']],
 ]
 
 /**
- * Expressions qui ne disent rien de sûr et qu'on retire avant de chercher.
- * « Lecture-écriture » (créneau de la trame par défaut) désigne une séance de
- * lecture et d'encodage, pas le geste d'écriture : le mot « écriture » y
- * tromperait.
+ * Ce qu'on efface avant de chercher, parce que le mot y trompe :
+ * - « compréhension orale », « production orale » ne sont ni LC ni PDE ;
+ * - « Lecture-écriture » (créneau de la trame par défaut) est une séance de
+ *   lecture et d'encodage, pas le geste d'écriture.
  */
-const EXPRESSIONS_NEUTRES: readonly string[] = ['lecture ecriture']
+const TROMPEURS = / (?:comprehension|production) orale? | lecture ecriture /g
 
-/** Minuscules, sans accents, chaque suite de signes réduite à un espace. */
-export function normaliserIntitule(texte: string): string {
-  return texte
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[Œœ]/g, 'oe')
-    .toLocaleLowerCase('fr-FR')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
+/** Mots d'un texte : `sansAccents`, puis la marque du pluriel retirée. */
+function mots(texte: string): string {
+  return sansAccents(texte)
+    .split(' ')
+    .map(m => (m.length > 3 && m.endsWith('s') ? m.slice(0, -1) : m))
+    .join(' ')
+}
+
+/** Vrai quand le texte (déjà passé par `mots`) contient ce mot ou cette expression, entier. */
+function contient(texte: string, mot: string): boolean {
+  return ` ${texte} `.includes(` ${mot} `)
+}
+
+/** Chaque famille désignée, avec les mots de la table qui l'ont désignée. */
+function lire(texte: string, table: Table): Map<FamilleSeance, string[]> {
+  // Remplacé deux fois : deux expressions trompeuses côte à côte partagent
+  // l'espace qui les sépare, et la première passe saute la seconde.
+  const cherche = ` ${mots(texte)} `.replace(TROMPEURS, '  ').replace(TROMPEURS, '  ').trim()
+  const trouve = new Map<FamilleSeance, string[]>()
+  for (const [famille, liste] of table) {
+    const touches = liste.filter(mot => contient(cherche, mot))
+    if (touches.length) trouve.set(famille, touches)
+  }
+  return trouve
 }
 
 /**
- * Les familles qu'un texte (libellé de séance ou nom de créneau) désigne, dans
- * l'ordre de la table. Vide quand rien ne parle sans hésitation.
+ * Un libellé qui n'est QUE « Écriture », éventuellement suivi d'une
+ * parenthèse (« Écriture (S2) »). Tout ce qui va plus loin (« Écriture d'une
+ * phrase », « Lecture et écriture de syllabes ») ne décide rien.
  */
-export function famillesDe(texte: string): FamilleSeance[] {
-  let cherche = ` ${normaliserIntitule(texte)} `
-  for (const neutre of EXPRESSIONS_NEUTRES) cherche = cherche.split(` ${neutre} `).join('  ')
-  return MOTS_PAR_FAMILLE
-    .filter(([, mots]) => mots.some(mot => cherche.includes(` ${mot} `)))
-    .map(([famille]) => famille)
+function estEcritureSeule(libelle: string): boolean {
+  return sansAccents(libelle.replace(/\([^()]*\)\s*$/, '')) === 'ecriture'
 }
 
-/** Familles d'une séance : son libellé, et son domaine s'il n'y est pas écrit. */
-function famillesSeance(s: SeanceProgression): FamilleSeance[] {
-  return famillesDe(`${s.domaine} ${s.libelle}`)
+function lireSeance(s: SeanceProgression): Map<FamilleSeance, string[]> {
+  const trouve = lire(`${s.domaine} ${s.libelle}`, TABLE_SEANCE)
+  if (estEcritureSeule(s.libelle) && !trouve.has('ecriture')) trouve.set('ecriture', ['ecriture'])
+  return trouve
+}
+
+/** Les familles dont parle une séance, dans l'ordre de la table. */
+export function famillesSeance(libelle: string, domaine = ''): FamilleSeance[] {
+  const trouve = lireSeance({ jour: null, domaine, libelle })
+  return TABLE_SEANCE.map(([f]) => f).filter(f => trouve.has(f))
+}
+
+/** Les familles qu'accueille un créneau, dans l'ordre de la table. */
+export function famillesCreneau(nom: string): FamilleSeance[] {
+  return [...lire(nom, TABLE_CRENEAU).keys()]
 }
 
 export type Repartition = {
@@ -96,58 +144,72 @@ export type Repartition = {
 /**
  * Répartit les séances d'UN jour entre les créneaux de cours d'UNE progression.
  *
- * 1. Une séance qui ne désigne qu'UNE famille va dans le premier créneau libre
- *    qui accueille cette famille. Plusieurs créneaux du MÊME nom se partagent
- *    les séances de la famille dans l'ordre (deux « Etude de la langue » : le
- *    Vocabulaire puis la Grammaire). Mais si la famille est accueillie ce
- *    jour-là par des créneaux de noms DIFFÉRENTS, c'est « plusieurs possibles »
- *    au sens de la décision du 17/10 : on ne choisit pas, elle reste.
+ * 1. Une séance qui ne désigne qu'UNE famille vise les créneaux qui accueillent
+ *    cette famille ce jour-là :
+ *    - tous du même nom : le premier libre la prend. Deux « Etude de la
+ *      langue » reçoivent le Vocabulaire puis la Grammaire ;
+ *    - de noms différents : seul un nom qui ÉCRIT le mot de la séance peut
+ *      trancher (« Graphème L » va dans « Appropriation des graphèmes » plutôt
+ *      que dans « Phonologie »). S'il n'y en a pas exactement un, c'est
+ *      « plusieurs possibles » au sens de la décision du 17/10 : la séance part
+ *      à placer, et jamais dans un créneau générique ;
+ *    - aucun : elle reste pour le créneau générique.
  * 2. Une séance à zéro ou plusieurs familles (« Vocabulaire et PDE (S8) ») ne
  *    se place pas par famille.
  * 3. Un créneau GÉNÉRIQUE (son nom n'est que la matière, « Français ») prend
- *    ensuite, dans l'ordre, ce qui reste. Il garde utilisables les emplois du
- *    temps simples. « Ateliers de français » n'est pas générique : il ne reçoit
- *    jamais rien tout seul.
- * 4. Le reste est rendu à l'appelant, qui le met « à placer ». Chaque séance
- *    finit donc dans exactement un créneau ou dans les restantes.
+ *    ensuite, dans l'ordre, ce qui n'a pas été placé : séances sans famille ou à
+ *    plusieurs familles, séances dont la famille n'a aucun créneau ce jour-là
+ *    ou dont le créneau est déjà pris. « Ateliers de français » n'est pas
+ *    générique : il ne reçoit jamais rien tout seul.
+ * 4. Le reste est rendu à l'appelant, dans l'ordre du document, qui le met
+ *    « à placer ». Chaque séance finit dans exactement un créneau ou dans les
+ *    restantes.
  */
 export function repartirSeances(
   nomsCreneaux: string[],
   seances: SeanceProgression[],
   estGenerique: (nomCreneau: string) => boolean,
 ): Repartition {
-  const famillesCreneau = nomsCreneaux.map(famillesDe)
+  const famillesParCreneau = nomsCreneaux.map(famillesCreneau)
+  const cles = nomsCreneaux.map(mots)
   const parCreneau: (SeanceProgression | null)[] = nomsCreneaux.map(() => null)
+  const placees = new Set<SeanceProgression>()
+  const ambigues = new Set<SeanceProgression>()
 
-  // Une famille est ambiguë ce jour-là quand des créneaux de noms différents
-  // l'accueillent. Calculé une fois pour toutes : le résultat ne dépend pas de
-  // l'ordre des séances.
-  const nomsParFamille = new Map<FamilleSeance, Set<string>>()
-  famillesCreneau.forEach((familles, i) => {
-    for (const f of familles) {
-      const noms = nomsParFamille.get(f) ?? new Set<string>()
-      noms.add(normaliserIntitule(nomsCreneaux[i]))
-      nomsParFamille.set(f, noms)
-    }
-  })
+  /** Nom (sous sa forme `mots`) du créneau visé, `null` s'il n'y en a aucun. */
+  const cible = (famille: FamilleSeance, motsSeance: string[]): string | null | 'ambigu' => {
+    const noms = [...new Set(cles.filter((_, i) => famillesParCreneau[i].includes(famille)))]
+    if (noms.length <= 1) return noms[0] ?? null
+    const precis = noms.filter(nom => motsSeance.some(mot => contient(nom, mot)))
+    return precis.length === 1 ? precis[0] : 'ambigu'
+  }
 
-  const nonPlacees: SeanceProgression[] = []
   for (const s of seances) {
-    const familles = famillesSeance(s)
-    const f = familles.length === 1 ? familles[0] : null
-    const libre = f !== null && nomsParFamille.get(f)?.size === 1
-      ? famillesCreneau.findIndex((fc, i) => parCreneau[i] === null && fc.includes(f))
-      : -1
-    if (libre >= 0) parCreneau[libre] = s
-    else nonPlacees.push(s)
+    const lu = lireSeance(s)
+    if (lu.size !== 1) continue
+    const [[famille, motsSeance]] = [...lu]
+    const nom = cible(famille, motsSeance)
+    if (nom === 'ambigu') {
+      ambigues.add(s)
+      continue
+    }
+    const libre = nom === null ? -1 : cles.findIndex((cle, i) =>
+      parCreneau[i] === null && cle === nom && famillesParCreneau[i].includes(famille))
+    if (libre >= 0) {
+      parCreneau[libre] = s
+      placees.add(s)
+    }
   }
 
-  const restantes: SeanceProgression[] = []
-  for (const s of nonPlacees) {
+  for (const s of seances) {
+    if (placees.has(s) || ambigues.has(s)) continue
     const libre = nomsCreneaux.findIndex((nom, i) =>
-      parCreneau[i] === null && famillesCreneau[i].length === 0 && estGenerique(nom))
-    if (libre >= 0) parCreneau[libre] = s
-    else restantes.push(s)
+      parCreneau[i] === null && famillesParCreneau[i].length === 0 && estGenerique(nom))
+    if (libre >= 0) {
+      parCreneau[libre] = s
+      placees.add(s)
+    }
   }
-  return { parCreneau, restantes }
+
+  return { parCreneau, restantes: seances.filter(s => !placees.has(s)) }
 }

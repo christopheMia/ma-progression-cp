@@ -791,7 +791,12 @@ function libelleRetenu(libelleSeance: string, libelleItem: string): string {
  *
  * Utilisée aussi par le chemin des sources (`progression-sources.ts`) depuis le
  * 17/10/2026 : déplacée ici depuis `ia/schema.ts` pour qu'il n'y ait qu'une
- * lecture des séances.
+ * lecture des séances, et par le cahier journal depuis le 17/10/2026.
+ *
+ * Un `jour` écrit en texte (« 1 », tel qu'une ligne jsonb peut le porter) est
+ * lu comme ce nombre quand il n'est fait que de chiffres et que
+ * `estJourValide` l'accepte (relecture du 17/10). Tout autre texte (« lundi »,
+ * « 1.5 », « 0 », « 1 » entouré d'espaces) reste un jour absent, comme avant.
  */
 export function lireSeances(v: unknown): SeanceProgression[] {
   if (!Array.isArray(v)) return []
@@ -799,11 +804,21 @@ export function lireSeances(v: unknown): SeanceProgression[] {
     const o = (raw ?? {}) as Record<string, unknown>
     const seance = seanceDepuisTexte(
       typeof o.libelle === 'string' ? o.libelle : '',
-      typeof o.jour === 'number' ? o.jour : null,
+      jourLu(o.jour),
       typeof o.domaine === 'string' ? o.domaine : '',
     )
     return seance ? [seance] : []
   })
+}
+
+/** Le `jour` d'une ligne brute : un nombre, ou un texte fait seulement de chiffres. */
+function jourLu(jour: unknown): number | null {
+  if (typeof jour === 'number') return jour
+  if (typeof jour === 'string' && /^\d+$/.test(jour)) {
+    const n = Number(jour)
+    return estJourValide(n) ? n : null
+  }
+  return null
 }
 
 /**
