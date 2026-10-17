@@ -1,4 +1,7 @@
-import { CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere } from '@/types'
+import {
+  CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere,
+  SeanceProgression, SeancePlacer,
+} from '@/types'
 import { trouverProgressionMatiere } from '@/lib/matieres'
 import { lirePrefixeJour } from '@/lib/progression-seances'
 
@@ -80,9 +83,20 @@ export function itemsDuJour(items: string[], indexJour: number, nbJours: number)
 }
 
 /**
- * Ce qu'affiche un créneau quand aucune progression ne l'alimente : le nom de
- * la matière, comme amorce à compléter.
+ * Vrai quand le document décrit des séances datées (une puce, un « Jour N »),
+ * et non des notions de semaine comme les maths, les arts ou l'EMC.
+ */
+function porteDesSeancesDatees(p: ProgressionMatiere | null): boolean {
+  return !!p?.seances?.some(s => s.jour !== null)
+}
+
+/**
+ * Ce qu'affiche un créneau alimenté par une progression de NOTIONS (aucune
+ * séance datée) : les items de la semaine, les pages, les mots. Comportement
+ * inchangé depuis avant la tâche 5, y compris pour des items datés qui n'ont
+ * pas de séances (lignes enregistrées avant l'import par séances).
  *
+ * Quand il n'y a rien à montrer, l'appelant retombe sur le nom de la matière.
  * Décision de Christophe le 31/07. Une case vide ne dit pas si l'application
  * n'a rien trouvé ou si la séance n'a rien de prévu, et elle n'invite à rien.
  * Le libellé de la matière répond aux deux : l'enseignante voit ce qu'il y a à
@@ -93,25 +107,35 @@ export function itemsDuJour(items: string[], indexJour: number, nbJours: number)
  * bouton « Générer la journée », qui rédigeait des séances plausibles que
  * personne n'avait prévues.
  */
-function deroulementInitial(
-  creneau: CreneauHoraire,
-  progression: ProgressionMatiere[],
-  indexJour: number,
-  nbJours: number,
-): string {
-  // Les routines (récréation, accueil, rituels) ne se remplissent pas.
-  if (creneau.type === 'routine') return ''
-
-  const p = progressionPourCreneau(creneau, progression)
-  const retenus = p ? itemsDuJour(p.items, indexJour, nbJours) : []
-  if (retenus.length === 0) return creneau.matiere
+function notions(p: ProgressionMatiere, indexJour: number, nbJours: number): string {
+  const retenus = itemsDuJour(p.items, indexJour, nbJours)
+  if (retenus.length === 0) return ''
 
   const items = retenus.join(', ')
-  const pages = p?.pages ? ` — ${p.pages}` : ''
-  const mots = p?.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
+  const pages = p.pages ? ` — ${p.pages}` : ''
+  const mots = p.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
   return `${items}${pages}${mots}`
 }
 
+/**
+ * Une séance par créneau (tâche 5, décisions de Cécile du 09/09/2026).
+ *
+ * Pour une progression qui date ses séances, chaque jour reçoit la file des
+ * séances de CE jour, et chaque créneau de cours de la matière en retire UNE,
+ * dans l'ordre. Plus de concaténation : « une puce, une séance, un créneau ».
+ *
+ * Ce qui ne trouve aucun créneau n'est ni empilé ni perdu, il part dans
+ * `aPlacer` et l'enseignante le pose elle-même (pas de placement au jugé) :
+ * - les séances du jour en surplus (plus de séances que de créneaux) ;
+ * - un « Jour 5 » sur une semaine de quatre jours, au dernier jour, avec sa
+ *   mention d'origine ;
+ * - une séance sans jour dans un document qui date les autres, le premier jour
+ *   seulement, jamais répétée sur chaque jour.
+ *
+ * Un créneau sans séance affiche le nom de la matière (jamais une case vide).
+ * Le domaine reste écrit dans le libellé de chaque ligne. Les routines et les
+ * progressions de notions sont inchangées.
+ */
 export function genererCahierJournal(
   emploiDuTemps: CreneauHoraire[],
   progression: ProgressionMatiere[],
@@ -128,17 +152,55 @@ export function genererCahierJournal(
   // documents importes. Sans mercredi, « Jour 3 » vaut donc pour le jeudi.
   const joursEcole = JOURS_ORDRE.filter(jour => parJour.has(jour))
 
-  return joursEcole
-    .map((jour, indexJour) => ({
-      jour,
-      seances: (parJour.get(jour) ?? [])
-        .sort((a, b) => a.ordre - b.ordre)
-        .map((c): SeanceJournal => ({
-          matiere: c.matiere,
-          heure_debut: c.heure_debut,
-          heure_fin: c.heure_fin,
-          type: c.type,
-          deroulement: deroulementInitial(c, progression, indexJour, joursEcole.length),
-        })),
-    }))
+  return joursEcole.map((jour, indexJour): JourJournal => {
+    const creneaux = [...(parJour.get(jour) ?? [])].sort((a, b) => a.ordre - b.ordre)
+    const aPlacer: SeancePlacer[] = []
+
+    // Une file de séances par progression datée : chaque créneau de cours en
+    // retire UNE, dans l'ordre du document.
+    const files = new Map<ProgressionMatiere, SeanceProgression[]>()
+    for (const p of progression) {
+      if (!porteDesSeancesDatees(p)) continue
+      files.set(p, (p.seances ?? []).filter(s => s.jour === indexJour + 1))
+    }
+
+    const seances = creneaux.map((c): SeanceJournal => {
+      const base = {
+        matiere: c.matiere, heure_debut: c.heure_debut,
+        heure_fin: c.heure_fin, type: c.type,
+      }
+      // Les routines (récréation, accueil, rituels) ne se remplissent pas.
+      if (c.type === 'routine') return { ...base, deroulement: '' }
+
+      const p = progressionPourCreneau(c, progression)
+      if (!p) return { ...base, deroulement: c.matiere }
+      if (!porteDesSeancesDatees(p)) {
+        return { ...base, deroulement: notions(p, indexJour, joursEcole.length) || c.matiere }
+      }
+      const suivante = files.get(p)?.shift()
+      return { ...base, deroulement: suivante ? suivante.libelle : c.matiere }
+    })
+
+    // Ce qui n'a trouvé aucun créneau : rien n'est empilé, rien n'est perdu.
+    for (const restantes of files.values()) {
+      for (const s of restantes) aPlacer.push({ libelle: s.libelle, origine: null })
+    }
+    for (const p of progression) {
+      if (!porteDesSeancesDatees(p)) continue
+      for (const s of p.seances ?? []) {
+        // Un « Jour 5 » sur une semaine de quatre jours ne tombe nulle part :
+        // il atterrit au dernier jour en gardant sa mention d'origine.
+        if (s.jour !== null && s.jour > joursEcole.length && indexJour === joursEcole.length - 1) {
+          aPlacer.push({ libelle: s.libelle, origine: `Jour ${s.jour}` })
+        }
+        // Une séance sans jour dans un document qui date les autres paraît une
+        // seule fois, le premier jour, et surtout pas répétée sur chaque jour.
+        if (s.jour === null && indexJour === 0) {
+          aPlacer.push({ libelle: s.libelle, origine: 'semaine' })
+        }
+      }
+    }
+
+    return aPlacer.length ? { jour, seances, aPlacer } : { jour, seances }
+  })
 }

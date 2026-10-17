@@ -137,6 +137,8 @@ export type SeanceJournal = {
 export type JourJournal = {
   jour: 'lundi' | 'mardi' | 'mercredi' | 'jeudi' | 'vendredi'
   seances: SeanceJournal[]
+  /** Séances qu'aucun créneau du jour n'a pu accueillir. Jamais empilées. */
+  aPlacer?: SeancePlacer[]
 }
 
 /** Une séance telle que le document l'écrit : une puce, une case, une ligne. */
