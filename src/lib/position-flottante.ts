@@ -63,3 +63,49 @@ export function lirePositionMemorisee(brut: string | null): Position | null {
     return null
   }
 }
+
+/** Écart entre le logo de l'en-tête et le bouton de l'assistant. */
+const ECART_LOGO_PX = 12
+
+/**
+ * Place par défaut du bouton : dans l'en-tête, juste à droite du logo, centré
+ * dans la hauteur du bandeau (demande de Christophe du 17/10/2026). Mesurée sur
+ * le vrai logo, dont la largeur dépend de la police et de l'écran.
+ */
+export function positionPresDuLogo(
+  logo: { gauche: number; droite: number; haut: number; bas: number },
+  bandeau: { haut: number; hauteur: number },
+  taille: Taille,
+): Position {
+  return {
+    x: Math.round(logo.droite + ECART_LOGO_PX),
+    y: Math.round(bandeau.haut + (bandeau.hauteur - taille.hauteur) / 2),
+  }
+}
+
+export type PlacementBulle = {
+  /** `bas` : la bulle sous le bouton ; `haut` : au-dessus. */
+  cote: 'haut' | 'bas'
+  /** Bord gauche de la bulle, relatif au bord gauche du bouton, en px. */
+  gauche: number
+}
+
+/**
+ * Place la bulle d'accueil pour qu'elle reste entière dans l'écran : sous le
+ * bouton quand il est dans la moitié haute (sa place dans l'en-tête), au-dessus
+ * sinon, centrée sur lui mais jamais au-delà des marges. À droite du bouton,
+ * comme avant, elle cachait le menu et sortait de l'écran d'un téléphone.
+ */
+export function placerBulle(
+  bouton: Position & Taille,
+  fenetre: Fenetre,
+  largeurBulle: number,
+): PlacementBulle {
+  const centre = bouton.x + bouton.largeur / 2
+  const gaucheMax = Math.max(MARGE_PX, fenetre.largeur - largeurBulle - MARGE_PX)
+  const gaucheAbsolue = Math.min(Math.max(centre - largeurBulle / 2, MARGE_PX), gaucheMax)
+  return {
+    cote: bouton.y + bouton.hauteur / 2 < fenetre.hauteur / 2 ? 'bas' : 'haut',
+    gauche: Math.round(gaucheAbsolue - bouton.x),
+  }
+}

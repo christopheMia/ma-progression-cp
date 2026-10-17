@@ -16,8 +16,14 @@ import {
   contraindre,
   estGlissement,
   lirePositionMemorisee,
+  placerBulle,
+  positionPresDuLogo,
+  type PlacementBulle,
   type Position,
 } from '@/lib/position-flottante'
+
+/** Largeur de la bulle d'accueil (`w-56`), pour la garder dans l'écran. */
+const LARGEUR_BULLE_PX = 224
 
 type Onglet = 'discuter' | 'document'
 
@@ -48,10 +54,13 @@ export default function AssistantFlottant({
   const ajoutRef = useRef(false)
   const router = useRouter()
 
-  // Position libre du bouton. null = position par defaut (sous l'en-tete, a
-  // gauche). Elle n'est lue qu'apres le montage pour ne pas casser le rendu
-  // serveur, qui n'a pas acces au stockage local.
+  // Position libre du bouton. null = position par defaut : dans l'en-tete, a
+  // droite du logo (demande de Christophe du 17/10/2026), mesuree sur le vrai
+  // logo dans `positionDefaut`. Les deux ne sont lues qu'apres le montage pour
+  // ne pas casser le rendu serveur, qui n'a ni stockage local ni mise en page.
   const [position, setPosition] = useState<Position | null>(null)
+  const [positionDefaut, setPositionDefaut] = useState<Position | null>(null)
+  const [placementBulle, setPlacementBulle] = useState<PlacementBulle | null>(null)
   const boutonRef = useRef<HTMLDivElement | null>(null)
   const glissementRef = useRef<{
     pointerId: number
@@ -91,6 +100,45 @@ export default function AssistantFlottant({
       { largeur: window.innerWidth, hauteur: window.innerHeight },
     ))
   }, [])
+
+  // Place par defaut, recalculee quand la fenetre change : la largeur du logo
+  // depend de la police et de la taille d'ecran.
+  useEffect(() => {
+    function mesurer() {
+      const logo = document.querySelector('[data-logo-entete]')
+      const bandeau = logo?.closest('header')
+      if (!logo || !bandeau) return
+      const l = logo.getBoundingClientRect()
+      const b = bandeau.getBoundingClientRect()
+      const boite = boutonRef.current?.getBoundingClientRect()
+      setPositionDefaut(positionPresDuLogo(
+        { gauche: l.left, droite: l.right, haut: l.top, bas: l.bottom },
+        { haut: b.top, hauteur: b.height },
+        { largeur: boite?.width ?? 44, hauteur: boite?.height ?? 44 },
+      ))
+    }
+    mesurer()
+    window.addEventListener('resize', mesurer)
+    return () => window.removeEventListener('resize', mesurer)
+  }, [])
+
+  // La bulle suit le bouton : dessous quand il est en haut, dessus sinon, et
+  // toujours entiere dans l'ecran.
+  useEffect(() => {
+    if (!bulleVisible) return
+    function placer() {
+      const boite = boutonRef.current?.getBoundingClientRect()
+      if (!boite) return
+      setPlacementBulle(placerBulle(
+        { x: boite.left, y: boite.top, largeur: boite.width, hauteur: boite.height },
+        { largeur: window.innerWidth, hauteur: window.innerHeight },
+        LARGEUR_BULLE_PX,
+      ))
+    }
+    placer()
+    window.addEventListener('resize', placer)
+    return () => window.removeEventListener('resize', placer)
+  }, [bulleVisible, position, positionDefaut])
 
   // La fenetre peut retrecir apres coup: on ne laisse jamais le bouton dehors.
   useEffect(() => {
@@ -197,6 +245,9 @@ export default function AssistantFlottant({
     }
   }
 
+  // La position choisie par l'enseignante l'emporte sur la place par defaut.
+  const place = position ?? positionDefaut
+
   return (
     <>
       {/* Un trait lumineux court le long de la bordure : un degrade conique
@@ -209,11 +260,11 @@ export default function AssistantFlottant({
         onPointerMove={suivreGlissement}
         onPointerUp={terminerGlissement}
         onPointerCancel={terminerGlissement}
-        style={position
-          ? { top: position.y, left: position.x }
+        style={place
+          ? { top: place.y, left: place.x }
           : { top: 'calc(4.5rem + env(safe-area-inset-top, 0px))' }}
         className={`fixed z-50 touch-none print:hidden ${
-          position ? '' : 'left-4 sm:left-5'
+          place ? '' : 'left-4 sm:left-5'
         } ${enDeplacement ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         <span
@@ -247,15 +298,23 @@ export default function AssistantFlottant({
           </span>
         </Bouton>
 
-        {bulleVisible && !ouvert && (
+        {bulleVisible && !ouvert && placementBulle && (
           <div
             role="status"
-            className="absolute left-full top-1/2 ml-3 w-56 -translate-y-1/2 animate-pop-in rounded-2xl border border-violet-200 bg-white p-3 shadow-xl"
+            style={{ left: placementBulle.gauche }}
+            className={`absolute w-56 animate-pop-in rounded-2xl border border-violet-200 bg-white p-3 shadow-xl ${
+              placementBulle.cote === 'bas' ? 'top-full mt-3' : 'bottom-full mb-3'
+            }`}
           >
-            {/* Petite pointe qui rattache la bulle au bouton. */}
+            {/* Petite pointe qui rattache la bulle au bouton, sous son centre. */}
             <span
               aria-hidden="true"
-              className="absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 border-b border-l border-violet-200 bg-white"
+              style={{ left: 22 - placementBulle.gauche - 6 }}
+              className={`absolute h-3 w-3 rotate-45 border-violet-200 bg-white ${
+                placementBulle.cote === 'bas'
+                  ? '-top-1.5 border-l border-t'
+                  : '-bottom-1.5 border-b border-r'
+              }`}
             />
             <p className="text-sm leading-6 text-slate-800">
               Hey ! Si tu as besoin d’aide, ton assistant préféré est là !

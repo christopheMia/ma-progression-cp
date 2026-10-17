@@ -3,6 +3,8 @@ import {
   estGlissement,
   lirePositionMemorisee,
   SEUIL_GLISSEMENT_PX,
+  placerBulle,
+  positionPresDuLogo,
 } from '../position-flottante'
 
 describe('estGlissement', () => {
@@ -49,5 +51,39 @@ describe('lirePositionMemorisee', () => {
     expect(lirePositionMemorisee('pas du json')).toBeNull()
     expect(lirePositionMemorisee('{"x":"gauche","y":10}')).toBeNull()
     expect(lirePositionMemorisee('{"x":null,"y":10}')).toBeNull()
+  })
+})
+
+// Demande de Christophe du 17/10/2026 : le bouton vit dans l'en-tete, juste a
+// droite du logo, et la bulle d'accueil doit rester lisible a cette place.
+describe('positionPresDuLogo', () => {
+  test('pose le bouton a droite du logo, centre dans le bandeau', () => {
+    expect(positionPresDuLogo(
+      { gauche: 24, droite: 174, haut: 12, bas: 44 },
+      { haut: 0, hauteur: 56 },
+      { largeur: 44, hauteur: 44 },
+    )).toEqual({ x: 186, y: 6 })
+  })
+})
+
+describe('placerBulle', () => {
+  const fenetre = { largeur: 360, hauteur: 700 }
+
+  test('sous le bouton quand il est en haut, centree sur lui', () => {
+    expect(placerBulle({ x: 186, y: 6, largeur: 44, hauteur: 44 }, fenetre, 224))
+      .toEqual({ cote: 'bas', gauche: -90 })
+  })
+
+  test('au-dessus du bouton quand il est dans la moitie basse', () => {
+    expect(placerBulle({ x: 150, y: 600, largeur: 44, hauteur: 44 }, fenetre, 224).cote)
+      .toBe('haut')
+  })
+
+  test('ne deborde jamais de l ecran, a gauche comme a droite', () => {
+    // Pres du bord gauche : la bulle commence a la marge, pas avant.
+    expect(placerBulle({ x: 10, y: 6, largeur: 44, hauteur: 44 }, fenetre, 224).gauche).toBe(-2)
+    // Pres du bord droit : elle finit a la marge.
+    const droite = placerBulle({ x: 306, y: 6, largeur: 44, hauteur: 44 }, fenetre, 224)
+    expect(306 + droite.gauche + 224).toBe(352)
   })
 })
