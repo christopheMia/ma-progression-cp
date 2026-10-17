@@ -30,6 +30,18 @@
 
 **DEMANDE DE CHRISTOPHE (17/10, ~18 h 25), CODÉE le soir même, PAS en ligne** (`SectionRepliable` et `SommaireParametres` dans `src/components/parametres/`, boutons Réduire/Ouvrir, Tout réduire/Tout ouvrir, état mémorisé dans le navigateur, contenu gardé monté ; 909 tests verts) : dans Paramètres, pouvoir **réduire chaque section avec un bouton** (précisé : un vrai bouton visible, pas seulement un clic sur le titre), et un **sommaire cliquable** en haut pour aller directement à la bonne section (« il faut scroller pour arriver au bon endroit, c'est long »). La page (`src/app/(app)/parametres/page.tsx`) a déjà un `id` et `scroll-mt-24` sur chaque section. Piège connu : une ancre `#section` se perd sur une page qui a un `loading.tsx` (fiche mémoire `cp-ancres-loading-tsx`), et cette page en a un.
 
+## Point de reprise du 17/10/2026, 19 h : PROCHAINE SESSION = rendre l'assistant vraiment utile
+
+**Décision de Christophe (17/10)** : « si il sert à rien c'est pas la peine de le mettre, il faut un vrai intérêt ». Session neuve dédiée.
+
+**Ce que fait l'assistant aujourd'hui (lu dans le code le 17/10)** : `src/components/assistant/ChatAssistant.tsx` (3 amorces seulement, toutes sur le démarrage) appelle `src/app/api/assistant/route.ts` (modèle `MODELE_COURT` = Haiku, 2 000 tokens, texte seul). Son prompt `systemAssistant` (`src/lib/ia/prompts.ts`) ne connaît que le prénom, la date de rentrée et la liste des matières : il ne voit NI le contenu des semaines, NI les élèves, NI le cahier journal, et n'agit sur rien. Il connaît mal Livret, emploi du temps, cahier journal (risque de réponses inventées). Onglet « Document » = import (marche, corrigé le 17/10).
+
+**Pistes proposées à Christophe, non tranchées** : (1) rapide : encadré « Ce que je sais faire », une dizaine d'amorces en 3 groupes (L'appli / Ma classe / Pédagogie), et lui donner le guide de l'appli depuis la MÊME source que la page Aide (`src/app/(app)/aide/page.tsx`), sans copie qui diverge ; (2) le vrai intérêt : lui faire VOIR la classe (contenu de la semaine, élèves, acquis) pour « qu'est-ce que je fais cette semaine », « prépare ma journée de lundi », etc. Coût : plus de crédit IA par question, à arbitrer. Commencer la session par le skill `brainstorming` (qu'est-ce qui serait vraiment utile à Cécile ?).
+
+**En attente de mise en ligne** : commit `5be1b34`, la bulle d'accueil dit « Tu peux me déplacer et me mettre où tu veux ! » (testé, poussé, pas déployé). Le regrouper avec le chantier assistant.
+
+**Restes ouverts du 17/10** : pas de « mot de passe oublié » ; restes 4, 7, 9 de la relecture (voir plus bas) ; tâches 5 à 12 du chantier séances ; décision domaine en double (LC / Lecture compréhension) ; empreinte des sources (avis : ne rien changer).
+
 **COMMENT REPRENDRE (17/10 soir)** : session neuve (le connecteur claude.ai Supabase n'était pas chargé dans la session du 17/10 alors qu'il est connecté sur claude.ai). Vérifier d'abord que les outils `mcp__claude_ai_Supabase__*` sont là. Puis : (1) Christophe importe un PDF de Cécile dans la classe de test, Claude vérifie en base les `seances` ; (2) sauvegarde de la base puis remplissage 028 classe de test, puis classe de Cécile ; (3) tâches 5 à 12. Deux décisions proposées à Christophe, réponse attendue : empreinte des sources = ne rien changer (avis de Claude) ; domaine en double = garder « Lecture compréhension » (avis de Claude, à confirmer avec Cécile).
 
 **17/10 : réglages Supabase faits par Christophe** (accès retrouvé par le compte GitHub de youckyboy@gmail.com) : Site URL passée de `http://localhost:3000` à `https://profenpoche.vercel.app`, Redirect URLs `https://profenpoche.vercel.app/**` et `https://ma-progression-cp.vercel.app/**`, mots de passe 8 caractères minimum.
