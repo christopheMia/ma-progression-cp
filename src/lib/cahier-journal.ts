@@ -2,8 +2,9 @@ import {
   CreneauHoraire, JourJournal, SeanceJournal, ProgressionMatiere,
   SeanceProgression, SeancePlacer,
 } from '@/types'
-import { trouverProgressionMatiere } from '@/lib/matieres'
-import { lirePrefixeJour } from '@/lib/progression-seances'
+import { libelleMatiereCanonique, trouverProgressionMatiere } from '@/lib/matieres'
+import { lirePrefixeJour, lireSeances } from '@/lib/progression-seances'
+import { normaliserIntitule, repartirSeances } from '@/lib/familles-seances'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
@@ -86,8 +87,20 @@ export function itemsDuJour(items: string[], indexJour: number, nbJours: number)
  * Vrai quand le document décrit des séances datées (une puce, un « Jour N »),
  * et non des notions de semaine comme les maths, les arts ou l'EMC.
  */
-function porteDesSeancesDatees(p: ProgressionMatiere | null): boolean {
-  return !!p?.seances?.some(s => s.jour !== null)
+function porteDesSeancesDatees(seances: SeanceProgression[]): boolean {
+  return seances.some(s => s.jour !== null)
+}
+
+/**
+ * Un créneau GÉNÉRIQUE ne porte que le nom de la matière (« Français » pour la
+ * progression de français, stockée « francais » en base). Lui seul accueille
+ * les séances qu'aucun créneau nommé n'a prises. Comparaison stricte : un nom
+ * qui dit autre chose (« Ateliers de français ») n'est pas générique.
+ */
+function estCreneauGenerique(nom: string, p: ProgressionMatiere): boolean {
+  const n = normaliserIntitule(nom)
+  return n === normaliserIntitule(p.matiere)
+    || n === normaliserIntitule(libelleMatiereCanonique(p.matiere))
 }
 
 /**
@@ -118,15 +131,24 @@ function notions(p: ProgressionMatiere, indexJour: number, nbJours: number): str
 }
 
 /**
- * Une séance par créneau (tâche 5, décisions de Cécile du 09/09/2026).
+ * Une séance par créneau (tâche 5, décisions de Cécile du 09/09/2026), placée
+ * PAR LE SENS depuis la décision de Christophe du 17/10/2026.
  *
- * Pour une progression qui date ses séances, chaque jour reçoit la file des
- * séances de CE jour, et chaque créneau de cours de la matière en retire UNE,
- * dans l'ordre. Plus de concaténation : « une puce, une séance, un créneau ».
+ * Pour une progression qui date ses séances, chaque jour reçoit les séances de
+ * CE jour, et chacune va dans le créneau dont le NOM lui correspond sans
+ * hésitation (`repartirSeances`, `src/lib/familles-seances.ts`, qui explique
+ * pourquoi le remplissage dans l'ordre a été abandonné). Un créneau qui ne
+ * porte que le nom de la matière (« Français ») prend ensuite le reste, dans
+ * l'ordre. Plus de concaténation : « une puce, une séance, un créneau ».
+ *
+ * Les séances passent d'abord par `lireSeances` : une ligne jsonb mal formée
+ * (jour écrit en texte, libellé vide) ne fait ni planter le journal ni
+ * disparaître un vrai texte. Un jour illisible rend la séance non datée.
  *
  * Ce qui ne trouve aucun créneau n'est ni empilé ni perdu, il part dans
  * `aPlacer` et l'enseignante le pose elle-même (pas de placement au jugé) :
- * - les séances du jour en surplus (plus de séances que de créneaux) ;
+ * - les séances du jour sans créneau sûr (aucun créneau à leur nom, plusieurs
+ *   possibles, séance qui parle de deux choses, ou créneau déjà pris) ;
  * - un « Jour 5 » sur une semaine de quatre jours, au dernier jour, avec sa
  *   mention d'origine ;
  * - une séance sans jour dans un document qui date les autres, le premier jour
@@ -152,19 +174,35 @@ export function genererCahierJournal(
   // documents importes. Sans mercredi, « Jour 3 » vaut donc pour le jeudi.
   const joursEcole = JOURS_ORDRE.filter(jour => parJour.has(jour))
 
+  // Les séances de chaque progression, relues une fois par la lecture commune.
+  const lues = new Map<ProgressionMatiere, SeanceProgression[]>(
+    progression.map(p => [p, lireSeances(p.seances)]),
+  )
+  const datees = progression.filter(p => porteDesSeancesDatees(lues.get(p) ?? []))
+
   return joursEcole.map((jour, indexJour): JourJournal => {
     const creneaux = [...(parJour.get(jour) ?? [])].sort((a, b) => a.ordre - b.ordre)
+    const progressionDe = creneaux.map(c =>
+      c.type === 'routine' ? null : progressionPourCreneau(c, progression))
     const aPlacer: SeancePlacer[] = []
 
-    // Une file de séances par progression datée : chaque créneau de cours en
-    // retire UNE, dans l'ordre du document.
-    const files = new Map<ProgressionMatiere, SeanceProgression[]>()
-    for (const p of progression) {
-      if (!porteDesSeancesDatees(p)) continue
-      files.set(p, (p.seances ?? []).filter(s => s.jour === indexJour + 1))
+    // Par progression datée : chaque séance du jour va dans le créneau qui
+    // porte son nom, ou nulle part. Ce qui reste part à placer.
+    const placees = new Map<number, SeanceProgression>()
+    for (const p of datees) {
+      const indices = creneaux.flatMap((_, i) => (progressionDe[i] === p ? [i] : []))
+      const duJour = (lues.get(p) ?? []).filter(s => s.jour === indexJour + 1)
+      const { parCreneau, restantes } = repartirSeances(
+        indices.map(i => creneaux[i].matiere), duJour, nom => estCreneauGenerique(nom, p),
+      )
+      indices.forEach((i, k) => {
+        const s = parCreneau[k]
+        if (s) placees.set(i, s)
+      })
+      for (const s of restantes) aPlacer.push({ libelle: s.libelle, origine: null })
     }
 
-    const seances = creneaux.map((c): SeanceJournal => {
+    const seances = creneaux.map((c, i): SeanceJournal => {
       const base = {
         matiere: c.matiere, heure_debut: c.heure_debut,
         heure_fin: c.heure_fin, type: c.type,
@@ -172,22 +210,18 @@ export function genererCahierJournal(
       // Les routines (récréation, accueil, rituels) ne se remplissent pas.
       if (c.type === 'routine') return { ...base, deroulement: '' }
 
-      const p = progressionPourCreneau(c, progression)
+      const p = progressionDe[i]
       if (!p) return { ...base, deroulement: c.matiere }
-      if (!porteDesSeancesDatees(p)) {
+      if (!datees.includes(p)) {
         return { ...base, deroulement: notions(p, indexJour, joursEcole.length) || c.matiere }
       }
-      const suivante = files.get(p)?.shift()
-      return { ...base, deroulement: suivante ? suivante.libelle : c.matiere }
+      // Un créneau sans séance affiche son nom, jamais une case vide (31/07).
+      return { ...base, deroulement: placees.get(i)?.libelle ?? c.matiere }
     })
 
-    // Ce qui n'a trouvé aucun créneau : rien n'est empilé, rien n'est perdu.
-    for (const restantes of files.values()) {
-      for (const s of restantes) aPlacer.push({ libelle: s.libelle, origine: null })
-    }
-    for (const p of progression) {
-      if (!porteDesSeancesDatees(p)) continue
-      for (const s of p.seances ?? []) {
+    // Les séances hors des jours d'école : rien n'est empilé, rien n'est perdu.
+    for (const p of datees) {
+      for (const s of lues.get(p) ?? []) {
         // Un « Jour 5 » sur une semaine de quatre jours ne tombe nulle part :
         // il atterrit au dernier jour en gardant sa mention d'origine.
         if (s.jour !== null && s.jour > joursEcole.length && indexJour === joursEcole.length - 1) {
