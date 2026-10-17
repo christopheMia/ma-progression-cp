@@ -8,7 +8,9 @@
 | Textes renommés en ProfEnPoche (onglet, connexion, barre du haut, accueil, assistant IA) | commit `3c51980`, 892 tests verts, `tsc` muet ; `<title>ProfEnPoche</title>` lu sur la production |
 | Nouvelle adresse | `profenpoche.vercel.app` ajoutée au projet ; l'ancienne `ma-progression-cp.vercel.app` marche toujours (raccourci de Cécile à changer plus tard) |
 
-Reste : Vercel toujours pas relié à GitHub (un push ne déploie pas, passer par la CLI) ; régler l'adresse du site dans Supabase (Authentication, URL Configuration) pour les mails d'inscription ; logo plus tard ; puis les points 1 à 4 ci-dessous (essai d'import sur la classe de test, remplissage 028, empreinte des sources, prévenir Cécile).
+**17/10 : réglages Supabase faits par Christophe** (accès retrouvé par le compte GitHub de youckyboy@gmail.com) : Site URL passée de `http://localhost:3000` à `https://profenpoche.vercel.app`, Redirect URLs `https://profenpoche.vercel.app/**` et `https://ma-progression-cp.vercel.app/**`, mots de passe 8 caractères minimum.
+
+Reste : Vercel toujours pas relié à GitHub (un push ne déploie pas, passer par la CLI) ; logo plus tard ; puis les points 1 à 4 ci-dessous (essai d'import sur la classe de test, remplissage 028, empreinte des sources, prévenir Cécile).
 
 ## Point de reprise du 20/09/2026, après-midi : tout est fusionné et poussé, reste le déploiement
 
