@@ -19,6 +19,7 @@ import {
   regenererJournal,
 } from '@/lib/actions/journal'
 import {
+  MAX_DEROULEMENT,
   modifierSeanceJournal,
   supprimerSeanceJournal,
 } from '@/lib/cahier-journal-edition'
@@ -48,6 +49,19 @@ function libelleOrigine(origine: string | null): string | null {
   return `(${origine})`
 }
 
+/**
+ * Ce qu'un créneau porte une fois la séance posée.
+ *
+ * Rien de ce que l'enseignante a écrit ne disparaît : un déroulement vide, ou
+ * qui répète seulement la matière (le repère affiché quand rien n'est prévu),
+ * est remplacé ; tout autre texte est conservé et la séance s'ajoute dessous.
+ */
+function deroulementApresPose(seance: SeanceJournal, libelle: string): string {
+  const actuel = seance.deroulement.trim()
+  if (actuel === '' || actuel === seance.matiere.trim()) return libelle
+  return `${actuel}\n${libelle}`
+}
+
 export default function CahierJournalEditor({
   semaineId,
   numeroSemaine,
@@ -61,6 +75,8 @@ export default function CahierJournalEditor({
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [erreur, setErreur] = useState('')
+  /** Message calme du bloc « À placer » (placement refusé, rien n'est perdu). */
+  const [avisPlacement, setAvisPlacement] = useState<{ jourIndex: number; texte: string } | null>(null)
   const [exporting, setExporting] = useState(false)
   const [exported, setExported] = useState(false)
   const [chargement, setChargement] = useState(true)
@@ -213,6 +229,72 @@ export default function CahierJournalEditor({
         setEdition(null)
         setBrouillon(null)
       }
+      afficherSauvegarde()
+    })
+  }
+
+  /**
+   * Pose une séance « à placer » dans un créneau du même jour.
+   *
+   * Même chemin que « Modifier » : `modifierSeanceJournal` valide, puis
+   * `sauvegarderJournal` enregistre, et l'écran ne change qu'une fois la
+   * sauvegarde réussie. La séance quitte la liste par son rang (deux entrées
+   * identiques peuvent exister, on n'en retire qu'une). Si le texte ne peut pas
+   * être ajouté ou si l'enregistrement échoue, la séance reste dans la liste.
+   */
+  function placerSeance(jourIndex: number, aPlacerIndex: number, seanceIndex: number) {
+    if (!journal) return
+    setErreur('')
+    setAvisPlacement(null)
+
+    const jour = journal[jourIndex]
+    const aPlacer = jour?.aPlacer ?? []
+    const choisie = aPlacer[aPlacerIndex]
+    const creneau = jour?.seances[seanceIndex]
+    if (!choisie || !creneau || creneau.type === 'routine') return
+
+    if (edition?.jourIndex === jourIndex && edition.seanceIndex === seanceIndex) {
+      setAvisPlacement({
+        jourIndex,
+        texte: 'Ce créneau est en cours de modification. Enregistre-le ou annule, puis pose la séance.',
+      })
+      return
+    }
+
+    const deroulement = deroulementApresPose(creneau, choisie.libelle)
+    if (deroulement.length > MAX_DEROULEMENT) {
+      setAvisPlacement({
+        jourIndex,
+        texte: `Ce créneau est déjà très rempli : « ${choisie.libelle} » n’a pas été ajoutée. `
+          + 'Elle reste dans la liste, tu peux la poser dans un autre créneau.',
+      })
+      return
+    }
+
+    let suivant: JourJournal[]
+    try {
+      const avecTexte = modifierSeanceJournal(journal, jourIndex, seanceIndex, {
+        ...creneau,
+        deroulement,
+      })
+      suivant = avecTexte.map((j, i) => {
+        if (i !== jourIndex) return j
+        const { aPlacer: _ancienne, ...reste } = j
+        const restantes = aPlacer.filter((_, k) => k !== aPlacerIndex)
+        return restantes.length ? { ...reste, aPlacer: restantes } : reste
+      })
+    } catch (error) {
+      setErreur(error instanceof Error ? error.message : 'Cette séance ne peut pas être posée ici.')
+      return
+    }
+
+    startTransition(async () => {
+      const r = await sauvegarderJournal(semaineId, suivant)
+      if (!r.ok) {
+        setErreur(r.message)
+        return
+      }
+      setJournal(suivant)
       afficherSauvegarde()
     })
   }
@@ -555,16 +637,44 @@ export default function CahierJournalEditor({
               <ul className="mt-2 space-y-1">
                 {jour.aPlacer.map((seance, i) => {
                   const origine = libelleOrigine(seance.origine)
+                  // Les routines n'ont pas de déroulement : on n'y pose rien.
+                  const creneaux = jour.seances
+                    .map((creneau, index) => ({ creneau, index }))
+                    .filter(({ creneau }) => creneau.type !== 'routine')
                   return (
-                    <li key={`${seance.libelle}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                    <li key={`${seance.libelle}-${i}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
                       <span>{seance.libelle}</span>
                       {origine ? (
                         <span className="text-xs text-amber-700 print:text-gray-600">{origine}</span>
+                      ) : null}
+                      {creneaux.length > 0 ? (
+                        <select
+                          aria-label={`Placer « ${seance.libelle} » dans un créneau`}
+                          value=""
+                          disabled={isPending}
+                          onChange={event => {
+                            if (event.target.value === '') return
+                            placerSeance(jourIndex, i, Number(event.target.value))
+                          }}
+                          className="no-print rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs text-gray-900"
+                        >
+                          <option value="">Placer dans un créneau…</option>
+                          {creneaux.map(({ creneau, index }) => (
+                            <option key={index} value={index}>
+                              {heureSansSecondes(creneau.heure_debut)} {creneau.matiere}
+                            </option>
+                          ))}
+                        </select>
                       ) : null}
                     </li>
                   )
                 })}
               </ul>
+              {avisPlacement?.jourIndex === jourIndex ? (
+                <p role="status" className="no-print mt-2 text-xs text-amber-800">
+                  {avisPlacement.texte}
+                </p>
+              ) : null}
             </section>
           ) : null}
         </div>

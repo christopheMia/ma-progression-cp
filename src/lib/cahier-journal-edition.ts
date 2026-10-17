@@ -11,7 +11,7 @@ const JOURS = new Set<JourJournal['jour']>([
 const HEURE = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/
 const MAX_SEANCES_PAR_JOUR = 40
 const MAX_MATIERE = 200
-const MAX_DEROULEMENT = 20_000
+export const MAX_DEROULEMENT = 20_000
 // Large : toutes les séances « semaine » d'une progression atterrissent le jour 1.
 const MAX_A_PLACER_PAR_JOUR = 200
 

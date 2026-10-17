@@ -47,6 +47,13 @@ const journal: JourJournal[] = [{
   ],
 }]
 
+/** Texte d'une ligne de la liste « à placer », sans le menu de placement. */
+function texteSansMenu(li: HTMLElement): string {
+  const copie = li.cloneNode(true) as HTMLElement
+  copie.querySelectorAll('select').forEach(menu => menu.remove())
+  return copie.textContent ?? ''
+}
+
 async function ouvrirJournal() {
   const user = userEvent.setup()
   render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
@@ -191,7 +198,7 @@ describe('CahierJournalEditor', () => {
       ]))
 
       const region = screen.getByRole('region', { name: /à placer ce jour \(2\)/i })
-      expect(within(region).getAllByRole('listitem').map(li => li.textContent))
+      expect(within(region).getAllByRole('listitem').map(texteSansMenu))
         .toEqual(['Fluence', 'Lettres muettes'])
     })
 
@@ -212,10 +219,10 @@ describe('CahierJournalEditor', () => {
       ]))
 
       const [sansOrigine, deSemaine, duJour, autre] = screen.getAllByRole('listitem')
-      expect(sansOrigine.textContent).toBe('Séance sans origine')
-      expect(deSemaine.textContent).toBe('Séance de semaine(pour la semaine)')
-      expect(duJour.textContent).toBe('Séance du jour(prévue jour 5)')
-      expect(autre.textContent).toBe('Séance autre(Période 2)')
+      expect(texteSansMenu(sansOrigine)).toBe('Séance sans origine')
+      expect(texteSansMenu(deSemaine)).toBe('Séance de semaine(pour la semaine)')
+      expect(texteSansMenu(duJour)).toBe('Séance du jour(prévue jour 5)')
+      expect(texteSansMenu(autre)).toBe('Séance autre(Période 2)')
     })
 
     test('n’affiche aucun bloc quand aPlacer est absent', async () => {
@@ -240,6 +247,131 @@ describe('CahierJournalEditor', () => {
 
       expect(await screen.findByText('Langage oral')).toBeTruthy()
       expect(screen.getByText(/aucune entrée pour cette journée/i)).toBeTruthy()
+    })
+  })
+
+  // Décision du 17/10 : on pose une séance « à placer » dans le créneau choisi
+  // par l'enseignante. Rien de ce qu'elle a écrit ne disparaît : le texte déjà
+  // présent est conservé, la séance s'ajoute dessous.
+  describe('poser une séance à placer dans un créneau', () => {
+    const creneau = (
+      matiere: string,
+      debut: string,
+      fin: string,
+      deroulement: string,
+      type: 'cours' | 'routine' = 'cours',
+    ) => ({ matiere, heure_debut: debut, heure_fin: fin, type, deroulement })
+
+    const lundi = (aPlacer: { libelle: string; origine: string | null }[]): JourJournal[] => [{
+      jour: 'lundi',
+      seances: [
+        creneau('Accueil', '08:30', '08:45', '', 'routine'),
+        creneau('Français', '09:00', '09:30', 'Séance A'),
+        creneau('Français', '10:00', '10:30', 'Français'),
+      ],
+      aPlacer,
+    }]
+
+    async function afficher(contenu: JourJournal[]) {
+      ;(lireJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: contenu })
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+      await screen.findByText('Séance A')
+    }
+
+    const menu = (libelle: string, rang = 0) =>
+      screen.getAllByLabelText(`Placer « ${libelle} » dans un créneau`)[rang] as HTMLSelectElement
+
+    test('remplace le repère d’un créneau où rien n’est prévu, et enregistre', async () => {
+      const user = userEvent.setup()
+      await afficher(lundi([{ libelle: 'Geste d’écriture', origine: null }]))
+
+      // Rien n'est choisi d'avance.
+      expect(menu('Geste d’écriture').value).toBe('')
+      await user.selectOptions(menu('Geste d’écriture'), '2')
+
+      await waitFor(() => expect(sauvegarderJournal).toHaveBeenCalledTimes(1))
+      const [semaineId, contenu] = (sauvegarderJournal as jest.Mock).mock.calls[0] as [string, JourJournal[]]
+      expect(semaineId).toBe('s1')
+      expect(contenu[0].seances[2].deroulement).toBe('Geste d’écriture')
+      expect(contenu[0].seances[1].deroulement).toBe('Séance A')
+      expect(contenu[0].aPlacer ?? []).toEqual([])
+
+      // L'écran suit : la séance a quitté la liste.
+      await waitFor(() => {
+        expect(screen.queryByRole('region', { name: /à placer ce jour/i })).toBeNull()
+      })
+      expect(screen.getByText('Geste d’écriture')).toBeTruthy()
+    })
+
+    test('ajoute sous le texte déjà écrit, sans rien effacer', async () => {
+      const user = userEvent.setup()
+      await afficher(lundi([{ libelle: 'Geste d’écriture', origine: 'Jour 1' }]))
+
+      await user.selectOptions(menu('Geste d’écriture'), '1')
+
+      await waitFor(() => expect(sauvegarderJournal).toHaveBeenCalledTimes(1))
+      const contenu = (sauvegarderJournal as jest.Mock).mock.calls[0][1] as JourJournal[]
+      expect(contenu[0].seances[1].deroulement).toBe('Séance A' + String.fromCharCode(10) + 'Geste d’écriture')
+      // L'autre créneau n'a pas bougé.
+      expect(contenu[0].seances[2]).toEqual(lundi([])[0].seances[2])
+    })
+
+    test('ne retire qu’une des deux entrées identiques, celle qu’on a posée', async () => {
+      const user = userEvent.setup()
+      await afficher(lundi([
+        { libelle: 'Fluence', origine: null },
+        { libelle: 'Fluence', origine: 'semaine' },
+      ]))
+
+      await user.selectOptions(menu('Fluence', 1), '2')
+
+      await waitFor(() => expect(sauvegarderJournal).toHaveBeenCalledTimes(1))
+      const contenu = (sauvegarderJournal as jest.Mock).mock.calls[0][1] as JourJournal[]
+      expect(contenu[0].aPlacer).toEqual([{ libelle: 'Fluence', origine: null }])
+      await waitFor(() => {
+        expect(screen.getByRole('region', { name: /à placer ce jour \(1\)/i })).toBeTruthy()
+      })
+    })
+
+    test('propose chaque créneau non routine avec son heure, jamais une routine', async () => {
+      await afficher(lundi([{ libelle: 'Fluence', origine: null }]))
+
+      const options = within(menu('Fluence')).getAllByRole('option').map(o => o.textContent)
+      expect(options).toEqual(['Placer dans un créneau…', '09:00 Français', '10:00 Français'])
+    })
+
+    test('refuse d’ajouter au-delà de la limite, avec un message calme, et garde la séance', async () => {
+      const user = userEvent.setup()
+      const long = 'x'.repeat(19_995)
+      const contenu = lundi([{ libelle: 'Geste d’écriture', origine: null }])
+      contenu[0].seances[1].deroulement = long
+      ;(lireJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: contenu })
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+      await screen.findByText('Geste d’écriture')
+
+      await user.selectOptions(menu('Geste d’écriture'), '1')
+
+      expect(sauvegarderJournal).not.toHaveBeenCalled()
+      expect(await screen.findByText(/déjà très rempli/i)).toBeTruthy()
+      expect(screen.queryByRole('alert')).toBeNull()
+      expect(screen.getByRole('region', { name: /à placer ce jour \(1\)/i })).toBeTruthy()
+      // Un autre créneau reste possible : la séance n'est pas bloquée.
+      expect(menu('Geste d’écriture').value).toBe('')
+    })
+
+    test('si l’enregistrement échoue, affiche l’erreur et garde la séance dans la liste', async () => {
+      const user = userEvent.setup()
+      ;(sauvegarderJournal as jest.Mock).mockResolvedValue({
+        ok: false,
+        message: 'Le cahier journal n’a pas pu être enregistré.',
+      })
+      await afficher(lundi([{ libelle: 'Geste d’écriture', origine: null }]))
+
+      await user.selectOptions(menu('Geste d’écriture'), '2')
+
+      expect((await screen.findByRole('alert')).textContent).toMatch(/n’a pas pu être enregistré/i)
+      expect(screen.getByRole('region', { name: /à placer ce jour \(1\)/i })).toBeTruthy()
+      expect(screen.queryByText('Geste d’écriture', { selector: 'td' })).toBeNull()
     })
   })
 })
