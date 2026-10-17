@@ -33,6 +33,21 @@ type AdresseSeance = {
   seanceIndex: number
 }
 
+/**
+ * Dit d'où vient une séance « à placer », en mots de l'enseignante.
+ *
+ * `null` : rien à dire. `'semaine'` : la méthode la prévoit pour la semaine,
+ * sans jour précis. `'Jour 5'` : la méthode la prévoit un jour numéroté.
+ * Toute autre valeur s'affiche telle quelle, entre parenthèses.
+ */
+function libelleOrigine(origine: string | null): string | null {
+  if (!origine) return null
+  if (origine === 'semaine') return '(pour la semaine)'
+  const numero = /^Jour (\d+)$/.exec(origine)
+  if (numero) return `(prévue jour ${numero[1]})`
+  return `(${origine})`
+}
+
 export default function CahierJournalEditor({
   semaineId,
   numeroSemaine,
@@ -524,6 +539,34 @@ export default function CahierJournalEditor({
               </table>
             </div>
           )}
+          {jour.aPlacer && jour.aPlacer.length > 0 ? (
+            <section
+              aria-labelledby={`a-placer-${jour.jour}`}
+              className="border-t bg-amber-50 px-4 py-3 text-amber-900 print:bg-white"
+            >
+              <h3 id={`a-placer-${jour.jour}`} className="text-sm font-semibold">
+                À placer ce jour ({jour.aPlacer.length})
+              </h3>
+              <p className="mt-1 text-xs text-amber-800 print:text-gray-700">
+                Ta méthode prévoit ces séances ce jour-là, mais aucune case de ton
+                emploi du temps ne leur correspond à coup sûr. Tu peux les poser
+                dans la case de ton choix, ou les laisser de côté.
+              </p>
+              <ul className="mt-2 space-y-1">
+                {jour.aPlacer.map((seance, i) => {
+                  const origine = libelleOrigine(seance.origine)
+                  return (
+                    <li key={`${seance.libelle}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                      <span>{seance.libelle}</span>
+                      {origine ? (
+                        <span className="text-xs text-amber-700 print:text-gray-600">{origine}</span>
+                      ) : null}
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ) : null}
         </div>
         )
       })}

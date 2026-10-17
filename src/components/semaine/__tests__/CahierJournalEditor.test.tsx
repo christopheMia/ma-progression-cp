@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import CahierJournalEditor from '../CahierJournalEditor'
 import {
@@ -149,5 +149,97 @@ describe('CahierJournalEditor', () => {
     expect(sauvegarderJournal).not.toHaveBeenCalled()
     expect(screen.getByText('Son a')).toBeTruthy()
     confirmer.mockRestore()
+  })
+
+  // Décision du 17/10 : les séances se placent selon leur sens (le nom du
+  // créneau), pas selon leur nombre. Celles qu'aucune case ne reçoit à coup sûr
+  // sont montrées à l'enseignante, calmement : ce n'est pas une erreur, certaines
+  // (Fluence, Lettres muettes...) n'ont simplement pas de case fixe.
+  describe('séances à placer', () => {
+    const jourAvecAPlacer = (aPlacer?: { libelle: string; origine: string | null }[]): JourJournal[] => [{
+      jour: 'lundi',
+      seances: [{
+        matiere: 'Français',
+        heure_debut: '09:00',
+        heure_fin: '09:30',
+        type: 'cours',
+        deroulement: 'Séance A',
+      }],
+      ...(aPlacer ? { aPlacer } : {}),
+    }]
+
+    async function afficher(contenu: JourJournal[]) {
+      ;(lireJournal as jest.Mock).mockResolvedValue({ ok: true, valeur: contenu })
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+      await screen.findByText('Séance A')
+    }
+
+    test('affiche les séances qu’aucune case n’a pu accueillir', async () => {
+      await afficher(jourAvecAPlacer([{ libelle: 'Geste d’écriture', origine: null }]))
+
+      expect(screen.getByRole('heading', { name: /à placer ce jour \(1\)/i })).toBeTruthy()
+      expect(screen.getByText('Geste d’écriture')).toBeTruthy()
+      expect(screen.getByText(/aucune case de ton emploi du temps/i)).toBeTruthy()
+      // Texte d'avant la décision du 17/10 : il parlait d'un manque de créneaux.
+      expect(screen.queryByText(/pas assez de créneaux/i)).toBeNull()
+    })
+
+    test('présente la liste comme une liste, rattachée à son titre', async () => {
+      await afficher(jourAvecAPlacer([
+        { libelle: 'Fluence', origine: null },
+        { libelle: 'Lettres muettes', origine: null },
+      ]))
+
+      const region = screen.getByRole('region', { name: /à placer ce jour \(2\)/i })
+      expect(within(region).getAllByRole('listitem').map(li => li.textContent))
+        .toEqual(['Fluence', 'Lettres muettes'])
+    })
+
+    test('reste calme : ni alerte ni bouton inventé', async () => {
+      await afficher(jourAvecAPlacer([{ libelle: 'Fluence', origine: null }]))
+
+      expect(screen.queryByRole('alert')).toBeNull()
+      const region = screen.getByRole('region', { name: /à placer ce jour/i })
+      expect(within(region).queryByRole('button')).toBeNull()
+    })
+
+    test('dit d’où vient la séance : semaine, jour numéroté, autre, ou rien', async () => {
+      await afficher(jourAvecAPlacer([
+        { libelle: 'Séance sans origine', origine: null },
+        { libelle: 'Séance de semaine', origine: 'semaine' },
+        { libelle: 'Séance du jour', origine: 'Jour 5' },
+        { libelle: 'Séance autre', origine: 'Période 2' },
+      ]))
+
+      const [sansOrigine, deSemaine, duJour, autre] = screen.getAllByRole('listitem')
+      expect(sansOrigine.textContent).toBe('Séance sans origine')
+      expect(deSemaine.textContent).toBe('Séance de semaine(pour la semaine)')
+      expect(duJour.textContent).toBe('Séance du jour(prévue jour 5)')
+      expect(autre.textContent).toBe('Séance autre(Période 2)')
+    })
+
+    test('n’affiche aucun bloc quand aPlacer est absent', async () => {
+      await afficher(jourAvecAPlacer())
+
+      expect(screen.queryByText(/à placer ce jour/i)).toBeNull()
+      expect(screen.queryByRole('region')).toBeNull()
+    })
+
+    test('n’affiche aucun bloc quand aPlacer est vide', async () => {
+      await afficher(jourAvecAPlacer([]))
+
+      expect(screen.queryByText(/à placer ce jour/i)).toBeNull()
+    })
+
+    test('montre le bloc même pour une journée sans aucune entrée', async () => {
+      ;(lireJournal as jest.Mock).mockResolvedValue({
+        ok: true,
+        valeur: [{ jour: 'mardi', seances: [], aPlacer: [{ libelle: 'Langage oral', origine: null }] }],
+      })
+      render(<CahierJournalEditor semaineId="s1" numeroSemaine={3} />)
+
+      expect(await screen.findByText('Langage oral')).toBeTruthy()
+      expect(screen.getByText(/aucune entrée pour cette journée/i)).toBeTruthy()
+    })
   })
 })
