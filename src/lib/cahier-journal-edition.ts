@@ -12,6 +12,8 @@ const HEURE = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/
 const MAX_SEANCES_PAR_JOUR = 40
 const MAX_MATIERE = 200
 const MAX_DEROULEMENT = 20_000
+// Large : toutes les séances « semaine » d'une progression atterrissent le jour 1.
+const MAX_A_PLACER_PAR_JOUR = 200
 
 function minutesDepuisMinuit(heure: string): number {
   const [heures, minutes] = heure.split(':').map(Number)
@@ -54,17 +56,30 @@ function validerSeance(value: unknown): SeanceJournal {
 }
 
 /**
- * Garde la liste « à placer » d'un jour. Tolérante : une entrée mal formée est
- * écartée (rien n'est inventé) et ne bloque jamais l'enregistrement.
+ * Garde la liste « à placer » d'un jour. Une entrée mal formée (pas un objet,
+ * libellé absent ou vide) est écartée en silence : rien n'est inventé. Les
+ * limites, elles, refusent avec un message clair comme `validerSeance`, car
+ * tronquer ou jeter un vrai texte ferait perdre ce que l'enseignante a écrit.
  */
 function validerAPlacer(brut: unknown): SeancePlacer[] {
   if (!Array.isArray(brut)) return []
-  return brut.flatMap((x): SeancePlacer[] => {
-    if (!x || typeof x !== 'object') return []
-    const o = x as Record<string, unknown>
-    const libelle = typeof o.libelle === 'string' ? o.libelle.trim() : ''
+  if (brut.length > MAX_A_PLACER_PAR_JOUR) {
+    throw new Error('Le nombre de séances à placer du jour est trop élevé.')
+  }
+
+  return brut.flatMap((element): SeancePlacer[] => {
+    if (!element || typeof element !== 'object') return []
+    const champs = element as Record<string, unknown>
+    const libelle = typeof champs.libelle === 'string' ? champs.libelle.trim() : ''
     if (!libelle) return []
-    return [{ libelle, origine: typeof o.origine === 'string' ? o.origine : null }]
+    if (libelle.length > MAX_DEROULEMENT) {
+      throw new Error('Le libellé d’une séance à placer est trop long.')
+    }
+    const origine = typeof champs.origine === 'string' ? champs.origine.trim() : ''
+    if (origine.length > MAX_MATIERE) {
+      throw new Error('L’origine d’une séance à placer est trop longue.')
+    }
+    return [{ libelle, origine: origine || null }]
   })
 }
 
@@ -80,8 +95,9 @@ export function validerContenuJournal(value: unknown): JourJournal[] {
       throw new Error('Jour du cahier journal invalide.')
     }
 
-    const jour = (entree as Record<string, unknown>).jour
-    const seances = (entree as Record<string, unknown>).seances
+    const champsJour = entree as Record<string, unknown>
+    const jour = champsJour.jour
+    const seances = champsJour.seances
     if (typeof jour !== 'string' || !JOURS.has(jour as JourJournal['jour'])) {
       throw new Error('Jour du cahier journal invalide.')
     }
@@ -94,7 +110,7 @@ export function validerContenuJournal(value: unknown): JourJournal[] {
       throw new Error('Le nombre de séances du jour est invalide.')
     }
 
-    const aPlacer = validerAPlacer((entree as Record<string, unknown>).aPlacer)
+    const aPlacer = validerAPlacer(champsJour.aPlacer)
 
     return {
       jour: jour as JourJournal['jour'],
