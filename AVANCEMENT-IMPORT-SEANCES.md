@@ -30,6 +30,12 @@
 
 **DEMANDE DE CHRISTOPHE (17/10, ~18 h 25), CODÉE le soir même, PAS en ligne** (`SectionRepliable` et `SommaireParametres` dans `src/components/parametres/`, boutons Réduire/Ouvrir, Tout réduire/Tout ouvrir, état mémorisé dans le navigateur, contenu gardé monté ; 909 tests verts) : dans Paramètres, pouvoir **réduire chaque section avec un bouton** (précisé : un vrai bouton visible, pas seulement un clic sur le titre), et un **sommaire cliquable** en haut pour aller directement à la bonne section (« il faut scroller pour arriver au bon endroit, c'est long »). La page (`src/app/(app)/parametres/page.tsx`) a déjà un `id` et `scroll-mt-24` sur chaque section. Piège connu : une ancre `#section` se perd sur une page qui a un `loading.tsx` (fiche mémoire `cp-ancres-loading-tsx`), et cette page en a un.
 
+## DÉCISION DE CHRISTOPHE (17/10, soir) : placer les séances PAR LE SENS, pas dans l'ordre
+
+Constat de la relecture Opus de la tâche 5 (branche `seances-taches-5-12`, commit `d61b1ad`) : remplir les créneaux de français « dans l'ordre » (règle D.4 du plan d'août) met 5 séances sur 12 au mauvais endroit sur le vrai emploi du temps de Cécile (5 à 6 créneaux de français par jour pour 2 à 4 séances : Vocabulaire dans « Ateliers de français », Geste d'écriture dans « Étude de la langue »). Faux qui a l'air juste.
+
+Réponse de Christophe : « oui » à la règle suivante. Une séance va dans le créneau dont le NOM lui correspond sans hésitation (Vocabulaire ou Grammaire vers « Étude de la langue », Geste d'écriture vers « Écriture », Graphème vers « Phonologie », LC vers « Compréhension », PDE vers « Production d'écrits »). Aucun créneau ou plusieurs possibles : la séance va dans « à placer », Cécile la pose d'un clic. Jamais de devinette (règle du 31/07).
+
 ## Point de reprise du 17/10/2026, 19 h : PROCHAINE SESSION = rendre l'assistant vraiment utile
 
 **Décision de Christophe (17/10)** : « si il sert à rien c'est pas la peine de le mettre, il faut un vrai intérêt ». Session neuve dédiée.
