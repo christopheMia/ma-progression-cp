@@ -361,6 +361,49 @@ describe('SourceImporter', () => {
     await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
   })
 
+  // Decision de Christophe du 17/10/2026 : rien ne remplace des semaines deja
+  // remplies sans que l'enseignante l'ait vu et choisi.
+  test('montre les semaines remplacees et ne remplace qu apres accord', async () => {
+    const onSourceReady = jest.fn()
+      .mockResolvedValueOnce({ statut: 'a-confirmer', semainesRemplacees: [1, 2] })
+      .mockResolvedValueOnce({ statut: 'ajoute', sourceId: 's', methodeId: 'm' })
+    await analyserAvecCalage({ ...REPONSE_MANUEL, avertissements: [] }, onSourceReady)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    expect(await screen.findByText(/va remplacer 2 semaines déjà remplies/)).toBeInTheDocument()
+    expect(screen.getByText(/Semaines 1, 2\./)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remplacer ces semaines' }))
+    await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(2))
+    expect(onSourceReady.mock.calls[1][0]).toBe(onSourceReady.mock.calls[0][0])
+    expect(onSourceReady.mock.calls[1][1]).toEqual({ semainesConfirmees: [1, 2] })
+  })
+
+  test('une retouche apres l avertissement l annule et oblige a recalculer', async () => {
+    const onSourceReady = jest.fn()
+      .mockResolvedValueOnce({ statut: 'a-confirmer', semainesRemplacees: [4] })
+    await analyserAvecCalage({ ...REPONSE_MANUEL, avertissements: [] }, onSourceReady)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    await screen.findByRole('button', { name: 'Remplacer ces semaines' })
+    fireEvent.change(screen.getByLabelText('Matière'), { target: { value: 'Autre matière' } })
+
+    expect(screen.queryByRole('button', { name: 'Remplacer ces semaines' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ajouter cette source' })).toBeInTheDocument()
+  })
+
+  test('garder l existant ne rappelle rien et le dit', async () => {
+    const onSourceReady = jest.fn()
+      .mockResolvedValueOnce({ statut: 'a-confirmer', semainesRemplacees: [4] })
+    await analyserAvecCalage({ ...REPONSE_MANUEL, avertissements: [] }, onSourceReady)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter cette source' }))
+    fireEvent.click(await screen.findByRole('button', { name: "Garder l'existant" }))
+
+    expect(await screen.findByText(/Rien n'a changé/)).toBeInTheDocument()
+    expect(onSourceReady).toHaveBeenCalledTimes(1)
+  })
+
   test('le bouton Analyser relance le fichier choisi au lieu de reclamer du texte', async () => {
     // Defaut trouve le 17/10 : apres un fichier, le bouton ne lisait que la case
     // de texte, vide, et repondait « colle un texte un peu plus long ».

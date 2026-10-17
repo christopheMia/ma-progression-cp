@@ -58,6 +58,7 @@ describe('AssistantFlottant', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.mocked(ajouterSourceProgression).mockResolvedValue({
+      statut: 'ajoute',
       sourceId: 'source-1',
       methodeId: 'm-ma',
     })
@@ -127,7 +128,7 @@ describe('AssistantFlottant', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter depuis l’assistant' }))
 
     await waitFor(() =>
-      expect(ajouterSourceProgression).toHaveBeenCalledWith(source)
+      expect(ajouterSourceProgression).toHaveBeenCalledWith(source, undefined)
     )
     expect(screen.getByRole('status').textContent).toContain('Document ajouté')
   })

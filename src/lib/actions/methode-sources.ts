@@ -6,16 +6,44 @@ import {
   executerAjoutSourceProgression,
   executerRetraitSourceProgression,
   type MethodeSourcesDependances,
+  type OptionsAjoutSource,
+  type ResultatAjoutSource,
   type SourceProgressionBdd,
 } from '@/lib/methode-sources'
 import type { SourceProgression } from '@/lib/progression-sources'
 
-export async function ajouterSourceProgression(source: SourceProgression) {
-  return executerAjoutSourceProgression(source, await creerDependances())
+/**
+ * Les refus reviennent en VALEUR, jamais en exception : en production, Next.js
+ * remplace le message d'une erreur levée dans une action serveur par « An error
+ * occurred in the Server Components render… ». L'enseignante lisait ce charabia
+ * au lieu de « Ce document est déjà importé » (constaté le 17/10/2026).
+ */
+export type ReponseActionSource = { statut: 'erreur'; message: string }
+
+export async function ajouterSourceProgression(
+  source: SourceProgression,
+  options: OptionsAjoutSource = {},
+): Promise<ResultatAjoutSource | ReponseActionSource> {
+  try {
+    return await executerAjoutSourceProgression(source, await creerDependances(), options)
+  } catch (erreur) {
+    return { statut: 'erreur', message: messageErreur(erreur) }
+  }
 }
 
-export async function retirerSourceProgression(sourceId: string) {
-  await executerRetraitSourceProgression(sourceId, await creerDependances())
+export async function retirerSourceProgression(
+  sourceId: string,
+): Promise<{ statut: 'retire' } | ReponseActionSource> {
+  try {
+    await executerRetraitSourceProgression(sourceId, await creerDependances())
+    return { statut: 'retire' }
+  } catch (erreur) {
+    return { statut: 'erreur', message: messageErreur(erreur) }
+  }
+}
+
+function messageErreur(erreur: unknown): string {
+  return erreur instanceof Error ? erreur.message : String(erreur)
 }
 
 async function creerDependances(): Promise<MethodeSourcesDependances> {
@@ -99,6 +127,16 @@ async function creerDependances(): Promise<MethodeSourcesDependances> {
         .order('id')
       if (error) throw new Error(`Lecture des documents impossible : ${error.message}`)
       return (data ?? []) as unknown as SourceProgressionBdd[]
+    },
+
+    async lireProgression(classId, matiere) {
+      const { data, error } = await supabase
+        .from('progression')
+        .select('numero, items, pages, mots_exemple')
+        .eq('class_id', classId)
+        .eq('matiere', matiere)
+      if (error) throw new Error(`Lecture de la progression impossible : ${error.message}`)
+      return data ?? []
     },
 
     async lireSemaines(classId) {

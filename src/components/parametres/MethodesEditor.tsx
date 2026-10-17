@@ -14,6 +14,7 @@ import { libelleMatiereCanonique } from '@/lib/matieres'
 import NomMethodeEditor from '@/components/parametres/NomMethodeEditor'
 import type { Methode, MethodeSource } from '@/types'
 import type { SourceProgression } from '@/lib/progression-sources'
+import type { OptionsAjoutSource, ResultatAjoutSource } from '@/lib/methode-sources'
 
 type CreneauInfo = {
   id: string
@@ -93,13 +94,20 @@ export default function MethodesEditor({
     })
   }
 
-  async function ajouter(source: SourceProgression) {
+  async function ajouter(
+    source: SourceProgression,
+    options?: OptionsAjoutSource,
+  ): Promise<ResultatAjoutSource | void> {
     if (ajoutRef.current) return
     ajoutRef.current = true
     setAjoutEnCours(true)
     setMessage(null)
     try {
-      await ajouterSourceProgression(source)
+      const reponse = await ajouterSourceProgression(source, options)
+      if (reponse.statut === 'erreur') throw new Error(reponse.message)
+      // Des semaines déjà remplies changeraient : c'est l'écran d'import qui
+      // montre le choix, rien n'est encore écrit.
+      if (reponse.statut === 'a-confirmer') return reponse
       setMessage({
         type: 'succes',
         texte: `Document ajouté : ${source.nomSource}`,
@@ -126,7 +134,8 @@ export default function MethodesEditor({
     setRetraitEnCours(source.id)
     setMessage(null)
     try {
-      await retirerSourceProgression(source.id)
+      const reponse = await retirerSourceProgression(source.id)
+      if (reponse.statut === 'erreur') throw new Error(reponse.message)
       setMessage({
         type: 'succes',
         texte: `Document retiré : ${source.nom_source}`,

@@ -9,6 +9,7 @@ import ChatAssistant from '@/components/assistant/ChatAssistant'
 import Bouton from '@/components/ui/Bouton'
 import { ajouterSourceProgression } from '@/lib/actions/methode-sources'
 import type { SourceProgression } from '@/lib/progression-sources'
+import type { OptionsAjoutSource, ResultatAjoutSource } from '@/lib/methode-sources'
 import type { ZoneScolaire } from '@/lib/calendrier-officiel'
 import {
   CLE_POSITION,
@@ -169,12 +170,19 @@ export default function AssistantFlottant({
     return () => window.removeEventListener('keydown', fermerAuClavier)
   }, [ouvert])
 
-  async function ajouter(source: SourceProgression) {
+  async function ajouter(
+    source: SourceProgression,
+    options?: OptionsAjoutSource,
+  ): Promise<ResultatAjoutSource | void> {
     if (ajoutRef.current) return
     ajoutRef.current = true
     setMessage(null)
     try {
-      await ajouterSourceProgression(source)
+      const reponse = await ajouterSourceProgression(source, options)
+      if (reponse.statut === 'erreur') throw new Error(reponse.message)
+      // Des semaines déjà remplies changeraient : c'est l'écran d'import qui
+      // montre le choix, rien n'est encore écrit.
+      if (reponse.statut === 'a-confirmer') return reponse
       setMessage({
         type: 'succes',
         texte: `Document ajouté : ${source.nomSource}`,

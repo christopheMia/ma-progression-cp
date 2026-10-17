@@ -120,10 +120,11 @@ describe('MethodesEditor avec sources persistantes', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.mocked(ajouterSourceProgression).mockResolvedValue({
+      statut: 'ajoute',
       sourceId: 'source-2',
       methodeId: 'm-fr',
     })
-    jest.mocked(retirerSourceProgression).mockResolvedValue(undefined)
+    jest.mocked(retirerSourceProgression).mockResolvedValue({ statut: 'retire' })
   })
 
   test('guide une classe sans méthode vers l’import direct', () => {
@@ -159,7 +160,7 @@ describe('MethodesEditor avec sources persistantes', () => {
     let terminer: (() => void) | undefined
     jest.mocked(ajouterSourceProgression).mockImplementation(
       () => new Promise(resolve => {
-        terminer = () => resolve({ sourceId: 'source-2', methodeId: 'm-fr' })
+        terminer = () => resolve({ statut: 'ajoute', sourceId: 'source-2', methodeId: 'm-fr' })
       }),
     )
     afficher()
@@ -196,8 +197,8 @@ describe('MethodesEditor avec sources persistantes', () => {
   })
 
   test('rend une erreur accessible et réactive le bouton', async () => {
-    jest.mocked(retirerSourceProgression).mockRejectedValue(
-      new Error('Les documents ont changé'),
+    jest.mocked(retirerSourceProgression).mockResolvedValue(
+      { statut: 'erreur', message: 'Les documents ont changé' },
     )
     jest.spyOn(window, 'confirm').mockReturnValue(true)
     afficher()

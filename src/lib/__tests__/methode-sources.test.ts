@@ -23,6 +23,12 @@ const sourceManuel: SourceProgression = {
   empreinteContenu: 'empreinte-manuel',
 }
 
+// Ce que la base contient pour la matiere quand seul `sourceManuel` y est.
+const lignesDuManuel = [
+  { numero: 1, items: ['Base générale'], pages: '4', mots_exemple: [] },
+  { numero: 8, items: ['Semaine huit'], pages: '30', mots_exemple: [] },
+]
+
 const sourcePeriode: SourceProgression = {
   clientId: 'candidate-periode',
   creeLe: '2026-07-23T09:00:00.000Z',
@@ -81,6 +87,7 @@ function creerDependances(
       ligneBdd(sourceId, sourcePeriode)
     ),
     lireSources: jest.fn(async () => []),
+    lireProgression: jest.fn(async () => []),
     lireSemaines: jest.fn(async () => [
       { id: 'sem-1', numero: 1, periode_numero: 1 },
       { id: 'sem-2', numero: 2, periode_numero: 1 },
@@ -118,10 +125,16 @@ describe('gestion atomique des sources de méthode', () => {
     const existante = ligneBdd('source-1', sourceManuel)
     const dependances = creerDependances({
       lireSources: jest.fn(async () => [existante]),
+      lireProgression: jest.fn(async () => lignesDuManuel),
     })
 
-    await executerAjoutSourceProgression(sourcePeriode, dependances)
+    const resultat = await executerAjoutSourceProgression(
+      sourcePeriode,
+      dependances,
+      { semainesConfirmees: [1] },
+    )
 
+    expect(resultat).toEqual({ statut: 'ajoute', sourceId: 'source-nouvelle', methodeId: 'm-fr' })
     expect(dependances.enregistrerSource).toHaveBeenCalledWith({
       p_class_id: 'classe-1',
       p_methode_id: 'm-fr',
@@ -155,7 +168,11 @@ describe('gestion atomique des sources de méthode', () => {
     expect(dependances.enregistrerSource).not.toHaveBeenCalled()
   })
 
-  test('refuse de fusionner deux noms de méthode pour la même matière', async () => {
+  // Decision du 17/10/2026 : une matiere n'a qu'une methode, et l'IA nomme
+  // rarement deux fois un document de la meme facon (« Arts (poesie, arts
+  // plastiques...) » contre « Arts plastiques, poesie... »). Refuser bloquait
+  // l'enseignante pour une virgule ; le nom deja enregistre est repris.
+  test('reprend la méthode déjà enregistrée quand le document la nomme autrement', async () => {
     const dependances = creerDependances({
       trouverMethode: jest.fn(async () => ({
         id: 'm-fr',
@@ -164,11 +181,82 @@ describe('gestion atomique des sources de méthode', () => {
       })),
     })
 
-    await expect(
-      executerAjoutSourceProgression(sourceManuel, dependances),
-    ).rejects.toThrow('Pilotis')
-    expect(dependances.lireSources).not.toHaveBeenCalled()
+    const resultat = await executerAjoutSourceProgression(sourceManuel, dependances)
+
+    expect(resultat).toEqual(expect.objectContaining({ statut: 'ajoute', methodeId: 'm-fr' }))
+    expect(dependances.creerMethode).not.toHaveBeenCalled()
+    expect(dependances.enregistrerSource).toHaveBeenCalledWith(
+      expect.objectContaining({ p_methode_id: 'm-fr' }),
+    )
+  })
+
+  // Decision de Christophe du 17/10/2026 (option a) : un document qui
+  // remplacerait des semaines deja remplies ne s'enregistre pas sans accord.
+  // Le meme PDF, classe manuel en juillet puis programmation, avait reecrit
+  // les 36 semaines d'arts de la classe de test sans un mot.
+  test('demande un accord avant de remplacer des semaines déjà remplies', async () => {
+    const dependances = creerDependances({
+      lireSources: jest.fn(async () => [ligneBdd('source-1', sourceManuel)]),
+      lireProgression: jest.fn(async () => lignesDuManuel),
+    })
+
+    const resultat = await executerAjoutSourceProgression(sourcePeriode, dependances)
+
+    expect(resultat).toEqual({ statut: 'a-confirmer', semainesRemplacees: [1] })
     expect(dependances.enregistrerSource).not.toHaveBeenCalled()
+  })
+
+  // Relecture du 17/10 : `remplacer_progression` efface TOUTE la matiere avant
+  // de la reecrire. Une semaine corrigee a la main, ou ecrite par un autre
+  // chemin que les documents, comptait donc pour rien et partait sans un mot.
+  test('compte les semaines écrites à la main, même sans aucun document', async () => {
+    const dependances = creerDependances({
+      lireProgression: jest.fn(async () => [
+        { numero: 1, items: ['Corrigé à la main'], pages: '', mots_exemple: [] },
+        { numero: 20, items: ['Hors du document'], pages: '', mots_exemple: [] },
+        { numero: 8, items: ['Semaine huit'], pages: '30', mots_exemple: [] },
+      ]),
+    })
+
+    const resultat = await executerAjoutSourceProgression(sourceManuel, dependances)
+
+    // Semaine 1 changee, semaine 20 effacee ; la semaine 8 reste identique.
+    expect(resultat).toEqual({ statut: 'a-confirmer', semainesRemplacees: [1, 20] })
+    expect(dependances.enregistrerSource).not.toHaveBeenCalled()
+  })
+
+  test('redemande si les semaines touchées ont changé depuis l accord', async () => {
+    const dependances = creerDependances({
+      lireSources: jest.fn(async () => [ligneBdd('source-1', sourceManuel)]),
+      lireProgression: jest.fn(async () => [
+        ...lignesDuManuel,
+        { numero: 2, items: ['Ajouté entre-temps'], pages: '', mots_exemple: [] },
+      ]),
+    })
+
+    const resultat = await executerAjoutSourceProgression(
+      sourcePeriode,
+      dependances,
+      { semainesConfirmees: [1] },
+    )
+
+    expect(resultat).toEqual({ statut: 'a-confirmer', semainesRemplacees: [1, 2] })
+    expect(dependances.enregistrerSource).not.toHaveBeenCalled()
+  })
+
+  test('ajoute sans rien demander quand aucune semaine remplie ne change', async () => {
+    const dependances = creerDependances({
+      lireSources: jest.fn(async () => [ligneBdd('source-1', {
+        ...sourceManuel,
+        semaines: [{ numero: 8, items: ['Semaine huit'], pages: '30', mots_exemple: [] }],
+      })]),
+      lireProgression: jest.fn(async () => [lignesDuManuel[1]]),
+    })
+
+    const resultat = await executerAjoutSourceProgression(sourcePeriode, dependances)
+
+    expect(resultat).toEqual(expect.objectContaining({ statut: 'ajoute' }))
+    expect(dependances.enregistrerSource).toHaveBeenCalledTimes(1)
   })
 
   test('retire par le RPC avec la cible comprise dans le snapshot et restaure la priorité', async () => {

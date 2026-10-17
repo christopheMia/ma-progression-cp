@@ -31,6 +31,7 @@ import {
 } from '@/lib/progression-sources'
 import type { TypeDocumentImport } from '@/lib/ia/schema-import-auto'
 import type { PeriodeProgrammation } from '@/lib/repartition-periode'
+import type { OptionsAjoutSource, ResultatAjoutSource } from '@/lib/methode-sources'
 
 type SourceImporterProps = {
   prenom?: string
@@ -39,7 +40,15 @@ type SourceImporterProps = {
   /** Date de rentrée de la classe. Absente = ni bandeau de calage ni dates. */
   rentreeDate?: string
   zone?: ZoneScolaire
-  onSourceReady: (source: SourceProgression) => void | Promise<void>
+  /**
+   * Rend `a-confirmer` quand le document remplacerait des semaines déjà
+   * remplies : l'écran montre alors le choix, et rappelle avec
+   * `remplacementConfirme` si l'enseignante choisit « Remplacer ».
+   */
+  onSourceReady: (
+    source: SourceProgression,
+    options?: OptionsAjoutSource,
+  ) => void | Promise<void | ResultatAjoutSource>
   onCancel?: () => void
 }
 
@@ -260,9 +269,26 @@ export default function SourceImporter({
   // pas de texte collé. Avant le 17/10, ce bouton ne lisait QUE le texte, et
   // répondait « colle un texte plus long » à qui venait de choisir un fichier.
   const [fichiersChoisis, setFichiersChoisis] = useState<File[]>([])
+  // Décision de Christophe du 17/10/2026 : un document qui remplacerait des
+  // semaines déjà remplies attend ici le choix de l'enseignante.
+  // L'attente garde l'analyse et le décalage qu'elle concerne : si
+  // l'enseignante retouche quoi que ce soit après l'avertissement, il ne
+  // s'applique plus, et le bouton « Ajouter » revient pour recalculer. Sans ça
+  // elle accepterait une chose et une autre serait écrite (relecture du 17/10).
+  const [attenteRemplacement, setAttenteRemplacement] = useState<{
+    source: SourceProgression
+    semaines: number[]
+    analyse: AnalyseSource
+    decalage: number
+  } | null>(null)
   // Decalage a appliquer aux numeros rendus par l'IA. L'enseignante ne le voit
   // jamais: elle repond « ma progression demarre en semaine N » et on convertit.
   const [decalage, setDecalage] = useState(0)
+  const attenteActive = attenteRemplacement
+    && attenteRemplacement.analyse === analyse
+    && attenteRemplacement.decalage === decalage
+    ? attenteRemplacement
+    : null
   const savingRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const requeteTokenRef = useRef(0)
@@ -538,9 +564,7 @@ export default function SourceImporter({
         clientId: crypto.randomUUID(),
         empreinteContenu,
       } as SourceProgression
-      await onSourceReady(source)
-      setReady(true)
-      setConfirmation(null)
+      await envoyerSource(source)
     } catch (erreur) {
       setError(
         `Impossible de préparer la source : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
@@ -549,6 +573,50 @@ export default function SourceImporter({
       savingRef.current = false
       setSaving(false)
     }
+  }
+
+  async function envoyerSource(source: SourceProgression, options?: OptionsAjoutSource) {
+    const resultat = await onSourceReady(source, options)
+    if (resultat && resultat.statut === 'a-confirmer') {
+      if (analyse) {
+        setAttenteRemplacement({
+          source,
+          semaines: resultat.semainesRemplacees,
+          analyse,
+          decalage,
+        })
+      }
+      return
+    }
+    setAttenteRemplacement(null)
+    setReady(true)
+    setConfirmation(null)
+  }
+
+  async function remplacerSemaines() {
+    if (!attenteActive || savingRef.current) return
+    savingRef.current = true
+    setSaving(true)
+    setError(null)
+    try {
+      await envoyerSource(attenteActive.source, { semainesConfirmees: attenteActive.semaines })
+    } catch (erreur) {
+      setError(
+        `Impossible de préparer la source : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
+      )
+    } finally {
+      savingRef.current = false
+      setSaving(false)
+    }
+  }
+
+  function garderExistant() {
+    if (savingRef.current) return
+    setAttenteRemplacement(null)
+    setAnalyse(null)
+    setDecalage(0)
+    setError(null)
+    setConfirmation("Rien n'a changé : ta progression est gardée telle quelle.")
   }
 
   function changerTypeDocument(typeDocument: TypeDocumentImport) {
@@ -898,17 +966,56 @@ export default function SourceImporter({
             </div>
           )}
 
-          <Bouton
-            type="button"
-            variant="principal"
-            icon={Plus}
-            loading={saving}
-            disabled={ready || erreursValidation.length > 0}
-            className="w-full motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:[&>span]:transition-none"
-            onClick={() => void validerSource()}
-          >
-            {ready ? 'Source ajoutée' : 'Ajouter cette source'}
-          </Bouton>
+          {attenteActive ? (
+            <div
+              role="group"
+              aria-labelledby="remplacement-titre"
+              className="space-y-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4"
+            >
+              <p id="remplacement-titre" className="font-semibold text-amber-950">
+                {attenteActive.semaines.length === 1
+                  ? 'Ce document va remplacer 1 semaine déjà remplie'
+                  : `Ce document va remplacer ${attenteActive.semaines.length} semaines déjà remplies`}
+                {` en ${analyse.matiere}.`}
+              </p>
+              <p className="text-sm text-amber-900">
+                {attenteActive.semaines.length === 1 ? 'Semaine ' : 'Semaines '}
+                {attenteActive.semaines.join(', ')}. Leur contenu actuel serait remplacé
+                par celui de ce document.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Bouton
+                  type="button"
+                  variant="principal"
+                  className="w-full"
+                  disabled={saving}
+                  onClick={garderExistant}
+                >
+                  Garder l&apos;existant
+                </Bouton>
+                <Bouton
+                  type="button"
+                  loading={saving}
+                  className="w-full"
+                  onClick={() => void remplacerSemaines()}
+                >
+                  Remplacer ces semaines
+                </Bouton>
+              </div>
+            </div>
+          ) : (
+            <Bouton
+              type="button"
+              variant="principal"
+              icon={Plus}
+              loading={saving}
+              disabled={ready || erreursValidation.length > 0}
+              className="w-full motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:[&>span]:transition-none"
+              onClick={() => void validerSource()}
+            >
+              {ready ? 'Source ajoutée' : 'Ajouter cette source'}
+            </Bouton>
+          )}
         </div>
       )}
 

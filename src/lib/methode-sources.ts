@@ -6,6 +6,7 @@ import {
   normaliserTexte,
   type SourceProgression,
 } from '@/lib/progression-sources'
+import type { ProgressionSemaine } from '@/data/manuels'
 
 export type SourceProgressionBdd = {
   id: string
@@ -54,6 +55,13 @@ export type ParametresRetraitSource = {
   p_source_ids_attendus: string[]
 }
 
+export type LigneProgressionActuelle = {
+  numero: number
+  items: string[] | null
+  pages: string | null
+  mots_exemple: string[] | null
+}
+
 export type MethodeSourcesDependances = {
   lireContexte: () => Promise<{ classId: string }>
   trouverMethode: (
@@ -72,6 +80,8 @@ export type MethodeSourcesDependances = {
   lireSource: (sourceId: string) => Promise<SourceProgressionBdd | null>
   lireSources: (methodeId: string) => Promise<SourceProgressionBdd[]>
   lireSemaines: (classId: string) => Promise<SemaineSourceOperation[]>
+  /** Les lignes ACTUELLES de la matière, quel que soit le chemin qui les a écrites. */
+  lireProgression: (classId: string, matiere: string) => Promise<LigneProgressionActuelle[]>
   enregistrerSource: (params: ParametresAjoutSource) => Promise<string>
   retirerSource: (params: ParametresRetraitSource) => Promise<void>
   methodeEstVide: (methodeId: string) => Promise<boolean>
@@ -117,10 +127,25 @@ export function sourceProgressionDepuisBdd(
   return source
 }
 
+export type ResultatAjoutSource =
+  | { statut: 'ajoute'; sourceId: string; methodeId: string }
+  /** Rien n'est écrit : ces semaines déjà remplies changeraient, l'enseignante choisit. */
+  | { statut: 'a-confirmer'; semainesRemplacees: number[] }
+
+export type OptionsAjoutSource = {
+  /**
+   * Les semaines que l'enseignante a vues et accepté de remplacer. L'accord ne
+   * vaut que pour elles : si la liste recalculée diffère (une semaine remplie
+   * entre-temps), on redemande au lieu d'écrire.
+   */
+  semainesConfirmees?: number[]
+}
+
 export async function executerAjoutSourceProgression(
   sourceBrute: SourceProgression,
   dependances: MethodeSourcesDependances,
-): Promise<{ sourceId: string; methodeId: string }> {
+  options: OptionsAjoutSource = {},
+): Promise<ResultatAjoutSource> {
   if (!estSourceProgressionValide(sourceBrute)) {
     throw new Error('Le document à ajouter est invalide.')
   }
@@ -136,11 +161,13 @@ export async function executerAjoutSourceProgression(
   let methode = await dependances.trouverMethode(classId, matiere)
   let methodeCreee = false
 
+  // Une matière n'a qu'une méthode. Quand le document la nomme autrement
+  // (l'IA ne recopie jamais deux fois le même titre), c'est le nom déjà
+  // enregistré qui est repris. Refuser bloquait l'enseignante pour une virgule
+  // (17/10/2026 : « Arts (poésie, arts plastiques…) » contre « Arts
+  // plastiques, poésie… »).
   if (methode?.manuel && normaliserTexte(methode.manuel) !== normaliserTexte(nomMethode)) {
-    throw new Error(
-      `${libelleMatiereCanonique(matiere)} utilise déjà la méthode ${methode.manuel}. `
-      + `Le document indique ${nomMethode}. Corrige le nom avant de continuer.`,
-    )
+    source.nomMethode = methode.manuel.trim()
   }
 
   if (!methode) {
@@ -150,9 +177,10 @@ export async function executerAjoutSourceProgression(
   }
 
   try {
-    const [lignesBdd, semaines] = await Promise.all([
+    const [lignesBdd, semaines, lignesActuelles] = await Promise.all([
       dependances.lireSources(methode.id),
       dependances.lireSemaines(classId),
+      dependances.lireProgression(classId, matiere),
     ])
     const sourcesExistantes = lignesBdd.map(ligne =>
       sourceProgressionDepuisBdd(
@@ -173,6 +201,24 @@ export async function executerAjoutSourceProgression(
       [...sourcesExistantes, source],
       semainesParPeriode,
     )
+
+    // Décision de Christophe du 17/10/2026 : rien ne remplace une semaine déjà
+    // remplie sans que l'enseignante l'ait vu. Le même PDF, classé manuel en
+    // juillet puis programmation, avait réécrit les 36 semaines d'arts de la
+    // classe de test sans un mot. La comparaison se fait avec la BASE, pas avec
+    // les documents : `remplacer_progression` efface toute la matière avant de
+    // la réécrire, retouches à la main comprises.
+    const semainesRemplacees = semainesQuiChangent(lignesActuelles, apres.semaines)
+    if (semainesRemplacees.length
+      && !memesNumeros(semainesRemplacees, options.semainesConfirmees)) {
+      // Possible même pour une méthode créée à l'instant : la matière peut
+      // porter des lignes écrites hors des documents. On ne laisse pas derrière
+      // soi une méthode vide que personne n'a demandée.
+      if (methodeCreee && await dependances.methodeEstVide(methode.id)) {
+        await dependances.supprimerMethodeCreee(classId, methode.id)
+      }
+      return { statut: 'a-confirmer', semainesRemplacees }
+    }
     const sourceIdsAttendus = lignesBdd.map(ligne => ligne.id)
     const sourceId = await dependances.enregistrerSource({
       p_class_id: classId,
@@ -197,13 +243,59 @@ export async function executerAjoutSourceProgression(
       avant.semaines,
       apres.semaines,
     ))
-    return { sourceId, methodeId: methode.id }
+    return { statut: 'ajoute', sourceId, methodeId: methode.id }
   } catch (error) {
     if (methodeCreee && await dependances.methodeEstVide(methode.id)) {
       await dependances.supprimerMethodeCreee(classId, methode.id)
     }
     throw error
   }
+}
+
+/**
+ * Les semaines REMPLIES aujourd'hui dont le contenu changerait, ou qui
+ * disparaîtraient. Une semaine vide qui se remplit n'est pas un remplacement :
+ * compléter ne demande rien.
+ */
+function semainesQuiChangent(
+  actuelles: LigneProgressionActuelle[],
+  futures: ProgressionSemaine[],
+): number[] {
+  const futuresParNumero = new Map(futures.map(semaine => [semaine.numero, semaine]))
+  const numeros = new Set<number>()
+  for (const ligne of actuelles) {
+    const avant = contenuComparable(ligne.items, ligne.pages, ligne.mots_exemple)
+    if (avant === null) continue
+    const future = futuresParNumero.get(ligne.numero)
+    const apres = future
+      ? contenuComparable(future.items, future.pages, future.mots_exemple)
+      : null
+    if (apres !== avant) numeros.add(ligne.numero)
+  }
+  return [...numeros].sort((a, b) => a - b)
+}
+
+/** `null` pour une semaine sans contenu ; sinon une forme stable à comparer. */
+function contenuComparable(
+  items: string[] | null | undefined,
+  pages: string | null | undefined,
+  mots: string[] | null | undefined,
+): string | null {
+  const propres = (liste: string[] | null | undefined) =>
+    (liste ?? []).map(texte => texte.trim()).filter(Boolean)
+  const contenu = {
+    items: propres(items),
+    pages: (pages ?? '').trim(),
+    mots: propres(mots),
+  }
+  if (!contenu.items.length && !contenu.pages && !contenu.mots.length) return null
+  return JSON.stringify(contenu)
+}
+
+function memesNumeros(a: number[], b: number[] | undefined): boolean {
+  if (!b || a.length !== b.length) return false
+  const triee = [...b].sort((x, y) => x - y)
+  return a.every((numero, index) => numero === triee[index])
 }
 
 export async function executerRetraitSourceProgression(
