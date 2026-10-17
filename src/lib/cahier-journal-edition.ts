@@ -1,4 +1,4 @@
-import type { JourJournal, SeanceJournal } from '@/types'
+import type { JourJournal, SeanceJournal, SeancePlacer } from '@/types'
 
 const JOURS = new Set<JourJournal['jour']>([
   'lundi',
@@ -53,6 +53,21 @@ function validerSeance(value: unknown): SeanceJournal {
   }
 }
 
+/**
+ * Garde la liste « à placer » d'un jour. Tolérante : une entrée mal formée est
+ * écartée (rien n'est inventé) et ne bloque jamais l'enregistrement.
+ */
+function validerAPlacer(brut: unknown): SeancePlacer[] {
+  if (!Array.isArray(brut)) return []
+  return brut.flatMap((x): SeancePlacer[] => {
+    if (!x || typeof x !== 'object') return []
+    const o = x as Record<string, unknown>
+    const libelle = typeof o.libelle === 'string' ? o.libelle.trim() : ''
+    if (!libelle) return []
+    return [{ libelle, origine: typeof o.origine === 'string' ? o.origine : null }]
+  })
+}
+
 export function validerContenuJournal(value: unknown): JourJournal[] {
   if (!Array.isArray(value) || value.length > JOURS.size) {
     throw new Error('Le cahier journal doit contenir au maximum cinq jours.')
@@ -79,9 +94,12 @@ export function validerContenuJournal(value: unknown): JourJournal[] {
       throw new Error('Le nombre de séances du jour est invalide.')
     }
 
+    const aPlacer = validerAPlacer((entree as Record<string, unknown>).aPlacer)
+
     return {
       jour: jour as JourJournal['jour'],
       seances: seances.map(validerSeance),
+      ...(aPlacer.length ? { aPlacer } : {}),
     }
   })
 }

@@ -121,3 +121,92 @@ describe('édition ciblée du cahier journal', () => {
     })).toThrow(/heure de fin/i)
   })
 })
+
+describe('validerContenuJournal : liste « à placer »', () => {
+  const seanceA = {
+    matiere: 'Français',
+    heure_debut: '09:00',
+    heure_fin: '09:30',
+    type: 'cours',
+    deroulement: 'Séance A',
+  }
+
+  it('conserve la liste « à placer » d’un jour', () => {
+    const contenu = [{
+      jour: 'lundi',
+      seances: [seanceA],
+      aPlacer: [{ libelle: 'Séance C', origine: null }],
+    }]
+    expect(validerContenuJournal(contenu)[0].aPlacer).toEqual([{ libelle: 'Séance C', origine: null }])
+  })
+
+  it('accepte un jour sans « à placer »', () => {
+    const contenu = [{ jour: 'lundi', seances: [seanceA] }]
+    const resultat = validerContenuJournal(contenu)[0]
+    expect(resultat.aPlacer).toBeUndefined()
+    expect('aPlacer' in resultat).toBe(false)
+  })
+
+  it('garde l’origine texte et ordonne comme reçu', () => {
+    const contenu = [{
+      jour: 'mardi',
+      seances: [],
+      aPlacer: [
+        { libelle: 'Séance D', origine: 'Jour 5' },
+        { libelle: 'Séance E', origine: 'semaine' },
+      ],
+    }]
+    expect(validerContenuJournal(contenu)[0].aPlacer).toEqual([
+      { libelle: 'Séance D', origine: 'Jour 5' },
+      { libelle: 'Séance E', origine: 'semaine' },
+    ])
+  })
+
+  it('écarte les entrées mal formées sans rien inventer', () => {
+    const contenu = [{
+      jour: 'lundi',
+      seances: [seanceA],
+      aPlacer: [
+        null,
+        'texte',
+        42,
+        {},
+        { libelle: '   ', origine: null },
+        { libelle: 12, origine: null },
+        { libelle: '  Séance F  ', origine: 7 },
+      ],
+    }]
+    expect(validerContenuJournal(contenu)[0].aPlacer).toEqual([
+      { libelle: 'Séance F', origine: null },
+    ])
+  })
+
+  it('omet « à placer » quand rien de valide ne reste ou quand ce n’est pas une liste', () => {
+    const vide = validerContenuJournal([{ jour: 'lundi', seances: [], aPlacer: [{ libelle: '' }] }])
+    expect('aPlacer' in vide[0]).toBe(false)
+    const pasUneListe = validerContenuJournal([{ jour: 'lundi', seances: [], aPlacer: 'oups' }])
+    expect('aPlacer' in pasUneListe[0]).toBe(false)
+  })
+
+  it('survit à un aller-retour de sauvegarde puis de rechargement', () => {
+    const contenu = [{
+      jour: 'lundi',
+      seances: [seanceA],
+      aPlacer: [{ libelle: 'Séance C', origine: 'Jour 5' }],
+    }]
+    const unTour = validerContenuJournal(contenu)
+    expect(validerContenuJournal(JSON.parse(JSON.stringify(unTour)))).toEqual(unTour)
+  })
+
+  it('l’édition ou la suppression d’une séance garde « à placer »', () => {
+    const base = validerContenuJournal([{
+      jour: 'lundi',
+      seances: [seanceA],
+      aPlacer: [{ libelle: 'Séance C', origine: null }],
+    }])
+    const modifie = modifierSeanceJournal(base, 0, 0, { ...base[0].seances[0], deroulement: 'Autre' })
+    expect(modifie[0].aPlacer).toEqual([{ libelle: 'Séance C', origine: null }])
+    const supprime = supprimerSeanceJournal(base, 0, 0)
+    expect(supprime[0].aPlacer).toEqual([{ libelle: 'Séance C', origine: null }])
+  })
+})
