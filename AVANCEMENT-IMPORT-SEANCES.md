@@ -36,6 +36,8 @@ Constat de la relecture Opus de la tâche 5 (branche `seances-taches-5-12`, comm
 
 Réponse de Christophe : « oui » à la règle suivante. Une séance va dans le créneau dont le NOM lui correspond sans hésitation (Vocabulaire ou Grammaire vers « Étude de la langue », Geste d'écriture vers « Écriture », Graphème vers « Phonologie », LC vers « Compréhension », PDE vers « Production d'écrits »). Aucun créneau ou plusieurs possibles : la séance va dans « à placer », Cécile la pose d'un clic. Jamais de devinette (règle du 31/07).
 
+Précision de Christophe (17/10) : Fluence, Lettres muettes, Les prénoms de la classe et Langage oral n'ont PAS de case attitrée (« c'est des choses ponctuelles qui reviennent régulièrement ») : elles restent dans « à placer », ne pas leur ajouter de famille.
+
 ## Point de reprise du 17/10/2026, 19 h : PROCHAINE SESSION = rendre l'assistant vraiment utile
 
 **Décision de Christophe (17/10)** : « si il sert à rien c'est pas la peine de le mettre, il faut un vrai intérêt ». Session neuve dédiée.
