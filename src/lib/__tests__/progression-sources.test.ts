@@ -25,6 +25,11 @@ const source = (overrides: Partial<SourceProgressionManuel> = {}): SourceProgres
   ...overrides,
 })
 
+// Ces tests portent sur la semaine et la source retenues ; les seances ont leur
+// propre bloc plus bas (« materialiserSources garde les seances »).
+const sansSeances = (semaines: ReturnType<typeof materialiserSources>['semaines']) =>
+  semaines.map(({ seances: _seances, ...semaine }) => semaine)
+
 describe('materialiserSources', () => {
   test('regroupe les blocs de programmation de la meme periode sans perdre de notion', () => {
     const resultat = materialiserSources([
@@ -54,7 +59,7 @@ describe('materialiserSources', () => {
       }),
     ], new Map([[1, [4, 5]]]))
 
-    expect(resultat.semaines).toEqual([
+    expect(sansSeances(resultat.semaines)).toEqual([
       { numero: 5, items: ['reste seconde'], pages: '', mots_exemple: [] },
     ])
     expect(resultat.semaines.map(semaine => semaine.numero)).not.toContain(4)
@@ -76,7 +81,7 @@ describe('materialiserSources', () => {
       }),
     ], new Map([[1, [4]], [2, [2]]]))
 
-    expect(resultat.semaines).toEqual([
+    expect(sansSeances(resultat.semaines)).toEqual([
       { numero: 2, items: ['sommaire P2'], pages: '', mots_exemple: [] },
       { numero: 4, items: ['detail P1'], pages: 'p. 4', mots_exemple: [] },
     ])
@@ -116,7 +121,7 @@ describe('materialiserSources', () => {
       }),
     ], new Map([[1, [1, 2]]]))
 
-    expect(resultat.semaines).toEqual([
+    expect(sansSeances(resultat.semaines)).toEqual([
       { numero: 1, items: ['Calcul : Compter'], pages: '', mots_exemple: [] },
       { numero: 2, items: ['sommaire 2'], pages: '', mots_exemple: [] },
     ])
@@ -128,7 +133,7 @@ describe('materialiserSources', () => {
       Object.assign(source({ clientId: 'ancienne', semaines: [{ numero: 1, items: ['ancienne'], pages: '', mots_exemple: [] }] }), { creeLe: '2026-07-23T09:00:00.000Z' }),
     ], new Map())
 
-    expect(resultat.semaines).toEqual([
+    expect(sansSeances(resultat.semaines)).toEqual([
       { numero: 1, items: ['recente'], pages: '', mots_exemple: [] },
     ])
     expect(resultat.remplacements).toEqual([
@@ -442,5 +447,67 @@ describe('progression-sources', () => {
     [source(), true],
   ])('valide les combinaisons type et periode a la frontiere IA', (valeur, attendu) => {
     expect(estSourceProgressionValide(valeur)).toBe(attendu)
+  })
+})
+
+// Defaut du 17/10/2026 : tout le chemin « sources » (Parametres, assistant,
+// creation de classe) reconstruisait les semaines sans leurs seances, et
+// `remplacer_progression` ecrivait donc `seances = []` sur toute la matiere a
+// chaque ajout ou retrait d'un document.
+describe('materialiserSources garde les seances', () => {
+  test('rend les seances enregistrees avec le document', () => {
+    const resultat = materialiserSources([
+      source({
+        semaines: [{
+          numero: 3,
+          items: ['Jour 1 : LC : La petite poule'],
+          pages: '',
+          mots_exemple: [],
+          seances: [{ jour: 1, domaine: 'LC', libelle: 'LC : La petite poule' }],
+        }],
+      }),
+    ], new Map())
+
+    expect(resultat.semaines[0].seances).toEqual([
+      { jour: 1, domaine: 'LC', libelle: 'LC : La petite poule' },
+    ])
+  })
+
+  test('relit les seances depuis les items pour un document enregistre avant elles', () => {
+    const resultat = materialiserSources([
+      source({
+        semaines: [{ numero: 3, items: ['Jour 2 : Poesie : Trois escargots'], pages: '', mots_exemple: [] }],
+      }),
+    ], new Map())
+
+    expect(resultat.semaines[0].seances).toEqual([
+      { jour: 2, domaine: 'Poesie', libelle: 'Poesie : Trois escargots' },
+    ])
+  })
+
+  test('donne des seances aux semaines reparties depuis une programmation', () => {
+    const resultat = materialiserSources([
+      sourceProgrammation({
+        periodes: [{ numero: 1, domaines: [{ nom: 'Chant', items: ['Polyglotte'] }] }],
+      }),
+    ], new Map([[1, [4]]]))
+
+    expect(resultat.semaines[0].seances).toEqual([
+      { jour: null, domaine: 'Chant', libelle: 'Chant : Polyglotte' },
+    ])
+  })
+
+  test('garde une semaine qui ne porte que des seances', () => {
+    const resultat = materialiserSources([
+      source({
+        semaines: [{
+          numero: 5, items: [], pages: '', mots_exemple: [],
+          seances: [{ jour: 3, domaine: '', libelle: 'Fluence' }],
+        }],
+      }),
+    ], new Map())
+
+    expect(resultat.semaines.map(semaine => semaine.numero)).toEqual([5])
+    expect(resultat.semaines[0].seances).toEqual([{ jour: 3, domaine: '', libelle: 'Fluence' }])
   })
 })

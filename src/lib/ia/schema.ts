@@ -1,6 +1,5 @@
 import type { ProgressionSemaine } from '@/data/manuels'
-import type { SeanceProgression } from '@/types'
-import { completerSeances, itemsDepuisSeances, seanceDepuisTexte } from '@/lib/progression-seances'
+import { completerSeances, itemsDepuisSeances, lireSeances } from '@/lib/progression-seances'
 
 // Anthropic exige un OBJET racine pour les sorties structurées (un array nu est
 // refusé) : on enveloppe la liste des semaines dans { semaines: [...] }.
@@ -71,61 +70,6 @@ function toStringArray(v: unknown): string[] {
   return v.map(x => (typeof x === 'string' ? x.trim() : '')).filter(Boolean)
 }
 
-/**
- * Nettoie les séances rendues par le modèle.
- *
- * Tout le travail est délégué à `seanceDepuisTexte` (`progression-seances.ts`),
- * le point de passage unique qu'emprunte aussi le repli sur `items`. Rien de ce
- * qui concerne le préfixe « Jour N : » ne s'écrit ici : ce module ne connaît pas
- * cette convention, et l'avoir laissé l'ignorer est précisément ce qui faisait
- * diverger les deux chemins. Une séance rendue avec
- * `{ jour: null, libelle: 'Jour 3 : Fluence' }` sortait non datée et préfixée,
- * là où le même contenu arrivé par `items` sortait daté et nettoyé : deux champs
- * du même objet se contredisaient, et le contrat du type
- * (`src/types/index.ts`, « préfixe de jour retiré ») était faux une fois sur
- * deux.
- *
- * Ce que la délégation apporte, en plus de l'unicité :
- *
- * - le `jour` du TEXTE de la puce gagne quand elle en porte un (« Jour 3 : »),
- *   celui du modèle ne servant que là où le texte se tait, `null` en dernier
- *   recours. Jamais de jour deviné. Cette phrase disait l'inverse jusqu'au
- *   21/08, contredisant à la fois le code et le paragraphe suivant du même
- *   commentaire ;
- * - le `domaine` du modèle gagne quand il en donne un (il a pu le lire dans un
- *   en-tête de colonne absent du libellé), sinon il est dérivé du libellé. Et
- *   depuis la décision de Christophe du 21/08, il est RÉÉCRIT DEVANT le texte
- *   de la puce quand celle-ci ne le porte pas (`avecDomaine`), pour qu'il
- *   atteigne l'écran : le cahier journal ne lit que `items`. C'est aussi ce qui
- *   le fait survivre à un aller-retour par le texte, ce que ce commentaire
- *   donnait auparavant pour impossible ;
- * - un intervalle (« Jours 3-4 : révisions ») n'est pas un rang de jour et
- *   ressort intact, non daté, même quand le modèle a rempli `jour` lui-même ;
- * - un `jour` du modèle qui contredit le préfixe écrit dans le libellé perd :
- *   c'est le texte du document qui date la puce (voir `seanceDepuisTexte`).
- *
- * Une séance sans libellé n'est pas une séance : une case vide du tableau ne
- * doit rien produire, sinon un créneau du cahier journal recevrait du vide au
- * lieu du nom de sa matière. C'est `seanceDepuisTexte` qui rend `null` dans ce
- * cas, y compris pour une puce réduite à son seul préfixe (« Jour 4 : », une
- * case vide dont le modèle recopie l'en-tête). Ce dernier cas manquait jusqu'au
- * 21/08 : la chaîne rendait `items: ['Jour 4 : ']` et le créneau s'affichait
- * VIDE, parce que `itemsDuJour` rendait `['']` et que le repli sur le nom de la
- * matière ne se déclenche que sur une liste vide.
- */
-function toSeances(v: unknown): SeanceProgression[] {
-  if (!Array.isArray(v)) return []
-  return v.flatMap((raw): SeanceProgression[] => {
-    const o = (raw ?? {}) as Record<string, unknown>
-    const seance = seanceDepuisTexte(
-      typeof o.libelle === 'string' ? o.libelle : '',
-      typeof o.jour === 'number' ? o.jour : null,
-      typeof o.domaine === 'string' ? o.domaine : '',
-    )
-    return seance ? [seance] : []
-  })
-}
-
 function nettoyerSemainesBrutes(brut: unknown[]): ProgressionSemaine[] {
   const items = Array.isArray(brut) ? brut : []
   return items.map((raw) => {
@@ -144,7 +88,7 @@ function nettoyerSemainesBrutes(brut: unknown[]): ProgressionSemaine[] {
     // Quand le modèle ne rend aucune séance, la reconstruction depuis `items`
     // reste le repli : un modèle retombé sur l'ancien format ne fait pas perdre
     // la journée, elle est encore lisible dans le préfixe.
-    const seances = toSeances(o.seances)
+    const seances = lireSeances(o.seances)
     const itemsPropres = toStringArray(o.items)
     const retenues = completerSeances(seances, itemsPropres)
     return {

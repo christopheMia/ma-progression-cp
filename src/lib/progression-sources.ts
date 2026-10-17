@@ -1,5 +1,6 @@
 import type { ProgressionSemaine } from '@/data/manuels'
 import { repartirProgrammation, type PeriodeProgrammation } from '@/lib/repartition-periode'
+import { completerSeances, lireSeances, seancesDepuisItems } from '@/lib/progression-seances'
 
 export type TypeDocumentProgression = 'periode' | 'programmation' | 'manuel'
 export type NumeroPeriode = 1 | 2 | 3 | 4 | 5
@@ -333,6 +334,7 @@ function lignesDeSource(
       items: [...semaine.items],
       pages: '',
       mots_exemple: [],
+      seances: seancesDepuisItems(semaine.items),
     }))
   }
 
@@ -460,11 +462,20 @@ function lireSemaine(brute: unknown): ProgressionSemaine | null {
     items,
     pages: typeof brute.pages === 'string' ? brute.pages.trim() : '',
     mots_exemple,
+    // Les séances du document sont gardées, et complétées depuis les items :
+    // un document enregistré avant elles (juillet 2026) n'en porte aucune, et
+    // les perdre ici écrivait `seances = []` sur toute la matière à chaque
+    // ajout ou retrait d'un document (défaut du 17/10/2026). Les items, eux,
+    // restent tels qu'enregistrés.
+    seances: completerSeances(lireSeances(brute.seances), items),
   }
 }
 
 function aDuContenu(semaine: ProgressionSemaine): boolean {
-  return semaine.items.length > 0 || semaine.pages.length > 0 || semaine.mots_exemple.length > 0
+  return semaine.items.length > 0
+    || semaine.pages.length > 0
+    || semaine.mots_exemple.length > 0
+    || (semaine.seances?.length ?? 0) > 0
 }
 
 function estNumeroSemaine(numero: number): boolean {
@@ -477,6 +488,7 @@ function copierSemaine(semaine: ProgressionSemaine): ProgressionSemaine {
     items: [...semaine.items],
     pages: semaine.pages,
     mots_exemple: [...semaine.mots_exemple],
+    seances: (semaine.seances ?? []).map(seance => ({ ...seance })),
   }
 }
 
