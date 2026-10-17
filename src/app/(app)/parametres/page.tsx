@@ -15,20 +15,22 @@ import RealignerSemainesButton from '@/components/parametres/RealignerSemainesBu
 import DemoButton from '@/components/DemoButton'
 import CreditIaEditor from '@/components/parametres/CreditIaEditor'
 import AncreAuChargement from '@/components/AncreAuChargement'
+import SectionRepliable from '@/components/parametres/SectionRepliable'
+import SommaireParametres from '@/components/parametres/SommaireParametres'
 import { soldeDepuisRpc, type PageParametresData } from '@/lib/rpc-pages'
 import type { Methode, MethodeSource } from '@/types'
 
-function Section({ titre, children, id, headerRight }: { titre: string; children: React.ReactNode; id?: string; headerRight?: React.ReactNode }) {
-  return (
-    <section id={id} className="bg-white border rounded-2xl p-5 scroll-mt-24">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h2 className="font-bold text-gray-700">{titre}</h2>
-        {headerRight}
-      </div>
-      {children}
-    </section>
-  )
-}
+// L'ordre de la page, repris tel quel par le sommaire cliquable.
+const SECTIONS = [
+  { id: 'prenom', titre: 'Mon prénom' },
+  { id: 'eleves', titre: 'Mes élèves' },
+  { id: 'edt', titre: 'Emploi du temps' },
+  { id: 'rentree', titre: 'Date de rentrée' },
+  { id: 'methodes', titre: 'Méthodes et acquis' },
+  { id: 'credit-ia', titre: 'Crédit IA' },
+  { id: 'demo', titre: 'Mode démonstration' },
+  { id: 'remise-a-zero', titre: 'Remise à zéro' },
+]
 
 export default async function ParametresPage() {
   // Cette page a enchaine jusqu'a SEPT requetes en serie (2,08 s mesurees le
@@ -70,15 +72,17 @@ export default async function ParametresPage() {
         <h1 className="text-xl font-bold text-gray-800">Paramètres de ma classe</h1>
       </div>
 
-      <Section id="prenom" titre="👤 Mon prénom">
+      <SommaireParametres sections={SECTIONS} />
+
+      <SectionRepliable id="prenom" titre="👤 Mon prénom">
         <PrenomEnseignantEditor initial={classe.prenom_enseignant ?? ''} />
-      </Section>
+      </SectionRepliable>
 
-      <Section id="eleves" titre="👧 Mes élèves" headerRight={<ResetBlockButton scope="eleves" message="Efface tous les élèves et leur suivi." />}>
+      <SectionRepliable id="eleves" titre="👧 Mes élèves" headerRight={<ResetBlockButton scope="eleves" message="Efface tous les élèves et leur suivi." />}>
         <ElevesEditor initial={(eleves ?? []).map(e => ({ id: e.id, prenom: e.prenom }))} />
-      </Section>
+      </SectionRepliable>
 
-      <Section id="edt" titre="🕐 Emploi du temps" headerRight={
+      <SectionRepliable id="edt" titre="🕐 Emploi du temps" headerRight={
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <ImporterEdtButton />
           <GenererEdtButton />
@@ -93,14 +97,14 @@ export default async function ParametresPage() {
           type: (c.type ?? 'cours') as 'cours' | 'routine',
           visible_journal: (c.visible_journal ?? true) as boolean,
         }))} />
-      </Section>
+      </SectionRepliable>
 
-      <Section id="rentree" titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>
+      <SectionRepliable id="rentree" titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>
         <RentreeEditor initial={classe.rentree_date}
           initialZone={(classe.zone_scolaire === 'B' || classe.zone_scolaire === 'C') ? classe.zone_scolaire : 'A'} />
-      </Section>
+      </SectionRepliable>
 
-      <Section id="methodes" titre="📚 Mes méthodes et acquis des élèves" headerRight={<ResetBlockButton scope="methodes" message="Efface les méthodes importées et leur progression." />}>
+      <SectionRepliable id="methodes" titre="📚 Mes méthodes et acquis des élèves" headerRight={<ResetBlockButton scope="methodes" message="Efface les méthodes importées et leur progression." />}>
         <MethodesEditor
           prenom={(classe.prenom_enseignant ?? '').trim() || undefined}
           methodes={(methodes ?? []) as Methode[]}
@@ -108,40 +112,41 @@ export default async function ParametresPage() {
           creneaux={(edt ?? []).map(c => ({ id: c.id, matiere: c.matiere, jour: c.jour, methode_id: c.methode_id ?? null }))}
           resumes={resumes}
         />
-      </Section>
+      </SectionRepliable>
 
-      <Section id="credit-ia" titre="💳 Crédit IA">
+      <SectionRepliable id="credit-ia" titre="💳 Crédit IA">
         <CreditIaEditor
           soldeInitial={solde.soldeReleveUsd}
           releveAt={solde.releveAt}
           consommeDepuis={solde.consommeUsd}
         />
-      </Section>
+      </SectionRepliable>
 
-      <section id="demo" className="bg-white border border-violet-200 rounded-2xl p-5 scroll-mt-24">
-        <h2 className="font-bold text-violet-700 mb-2">🎓 Mode démonstration</h2>
+      <SectionRepliable id="demo" titre="🎓 Mode démonstration" ton="demo">
         <p className="text-sm text-gray-500 mb-4">
           Remplit une classe d&apos;exemple complète (élèves, emploi du temps, progression, suivi) pour la formation.
         </p>
         <DemoButton confirmer />
-      </section>
+      </SectionRepliable>
 
-      <section id="remise-a-zero" className="bg-white border-2 border-red-200 rounded-2xl p-5 space-y-5 scroll-mt-24">
-        <div>
-          <h2 className="font-bold text-red-700 mb-1">🧽 Nouvelle année, même classe</h2>
-          <p className="text-sm text-gray-500 mb-3">
-            Vide tout le contenu et garde ta classe telle quelle. L&apos;emploi du temps repart vide.
-          </p>
-          <ResetContenuButton />
+      <SectionRepliable id="remise-a-zero" titre="⚠️ Remise à zéro" ton="danger">
+        <div className="space-y-5">
+          <div>
+            <h3 className="font-bold text-red-700 mb-1">🧽 Nouvelle année, même classe</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Vide tout le contenu et garde ta classe telle quelle. L&apos;emploi du temps repart vide.
+            </p>
+            <ResetContenuButton />
+          </div>
+          <div className="border-t border-red-100 pt-5">
+            <h3 className="font-bold text-red-700 mb-1">🗑️ Repartir de zéro</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Supprime aussi la classe et relance la configuration complète.
+            </p>
+            <ResetButton />
+          </div>
         </div>
-        <div className="border-t border-red-100 pt-5">
-          <h2 className="font-bold text-red-700 mb-1">🗑️ Repartir de zéro</h2>
-          <p className="text-sm text-gray-500 mb-3">
-            Supprime aussi la classe et relance la configuration complète.
-          </p>
-          <ResetButton />
-        </div>
-      </section>
+      </SectionRepliable>
     </div>
   )
 }
