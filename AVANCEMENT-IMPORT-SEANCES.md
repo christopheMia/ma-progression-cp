@@ -44,6 +44,8 @@
 
 **Limites connues du placement, hors des données de Cécile (relecture Opus, non corrigées)** : une case « Compréhension de l'oral » accepte encore LC ; une case « Lecture et écriture » est lue comme Écriture ; quand la case la plus précise est prise, la séance suivante de la même famille peut tomber dans une case générique « Français » ; « Écriture : les boucles » part en « à placer » ; « copie » compte comme Écriture.
 
+**DÉCISION DE CHRISTOPHE (17/10, « il faut écrire des choses lisibles et structurer », puis « oui »)** : même logique pour les progressions de NOTIONS (maths, histoire, EMC...). Chaque notion va dans la case qui porte son nom (« Problèmes : ... » dans « Problème », « Calcul mental : ... » dans « Calcul mental ») ; ce qui n'a pas de case précise va dans la case générale de la matière (« Mathématiques ») ; les rituels (Chaque jour compte, Flash maths) affichent leur nom ; une case qui reçoit plusieurs notions les met une par ligne, jamais collées par des virgules. Le constat ci-dessous est donc le chantier suivant.
+
 **Constat à traiter plus tard** : dans le cahier journal, les créneaux de maths d'un même jour (Chaque jour compte, flash maths, maths, calcul mental) affichent tous le même texte complet des notions de la semaine. Ce n'est pas ce chantier (progressions de notions, comportement d'avant), mais c'est le même défaut « brouillon » que Christophe a signalé.
 
 ## DÉCISION DE CHRISTOPHE (17/10, soir) : placer les séances PAR LE SENS, pas dans l'ordre
