@@ -7,7 +7,7 @@ import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 /**
  * Le chat corrige une progression et la renvoie ENTIÈRE, mais ne connaît que
@@ -87,7 +87,11 @@ export async function POST(request: Request) {
     // revenait à demander au modèle d'ignorer la moitié de ce qu'il lisait.
     const contexte = progression.map(({ seances: _seances, ...semaine }) => semaine)
 
-    const result = await client.messages.create({
+    // En flux, pas en un bloc : au-dela d'environ 21 000 tokens de plafond, le SDK
+    // refuse d'avance un appel non streame (« Streaming is required for operations
+    // that may take longer than 10 minutes »). C'est ce qui a casse l'import en
+    // production du 11/10 au 17/10/2026, sans qu'aucun test ne le voie.
+    const result = await client.messages.stream({
       model: MODELE_CHAT,
       // Même plafond que l'import : le chat aussi renvoie la progression
       // entière, et les puces ont grandi de leur domaine.
@@ -102,7 +106,7 @@ export async function POST(request: Request) {
       ],
       output_config: { format: { type: 'json_schema', schema: CHAT_SCHEMA } },
       messages: [...hist, { role: 'user', content: message }],
-    })
+    }).finalMessage()
 
     await enregistrerUsageIA({ route: 'ia-chat', modele: MODELE_CHAT, usage: result.usage })
 

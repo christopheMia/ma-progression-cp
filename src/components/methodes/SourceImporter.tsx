@@ -256,6 +256,10 @@ export default function SourceImporter({
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmation, setConfirmation] = useState<string | null>(null)
+  // Le dernier document choisi : le bouton « Analyser » le relance s'il n'y a
+  // pas de texte collé. Avant le 17/10, ce bouton ne lisait QUE le texte, et
+  // répondait « colle un texte plus long » à qui venait de choisir un fichier.
+  const [fichiersChoisis, setFichiersChoisis] = useState<File[]>([])
   // Decalage a appliquer aux numeros rendus par l'IA. L'enseignante ne le voit
   // jamais: elle repond « ma progression demarre en semaine N » et on convertit.
   const [decalage, setDecalage] = useState(0)
@@ -408,9 +412,24 @@ export default function SourceImporter({
     void lancerAnalyse(form, 'Texte collé')
   }
 
+  function analyserDocument() {
+    if (!texte.trim() && fichiersChoisis.length) {
+      void analyserFichiers(fichiersChoisis)
+      return
+    }
+    analyserTexte()
+  }
+
   async function importerFichiers(event: React.ChangeEvent<HTMLInputElement>) {
     const fichiers = Array.from(event.target.files ?? [])
+    // Remis à zéro, sinon rechoisir le même fichier ne déclenche plus rien.
+    event.target.value = ''
     if (!fichiers.length) return
+    setFichiersChoisis(fichiers)
+    await analyserFichiers(fichiers)
+  }
+
+  async function analyserFichiers(fichiers: File[]) {
     const tailleTotale = fichiers.reduce((total, fichier) => total + fichier.size, 0)
     if (fichiers.length > NOMBRE_FICHIERS_MAX) {
       setError(`Tu peux importer au maximum ${NOMBRE_FICHIERS_MAX} fichiers à la fois.`)
@@ -650,6 +669,11 @@ export default function SourceImporter({
               onChange={event => void importerFichiers(event)}
               className="mt-3 block w-full text-sm text-violet-900 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:font-semibold file:text-violet-700 hover:file:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300/70"
             />
+            {fichiersChoisis.length > 0 && (
+              <p className="mt-2 text-center text-xs text-violet-800">
+                Document choisi : {fichiersChoisis.map(fichier => fichier.name).join(', ')}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3" aria-hidden="true">
@@ -678,10 +702,16 @@ export default function SourceImporter({
             icon={Search}
             loading={loading}
             className="w-full motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:[&>span]:transition-none"
-            onClick={analyserTexte}
+            onClick={analyserDocument}
           >
             Analyser le document
           </Bouton>
+          {loading && (
+            <p aria-live="polite" className="text-center text-sm text-violet-900">
+              Analyse de ton document en cours. Pour une année entière, ça peut prendre
+              quelques minutes : laisse cette page ouverte.
+            </p>
+          )}
         </div>
       )}
 

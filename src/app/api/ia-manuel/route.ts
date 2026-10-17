@@ -20,7 +20,7 @@ import { messageErreurIA, messageReponseIncomplete } from '@/lib/ia/erreurs'
 import { enregistrerUsageIA } from '@/lib/actions/ia-usage'
 import { garderAppelIA } from '@/lib/ia/garde'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 function chaineNormalisee(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
@@ -104,7 +104,11 @@ export async function POST(request: Request) {
       : [{ type: 'text', text: userImport(texte) }]
 
     const client = getAnthropicClient()
-    const message = await client.messages.create({
+    // En flux, pas en un bloc : au-dela d'environ 21 000 tokens de plafond, le SDK
+    // refuse d'avance un appel non streame (« Streaming is required for operations
+    // that may take longer than 10 minutes »). C'est ce qui a casse l'import en
+    // production du 11/10 au 17/10/2026, sans qu'aucun test ne le voie.
+    const message = await client.messages.stream({
       model: MODELE_IMPORT,
       // Voir `PLAFOND_SORTIE_PROGRESSION` : le champ "seances" a presque triplé
       // la taille de la réponse, et 16000 coupait l'année d'une enseignante.
@@ -123,7 +127,7 @@ export async function POST(request: Request) {
         },
       },
       messages: [{ role: 'user', content: contenuUtilisateur }],
-    })
+    }).finalMessage()
 
     await enregistrerUsageIA({ route: 'ia-manuel', modele: MODELE_IMPORT, usage: message.usage })
 

@@ -361,6 +361,30 @@ describe('SourceImporter', () => {
     await waitFor(() => expect(onSourceReady).toHaveBeenCalledTimes(1))
   })
 
+  test('le bouton Analyser relance le fichier choisi au lieu de reclamer du texte', async () => {
+    // Defaut trouve le 17/10 : apres un fichier, le bouton ne lisait que la case
+    // de texte, vide, et repondait « colle un texte un peu plus long ».
+    jest.mocked(fetch)
+      .mockResolvedValueOnce(reponseJson({ error: 'Panne passagere' }, false, 500))
+      .mockResolvedValueOnce(reponseJson({ ...REPONSE_MANUEL, avertissements: [] }))
+    render(<SourceImporter onSourceReady={jest.fn()} />)
+    const fichier = new File(['pdf-1'], 'programmation-p1.pdf', { type: 'application/pdf' })
+
+    fireEvent.change(screen.getByLabelText('Documents à importer'), {
+      target: { files: [fichier] },
+    })
+    await screen.findByRole('alert')
+    expect(screen.getByText('Document choisi : programmation-p1.pdf')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /Analyser le document/ }))
+    await screen.findByRole('status')
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+    const form = jest.mocked(fetch).mock.calls[1][1]?.body as FormData
+    expect(form.getAll('pdf')).toHaveLength(1)
+    expect(screen.queryByText(/colle un texte un peu plus long/i)).not.toBeInTheDocument()
+  })
+
   test('envoie plusieurs petits PDF bruts et utilise leurs noms comme source', async () => {
     const onSourceReady = jest.fn()
     jest.mocked(fetch).mockResolvedValueOnce(reponseJson({

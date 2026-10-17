@@ -1,9 +1,21 @@
+// `mockCreate` recoit les parametres de l'appel et rend la reponse finale, que
+// la route passe par le flux (`stream(...).finalMessage()`). L'appel en un bloc,
+// `create`, se comporte comme le vrai SDK avec un plafond de 32 000 tokens : il
+// refuse. C'est ce refus qui a casse l'import en production le 11/10/2026.
 const mockCreate = jest.fn()
+const mockCreateEnUnBloc = jest.fn(() => {
+  throw new Error('Streaming is required for operations that may take longer than 10 minutes.')
+})
 const mockEnregistrerUsageIA = jest.fn()
 const mockUtilisateurCourant = jest.fn()
 
 jest.mock('@/lib/ia/anthropic', () => ({
-  getAnthropicClient: jest.fn(() => ({ messages: { create: mockCreate } })),
+  getAnthropicClient: jest.fn(() => ({
+    messages: {
+      create: mockCreateEnUnBloc,
+      stream: (params: unknown) => ({ finalMessage: () => mockCreate(params) }),
+    },
+  })),
   MODELE_IMPORT: 'modele-test',
 }))
 
@@ -42,10 +54,25 @@ function requeteImport(matiere?: string) {
 describe('POST /api/ia-manuel', () => {
   beforeEach(() => {
     mockCreate.mockReset()
+    mockCreateEnUnBloc.mockClear()
     mockEnregistrerUsageIA.mockReset()
     // Par defaut, une enseignante connectee : chaque test verifie le reste.
     mockUtilisateurCourant.mockReset()
     mockUtilisateurCourant.mockResolvedValue({ id: 'prof-1' })
+  })
+
+  test('appelle l IA en flux, jamais en un bloc que le SDK refuserait', async () => {
+    reponseIA({
+      matiere: 'Francais', nom_methode: 'M', type_document: 'manuel', periode_numero: null,
+      confiance_detection: 1, avertissements: [], base_calage: 'numeros',
+      semaines: [{ numero: 1, items: ['a'], pages: '', mots_exemple: [] }], periodes: [],
+    })
+
+    const reponse = await POST(requeteImport())
+
+    expect(reponse.status).toBe(200)
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+    expect(mockCreateEnUnBloc).not.toHaveBeenCalled()
   })
 
   test('refuse un appel sans utilisateur connecte, sans toucher a l IA', async () => {

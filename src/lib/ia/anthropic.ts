@@ -50,12 +50,15 @@ export const REFLEXION_ETEINTE = { type: 'disabled' } as const
  * L'échec était BRUYANT (`stop_reason: 'max_tokens'` traduit en 422 explicite
  * par `messageReponseIncomplete`), jamais silencieux, mais il restait un échec.
  *
- * LIMITE QUI RESTE, et qui n'est pas celle-ci : `maxDuration = 60` sur les
- * routes. Au-delà d'une quinzaine de semaines à cette densité, c'est le temps
- * de la fonction serverless qui arrête la génération avant le plafond de
- * tokens. Monter ce nombre plus haut ne repousserait donc rien de réel ; le
- * jour où un document d'année entière devra passer, c'est le découpage de la
- * requête qu'il faudra revoir, pas ce plafond.
+ * PIÈGE PAYÉ (11/10 au 17/10/2026) : au-delà d'environ 21 000 tokens de
+ * plafond, le SDK refuse d'avance un appel `messages.create` non streamé. Les
+ * routes qui utilisent ce plafond passent donc par `messages.stream(...)
+ * .finalMessage()`. Avec `create`, l'import était cassé en production.
+ *
+ * LIMITE QUI RESTE : le temps de la fonction serverless, relevé de 60 à 300 s le
+ * 17/10 (Fluid activé sur le projet Vercel, plafond Hobby). Une année complète
+ * à cette densité peut encore s'en approcher ; si elle est coupée, c'est le
+ * découpage de la requête qu'il faudra revoir, pas ce plafond.
  */
 export const PLAFOND_SORTIE_PROGRESSION = 32000
 
