@@ -30,6 +30,22 @@
 
 **DEMANDE DE CHRISTOPHE (17/10, ~18 h 25), CODÉE le soir même, PAS en ligne** (`SectionRepliable` et `SommaireParametres` dans `src/components/parametres/`, boutons Réduire/Ouvrir, Tout réduire/Tout ouvrir, état mémorisé dans le navigateur, contenu gardé monté ; 909 tests verts) : dans Paramètres, pouvoir **réduire chaque section avec un bouton** (précisé : un vrai bouton visible, pas seulement un clic sur le titre), et un **sommaire cliquable** en haut pour aller directement à la bonne section (« il faut scroller pour arriver au bon endroit, c'est long »). La page (`src/app/(app)/parametres/page.tsx`) a déjà un `id` et `scroll-mt-24` sur chaque section. Piège connu : une ancre `#section` se perd sur une page qui a un `loading.tsx` (fiche mémoire `cp-ancres-loading-tsx`), et cette page en a un.
 
+## Avancement du 17/10 au soir, branche `seances-taches-5-12` (NON fusionnée, NON en ligne)
+
+| Tâche | État | Preuve |
+|---|---|---|
+| 5. Une séance par créneau | faite, puis REMPLACÉE par le placement par le sens | `d61b1ad`, puis `3c00856` + `36480de` (nouveau `src/lib/familles-seances.ts`), relu par Opus deux fois, approuvé |
+| 6. La sauvegarde garde « à placer » | faite | `e31f1da` + `8f339f6` (limites de taille comme `validerSeance`), relue |
+| 8. Planning réel des Petites Poules figé | fait | `edd64d6` (test seul, LC partout vérifié) |
+| 9. Afficher « à placer » | faite | `18605f9`, vu en vrai sur localhost, classe de test, semaine 3 : lundi Graphèmes en Phonologie, Vocabulaire en Étude de la langue, Geste d'écriture en Écriture, « Langage oral » à placer ; vendredi LC en Compréhension |
+| 7, 10, 11, 12 | à faire | 7 demande à Christophe de valider les valeurs sur le vrai emploi du temps |
+
+1021 tests verts, `tsc` muet. Le cahier journal de la semaine 3 de la classe de test a été généré le 17/10 (essai).
+
+**Limites connues du placement, hors des données de Cécile (relecture Opus, non corrigées)** : une case « Compréhension de l'oral » accepte encore LC ; une case « Lecture et écriture » est lue comme Écriture ; quand la case la plus précise est prise, la séance suivante de la même famille peut tomber dans une case générique « Français » ; « Écriture : les boucles » part en « à placer » ; « copie » compte comme Écriture.
+
+**Constat à traiter plus tard** : dans le cahier journal, les créneaux de maths d'un même jour (Chaque jour compte, flash maths, maths, calcul mental) affichent tous le même texte complet des notions de la semaine. Ce n'est pas ce chantier (progressions de notions, comportement d'avant), mais c'est le même défaut « brouillon » que Christophe a signalé.
+
 ## DÉCISION DE CHRISTOPHE (17/10, soir) : placer les séances PAR LE SENS, pas dans l'ordre
 
 Constat de la relecture Opus de la tâche 5 (branche `seances-taches-5-12`, commit `d61b1ad`) : remplir les créneaux de français « dans l'ordre » (règle D.4 du plan d'août) met 5 séances sur 12 au mauvais endroit sur le vrai emploi du temps de Cécile (5 à 6 créneaux de français par jour pour 2 à 4 séances : Vocabulaire dans « Ateliers de français », Geste d'écriture dans « Étude de la langue »). Faux qui a l'air juste.
