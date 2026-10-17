@@ -30,6 +30,34 @@
 
 **DEMANDE DE CHRISTOPHE (17/10, ~18 h 25), CODÉE le soir même, PAS en ligne** (`SectionRepliable` et `SommaireParametres` dans `src/components/parametres/`, boutons Réduire/Ouvrir, Tout réduire/Tout ouvrir, état mémorisé dans le navigateur, contenu gardé monté ; 909 tests verts) : dans Paramètres, pouvoir **réduire chaque section avec un bouton** (précisé : un vrai bouton visible, pas seulement un clic sur le titre), et un **sommaire cliquable** en haut pour aller directement à la bonne section (« il faut scroller pour arriver au bon endroit, c'est long »). La page (`src/app/(app)/parametres/page.tsx`) a déjà un `id` et `scroll-mt-24` sur chaque section. Piège connu : une ancre `#section` se perd sur une page qui a un `loading.tsx` (fiche mémoire `cp-ancres-loading-tsx`), et cette page en a un.
 
+## POINT DE REPRISE DU 17/10, ~22 h : LIRE EN PREMIER (pause demandée par Christophe, fatigué)
+
+Tout est sur la branche `seances-taches-5-12`, poussée sur GitHub, **PAS fusionnée, PAS en ligne**. Cécile n'a rien de nouveau. En ligne : seulement ce qui l'était à 18 h 46 (fiche de semaine lisible `7b78dfd` est sur `main`, poussée, PAS déployée).
+
+| Fait ce soir | Preuve |
+|---|---|
+| Séances de français placées par le sens (tâche 5 refaite) | `3c00856`, `36480de`, relu 2 fois par Opus, approuvé ; vu en vrai sur la classe de test |
+| « À placer » gardé à l'enregistrement (6), affiché (9), posé d'un menu (12) | `e31f1da`, `8f339f6`, `18605f9`, `4c3e0f8` ; posé « Langage oral » dans Ateliers de français lundi S3 classe de test, vérifié EN BASE après rechargement |
+| Planning des Petites Poules figé (8) | `edd64d6` |
+| Notions (maths, histoire-géo, arts) placées par le sens, une par ligne | `822393b`, relu par Opus : **changements demandés**, voir ci-dessous |
+
+**État des tests sur la branche : 1050 sur 1052.** Les 2 échecs sont VOULUS, dans `cahier-journal-lundi-reel.test.ts` (tâche 7) : ils attendent l'ancien affichage des maths et d'« EMC / Poésie ». Ne pas les « réparer » sans l'accord de Christophe.
+
+**Relecture Opus de `822393b`, à traiter AVANT toute fusion :**
+1. RÉGRESSION pour une NOUVELLE enseignante (trame par défaut + manuel sans « Domaine : ») : son premier cahier journal n'affiche presque que des noms de cases, et tout son français part « à placer » le lundi. Cause : la règle des notions s'applique aussi au français sans jours, ce que personne n'a décidé.
+2. Le test `cahier-journal.test.ts` (« repli : créneau français non relié ») a été modifié pour rester vert : il cachait cette régression. Lui rendre son intention.
+3. Export Word : les notions sur plusieurs lignes s'y collent sur une seule (retours à la ligne non gérés dans `src/lib/export-word.ts`). À corriger.
+4. Petits effets de bord des noms : « Calcul : ... » va dans « Calcul mental », « Maths : ... » dans le rituel « flash maths », « Écriture : ... » dans « Lecture-écriture ».
+
+**Questions pour Christophe (en mots simples, une par ligne) :**
+1. Le français sans jours (sommaire d'un manuel) doit-il suivre la même règle, ou garder l'ancien remplissage tant qu'il n'a pas de jours ?
+2. Quand une matière n'a qu'une seule case dans la journée (« Arts visuels »), cette case reçoit-elle toutes ses notions ? (avis du relecteur : oui, c'est la correction la plus simple pour une nouvelle enseignante)
+3. « Calcul : poser une addition » : dans « Calcul mental » ou dans « Mathématiques » ?
+4. Les rituels (« flash maths », « Chaque jour compte ») ne reçoivent-ils jamais rien ?
+5. Tâche 7, lundi réel : « Chaque jour compte » et « flash maths » montrent leur nom, « calcul mental » seulement le calcul mental, « EMC / Poésie » seulement l'EMC. On valide ?
+
+**Reste ensuite** : tâches 10 et 11 (vérifier l'import jour par jour, déplacer une séance), relecture finale de toute la branche, puis mise en ligne avec l'accord de Christophe. Puis le chantier assistant (il doit pouvoir faire les corrections, exigence du 17/10).
+
 ## Avancement du 17/10 au soir, branche `seances-taches-5-12` (NON fusionnée, NON en ligne)
 
 | Tâche | État | Preuve |
@@ -61,6 +89,8 @@ Précision de Christophe (17/10) : Fluence, Lettres muettes, Les prénoms de la 
 **Décision de Christophe (17/10)** : « si il sert à rien c'est pas la peine de le mettre, il faut un vrai intérêt ». Session neuve dédiée.
 
 **Ce que fait l'assistant aujourd'hui (lu dans le code le 17/10)** : `src/components/assistant/ChatAssistant.tsx` (3 amorces seulement, toutes sur le démarrage) appelle `src/app/api/assistant/route.ts` (modèle `MODELE_COURT` = Haiku, 2 000 tokens, texte seul). Son prompt `systemAssistant` (`src/lib/ia/prompts.ts`) ne connaît que le prénom, la date de rentrée et la liste des matières : il ne voit NI le contenu des semaines, NI les élèves, NI le cahier journal, et n'agit sur rien. Il connaît mal Livret, emploi du temps, cahier journal (risque de réponses inventées). Onglet « Document » = import (marche, corrigé le 17/10).
+
+**EXIGENCE DE CHRISTOPHE (17/10 au soir)** : « si il y a des corrections à faire il faut que ce soit possible manuellement et aussi que l'assistant puisse le faire ». À la main : déjà possible dans le cahier journal (bouton Modifier sur chaque case, menu pour poser une séance « à placer »). Par l'assistant : PAS encore, il ne voit ni n'agit sur rien. À inclure dans le chantier assistant comme premier usage concret (« mets le vocabulaire de lundi dans Étude de la langue », « déplace la poésie à jeudi »), avec confirmation avant d'écrire.
 
 **Pistes proposées à Christophe, non tranchées** : (1) rapide : encadré « Ce que je sais faire », une dizaine d'amorces en 3 groupes (L'appli / Ma classe / Pédagogie), et lui donner le guide de l'appli depuis la MÊME source que la page Aide (`src/app/(app)/aide/page.tsx`), sans copie qui diverge ; (2) le vrai intérêt : lui faire VOIR la classe (contenu de la semaine, élèves, acquis) pour « qu'est-ce que je fais cette semaine », « prépare ma journée de lundi », etc. Coût : plus de crédit IA par question, à arbitrer. Commencer la session par le skill `brainstorming` (qu'est-ce qui serait vraiment utile à Cécile ?).
 
