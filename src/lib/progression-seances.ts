@@ -121,7 +121,7 @@ const INTERVALLE_JOURS = new RegExp(
  */
 const MAX_LONGUEUR_DOMAINE = 30
 
-function domaineDe(libelle: string): string {
+export function domaineDe(libelle: string): string {
   const coupe = libelle.indexOf(':')
   if (coupe < 1 || coupe > MAX_LONGUEUR_DOMAINE) return ''
   return libelle.slice(0, coupe).trim()

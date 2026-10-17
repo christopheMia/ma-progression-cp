@@ -64,7 +64,10 @@ describe('une séance par créneau', () => {
     expect(lundi.seances[0].deroulement).toBe('Séance de lundi')
   })
 
-  it('laisse les progressions de notions exactement comme avant', () => {
+  // Depuis le 17/10/2026 : une notion par ligne, plus de virgules, et les pages
+  // une seule fois par jour. Deux créneaux « Maths » (généraux) reçoivent
+  // chacun les notions.
+  it('écrit les notions une par ligne, les pages une seule fois', () => {
     const notions: ProgressionMatiere = {
       methode_id: null, matiere: 'Maths',
       items: ['Nombres jusqu’à 10', 'Décomposer 4 et 5'],
@@ -77,9 +80,11 @@ describe('une séance par créneau', () => {
     const [lundi] = genererCahierJournal(
       [creneau(0, 'Maths'), creneau(1, 'Maths')], [notions],
     )
-    const attendu = 'Nombres jusqu’à 10, Décomposer 4 et 5 — p.12'
-    expect(lundi.seances[0].deroulement).toBe(attendu)
-    expect(lundi.seances[1].deroulement).toBe(attendu)
+    const [premier, deuxieme] = lundi.seances.map(s => s.deroulement.split('\n'))
+    expect(premier).toHaveLength(2)
+    expect(premier[0]).toBe('Nombres jusqu’à 10')
+    expect(premier[1]).toMatch(/^Décomposer 4 et 5 .*p\.12$/)
+    expect(deuxieme).toEqual(['Nombres jusqu’à 10', 'Décomposer 4 et 5'])
     expect(lundi.aPlacer ?? []).toEqual([])
   })
 

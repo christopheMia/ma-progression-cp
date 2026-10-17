@@ -5,6 +5,7 @@ import {
 import { libelleMatiereCanonique, trouverProgressionMatiere } from '@/lib/matieres'
 import { lirePrefixeJour, lireSeances } from '@/lib/progression-seances'
 import { repartirSeances } from '@/lib/familles-seances'
+import { placerNotionsDuJour, type NotionPlacee } from '@/lib/notions-creneaux'
 import { sansAccents } from '@/data/trame-edt'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
@@ -105,10 +106,31 @@ function estCreneauGenerique(nom: string, p: ProgressionMatiere): boolean {
 }
 
 /**
- * Ce qu'affiche un créneau alimenté par une progression de NOTIONS (aucune
- * séance datée) : les items de la semaine, les pages, les mots. Comportement
- * inchangé depuis avant la tâche 5, y compris pour des items datés qui n'ont
- * pas de séances (lignes enregistrées avant l'import par séances).
+ * Vrai pour une ANCIENNE ligne de progression : des items datés « Jour N »
+ * sans séances, enregistrés avant l'import par séances. Ce sont des séances
+ * écrites à l'ancienne, pas des notions : elles gardent leur découpage par
+ * jour (`itemsDuJour`) et ne passent pas par le placement des notions.
+ */
+function estAncienneLigneDatee(p: ProgressionMatiere): boolean {
+  return p.items.some(item => numeroJourItem(item) !== null)
+}
+
+/**
+ * Les pages et les mots d'une progression, à écrire après sa dernière notion.
+ * Une seule fois par jour (voir `genererCahierJournal`), plus dans chaque
+ * créneau de la matière.
+ */
+function pagesEtMots(p: ProgressionMatiere): string {
+  const pages = p.pages ? ` — ${p.pages}` : ''
+  const mots = p.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
+  return `${pages}${mots}`
+}
+
+/**
+ * Ce qu'affiche un créneau alimenté par une ANCIENNE ligne datée
+ * (`estAncienneLigneDatee`) : les items du jour, les pages, les mots. Même
+ * contenu qu'avant le 17/10, mais une ligne par item au lieu de les coller par
+ * des virgules (« il faut écrire des choses lisibles et structurer »).
  *
  * Quand il n'y a rien à montrer, l'appelant retombe sur le nom de la matière.
  * Décision de Christophe le 31/07. Une case vide ne dit pas si l'application
@@ -121,14 +143,78 @@ function estCreneauGenerique(nom: string, p: ProgressionMatiere): boolean {
  * bouton « Générer la journée », qui rédigeait des séances plausibles que
  * personne n'avait prévues.
  */
-function notions(p: ProgressionMatiere, indexJour: number, nbJours: number): string {
+function itemsAnciens(p: ProgressionMatiere, indexJour: number, nbJours: number): string {
   const retenus = itemsDuJour(p.items, indexJour, nbJours)
   if (retenus.length === 0) return ''
+  return `${retenus.join('\n')}${pagesEtMots(p)}`
+}
 
-  const items = retenus.join(', ')
-  const pages = p.pages ? ` — ${p.pages}` : ''
-  const mots = p.mots_exemple && p.mots_exemple.length ? ` (mots : ${p.mots_exemple.join(', ')})` : ''
-  return `${items}${pages}${mots}`
+/**
+ * Les NOTIONS de toute la semaine, placées par le sens (décision de Christophe
+ * du 17/10/2026, voir `src/lib/notions-creneaux.ts`) : chaque notion dans les
+ * créneaux qui portent son nom, le reste au créneau général de sa matière, les
+ * rituels sous leur nom, une notion par ligne.
+ *
+ * Rend, pour chaque jour d'école, le texte des créneaux qui montrent des
+ * notions (par rang de créneau), et les notions qu'AUCUN créneau de la semaine
+ * n'a montrées, à placer une seule fois, le premier jour, avec l'origine
+ * « semaine ». Une notion qui n'a pas de créneau le lundi mais en a un le
+ * jeudi n'est donc pas « à placer » : elle est écrite le jeudi, et on ne
+ * l'annonce pas chaque jour où elle manque.
+ *
+ * Les pages et les mots d'une progression s'écrivent une fois par jour, après
+ * sa dernière notion dans son créneau général, sinon dans le premier de ses
+ * créneaux qui en montre, sinon dans le premier créneau qui en montre. Une
+ * progression dont aucune notion n'a trouvé de créneau de la semaine les
+ * porte sur sa dernière notion à placer : rien n'est perdu.
+ */
+function notionsDeLaSemaine(
+  jours: { creneaux: CreneauHoraire[]; progressionDe: (ProgressionMatiere | null)[] }[],
+  progression: ProgressionMatiere[],
+  horsNotions: (p: ProgressionMatiere) => boolean,
+): { textes: Map<number, string>[]; sansCreneau: SeancePlacer[] } {
+  const notions = progression.map(p => (horsNotions(p) ? [] : p.items.filter(n => typeof n === 'string' && n.trim() !== '')))
+  const montrees = notions.map(liste => liste.map(() => false))
+  const rangDe = (p: ProgressionMatiere | null) => (p ? progression.indexOf(p) : null)
+
+  const placements = jours.map(({ creneaux, progressionDe }) => {
+    const parCreneau = placerNotionsDuJour(creneaux.map((c, i) => {
+      const p = progressionDe[i]
+      return {
+        nom: c.matiere,
+        progression: rangDe(p),
+        general: p ? estCreneauGenerique(c.matiere, p) : false,
+        ouvert: c.type !== 'routine' && !(p && horsNotions(p)),
+      }
+    }), notions)
+    for (const liste of parCreneau) for (const n of liste) montrees[n.progression][n.rang] = true
+    return parCreneau
+  })
+
+  const textes = placements.map((parCreneau, d) => {
+    const { creneaux, progressionDe } = jours[d]
+    const lignes = parCreneau.map(liste => liste.map(n => notions[n.progression][n.rang]))
+    notions.forEach((_, k) => {
+      const suffixe = pagesEtMots(progression[k])
+      const porteurs = parCreneau.flatMap((liste, i) => (liste.some(n => n.progression === k) ? [i] : []))
+      if (!suffixe || porteurs.length === 0) return
+      const siens = porteurs.filter(i => progressionDe[i] === progression[k])
+      const ancre = siens.find(i => estCreneauGenerique(creneaux[i].matiere, progression[k]))
+        ?? siens[0] ?? porteurs[0]
+      const derniere = parCreneau[ancre].map((n: NotionPlacee) => n.progression).lastIndexOf(k)
+      lignes[ancre][derniere] += suffixe
+    })
+    return new Map(lignes.flatMap((l, i): [number, string][] => (l.length ? [[i, l.join('\n')]] : [])))
+  })
+
+  const sansCreneau = notions.flatMap((liste, k): SeancePlacer[] => {
+    const restantes = liste.filter((_, r) => !montrees[k][r])
+    if (restantes.length === 0) return []
+    if (!montrees[k].some(Boolean)) restantes[restantes.length - 1] += pagesEtMots(progression[k])
+    return restantes.map(libelle => ({ libelle, origine: 'semaine' }))
+  })
+
+  return { textes, sansCreneau }
 }
 
 /**
@@ -159,8 +245,15 @@ function notions(p: ProgressionMatiere, indexJour: number, nbJours: number): str
  *   seulement, jamais répétée sur chaque jour.
  *
  * Un créneau sans séance affiche le nom de la matière (jamais une case vide).
- * Le domaine reste écrit dans le libellé de chaque ligne. Les routines et les
- * progressions de notions sont inchangées.
+ * Le domaine reste écrit dans le libellé de chaque ligne. Les routines ne
+ * changent pas.
+ *
+ * Les progressions de NOTIONS (maths, arts, EMC : aucune séance datée) se
+ * placent elles aussi par le sens depuis le 17/10/2026 (`notionsDeLaSemaine`) :
+ * une notion par ligne, dans le créneau qui porte son nom, et plus toute la
+ * semaine collée par des virgules dans chaque créneau de la matière. Les
+ * anciennes lignes datées « Jour N » sans séances (`estAncienneLigneDatee`)
+ * gardent leur découpage par jour, une ligne par item.
  */
 export function genererCahierJournal(
   emploiDuTemps: CreneauHoraire[],
@@ -183,11 +276,20 @@ export function genererCahierJournal(
     progression.map(p => [p, lireSeances(p.seances)]),
   )
   const datees = progression.filter(p => porteDesSeancesDatees(lues.get(p) ?? []))
+  const anciennes = progression.filter(p => !datees.includes(p) && estAncienneLigneDatee(p))
 
-  return joursEcole.map((jour, indexJour): JourJournal => {
+  const jours = joursEcole.map(jour => {
     const creneaux = [...(parJour.get(jour) ?? [])].sort((a, b) => a.ordre - b.ordre)
     const progressionDe = creneaux.map(c =>
       c.type === 'routine' ? null : progressionPourCreneau(c, progression))
+    return { creneaux, progressionDe }
+  })
+  const notions = notionsDeLaSemaine(
+    jours, progression, p => datees.includes(p) || anciennes.includes(p),
+  )
+
+  return joursEcole.map((jour, indexJour): JourJournal => {
+    const { creneaux, progressionDe } = jours[indexJour]
     const aPlacer: SeancePlacer[] = []
 
     // Par progression datée : chaque séance du jour va dans le créneau qui
@@ -215,9 +317,14 @@ export function genererCahierJournal(
       if (c.type === 'routine') return { ...base, deroulement: '' }
 
       const p = progressionDe[i]
-      if (!p) return { ...base, deroulement: c.matiere }
+      // Sans progression, il peut encore porter le nom d'une notion (17/10).
+      if (!p) return { ...base, deroulement: notions.textes[indexJour].get(i) ?? c.matiere }
+      if (anciennes.includes(p)) {
+        return { ...base, deroulement: itemsAnciens(p, indexJour, joursEcole.length) || c.matiere }
+      }
       if (!datees.includes(p)) {
-        return { ...base, deroulement: notions(p, indexJour, joursEcole.length) || c.matiere }
+        // Un créneau sans notion (un rituel) affiche son nom.
+        return { ...base, deroulement: notions.textes[indexJour].get(i) ?? c.matiere }
       }
       // Un créneau sans séance affiche son nom, jamais une case vide (31/07).
       return { ...base, deroulement: placees.get(i)?.libelle ?? c.matiere }
@@ -238,6 +345,10 @@ export function genererCahierJournal(
         }
       }
     }
+
+    // Les notions qu'aucun créneau de la semaine n'a montrées : une fois, le
+    // premier jour, comme une séance non datée.
+    if (indexJour === 0) aPlacer.push(...notions.sansCreneau)
 
     return aPlacer.length ? { jour, seances, aPlacer } : { jour, seances }
   })

@@ -443,8 +443,18 @@ describe('executerCreationClasse', () => {
       progression,
     )
 
-    expect(journal[0].seances[0].deroulement).toContain('Découvrir le son a')
-    expect(journal[0].seances[1].deroulement).toContain('Comparer des collections')
+    // Depuis le 17/10/2026 (décision de Christophe), une notion ne va que dans
+    // un créneau qui porte son nom ou dans le créneau général de sa matière.
+    // Ni « Appropriation des graphèmes » ni « Calcul mental » n'en sont un pour
+    // ces notions : les créneaux gardent leur nom, les notions arrivent quand
+    // même dans le cahier journal, à placer, avec leurs pages.
+    expect(journal[0].seances[0].deroulement).toBe('Appropriation des graphèmes')
+    expect(journal[0].seances[1].deroulement).toBe('Calcul mental')
+    const aPlacer = (journal[0].aPlacer ?? []).map(a => a.libelle)
+    expect(aPlacer).toHaveLength(2)
+    expect(aPlacer[0]).toContain('Découvrir le son a')
+    expect(aPlacer[0]).toContain('4-5')
+    expect(aPlacer[1]).toContain('Comparer des collections')
     // Arts visuels n'a pas de progression : le créneau affiche sa matière, à
     // compléter par l'enseignante (décision du 31/07). La récréation est une
     // routine, elle ne se remplit pas.

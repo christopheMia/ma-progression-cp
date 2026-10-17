@@ -131,9 +131,12 @@ describe('placer par le sens : le jeudi réel de Cécile, semaine 3', () => {
     expect(jeudi.aPlacer ?? []).toEqual([])
   })
 
-  it('les créneaux de maths intercalés gardent leur progression', () => {
-    for (const m of ['Chaque jour compte', 'flash maths', 'Mathématiques', 'problème', 'Calcul mental']) {
-      expect(dans(jeudi, m)).toContain('Numération : nombres jusqu’à 20')
+  // Depuis le 17/10/2026, la numération va dans « Mathématiques » seulement ;
+  // les autres créneaux de maths affichent leur nom (pas de notion à leur nom).
+  it('les créneaux de maths intercalés : la notion dans « Mathématiques », les autres sous leur nom', () => {
+    expect(dans(jeudi, 'Mathématiques')).toBe('Numération : nombres jusqu’à 20')
+    for (const m of ['Chaque jour compte', 'flash maths', 'problème', 'Calcul mental']) {
+      expect(dans(jeudi, m)).toBe(m)
     }
   })
 })

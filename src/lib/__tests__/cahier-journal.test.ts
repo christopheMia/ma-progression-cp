@@ -26,11 +26,17 @@ describe('genererCahierJournal (lien par méthode)', () => {
     expect(s.deroulement).toBe('')
   })
 
-  test('un créneau relié à la méthode française est pré-rempli', () => {
+  // Depuis le 17/10/2026 (décision de Christophe), une notion ne va que dans
+  // un créneau qui porte son nom ou dans le créneau général de sa matière.
+  // « a » n'a pas de domaine et « Lecture » n'est pas « Français » : le créneau
+  // garde son nom, la notion et ses pages partent à placer, une fois.
+  test('un créneau relié à la méthode française, sans notion à son nom, garde son nom', () => {
     const edt = [creneau({ matiere: 'Lecture', methode_id: 'm-fr' })]
-    const s = genererCahierJournal(edt, progression)[0].seances[0]
-    expect(s.deroulement).toContain('a')
-    expect(s.deroulement).toContain('p.10-13')
+    const [lundi] = genererCahierJournal(edt, progression)
+    expect(lundi.seances[0].deroulement).toBe('Lecture')
+    expect(lundi.aPlacer?.[0].libelle).toContain('a')
+    expect(lundi.aPlacer?.[0].libelle).toContain('p.10-13')
+    expect(lundi.aPlacer?.[0].origine).toBe('semaine')
   })
 
   test('un créneau relié à la méthode maths est pré-rempli', () => {
@@ -55,16 +61,18 @@ describe('genererCahierJournal (lien par méthode)', () => {
   test('repli : un créneau français non relié est rempli via le libellé', () => {
     // Cas du bug remonté par Cécile : progression enregistrée mais créneaux
     // jamais reliés manuellement à une méthode. Le journal doit se remplir.
-    const edt = [creneau({ matiere: 'Appropriation des graphèmes', methode_id: null })]
+    // Depuis le 17/10, le créneau général de la matière reçoit les notions.
+    const edt = [creneau({ matiere: 'Français', methode_id: null })]
     const s = genererCahierJournal(edt, progression)[0].seances[0]
     expect(s.deroulement).toContain('a')
     expect(s.deroulement).toContain('p.10-13')
   })
 
-  test('repli : un créneau de calcul non relié est rempli via le libellé', () => {
+  test('repli : un créneau de calcul non relié reçoit la notion qui porte son nom', () => {
+    const maths = [{ methode_id: 'm-ma', matiere: 'maths', items: ['Calcul mental : les doubles'], pages: null, mots_exemple: [] }]
     const edt = [creneau({ matiere: 'Calcul mental', methode_id: null })]
-    const s = genererCahierJournal(edt, progression)[0].seances[0]
-    expect(s.deroulement).toContain('Nombres jusqu’à 10')
+    const s = genererCahierJournal(edt, maths)[0].seances[0]
+    expect(s.deroulement).toBe('Calcul mental : les doubles')
   })
 
   test('repli : une matière personnalisée non reliée est rapprochée par nom', () => {

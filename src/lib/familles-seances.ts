@@ -83,7 +83,7 @@ const TABLE_CRENEAU: Table = [
 const TROMPEURS = / (?:comprehension|production) orale? | lecture ecriture /g
 
 /** Mots d'un texte : `sansAccents`, puis la marque du pluriel retirée. */
-function mots(texte: string): string {
+export function mots(texte: string): string {
   return sansAccents(texte)
     .split(' ')
     .map(m => (m.length > 3 && m.endsWith('s') ? m.slice(0, -1) : m))
@@ -91,7 +91,7 @@ function mots(texte: string): string {
 }
 
 /** Vrai quand le texte (déjà passé par `mots`) contient ce mot ou cette expression, entier. */
-function contient(texte: string, mot: string): boolean {
+export function contient(texte: string, mot: string): boolean {
   return ` ${texte} `.includes(` ${mot} `)
 }
 
