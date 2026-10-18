@@ -1649,7 +1649,7 @@ git commit -m "Carnet de rangement : appel IA avec mes mots (Haiku 5.5, schema, 
 - Create: `src/app/api/ia-regle/route.ts`
 - Test: `src/app/api/ia-regle/route.test.ts`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```ts
 const mockCreate = jest.fn()
@@ -1738,12 +1738,12 @@ describe('POST /api/ia-regle', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/app/api/ia-regle/route.test.ts`
 Expected: FAIL, `Cannot find module './route'`.
 
-- [ ] **Step 3: Écrire la route**
+- [x] **Step 3: Écrire la route**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -1821,14 +1821,14 @@ export async function POST(request: Request) {
 
 Si `npx tsc --noEmit` refuse `effort` dans `output_config` (SDK 0.104 trop ancien pour le connaître) : NE PAS monter le SDK dans ce chantier. Retirer la ligne `effort: 'low'`, passer `max_tokens` à 4000 (effort par défaut `medium`, plus de réflexion), adapter le test (`expect(appel.output_config.effort).toBeUndefined()`), et noter le point dans `AVANCEMENT-IMPORT-SEANCES.md`.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/app/api/ia-regle/route.test.ts`
 Expected: PASS (7 tests).
 Run: `npx tsc --noEmit`
 Expected: aucune sortie.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/app/api/ia-regle/route.ts src/app/api/ia-regle/route.test.ts
