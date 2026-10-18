@@ -2,7 +2,7 @@
 
 ## POINT DE REPRISE DU 18/10, soir : CARNET DE RANGEMENT, ÉTAPE 1 CODÉE (LIRE EN PREMIER)
 
-Branche `seances-taches-5-12`, **pas fusionnée, pas en ligne, migration 031 PAS appliquée**. Les 13 tâches du plan `docs/superpowers/plans/2026-10-18-carnet-de-rangement-etape-1.md` sont codées (une par sous-agent Sonnet), puis relues par Opus en deux temps (tâches 1 à 5, puis 6 à 12), chaque relecture vérifiée après ses correctifs.
+Branche `seances-taches-5-12`, **pas fusionnée, pas en ligne**. **Migration 031 APPLIQUÉE en base le 18/10 au soir** avec l'accord de Christophe, après la sauvegarde `backup-2026-10-18.json` (24 tables, 3 empreintes md5 vérifiées, lignes recomptées en base, dossier `Desktop/claude/_backups_ma-progression-cp`). Table `regles_rangement` vide, RLS active, une policy propriétaire, droits `authenticated` seulement ; le contrôle de sécurité Supabase ne signale rien sur elle. Sans effet pour Cécile tant que son carnet est vide ; le code en ligne ne lit pas encore cette table. Les 13 tâches du plan `docs/superpowers/plans/2026-10-18-carnet-de-rangement-etape-1.md` sont codées (une par sous-agent Sonnet), puis relues par Opus en deux temps (tâches 1 à 5, puis 6 à 12), chaque relecture vérifiée après ses correctifs.
 
 | Fait | Preuve |
 |---|---|
@@ -19,7 +19,7 @@ Branche `seances-taches-5-12`, **pas fusionnée, pas en ligne, migration 031 PAS
 **Laissé pour plus tard (relecture finale)** : prévenir quand une règle en remplace une autre du même type ; le message de refus de l'IA parle de « document » ; la route `ia-regle` enchaîne plusieurs lectures en base avant l'appel (vitesse) ; un domaine de séance « EMC/EVARS » n'est pas coupé en deux types comme pour les notions. Dernière relecture : la sortie « Je n'ai pas compris » s'affiche aussi après deux « Je réexplique » (formulation de la conception, un peu étrange quand l'IA avait compris mais s'était trompée) ; `supprimerRegle` ne vérifie pas que `id` est un texte (sans danger).
 
 **Ce qui attend Christophe (rien fait sans son accord)** :
-1. Appliquer la migration 031 sur la base Supabase. Sans elle, l'appli marche comme avant et « Mon rangement » affiche « pas encore activé ».
+1. ~~Appliquer la migration 031~~ FAIT le 18/10 au soir (voir plus haut).
 2. Essai réel sur la classe « Bac a sable » (jamais celle de Cécile) : ajouter « le chant c'est en musique le jeudi », vérifier la règle, régénérer une semaine qui a du chant, relever le coût de l'appel dans la jauge IA.
 3. Mise en ligne de la branche (avec le reste de `seances-taches-5-12`), puis régénérer avec Cécile ses semaines déjà ouvertes.
 
