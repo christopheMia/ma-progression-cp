@@ -1028,7 +1028,7 @@ git commit -m "Carnet de rangement : le cahier journal lit le carnet, vide s'il 
 - Modify: `src/lib/regles-rangement.ts`
 - Test: `src/lib/__tests__/regles-rangement-parametres.test.ts`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```ts
 import {
@@ -1119,12 +1119,12 @@ describe('lireReglesCompletes', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/__tests__/regles-rangement-parametres.test.ts`
 Expected: FAIL, fonctions non exportées.
 
-- [ ] **Step 3: Écrire le code**
+- [x] **Step 3: Écrire le code**
 
 Ajouter à `src/lib/regles-rangement.ts` (et `RegleRangement` à l'import des types) :
 
@@ -1222,12 +1222,12 @@ export function lireReglesCompletes(v: unknown): RegleRangement[] {
 
 Note sur le test `lireReglesCompletes` : la troisième ligne (`id: 3`, un nombre) est écartée par `texte`, c'est voulu.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/lib/__tests__/regles-rangement`
 Expected: PASS (les trois fichiers `regles-rangement*`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/regles-rangement.ts src/lib/__tests__/regles-rangement-parametres.test.ts
