@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { resultat, type Resultat } from '@/lib/resultat'
 import {
-  casesDisponibles, lireReglesCompletes, preparerRegle, tableAbsente, type CaseDisponible,
+  casesDisponibles, estJourSemaine, lireReglesCompletes, preparerRegle, tableAbsente, type CaseDisponible,
 } from '@/lib/regles-rangement'
 import type { JourSemaine, RegleRangement } from '@/types'
 
@@ -14,6 +14,7 @@ import type { JourSemaine, RegleRangement } from '@/types'
 
 type Client = Awaited<ReturnType<typeof createClient>>
 
+const ORIGINES: readonly RegleRangement['origine'][] = ['main', 'cahier', 'ia']
 const CARNET_PAS_PRET = 'Le carnet de rangement n’est pas encore prêt. Il sera disponible très bientôt.'
 
 async function maClasse(): Promise<{ supabase: Client; classId: string }> {
@@ -54,6 +55,15 @@ export async function enregistrerRegle(entree: {
   origine?: RegleRangement['origine']
 }): Promise<Resultat<RegleRangement>> {
   return resultat(async () => {
+    // Ces actions reçoivent des données du navigateur : on vérifie les types
+    // avant tout, pour ne jamais renvoyer un texte de TypeError.
+    const brut = (entree ?? {}) as Record<string, unknown>
+    if (typeof brut.type !== 'string' || typeof brut.creneau !== 'string'
+      || (brut.jour !== null && !estJourSemaine(brut.jour))
+      || (brut.id !== undefined && typeof brut.id !== 'string')) {
+      throw new Error('Cette règle n’est pas complète : le nom, la case et le jour doivent être renseignés.')
+    }
+    const origine = ORIGINES.find(o => o === brut.origine) ?? 'main'
     const { supabase, classId } = await maClasse()
     const prete = preparerRegle(entree, await casesDe(supabase, classId))
     if (!prete.ok) throw new Error(prete.message)
@@ -63,7 +73,7 @@ export async function enregistrerRegle(entree: {
       ? await supabase.from('regles_rangement').update(champs)
         .eq('id', entree.id).eq('class_id', classId).select(colonnes).single()
       : await supabase.from('regles_rangement')
-        .upsert({ ...champs, class_id: classId, origine: entree.origine ?? 'main' }, { onConflict: 'class_id,type_cle' })
+        .upsert({ ...champs, class_id: classId, origine }, { onConflict: 'class_id,type_cle' })
         .select(colonnes).single()
     if (tableAbsente(error)) throw new Error(CARNET_PAS_PRET)
     if (error?.code === '23505') throw new Error(`Tu as déjà une règle pour « ${prete.valeur.type} ». Modifie celle-là.`)

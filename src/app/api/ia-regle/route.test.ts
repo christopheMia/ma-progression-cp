@@ -81,4 +81,62 @@ describe('POST /api/ia-regle', () => {
     expect((await POST(requete({ phrase: 'le chant en musique' }))).status).toBe(422)
     expect(mockEnregistrerUsageIA).toHaveBeenCalled()
   })
+
+  it('type trop long ou pas du texte : 400, sans appel IA', async () => {
+    const long = await POST(requete({ phrase: 'le chant en musique', type: 'x'.repeat(81) }))
+    expect(long.status).toBe(400)
+    expect((await long.json()).error).toMatch(/trop long/)
+    const nombre = await POST(requete({ phrase: 'le chant en musique', type: 42 }))
+    expect(nombre.status).toBe(400)
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  it('refus du modèle : 422, dépense comptée', async () => {
+    reponseIA({}, 'refusal')
+    const r = await POST(requete({ phrase: 'le chant en musique' }))
+    expect(r.status).toBe(422)
+    expect(mockEnregistrerUsageIA).toHaveBeenCalled()
+  })
+
+  it('appel IA qui échoue : message traduit, aucune dépense comptée', async () => {
+    mockCreate.mockRejectedValue(new Error('credit balance is too low'))
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const r = await POST(requete({ phrase: 'le chant en musique' }))
+    spy.mockRestore()
+    expect(r.status).toBe(402)
+    expect(mockEnregistrerUsageIA).not.toHaveBeenCalled()
+  })
+
+  it('emploi du temps illisible : 500 avec son message, sans appel IA', async () => {
+    mockCasesDeMaClasse.mockResolvedValue({ ok: false, message: 'Ton emploi du temps n’a pas pu être lu.' })
+    const r = await POST(requete({ phrase: 'le chant en musique' }))
+    expect(r.status).toBe(500)
+    expect(await r.json()).toEqual({ error: 'Ton emploi du temps n’a pas pu être lu.' })
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  it('case introuvable : la réponse le dit, avec la case la plus proche', async () => {
+    reponseIA({ statut: 'introuvable', type: 'Fluence', creneau: 'Soutien', jour: 'jeudi', plus_proche: 'Musique' })
+    const r = await POST(requete({ phrase: 'la fluence en soutien le jeudi' }))
+    expect(r.status).toBe(200)
+    expect(await r.json()).toEqual({ reponse: {
+      statut: 'introuvable', type: 'Fluence', demande: 'Soutien le jeudi', plusProche: { creneau: 'Musique', jour: 'jeudi' },
+    } })
+  })
+
+  it('un champ « cases » envoyé par le navigateur est ignoré : les cases viennent de la base', async () => {
+    reponseIA({ statut: 'regle', type: 'Chant', creneau: 'Ateliers', jour: '', plus_proche: '' })
+    const r = await POST(requete({ phrase: 'le chant en ateliers', cases: [{ nom: 'Ateliers', jours: ['lundi'] }] }))
+    expect((await r.json()).reponse.statut).toBe('introuvable')
+    const consigne = mockCreate.mock.calls[0][0].messages[0].content as string
+    expect(consigne).toContain('jeudi : Musique')
+    expect(consigne).not.toContain('lundi :')
+  })
+
+  it('le type reçu va dans la consigne et l’emporte sur celui du modèle', async () => {
+    reponseIA({ statut: 'regle', type: 'Chants', creneau: 'Musique', jour: 'jeudi', plus_proche: '' })
+    const r = await POST(requete({ phrase: 'en musique le jeudi', type: 'Chant' }))
+    expect((await r.json()).reponse.regle.type).toBe('Chant')
+    expect(mockCreate.mock.calls[0][0].messages[0].content).toContain('Type concerné : Chant')
+  })
 })

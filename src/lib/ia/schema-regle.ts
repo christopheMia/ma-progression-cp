@@ -41,7 +41,7 @@ export function lireReponseRegle(brut: unknown, cases: CaseDisponible[], typeCon
   const jour = estJourSemaine(o.jour) ? o.jour : null
   const nommee = (nom: string) => cases.find(k => sansAccents(k.nom) === sansAccents(nom) && sansAccents(nom) !== '')
   const demandee = nommee(texte(o.creneau))
-  if (o.statut === 'regle' && demandee && (jour === null || demandee.jours.includes(jour))) {
+  if (demandee && (jour === null || demandee.jours.includes(jour))) {
     return { statut: 'regle', regle: { type, creneau: demandee.nom, jour } }
   }
   const proche = nommee(texte(o.plus_proche)) ?? demandee

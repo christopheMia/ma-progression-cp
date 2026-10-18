@@ -32,6 +32,14 @@ describe('lireReponseRegle', () => {
       statut: 'introuvable', type: 'Fluence', demande: 'APC le vendredi', plusProche: { creneau: 'APC', jour: null },
     })
   })
+  it('« introuvable » dit par l’IA mais la case existe (et le jour convient) : c’est une règle', () => {
+    expect(lireReponseRegle(brut({ statut: 'introuvable', type: 'Chant', creneau: 'Musique', jour: 'jeudi', plus_proche: 'Musique' }), CASES))
+      .toEqual({ statut: 'regle', regle: { type: 'Chant', creneau: 'Musique', jour: 'jeudi' } })
+  })
+  it('« introuvable » dit par l’IA, la case existe mais pas ce jour-là : reste introuvable', () => {
+    expect(lireReponseRegle(brut({ statut: 'introuvable', type: 'Fluence', creneau: 'APC', jour: 'vendredi' }), CASES))
+      .toEqual({ statut: 'introuvable', type: 'Fluence', demande: 'APC le vendredi', plusProche: { creneau: 'APC', jour: null } })
+  })
   it('incompris : réponse vide, mal formée, ou sans type', () => {
     expect(lireReponseRegle(null, CASES)).toEqual({ statut: 'incompris' })
     expect(lireReponseRegle(brut({ statut: 'incompris' }), CASES)).toEqual({ statut: 'incompris' })

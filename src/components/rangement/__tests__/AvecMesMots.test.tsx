@@ -43,7 +43,8 @@ it('case introuvable : le dit, et propose la plus proche', async () => {
   render(<AvecMesMots onValidee={jest.fn(async () => null)} />)
   ecrireEtComprendre('la fluence en soutien le mardi')
   expect(await screen.findByText('Je ne trouve pas de case « Soutien le mardi » dans ton emploi du temps.')).toBeTruthy()
-  expect(screen.getByText('J’ai compris : Fluence vers APC, le mardi.')).toBeTruthy()
+  expect(screen.getByText('La case la plus proche : APC, le mardi. C’est ça ?')).toBeTruthy()
+  expect(screen.queryByText(/J’ai compris/)).toBeNull()
 })
 
 it('incompris deux fois : propose de la poser à la main, rien n’est enregistré', async () => {
@@ -63,4 +64,61 @@ it('IA indisponible : son message, jamais bloquée', async () => {
   ecrireEtComprendre('le chant en musique')
   expect(await screen.findByText('Le crédit IA est épuisé.')).toBeTruthy()
   expect((screen.getByLabelText('Dis-moi où tu la fais') as HTMLTextAreaElement).disabled).toBe(false)
+})
+
+const SORTIE = 'Je n’ai pas compris, tu peux la poser à la main dans le cahier journal.'
+
+it('« Je réexplique » deux fois de suite offre aussi la sortie à la main', async () => {
+  demander.mockResolvedValue({ ok: true, reponse: { statut: 'regle', regle: { type: 'Chant', creneau: 'Musique', jour: null } } })
+  render(<AvecMesMots onValidee={jest.fn(async () => null)} />)
+  ecrireEtComprendre('le chant en musique')
+  fireEvent.click(await screen.findByRole('button', { name: 'Je réexplique' }))
+  expect(screen.queryByText(SORTIE)).toBeNull()
+  ecrireEtComprendre('le chant en musique encore')
+  fireEvent.click(await screen.findByRole('button', { name: 'Je réexplique' }))
+  expect(screen.getByText(SORTIE)).toBeTruthy()
+})
+
+it('case introuvable sans case proche, deux fois : la sortie à la main', async () => {
+  demander.mockResolvedValue({ ok: true, reponse: { statut: 'introuvable', type: 'Fluence', demande: 'Ateliers', plusProche: null } })
+  render(<AvecMesMots onValidee={jest.fn(async () => null)} />)
+  ecrireEtComprendre('la fluence en ateliers')
+  expect(await screen.findByText('Je ne trouve pas de case « Ateliers » dans ton emploi du temps.')).toBeTruthy()
+  expect(screen.queryByText(SORTIE)).toBeNull()
+  ecrireEtComprendre('la fluence en ateliers svp')
+  await waitFor(() => expect(screen.getByText(SORTIE)).toBeTruthy())
+})
+
+it('un conseil « incompris » disparaît quand la réponse suivante est comprise', async () => {
+  demander.mockResolvedValueOnce({ ok: true, reponse: { statut: 'incompris' } })
+  render(<AvecMesMots onValidee={jest.fn(async () => null)} />)
+  ecrireEtComprendre('bonjour')
+  expect(await screen.findByText(/Redis-le autrement/)).toBeTruthy()
+  demander.mockResolvedValueOnce({ ok: true, reponse: { statut: 'regle', regle: { type: 'Chant', creneau: 'Musique', jour: null } } })
+  ecrireEtComprendre('le chant en musique')
+  expect(await screen.findByText('J’ai compris : Chant vers Musique.')).toBeTruthy()
+  expect(screen.queryByText(/Redis-le autrement/)).toBeNull()
+})
+
+it('une erreur d’enregistrement s’efface au « C’est ça » suivant', async () => {
+  demander.mockResolvedValue({ ok: true, reponse: { statut: 'regle', regle: { type: 'Chant', creneau: 'Musique', jour: null } } })
+  const onValidee = jest.fn()
+    .mockResolvedValueOnce('La règle n’a pas pu être enregistrée.')
+    .mockResolvedValueOnce(null)
+  render(<AvecMesMots onValidee={onValidee} />)
+  ecrireEtComprendre('le chant en musique')
+  fireEvent.click(await screen.findByRole('button', { name: 'C’est ça' }))
+  expect(await screen.findByText('La règle n’a pas pu être enregistrée.')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'C’est ça' }))
+  expect(await screen.findByText('C’est noté.')).toBeTruthy()
+  expect(screen.queryByText('La règle n’a pas pu être enregistrée.')).toBeNull()
+})
+
+it('les résultats et erreurs sont annoncés (role status), la saisie est limitée à 500 caractères', async () => {
+  demander.mockResolvedValue({ ok: false, message: 'Le crédit IA est épuisé.' })
+  render(<AvecMesMots onValidee={jest.fn(async () => null)} />)
+  expect((screen.getByLabelText('Dis-moi où tu la fais') as HTMLTextAreaElement).maxLength).toBe(500)
+  ecrireEtComprendre('le chant en musique')
+  const message = await screen.findByText('Le crédit IA est épuisé.')
+  expect(message.closest('[role="status"]')).not.toBeNull()
 })

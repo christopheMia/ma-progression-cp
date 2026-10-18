@@ -1,5 +1,5 @@
 import {
-  casesDisponibles, estRegleSansCase, regrouperRegles, preparerRegle, lireReglesCompletes,
+  casesDisponibles, estRegleSansCase, etatCaseRegle, regrouperRegles, preparerRegle, lireReglesCompletes,
 } from '../regles-rangement'
 import type { CreneauHoraire, RegleRangement } from '@/types'
 
@@ -34,6 +34,16 @@ describe('estRegleSansCase', () => {
   })
   it('une règle juste ne l’est pas', () => {
     expect(estRegleSansCase(regle('1', 'Chant', 'musique', 'jeudi'), cases)).toBe(false)
+  })
+})
+
+describe('etatCaseRegle', () => {
+  const cases = casesDisponibles(EDT)
+  it('distingue case absente, case d’un autre jour, et case juste', () => {
+    expect(etatCaseRegle(regle('1', 'Chant', 'Éveil musical'), cases)).toBe('absente')
+    expect(etatCaseRegle(regle('1', 'Chant', 'Musique', 'lundi'), cases)).toBe('autre-jour')
+    expect(etatCaseRegle(regle('1', 'Chant', 'musique', 'jeudi'), cases)).toBe('ok')
+    expect(etatCaseRegle(regle('1', 'Chant', 'Musique'), cases)).toBe('ok')
   })
 })
 

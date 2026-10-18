@@ -117,10 +117,21 @@ function caseNommee(cases: CaseDisponible[], nom: string): CaseDisponible | unde
   return cases.find(k => sansAccents(k.nom) === cle)
 }
 
+/**
+ * La case d'une règle : « ok », « absente » (renommée ou supprimée) ou
+ * « autre-jour » (la case existe, mais pas le jour préféré de la règle).
+ */
+export function etatCaseRegle(
+  r: Pick<RegleRangement, 'creneau' | 'jour'>, cases: CaseDisponible[],
+): 'ok' | 'absente' | 'autre-jour' {
+  const k = caseNommee(cases, r.creneau)
+  if (!k) return 'absente'
+  return r.jour !== null && !k.jours.includes(r.jour) ? 'autre-jour' : 'ok'
+}
+
 /** Une règle dont la case n'existe plus, ou plus ce jour-là : signalée en orange. */
 export function estRegleSansCase(r: Pick<RegleRangement, 'creneau' | 'jour'>, cases: CaseDisponible[]): boolean {
-  const k = caseNommee(cases, r.creneau)
-  return !k || (r.jour !== null && !k.jours.includes(r.jour))
+  return etatCaseRegle(r, cases) !== 'ok'
 }
 
 export type GroupeRegles = { creneau: string; jour: JourSemaine | null; regles: RegleRangement[] }

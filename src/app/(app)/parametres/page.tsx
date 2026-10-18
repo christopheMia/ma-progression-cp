@@ -18,7 +18,7 @@ import AncreAuChargement from '@/components/AncreAuChargement'
 import SectionRepliable from '@/components/parametres/SectionRepliable'
 import SommaireParametres from '@/components/parametres/SommaireParametres'
 import MonRangementEditor from '@/components/parametres/MonRangementEditor'
-import { casesDisponibles, lireReglesCompletes } from '@/lib/regles-rangement'
+import { casesDisponibles, lireReglesCompletes, tableAbsente } from '@/lib/regles-rangement'
 import { soldeDepuisRpc, type PageParametresData } from '@/lib/rpc-pages'
 import type { Methode, MethodeSource } from '@/types'
 
@@ -117,7 +117,9 @@ export default async function ParametresPage() {
       </SectionRepliable>
 
       <SectionRepliable id="rangement" titre="🗂️ Mon rangement">
-        <MonRangementEditor initial={regles} cases={casesRangement} indisponible={Boolean(reglesErreur)} />
+        <MonRangementEditor initial={regles} cases={casesRangement}
+          indisponible={tableAbsente(reglesErreur ?? null)}
+          illisible={Boolean(reglesErreur) && !tableAbsente(reglesErreur ?? null)} />
       </SectionRepliable>
 
       <SectionRepliable id="rentree" titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>

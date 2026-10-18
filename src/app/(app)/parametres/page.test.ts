@@ -24,6 +24,11 @@ describe('page Paramètres et documents de progression', () => {
     )
   })
 
+  test('le carnet dit « pas activé » seulement si la table manque, pas pour une autre erreur', () => {
+    expect(source).toContain('indisponible={tableAbsente(reglesErreur ?? null)}')
+    expect(source).toContain('illisible={Boolean(reglesErreur) && !tableAbsente(reglesErreur ?? null)}')
+  })
+
   test('transmet les sources et ne réintroduit pas l’ancien changement de manuel', () => {
     expect(source).toContain('sources={sources}')
     expect(source).not.toContain('MANUELS')

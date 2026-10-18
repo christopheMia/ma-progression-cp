@@ -26,8 +26,14 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
   const [phrase, setPhrase] = useState('')
   const [enCours, setEnCours] = useState(false)
   const [proposee, setProposee] = useState<RegleComprise | null>(null)
+  // Vrai quand la proposition est la case la plus proche, pas ce qu'elle a demandé.
+  const [procheSeulement, setProcheSeulement] = useState(false)
   const [introuvable, setIntrouvable] = useState<string | null>(null)
-  const [incompris, setIncompris] = useState(0)
+  // `echecs` compte tout ce qui n'a pas abouti : réponse « incompris », case
+  // sans plus proche, clic sur « Je réexplique ». À deux, on offre la sortie
+  // à la main. `dernierIncompris` ne sert qu'au premier conseil.
+  const [echecs, setEchecs] = useState(0)
+  const [dernierIncompris, setDernierIncompris] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   const [notee, setNotee] = useState(false)
 
@@ -35,7 +41,9 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
     setEnCours(true)
     setErreur(null)
     setProposee(null)
+    setProcheSeulement(false)
     setIntrouvable(null)
+    setDernierIncompris(false)
     setNotee(false)
     const r = await demanderRegle(phrase, typeConnu)
     setEnCours(false)
@@ -50,14 +58,21 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
       setIntrouvable(rep.demande
         ? `Je ne trouve pas de case « ${rep.demande} » dans ton emploi du temps.`
         : 'Je ne trouve pas cette case dans ton emploi du temps.')
-      if (rep.plusProche) setProposee({ type: rep.type, ...rep.plusProche })
+      if (rep.plusProche) {
+        setProposee({ type: rep.type, ...rep.plusProche })
+        setProcheSeulement(true)
+      } else {
+        setEchecs(n => n + 1)
+      }
     } else {
-      setIncompris(n => n + 1)
+      setEchecs(n => n + 1)
+      setDernierIncompris(true)
     }
   }
 
   async function valider() {
     if (!proposee) return
+    setErreur(null)
     setEnCours(true)
     const message = await onValidee(proposee)
     setEnCours(false)
@@ -67,14 +82,18 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
     }
     setNotee(true)
     setProposee(null)
+    setProcheSeulement(false)
     setIntrouvable(null)
     setPhrase('')
-    setIncompris(0)
+    setEchecs(0)
+    setDernierIncompris(false)
   }
 
   function reexpliquer() {
     setProposee(null)
+    setProcheSeulement(false)
     setIntrouvable(null)
+    setEchecs(n => n + 1)
   }
 
   return (
@@ -84,6 +103,7 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
         <textarea
           className="mt-1 block w-full rounded border p-2 text-sm"
           rows={2}
+          maxLength={500}
           value={phrase}
           disabled={enCours}
           placeholder={exemple ?? 'Par exemple : le chant, c’est en Musique le jeudi'}
@@ -99,24 +119,34 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
         Comprendre
       </button>
 
-      {introuvable && <p className="text-sm text-amber-700">{introuvable}</p>}
+      <div role="status" className="space-y-2">
+        {introuvable && <p className="text-sm text-amber-700">{introuvable}</p>}
+        {proposee && (
+          <p className="rounded border border-violet-200 bg-violet-50 p-2 text-sm">
+            {procheSeulement
+              ? `La case la plus proche : ${proposee.creneau}${proposee.jour ? `, le ${proposee.jour}` : ''}. C’est ça ?`
+              : `J’ai compris : ${phraseRegle(proposee)}.`}
+          </p>
+        )}
+        {dernierIncompris && echecs === 1 && (
+          <p className="text-sm text-amber-700">Je n’ai pas compris. Redis-le autrement, avec le nom de ta case.</p>
+        )}
+        {echecs >= 2 && !proposee && (
+          <p className="text-sm text-amber-700">Je n’ai pas compris, tu peux la poser à la main dans le cahier journal.</p>
+        )}
+        {erreur && <p className="text-sm text-red-700">{erreur}</p>}
+        {notee && <p className="text-sm text-green-700">C’est noté.</p>}
+      </div>
       {proposee && (
-        <div className="rounded border border-violet-200 bg-violet-50 p-2 text-sm">
-          <p>J’ai compris : {phraseRegle(proposee)}.</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" className="rounded bg-violet-600 px-3 py-1 text-white" disabled={enCours} onClick={valider}>
-              C’est ça
-            </button>
-            <button type="button" className="rounded border px-3 py-1" disabled={enCours} onClick={reexpliquer}>
-              Je réexplique
-            </button>
-          </div>
+        <div className="flex flex-wrap gap-2 text-sm">
+          <button type="button" className="rounded bg-violet-600 px-3 py-1 text-white" disabled={enCours} onClick={valider}>
+            C’est ça
+          </button>
+          <button type="button" className="rounded border px-3 py-1" disabled={enCours} onClick={reexpliquer}>
+            Je réexplique
+          </button>
         </div>
       )}
-      {incompris === 1 && <p className="text-sm text-amber-700">Je n’ai pas compris. Redis-le autrement, avec le nom de ta case.</p>}
-      {incompris >= 2 && <p className="text-sm text-amber-700">Je n’ai pas compris, tu peux la poser à la main dans le cahier journal.</p>}
-      {erreur && <p className="text-sm text-red-700">{erreur}</p>}
-      {notee && <p className="text-sm text-green-700">C’est noté.</p>}
     </div>
   )
 }

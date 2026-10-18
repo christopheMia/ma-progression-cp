@@ -21,7 +21,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({})) as Record<string, unknown>
     const phrase = typeof body.phrase === 'string' ? body.phrase.trim() : ''
+    if (body.type !== undefined && body.type !== null && typeof body.type !== 'string') {
+      return NextResponse.json({ error: 'Ce nom de séance n’est pas valide.' }, { status: 400 })
+    }
     const type = typeof body.type === 'string' ? body.type.trim() : ''
+    if (type.length > 80) {
+      return NextResponse.json({ error: 'Ce nom est trop long : 80 caractères au plus.' }, { status: 400 })
+    }
     if (phrase.length < 3 || phrase.length > 500) {
       return NextResponse.json({ error: 'Dis-moi en une phrase où tu fais cette séance.' }, { status: 400 })
     }
