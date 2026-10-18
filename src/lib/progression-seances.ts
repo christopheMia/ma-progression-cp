@@ -262,7 +262,7 @@ const ABREVIATIONS: ReadonlyArray<readonly [string, string]> = [
  * Le domaine dans la forme que Cécile veut lire. Rendu tel quel s'il ne fait
  * pas partie de ceux qu'elle a nommés.
  */
-function domaineAbrege(domaine: string): string {
+export function domaineAbrege(domaine: string): string {
   const cle = normaliserTexte(domaine).replace(/['\u2019]/g, ' ').replace(/\s+/g, ' ').trim()
   for (const [entier, court] of ABREVIATIONS) {
     if (cle === entier || cle === court.toLowerCase()) return court

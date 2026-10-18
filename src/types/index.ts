@@ -174,3 +174,24 @@ export type ProgressionMatiere = {
   mots_exemple: string[] | null
   seances?: SeanceProgression[] | null
 }
+
+/** Un jour de la semaine d'école, tel qu'écrit en base. */
+export type JourSemaine = CreneauHoraire['jour']
+
+/**
+ * Une règle du carnet de rangement d'une classe (migration 031) : « Chant va
+ * dans Musique ». Conception du 18/10/2026.
+ */
+export type RegleRangement = {
+  id: string
+  class_id: string
+  /** Le type tel qu'écrit (« Écoute musicale »). */
+  type: string
+  /** Le type comparé, calculé par `cleType`. Unique par classe. */
+  type_cle: string
+  /** Le nom de la case, tel qu'écrit dans l'emploi du temps. */
+  creneau: string
+  /** Jour préféré, pour ce qui n'a pas de jour. */
+  jour: JourSemaine | null
+  origine: 'main' | 'cahier' | 'ia'
+}

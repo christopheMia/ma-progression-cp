@@ -194,7 +194,7 @@ git commit -m "Carnet de rangement : migration 031 (table regles_rangement, non 
 - Create: `src/lib/regles-rangement.ts`
 - Test: `src/lib/__tests__/regles-rangement.test.ts`
 
-- [ ] **Step 1: Ajouter les types**
+- [x] **Step 1: Ajouter les types**
 
 Dans `src/types/index.ts`, après le type `ProgressionMatiere` :
 
@@ -223,7 +223,7 @@ export type RegleRangement = {
 
 Dans `src/lib/progression-seances.ts`, remplacer `function domaineAbrege(domaine: string): string {` par `export function domaineAbrege(domaine: string): string {`. Rien d'autre.
 
-- [ ] **Step 2: Écrire les tests qui échouent**
+- [x] **Step 2: Écrire les tests qui échouent**
 
 ```ts
 import {
@@ -305,12 +305,12 @@ describe('lireRegles', () => {
 })
 ```
 
-- [ ] **Step 3: Vérifier qu'ils échouent**
+- [x] **Step 3: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/__tests__/regles-rangement.test.ts`
 Expected: FAIL, `Cannot find module '../regles-rangement'`.
 
-- [ ] **Step 4: Écrire le module**
+- [x] **Step 4: Écrire le module**
 
 ```ts
 import type { CreneauHoraire, JourSemaine, SeanceProgression } from '@/types'
@@ -397,14 +397,14 @@ export function lireRegles(v: unknown): RegleAppliquee[] {
 
 Note : `notions-creneaux.ts` importe déjà `familles-seances.ts` et `progression-seances.ts`, pas `regles-rangement.ts` : il n'y a pas d'import circulaire. Le garder ainsi (la tâche 3 ne fait PAS importer `regles-rangement.ts` par `notions-creneaux.ts`).
 
-- [ ] **Step 5: Vérifier qu'ils passent, et que rien d'autre ne bouge**
+- [x] **Step 5: Vérifier qu'ils passent, et que rien d'autre ne bouge**
 
 Run: `npx jest src/lib/__tests__/regles-rangement.test.ts`
 Expected: PASS.
 Run: `npx jest src/lib/__tests__/progression-seances.test.ts src/lib/__tests__/familles-seances.test.ts`
 Expected: PASS, aucun test modifié.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/types/index.ts src/lib/progression-seances.ts src/lib/regles-rangement.ts src/lib/__tests__/regles-rangement.test.ts
