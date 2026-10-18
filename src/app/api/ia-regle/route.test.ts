@@ -120,7 +120,8 @@ describe('POST /api/ia-regle', () => {
     const r = await POST(requete({ phrase: 'la fluence en soutien le jeudi' }))
     expect(r.status).toBe(200)
     expect(await r.json()).toEqual({ reponse: {
-      statut: 'introuvable', type: 'Fluence', demande: 'Soutien le jeudi', plusProche: { creneau: 'Musique', jour: 'jeudi' },
+      statut: 'introuvable', type: 'Fluence', demande: 'Soutien le jeudi', jourAbsent: null,
+      plusProche: { creneau: 'Musique', jour: 'jeudi', jours: ['jeudi'] },
     } })
   })
 

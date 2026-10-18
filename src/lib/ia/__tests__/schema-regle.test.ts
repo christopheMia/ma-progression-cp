@@ -20,16 +20,20 @@ describe('lireReponseRegle', () => {
   })
   it('une case inventée par l’IA n’est jamais rendue comme règle', () => {
     expect(lireReponseRegle(brut({ type: 'Fluence', creneau: 'Ateliers', plus_proche: 'Atelier X' }), CASES)).toEqual({
-      statut: 'introuvable', type: 'Fluence', demande: 'Ateliers', plusProche: null,
+      statut: 'introuvable', type: 'Fluence', demande: 'Ateliers', jourAbsent: null, plusProche: null,
     })
   })
   it('case introuvable avec une case proche qui existe', () => {
     expect(lireReponseRegle(brut({ statut: 'introuvable', type: 'Fluence', creneau: 'Soutien', jour: 'mardi', plus_proche: 'APC' }), CASES))
-      .toEqual({ statut: 'introuvable', type: 'Fluence', demande: 'Soutien le mardi', plusProche: { creneau: 'APC', jour: 'mardi' } })
+      .toEqual({
+        statut: 'introuvable', type: 'Fluence', demande: 'Soutien le mardi', jourAbsent: null,
+        plusProche: { creneau: 'APC', jour: 'mardi', jours: ['mardi'] },
+      })
   })
   it('la case existe, mais pas ce jour-là : introuvable, la case sans jour en proposition', () => {
     expect(lireReponseRegle(brut({ type: 'Fluence', creneau: 'APC', jour: 'vendredi' }), CASES)).toEqual({
-      statut: 'introuvable', type: 'Fluence', demande: 'APC le vendredi', plusProche: { creneau: 'APC', jour: null },
+      statut: 'introuvable', type: 'Fluence', demande: 'APC le vendredi', jourAbsent: { creneau: 'APC', jour: 'vendredi' },
+      plusProche: { creneau: 'APC', jour: null, jours: ['mardi'] },
     })
   })
   it('« introuvable » dit par l’IA mais la case existe (et le jour convient) : c’est une règle', () => {
@@ -38,7 +42,10 @@ describe('lireReponseRegle', () => {
   })
   it('« introuvable » dit par l’IA, la case existe mais pas ce jour-là : reste introuvable', () => {
     expect(lireReponseRegle(brut({ statut: 'introuvable', type: 'Fluence', creneau: 'APC', jour: 'vendredi' }), CASES))
-      .toEqual({ statut: 'introuvable', type: 'Fluence', demande: 'APC le vendredi', plusProche: { creneau: 'APC', jour: null } })
+      .toEqual({
+        statut: 'introuvable', type: 'Fluence', demande: 'APC le vendredi', jourAbsent: { creneau: 'APC', jour: 'vendredi' },
+        plusProche: { creneau: 'APC', jour: null, jours: ['mardi'] },
+      })
   })
   it('incompris : réponse vide, mal formée, ou sans type', () => {
     expect(lireReponseRegle(null, CASES)).toEqual({ statut: 'incompris' })

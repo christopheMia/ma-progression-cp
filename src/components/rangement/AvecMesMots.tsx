@@ -2,10 +2,17 @@
 import { useState } from 'react'
 import { demanderRegle } from '@/lib/ia/regle-client'
 import type { RegleComprise } from '@/lib/ia/schema-regle'
+import type { JourSemaine } from '@/types'
 
 /** « Chant vers Musique, le jeudi » */
 export function phraseRegle(r: RegleComprise): string {
   return `${r.type} vers ${r.creneau}${r.jour ? `, le ${r.jour}` : ''}`
+}
+
+/** « le mardi », « le lundi ou le mardi », « le lundi, le mardi ou le jeudi » */
+export function listeJours(jours: JourSemaine[]): string {
+  const l = jours.map(j => `le ${j}`)
+  return l.length < 2 ? (l[0] ?? '') : `${l.slice(0, -1).join(', ')} ou ${l[l.length - 1]}`
 }
 
 /**
@@ -26,8 +33,10 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
   const [phrase, setPhrase] = useState('')
   const [enCours, setEnCours] = useState(false)
   const [proposee, setProposee] = useState<RegleComprise | null>(null)
-  // Vrai quand la proposition est la case la plus proche, pas ce qu'elle a demandé.
-  const [procheSeulement, setProcheSeulement] = useState(false)
+  // Rempli quand la proposition est la case la plus proche, pas ce qu'elle a
+  // demandé : la question dit alors QUEL jour (essai du 18/10, « Musique »
+  // seule laissait croire au jeudi demandé alors que la case est le mardi).
+  const [proche, setProche] = useState<{ jours: JourSemaine[]; memeCase: boolean } | null>(null)
   const [introuvable, setIntrouvable] = useState<string | null>(null)
   // `echecs` compte tout ce qui n'a pas abouti : réponse « incompris », case
   // sans plus proche, clic sur « Je réexplique ». À deux, on offre la sortie
@@ -41,7 +50,7 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
     setEnCours(true)
     setErreur(null)
     setProposee(null)
-    setProcheSeulement(false)
+    setProche(null)
     setIntrouvable(null)
     setDernierIncompris(false)
     setNotee(false)
@@ -55,12 +64,15 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
     if (rep.statut === 'regle') {
       setProposee(rep.regle)
     } else if (rep.statut === 'introuvable') {
-      setIntrouvable(rep.demande
-        ? `Je ne trouve pas de case « ${rep.demande} » dans ton emploi du temps.`
-        : 'Je ne trouve pas cette case dans ton emploi du temps.')
+      setIntrouvable(rep.jourAbsent
+        ? `Il n’y a pas de case « ${rep.jourAbsent.creneau} » le ${rep.jourAbsent.jour} dans ton emploi du temps.`
+        : rep.demande
+          ? `Je ne trouve pas de case « ${rep.demande} » dans ton emploi du temps.`
+          : 'Je ne trouve pas cette case dans ton emploi du temps.')
       if (rep.plusProche) {
-        setProposee({ type: rep.type, ...rep.plusProche })
-        setProcheSeulement(true)
+        const { creneau, jour, jours } = rep.plusProche
+        setProposee({ type: rep.type, creneau, jour })
+        setProche({ jours: jour ? [jour] : jours, memeCase: rep.jourAbsent?.creneau === creneau })
       } else {
         setEchecs(n => n + 1)
       }
@@ -82,7 +94,7 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
     }
     setNotee(true)
     setProposee(null)
-    setProcheSeulement(false)
+    setProche(null)
     setIntrouvable(null)
     setPhrase('')
     setEchecs(0)
@@ -91,7 +103,7 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
 
   function reexpliquer() {
     setProposee(null)
-    setProcheSeulement(false)
+    setProche(null)
     setIntrouvable(null)
     setEchecs(n => n + 1)
   }
@@ -123,8 +135,8 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
         {introuvable && <p className="text-sm text-amber-700">{introuvable}</p>}
         {proposee && (
           <p className="rounded border border-violet-200 bg-violet-50 p-2 text-sm">
-            {procheSeulement
-              ? `Pour ${proposee.type}, la case la plus proche : ${proposee.creneau}${proposee.jour ? `, le ${proposee.jour}` : ''}. C’est ça ?`
+            {proche
+              ? `Pour ${proposee.type}, ${proche.memeCase ? 'je te propose' : 'la case la plus proche :'} ${proposee.creneau}${proche.jours.length ? `, ${listeJours(proche.jours)}` : ''}. C’est ça ?`
               : `J’ai compris : ${phraseRegle(proposee)}.`}
           </p>
         )}

@@ -27,7 +27,15 @@ export type RegleComprise = { type: string; creneau: string; jour: JourSemaine |
 
 export type ReponseRegle =
   | { statut: 'regle'; regle: RegleComprise }
-  | { statut: 'introuvable'; type: string; demande: string; plusProche: { creneau: string; jour: JourSemaine | null } | null }
+  | {
+      statut: 'introuvable'
+      type: string
+      demande: string
+      /** La case demandée existe, mais pas le jour demandé (essai du 18/10 : « Musique le jeudi »). */
+      jourAbsent: { creneau: string; jour: JourSemaine } | null
+      /** `jours` : ceux où la case a lieu, pour que la question dise QUEL jour. */
+      plusProche: { creneau: string; jour: JourSemaine | null; jours: JourSemaine[] } | null
+    }
   | { statut: 'incompris' }
 
 export function lireReponseRegle(brut: unknown, cases: CaseDisponible[], typeConnu?: string): ReponseRegle {
@@ -50,6 +58,9 @@ export function lireReponseRegle(brut: unknown, cases: CaseDisponible[], typeCon
     statut: 'introuvable',
     type,
     demande: demande && jour ? `${demande} le ${jour}` : demande,
-    plusProche: proche ? { creneau: proche.nom, jour: jour && proche.jours.includes(jour) ? jour : null } : null,
+    jourAbsent: demandee && jour ? { creneau: demandee.nom, jour } : null,
+    plusProche: proche
+      ? { creneau: proche.nom, jour: jour && proche.jours.includes(jour) ? jour : null, jours: proche.jours }
+      : null,
   }
 }
