@@ -1,6 +1,7 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { genererCahierJournal } from '@/lib/cahier-journal'
+import { lireRegles } from '@/lib/regles-rangement'
 import { validerContenuJournal } from '@/lib/cahier-journal-edition'
 import { resultat, type Resultat } from '@/lib/resultat'
 import { JourJournal } from '@/types'
@@ -27,6 +28,42 @@ async function contexteJournal(semaineId: string) {
 
   if (error || !semaine) throw new Error('Semaine introuvable ou non autorisée.')
   return { supabase, semaine }
+}
+
+type Contexte = Awaited<ReturnType<typeof contexteJournal>>
+
+/**
+ * Charge ce qu'il faut et fabrique le cahier journal d'une semaine. Commun à
+ * l'ouverture et à « Régénérer », qui le chargeaient chacun de leur côté.
+ *
+ * Deux lectures sont facultatives et ne bloquent jamais le cahier :
+ * - la semaine d'avant (une notion qui continue, voir `placerNotionsDuJour`) ;
+ * - le carnet de rangement (migration 031). Illisible, par exemple avant que
+ *   la migration soit passée, il compte pour vide : le cahier est alors
+ *   exactement celui d'avant le carnet.
+ */
+async function fabriquerJournal({ supabase, semaine }: Contexte) {
+  const [
+    { data: edt, error: edtError },
+    { data: progression, error: progressionError },
+    { data: precedente, error: precedenteError },
+    { data: regles, error: reglesError },
+  ] = await Promise.all([
+    supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
+    supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
+      .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
+    supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
+      .eq('class_id', semaine.class_id).eq('numero', semaine.numero - 1),
+    supabase.from('regles_rangement').select('type, creneau, jour').eq('class_id', semaine.class_id),
+  ])
+  if (edtError || progressionError) {
+    throw new Error('Les données nécessaires au cahier journal n’ont pas pu être chargées.')
+  }
+  return genererCahierJournal(
+    edt ?? [], progression ?? [],
+    precedenteError ? undefined : precedente ?? [],
+    reglesError ? [] : lireRegles(regles),
+  )
 }
 
 /**
@@ -58,7 +95,8 @@ export async function lireJournal(semaineId: string): Promise<Resultat<JourJourn
 
 export async function genererOuChargerJournal(semaineId: string): Promise<Resultat<JourJournal[]>> {
   return resultat(async () => {
-    const { supabase, semaine } = await contexteJournal(semaineId)
+    const contexte = await contexteJournal(semaineId)
+    const { supabase } = contexte
 
     const { data: existing, error: existingError } = await supabase
       .from('cahier_journal')
@@ -68,26 +106,7 @@ export async function genererOuChargerJournal(semaineId: string): Promise<Result
     if (existingError) throw new Error('Le cahier journal n’a pas pu être chargé.')
     if (existing) return validerContenuJournal(existing.contenu)
 
-    const [
-      { data: edt, error: edtError },
-      { data: progression, error: progressionError },
-      { data: precedente, error: precedenteError },
-    ] = await Promise.all([
-      supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
-      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
-      .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
-      // La semaine d'avant, pour reconnaître une notion qui continue (un poème
-      // appris sur plusieurs semaines) : voir `placerNotionsDuJour`.
-      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
-      .eq('class_id', semaine.class_id).eq('numero', semaine.numero - 1),
-    ])
-    if (edtError || progressionError) {
-      throw new Error('Les données nécessaires au cahier journal n’ont pas pu être chargées.')
-    }
-
-    // La semaine d'avant est facultative : si elle ne se lit pas, toutes les
-    // notions comptent comme nouvelles, et le cahier se fabrique quand même.
-    const contenu = genererCahierJournal(edt ?? [], progression ?? [], precedenteError ? undefined : precedente ?? [])
+    const contenu = await fabriquerJournal(contexte)
     const { error: insertError } = await supabase
       .from('cahier_journal')
       .insert({ semaine_id: semaineId, contenu })
@@ -125,28 +144,10 @@ export async function sauvegarderJournal(
  */
 export async function regenererJournal(semaineId: string): Promise<Resultat<JourJournal[]>> {
   return resultat(async () => {
-    const { supabase, semaine } = await contexteJournal(semaineId)
+    const contexte = await contexteJournal(semaineId)
+    const { supabase } = contexte
 
-    const [
-      { data: edt, error: edtError },
-      { data: progression, error: progressionError },
-      { data: precedente, error: precedenteError },
-    ] = await Promise.all([
-      supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
-      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
-      .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
-      // La semaine d'avant, pour reconnaître une notion qui continue (un poème
-      // appris sur plusieurs semaines) : voir `placerNotionsDuJour`.
-      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
-      .eq('class_id', semaine.class_id).eq('numero', semaine.numero - 1),
-    ])
-    if (edtError || progressionError) {
-      throw new Error('Les données nécessaires au cahier journal n’ont pas pu être chargées.')
-    }
-
-    // La semaine d'avant est facultative : si elle ne se lit pas, toutes les
-    // notions comptent comme nouvelles, et le cahier se fabrique quand même.
-    const contenu = genererCahierJournal(edt ?? [], progression ?? [], precedenteError ? undefined : precedente ?? [])
+    const contenu = await fabriquerJournal(contexte)
     const { error } = await supabase.from('cahier_journal')
       .upsert({ semaine_id: semaineId, contenu, updated_at: new Date().toISOString() }, { onConflict: 'semaine_id' })
     if (error) throw new Error('Le cahier journal n’a pas pu être régénéré.')

@@ -873,7 +873,7 @@ git commit -m "Carnet de rangement : le cahier journal applique les regles en pr
 
 Point de sécurité : le code peut être mis en ligne avant la migration 031. La lecture du carnet qui échoue (table absente) doit donner un carnet vide, et le cahier journal se fabrique comme aujourd'hui.
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```ts
 import { genererCahierJournal } from '@/lib/cahier-journal'
@@ -949,12 +949,12 @@ describe('le cahier journal et le carnet de rangement', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/actions/__tests__/journal-carnet.test.ts`
 Expected: le premier test PASSE déjà (rien ne lit encore le carnet), les deux autres ÉCHOUENT (« Musique » au lieu du chant).
 
-- [ ] **Step 3: Écrire le code**
+- [x] **Step 3: Écrire le code**
 
 Dans `src/lib/actions/journal.ts`, ajouter l'import `import { lireRegles } from '@/lib/regles-rangement'`, puis, après `contexteJournal`, la fonction commune :
 
@@ -1004,14 +1004,14 @@ Dans `genererOuChargerJournal`, remplacer tout le bloc qui va de `const [` jusqu
 
 placé en tête (à la place de `const { supabase, semaine } = await contexteJournal(semaineId)`), puis `const { supabase } = contexte` et, à l'endroit du calcul, `const contenu = await fabriquerJournal(contexte)`. Faire de même dans `regenererJournal`. Le reste (lecture du cahier existant, insert, upsert, `revalidatePath`, messages) ne change pas.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/lib/actions/__tests__/journal-carnet.test.ts`
 Expected: PASS (3 tests).
 Run: `npx tsc --noEmit`
 Expected: aucune sortie.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/actions/journal.ts src/lib/actions/__tests__/journal-carnet.test.ts
