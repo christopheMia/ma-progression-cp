@@ -1244,7 +1244,7 @@ git commit -m "Carnet de rangement : cases disponibles, regles signalees, regrou
 - Create: `src/lib/actions/regles-rangement.ts`
 - Test: `src/lib/actions/__tests__/regles-rangement-actions.test.ts`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```ts
 type Reponse = { data: unknown; error: unknown }
@@ -1326,12 +1326,12 @@ describe('actions du carnet de rangement', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/actions/__tests__/regles-rangement-actions.test.ts`
 Expected: FAIL, module introuvable.
 
-- [ ] **Step 3: Écrire les actions**
+- [x] **Step 3: Écrire les actions**
 
 ```ts
 'use server'
@@ -1419,14 +1419,14 @@ export async function supprimerRegle(id: string): Promise<Resultat<void>> {
 
 Si `tsc` refuse `prete.valeur` après `throw` (rétrécissement), écrire `if (!prete.ok) throw new Error(prete.message)` puis `const valeur = prete.valeur` : le comportement ne change pas.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/lib/actions/__tests__/regles-rangement-actions.test.ts`
 Expected: PASS (6 tests).
 Run: `npx tsc --noEmit`
 Expected: aucune sortie.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/actions/regles-rangement.ts src/lib/actions/__tests__/regles-rangement-actions.test.ts
