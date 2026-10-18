@@ -61,7 +61,7 @@ Chaque fichier de tests voyage dans le même commit que le fichier qu'il couvre.
 - Create: `supabase/migrations/031_regles_rangement.sql`
 - Test: `src/lib/__tests__/regles-rangement-migration.test.ts`
 
-- [ ] **Step 1: Écrire le test qui échoue**
+- [x] **Step 1: Écrire le test qui échoue**
 
 ```ts
 import { readFileSync } from 'node:fs'
@@ -97,12 +97,12 @@ describe('migration du carnet de rangement', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'il échoue**
+- [x] **Step 2: Vérifier qu'il échoue**
 
 Run: `npx jest src/lib/__tests__/regles-rangement-migration.test.ts`
 Expected: FAIL, `ENOENT` sur `031_regles_rangement.sql`.
 
-- [ ] **Step 3: Écrire la migration**
+- [x] **Step 3: Écrire la migration**
 
 ```sql
 -- 031_regles_rangement.sql
@@ -170,12 +170,12 @@ revoke all on table public.regles_rangement from anon, authenticated;
 grant select, insert, update, delete on table public.regles_rangement to authenticated;
 ```
 
-- [ ] **Step 4: Vérifier qu'il passe**
+- [x] **Step 4: Vérifier qu'il passe**
 
 Run: `npx jest src/lib/__tests__/regles-rangement-migration.test.ts`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add supabase/migrations/031_regles_rangement.sql src/lib/__tests__/regles-rangement-migration.test.ts
