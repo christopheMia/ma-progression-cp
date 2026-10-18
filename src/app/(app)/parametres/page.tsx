@@ -17,6 +17,8 @@ import CreditIaEditor from '@/components/parametres/CreditIaEditor'
 import AncreAuChargement from '@/components/AncreAuChargement'
 import SectionRepliable from '@/components/parametres/SectionRepliable'
 import SommaireParametres from '@/components/parametres/SommaireParametres'
+import MonRangementEditor from '@/components/parametres/MonRangementEditor'
+import { casesDisponibles, lireReglesCompletes } from '@/lib/regles-rangement'
 import { soldeDepuisRpc, type PageParametresData } from '@/lib/rpc-pages'
 import type { Methode, MethodeSource } from '@/types'
 
@@ -25,6 +27,7 @@ const SECTIONS = [
   { id: 'prenom', titre: 'Mon prénom' },
   { id: 'eleves', titre: 'Mes élèves' },
   { id: 'edt', titre: 'Emploi du temps' },
+  { id: 'rangement', titre: 'Mon rangement' },
   { id: 'rentree', titre: 'Date de rentrée' },
   { id: 'methodes', titre: 'Méthodes et acquis' },
   { id: 'credit-ia', titre: 'Crédit IA' },
@@ -39,7 +42,14 @@ export default async function ParametresPage() {
   // temps, methodes, progression, documents et solde IA.
   const supabase = await createClient()
 
-  const { data, error } = await supabase.rpc('page_parametres')
+  // Le carnet de rangement (migration 031) est lu EN MEME TEMPS que le reste :
+  // pas de second aller-retour. La policy ne rend que les regles des classes
+  // de l'enseignante ; on garde ensuite celles de cette classe. Illisible
+  // (migration pas encore passee), la section le dit et rien d'autre ne casse.
+  const [{ data, error }, { data: reglesLues, error: reglesErreur }] = await Promise.all([
+    supabase.rpc('page_parametres'),
+    supabase.from('regles_rangement').select('id, class_id, type, type_cle, creneau, jour, origine'),
+  ])
   if (error) {
     throw new Error(`Chargement des paramètres impossible : ${error.message}`)
   }
@@ -50,6 +60,13 @@ export default async function ParametresPage() {
   const { eleves, edt, methodes, progression } = page
   const solde = soldeDepuisRpc(page.solde)
   const sources = (page.sources ?? []) as unknown as MethodeSource[]
+
+  const regles = reglesErreur ? [] : lireReglesCompletes(reglesLues).filter(r => r.class_id === classe.id)
+  const casesRangement = casesDisponibles((edt ?? []).map(c => ({
+    jour: c.jour, matiere: c.matiere,
+    type: (c.type ?? 'cours') as 'cours' | 'routine',
+    visible_journal: (c.visible_journal ?? true) as boolean,
+  })))
 
   // Recap par methode : ce que l'IA a produit a l'import (nb de semaines + nb de notions).
   const resumes: Record<string, { semaines: number; notions: number }> = {}
@@ -97,6 +114,10 @@ export default async function ParametresPage() {
           type: (c.type ?? 'cours') as 'cours' | 'routine',
           visible_journal: (c.visible_journal ?? true) as boolean,
         }))} />
+      </SectionRepliable>
+
+      <SectionRepliable id="rangement" titre="🗂️ Mon rangement">
+        <MonRangementEditor initial={regles} cases={casesRangement} indisponible={Boolean(reglesErreur)} />
       </SectionRepliable>
 
       <SectionRepliable id="rentree" titre="📅 Date de rentrée" headerRight={<RealignerSemainesButton />}>

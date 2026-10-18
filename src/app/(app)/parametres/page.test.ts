@@ -14,8 +14,14 @@ describe('page Paramètres et documents de progression', () => {
   // chaque appel Supabase coute 120 a 360 ms quelle que soit la table.
   test('charge tout en un seul appel, sans requete de table directe', () => {
     expect(source).toContain("rpc('page_parametres')")
-    expect(source).not.toContain('.from(')
-    expect(source).not.toContain('Promise.all')
+    // Seule exception (carnet de rangement, 18/10) : `regles_rangement` est lu
+    // EN PARALLELE de la fonction SQL dans un meme Promise.all, donc toujours
+    // un seul aller-retour, jamais une requete en serie.
+    const sansExceptionRangement = source.replace(".from('regles_rangement')", '')
+    expect(sansExceptionRangement).not.toContain('.from(')
+    expect(source).toMatch(
+      /Promise\.all\(\[\s*supabase\.rpc\('page_parametres'\),\s*supabase\.from\('regles_rangement'\)/,
+    )
   })
 
   test('transmet les sources et ne réintroduit pas l’ancien changement de manuel', () => {

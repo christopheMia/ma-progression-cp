@@ -2366,7 +2366,7 @@ git commit -m "Carnet de rangement : section Mon rangement"
 
 Pas de test unitaire de page dans ce dépôt : la vérification est `tsc` plus l'essai à l'écran de la tâche 13.
 
-- [ ] **Step 1: Ajouter la section au sommaire**
+- [x] **Step 1: Ajouter la section au sommaire**
 
 Dans `SECTIONS`, après `{ id: 'edt', titre: 'Emploi du temps' },` :
 
@@ -2374,7 +2374,7 @@ Dans `SECTIONS`, après `{ id: 'edt', titre: 'Emploi du temps' },` :
   { id: 'rangement', titre: 'Mon rangement' },
 ```
 
-- [ ] **Step 2: Lire le carnet en parallèle, sans aller-retour de plus**
+- [x] **Step 2: Lire le carnet en parallèle, sans aller-retour de plus**
 
 Imports à ajouter :
 
@@ -2413,7 +2413,7 @@ Après `const sources = ...` :
   })))
 ```
 
-- [ ] **Step 3: Afficher la section après l'emploi du temps**
+- [x] **Step 3: Afficher la section après l'emploi du temps**
 
 Juste après la `SectionRepliable id="edt"` (avant `id="rentree"`) :
 
@@ -2423,14 +2423,14 @@ Juste après la `SectionRepliable id="edt"` (avant `id="rentree"`) :
       </SectionRepliable>
 ```
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx tsc --noEmit`
 Expected: aucune sortie.
 Run: `npx jest src/components/parametres`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add "src/app/(app)/parametres/page.tsx"
