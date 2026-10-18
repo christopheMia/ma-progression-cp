@@ -214,6 +214,10 @@ type JourDeSemaine = { jour: string; creneaux: CreneauHoraire[] }
  * prendre ; sans jour préféré, un jour qui a une case LIBRE passe avant un
  * jour dont les cases sont toutes prises. -1 : aucun jour n'a la case.
  *
+ * Le jour préféré ne compte que s'il a une case LIBRE ; sinon le premier jour
+ * qui en a une libre ; si rien n'est libre, le jour préféré s'il a la case,
+ * sinon le premier jour qui l'a (la séance part à placer là).
+ *
  * Quand aucun jour n'a la case, la règle garde son jour préféré s'il existe
  * (la séance partira à placer ce jour-là).
  */
@@ -223,10 +227,16 @@ function jourDuCarnet(
   libre: (rang: number, creneau: number) => boolean = () => true,
 ): number {
   const cases = (j: JourDeSemaine) => j.creneaux.flatMap((c, i) => (estCaseDeRegle(c, regle) ? [i] : []))
+  const aCaseLibre = (j: JourDeSemaine, rang: number) => cases(j).some(i => libre(rang, i))
+  // Le jour préféré compte seulement s'il a une case LIBRE (sans vérificateur
+  // `libre`, toute case est libre : les notions n'y changent rien).
+  const prefereLibre = regle.jour ? jours.findIndex((j, rang) => j.jour === regle.jour && aCaseLibre(j, rang)) : -1
+  if (prefereLibre >= 0) return prefereLibre
+  const libreQuelquePart = jours.findIndex(aCaseLibre)
+  if (libreQuelquePart >= 0) return libreQuelquePart
+  // Rien de libre : le jour préféré s'il a la case, sinon le premier jour qui l'a (à placer là).
   const preferee = regle.jour ? jours.findIndex(j => j.jour === regle.jour && cases(j).length > 0) : -1
   if (preferee >= 0) return preferee
-  const libreQuelquePart = jours.findIndex((j, rang) => cases(j).some(i => libre(rang, i)))
-  if (libreQuelquePart >= 0) return libreQuelquePart
   const premier = jours.findIndex(j => cases(j).length > 0)
   if (premier >= 0) return premier
   return regle.jour ? jours.findIndex(j => j.jour === regle.jour) : -1
@@ -283,7 +293,7 @@ function notionsDeLaSemaine(
     const casesDeRegle = (k: number, rang: number) => {
       const r = regleDe[k][rang]
       if (!r) return undefined
-      // Un jour préféré sans la case cette semaine : la première case de la semaine.
+      // Un jour préféré sans la case cette semaine : le premier jour qui a la case.
       if (r.jour && jourDuCarnet(r, jours) !== indexJour) return new Set<number>()
       return new Set(creneaux.flatMap((c, i) => (estCaseDeRegle(c, r) ? [i] : [])))
     }

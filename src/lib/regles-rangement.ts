@@ -68,7 +68,7 @@ export function estCaseDeRegle(c: CreneauHoraire, r: RegleAppliquee): boolean {
 export function tableAbsente(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false
   return error.code === '42P01' || error.code === 'PGRST205'
-    || /does not exist|schema cache/i.test(error.message ?? '')
+    || (/regles_rangement/.test(error.message ?? '') && /does not exist|schema cache/i.test(error.message ?? ''))
 }
 
 /**

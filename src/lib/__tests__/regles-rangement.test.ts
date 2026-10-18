@@ -1,5 +1,5 @@
 import {
-  cleType, indexerRegles, regleDeSeance, regleDeNotion, estCaseDeRegle, lireRegles,
+  cleType, indexerRegles, regleDeSeance, regleDeNotion, estCaseDeRegle, lireRegles, tableAbsente,
 } from '../regles-rangement'
 import type { CreneauHoraire, SeanceProgression } from '@/types'
 
@@ -73,5 +73,24 @@ describe('lireRegles', () => {
       { type: 'Danse', creneau: 'EPS', jour: null },
     ])
     expect(lireRegles(null)).toEqual([])
+  })
+})
+
+describe('tableAbsente (M2)', () => {
+  it.each([
+    [{ code: '42P01', message: 'x' }],
+    [{ code: 'PGRST205', message: 'x' }],
+    [{ message: 'relation "public.regles_rangement" does not exist' }],
+    [{ message: 'Could not find the table \'public.regles_rangement\' in the schema cache' }],
+  ])('table absente (%j)', (e) => {
+    expect(tableAbsente(e)).toBe(true)
+  })
+  it.each([
+    [null],
+    [{ code: '42703', message: 'column "jour" does not exist' }],
+    [{ message: 'column "jour" does not exist' }],
+    [{ message: 'canceling statement due to timeout', code: '57014' }],
+  ])('autre erreur (%j) : pas une table absente', (e) => {
+    expect(tableAbsente(e)).toBe(false)
   })
 })

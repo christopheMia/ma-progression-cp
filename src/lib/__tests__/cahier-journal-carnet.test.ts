@@ -159,6 +159,16 @@ describe('le jour préféré sans la case (F3)', () => {
   })
 })
 
+describe('le jour préféré doit avoir une case libre (M1)', () => {
+  it('le mardi est pris par une séance datée, le lundi est libre : la séance sans jour va au lundi', () => {
+    const j = genererCahierJournal(EDT, [fr([FLU(2, 1), FLU(null, 2)])], undefined,
+      [regle('Fluence', 'Ateliers de français', 'mardi')])
+    expect(dans(jour(j, 'mardi'), 'Ateliers de français')).toBe('Fluence : texte 1')
+    expect(dans(jour(j, 'lundi'), 'Ateliers de français')).toBe('Fluence : texte 2')
+    expect(aPlacer(j)).toEqual([])
+  })
+})
+
 describe('une notion du carnet dans une case qui montre déjà autre chose (F2)', () => {
   it('case nourrie par une séance datée : séance, puis notion', () => {
     const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Chant', 'Phonologie encodage décodage')])
