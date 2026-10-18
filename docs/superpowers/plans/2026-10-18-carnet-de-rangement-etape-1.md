@@ -1848,7 +1848,7 @@ git commit -m "Carnet de rangement : route ia-regle (avec mes mots)"
 
 Ce composant resert aux étapes 2 (bandeau du cahier journal) et 3 (import) : il ne connaît ni Paramètres ni la base. Il reçoit `onValidee`, qui enregistre et rend un message d'erreur ou `null`.
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```tsx
 /**
@@ -1919,12 +1919,12 @@ it('IA indisponible : son message, jamais bloquée', async () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/components/rangement`
 Expected: FAIL, modules introuvables.
 
-- [ ] **Step 3: Écrire le code**
+- [x] **Step 3: Écrire le code**
 
 `src/lib/ia/regle-client.ts` :
 
@@ -2085,12 +2085,12 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
 
 Le message affiché par le test « J’ai compris : Chant vers Musique, le jeudi. » est rendu en un seul nœud texte : si Testing Library ne le trouve pas parce que React le découpe, écrire `<p>{`J’ai compris : ${phraseRegle(proposee)}.`}</p>`.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/components/rangement`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/ia/regle-client.ts src/components/rangement/AvecMesMots.tsx src/components/rangement/__tests__/AvecMesMots.test.tsx
