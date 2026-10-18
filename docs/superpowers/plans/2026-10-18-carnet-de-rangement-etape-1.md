@@ -2447,7 +2447,7 @@ git commit -m "Carnet de rangement : section Mon rangement dans Parametres"
 - Modify: `AVANCEMENT-IMPORT-SEANCES.md` (nouveau point de reprise en tête)
 - Modify: `C:\Users\youck\Documents\Claude\Projects\MON AIOS\wiki\entities\profenpoche-circuit-cahier-journal.md` (règle `carte-de-fonctionnement` : mise à jour dans la même session que la modification)
 
-- [ ] **Step 1: Toute la suite, et les types**
+- [x] **Step 1: Toute la suite, et les types**
 
 Run: `npx jest`
 Expected: tous verts. Compter : 1071 anciens + les nouveaux. Aucun fichier de test existant modifié, sauf l'AJOUT d'une ligne au `test.each` de `anthropic.test.ts` (tâche 8). Vérifier avec :
@@ -2461,7 +2461,7 @@ Expected : seuls des fichiers créés par ce plan, plus `anthropic.test.ts` (2 l
 Run: `npx tsc --noEmit`
 Expected: aucune sortie.
 
-- [ ] **Step 2: Aucun tiret long ajouté**
+- [x] **Step 2: Aucun tiret long ajouté**
 
 ```bash
 git diff 6c04eee -- . | grep -n $'^+.*\u2014' || echo "aucun tiret long ajoute"
@@ -2469,7 +2469,7 @@ git diff 6c04eee -- . | grep -n $'^+.*\u2014' || echo "aucun tiret long ajoute"
 
 Expected : `aucun tiret long ajoute`.
 
-- [ ] **Step 3: Relecture par un sous-agent**
+- [x] **Step 3: Relecture par un sous-agent**
 
 Lancer un sous-agent `code-reviewer` (lecture seule ; l'annoncer à Christophe : quel agent, quel modèle, pour quoi) sur le diff de la branche depuis `6c04eee`, avec la conception en référence. Lui demander en priorité : la garantie « carnet vide = identique » (tâches 3 et 4), l'absence d'écriture sans geste de l'enseignante, la tolérance à la table absente (tâches 5 et 12). Corriger les points graves, chacun avec son test.
 
@@ -2479,11 +2479,11 @@ Lancer un sous-agent `code-reviewer` (lecture seule ; l'annoncer à Christophe :
 2. Essai réel sur la classe « Bac a sable » (jamais celle de Cécile) : ajouter « le chant c'est en musique le jeudi », vérifier la règle, régénérer une semaine qui a du chant, relever le coût de l'appel dans la jauge IA.
 3. Mise en ligne de la branche (avec le reste de `seances-taches-5-12`).
 
-- [ ] **Step 5: Mettre à jour la carte de fonctionnement**
+- [x] **Step 5: Mettre à jour la carte de fonctionnement**
 
 Dans `profenpoche-circuit-cahier-journal.md` : date de dernière vérification, une étape « Carnet de rangement » en tête du schéma mermaid (« Une règle existe pour son type ? » oui : case de la règle, sinon à placer ; non : rangement actuel), une ligne au tableau des étapes (`src/lib/regles-rangement.ts`, `genererCahierJournal` paramètre `regles`, `placerNotionsDuJour` paramètre `casesDeRegle`), la table `regles_rangement` dans « Ce qui compte en base », et au piège : changer une règle ne change pas les cahiers déjà ouverts. Pas de code recopié, pas de numéros de ligne.
 
-- [ ] **Step 6: Point de reprise et commit**
+- [x] **Step 6: Point de reprise et commit**
 
 Écrire en tête de `AVANCEMENT-IMPORT-SEANCES.md` un point de reprise daté : étape 1 codée, nombre de tests, migration NON appliquée, ce qui attend Christophe (step 4), suite = plan de l'étape 2.
 

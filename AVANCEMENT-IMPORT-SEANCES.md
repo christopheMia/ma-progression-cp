@@ -1,5 +1,31 @@
 # Avancement : une séance du document, un créneau du cahier journal
 
+## POINT DE REPRISE DU 18/10, soir : CARNET DE RANGEMENT, ÉTAPE 1 CODÉE (LIRE EN PREMIER)
+
+Branche `seances-taches-5-12`, **pas fusionnée, pas en ligne, migration 031 PAS appliquée**. Les 13 tâches du plan `docs/superpowers/plans/2026-10-18-carnet-de-rangement-etape-1.md` sont codées (une par sous-agent Sonnet), puis relues par Opus en deux temps (tâches 1 à 5, puis 6 à 12), chaque relecture vérifiée après ses correctifs.
+
+| Fait | Preuve |
+|---|---|
+| Table `regles_rangement` (migration 031), écrite, NON appliquée | `8de0673` |
+| Logique pure du carnet, notions, cahier journal qui applique le carnet en premier, lecture tolérante | `f90c56d`, `5afcbae`, `8f7ddfe`, `0d5ffa0` |
+| « Mon rangement » : logique, actions serveur, appel Haiku 5.5 `ia-regle`, composant « avec mes mots », section dans Paramètres | `db5598c`, `a3d2a65`, `1080284`, `db37158`, `64d28c6`, `a89d73e`, `a8dabbd` |
+| Correctifs de relecture : séance datée prioritaire, jour préféré absent ou plein = premier jour avec une case libre, ordre déterministe des règles, avertissement si lecture en échec, `tableAbsente` strict | `9b9cf02`, `fd9d6f5` |
+| Correctifs de la relecture finale : `type` limité à 80 caractères (coût), « Je réexplique » deux fois = poser à la main, messages qui ne se contredisent plus, Annuler / Plus tard, accessibilité, « pas activé » seulement si la table manque, tests de propriété de la classe et des pannes IA | `0f399c3` |
+| Tests | **1204 sur 1204**, `tsc` muet, aucun tiret long ajouté |
+| Carnet vide = cahier journal identique | tests « carnet vide », vérifié par deux relectures Opus |
+
+**Seul ancien test modifié** : `parametres/page.test.ts` (« un seul appel ») : seule exception, `regles_rangement` lu EN PARALLÈLE de `page_parametres` dans le même `Promise.all`, donc toujours un aller-retour. Décision de Claude, à valider par Christophe. Plus une ligne ajoutée au `test.each` de `anthropic.test.ts` (prévue par le plan).
+
+**Laissé pour plus tard (relecture finale)** : prévenir quand une règle en remplace une autre du même type ; le message de refus de l'IA parle de « document » ; la route `ia-regle` enchaîne plusieurs lectures en base avant l'appel (vitesse) ; un domaine de séance « EMC/EVARS » n'est pas coupé en deux types comme pour les notions. Dernière relecture : la sortie « Je n'ai pas compris » s'affiche aussi après deux « Je réexplique » (formulation de la conception, un peu étrange quand l'IA avait compris mais s'était trompée) ; `supprimerRegle` ne vérifie pas que `id` est un texte (sans danger).
+
+**Ce qui attend Christophe (rien fait sans son accord)** :
+1. Appliquer la migration 031 sur la base Supabase. Sans elle, l'appli marche comme avant et « Mon rangement » affiche « pas encore activé ».
+2. Essai réel sur la classe « Bac a sable » (jamais celle de Cécile) : ajouter « le chant c'est en musique le jeudi », vérifier la règle, régénérer une semaine qui a du chant, relever le coût de l'appel dans la jauge IA.
+3. Mise en ligne de la branche (avec le reste de `seances-taches-5-12`), puis régénérer avec Cécile ses semaines déjà ouvertes.
+
+**Suite** : plan de l'étape 2 (« Toujours ? » + « Autrement » depuis le cahier journal). Restent aussi les tâches 10 à 12 du chantier séances (voir « État des tâches »).
+
+
 ## Point de reprise du 11/10/2026 : DÉPLOYÉ, et l'appli s'appelle ProfEnPoche
 
 | Fait | La preuve |
@@ -613,14 +639,16 @@ tant qu'un relecteur a des réserves.
 | 3 | Les consignes d'import | **avancée** au 20/08 : le schéma exige `seances` sans que le modèle sache quoi y mettre. Visait une fonction morte, corrigée sur `systemImportAutomatique` |
 | 4 | La colonne en base et son remplissage | **colonne POSÉE le 09/09** (`f7eaa57`, migration 028 appliquée en production, 308 lignes à vide, rien de modifié). Le **remplissage reste à lancer**, classe par classe, voir `supabase/remplissage/028_remplir_seances.sql` |
 | 4b | Les trois portes fermées entre l'IA et la base | **CODÉE le 20/09** : il y avait en fait CINQ portes. Tests, suite complète et `tsc` verts. La migration **029 est écrite mais PAS appliquée**, voir le point de reprise en tête |
-| 5 | Une séance par créneau | à faire |
-| 6 | La sauvegarde conserve « à placer » | à faire |
-| 7 | Les deux garanties sur le lundi réel | à faire, **valeurs à valider par Christophe** |
-| 8 | Le planning réel des Petites Poules | à faire |
-| 9 | Afficher « à placer » dans le cahier journal | à faire |
+| 5 | Une séance par créneau | faite puis REMPLACÉE par le placement par le sens (17/10, voir « Avancement du 17/10 ») |
+| 6 | La sauvegarde conserve « à placer » | faite (17/10) |
+| 7 | Les deux garanties sur le lundi réel | revue avec les réponses de Cécile (18/10, point de reprise de l'après-midi) |
+| 8 | Le planning réel des Petites Poules | fait (17/10) |
+| 9 | Afficher « à placer » dans le cahier journal | faite (17/10) |
 | 10 | Vérifier l'import jour par jour | à faire |
 | 11 | Déplacer une séance d'un jour à l'autre | à faire |
-| 12 | Poser une séance « à placer » dans un créneau | à faire |
+| 12 | Poser une séance « à placer » dans un créneau | à faire (le point du 18/10 après-midi ne cite que 10 et 11 : à vérifier) |
+
+*Tableau corrigé le 18/10 au soir : il disait encore « à faire » pour 5 à 9.*
 
 ## Ce que la tâche 1 a appris, et qui vaut pour la suite
 

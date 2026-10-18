@@ -43,7 +43,7 @@ it('case introuvable : le dit, et propose la plus proche', async () => {
   render(<AvecMesMots onValidee={jest.fn(async () => null)} />)
   ecrireEtComprendre('la fluence en soutien le mardi')
   expect(await screen.findByText('Je ne trouve pas de case « Soutien le mardi » dans ton emploi du temps.')).toBeTruthy()
-  expect(screen.getByText('La case la plus proche : APC, le mardi. C’est ça ?')).toBeTruthy()
+  expect(screen.getByText('Pour Fluence, la case la plus proche : APC, le mardi. C’est ça ?')).toBeTruthy()
   expect(screen.queryByText(/J’ai compris/)).toBeNull()
 })
 

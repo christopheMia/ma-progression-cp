@@ -124,7 +124,7 @@ export default function AvecMesMots({ typeConnu, onValidee, exemple }: {
         {proposee && (
           <p className="rounded border border-violet-200 bg-violet-50 p-2 text-sm">
             {procheSeulement
-              ? `La case la plus proche : ${proposee.creneau}${proposee.jour ? `, le ${proposee.jour}` : ''}. C’est ça ?`
+              ? `Pour ${proposee.type}, la case la plus proche : ${proposee.creneau}${proposee.jour ? `, le ${proposee.jour}` : ''}. C’est ça ?`
               : `J’ai compris : ${phraseRegle(proposee)}.`}
           </p>
         )}
