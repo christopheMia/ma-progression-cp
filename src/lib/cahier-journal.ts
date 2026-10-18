@@ -203,17 +203,33 @@ function avecLignes(contenu: string, ajout: string | undefined, nom: string): st
   return contenu === nom || contenu === '' ? ajout : `${contenu}\n${ajout}`
 }
 
+type JourDeSemaine = { jour: string; creneaux: CreneauHoraire[] }
+
 /**
- * Le jour (rang dans la semaine d'école) où le carnet range une séance SANS
- * jour : le jour préféré de la règle, sinon le premier jour qui a sa case.
- * -1 : aucun.
+ * Le jour (rang dans la semaine d'école) où le carnet range ce qui n'a pas de
+ * jour : le jour préféré de la règle s'il a sa case, sinon le premier jour qui
+ * en a une (décision du 18/10 : ne jamais bloquer l'enseignante, un jour
+ * préféré sans la case, ou qui n'est pas un jour d'école, ne renvoie pas à
+ * placer). `libre` dit si la case `creneau` du jour `rang` est encore à
+ * prendre ; sans jour préféré, un jour qui a une case LIBRE passe avant un
+ * jour dont les cases sont toutes prises. -1 : aucun jour n'a la case.
+ *
+ * Quand aucun jour n'a la case, la règle garde son jour préféré s'il existe
+ * (la séance partira à placer ce jour-là).
  */
 function jourDuCarnet(
   regle: RegleAppliquee,
-  jours: { jour: string; creneaux: CreneauHoraire[] }[],
+  jours: JourDeSemaine[],
+  libre: (rang: number, creneau: number) => boolean = () => true,
 ): number {
-  if (regle.jour) return jours.findIndex(j => j.jour === regle.jour)
-  return jours.findIndex(j => j.creneaux.some(c => estCaseDeRegle(c, regle)))
+  const cases = (j: JourDeSemaine) => j.creneaux.flatMap((c, i) => (estCaseDeRegle(c, regle) ? [i] : []))
+  const preferee = regle.jour ? jours.findIndex(j => j.jour === regle.jour && cases(j).length > 0) : -1
+  if (preferee >= 0) return preferee
+  const libreQuelquePart = jours.findIndex((j, rang) => cases(j).some(i => libre(rang, i)))
+  if (libreQuelquePart >= 0) return libreQuelquePart
+  const premier = jours.findIndex(j => cases(j).length > 0)
+  if (premier >= 0) return premier
+  return regle.jour ? jours.findIndex(j => j.jour === regle.jour) : -1
 }
 
 /**
@@ -236,7 +252,7 @@ function jourDuCarnet(
  * porte sur sa dernière notion à placer : rien n'est perdu.
  */
 function notionsDeLaSemaine(
-  jours: { jour: string; creneaux: CreneauHoraire[]; progressionDe: (ProgressionMatiere | null)[] }[],
+  jours: (JourDeSemaine & { progressionDe: (ProgressionMatiere | null)[] })[],
   progression: ProgressionMatiere[],
   horsNotions: (p: ProgressionMatiere) => boolean,
   precedente: ProgressionMatiere[] | undefined,
@@ -263,11 +279,12 @@ function notionsDeLaSemaine(
   // où elle existe, ou seulement le jour préféré.
   const regleDe = notions.map(liste => liste.map(n => regleDeNotion(n, regles)))
 
-  const placements = jours.map(({ jour, creneaux, progressionDe }) => {
+  const placements = jours.map(({ creneaux, progressionDe }, indexJour) => {
     const casesDeRegle = (k: number, rang: number) => {
       const r = regleDe[k][rang]
       if (!r) return undefined
-      if (r.jour && r.jour !== jour) return new Set<number>()
+      // Un jour préféré sans la case cette semaine : la première case de la semaine.
+      if (r.jour && jourDuCarnet(r, jours) !== indexJour) return new Set<number>()
       return new Set(creneaux.flatMap((c, i) => (estCaseDeRegle(c, r) ? [i] : [])))
     }
     const { parCreneau, continuees } = placerNotionsDuJour(creneaux.map((c, i) => {
@@ -408,14 +425,36 @@ export function genererCahierJournal(
   // où il les range. Un « Jour 5 » sur une semaine de quatre jours garde le
   // rangement d'aujourd'hui : il part à placer avec sa mention d'origine.
   const index = indexerRegles(regles)
-  const duCarnet = new Map<SeanceProgression, { regle: RegleAppliquee; jour: number }>()
+  const duCarnet = new Map<SeanceProgression, { regle: RegleAppliquee; jour: number; creneau: number }>()
+  const candidates: { s: SeanceProgression; regle: RegleAppliquee }[] = []
   for (const p of datees) {
     for (const s of lues.get(p) ?? []) {
       const regle = regleDeSeance(s, index)
       if (!regle || (s.jour !== null && s.jour > joursEcole.length)) continue
-      duCarnet.set(s, { regle, jour: s.jour !== null ? s.jour - 1 : jourDuCarnet(regle, jours) })
+      candidates.push({ s, regle })
     }
   }
+  // Les séances DATÉES prennent leur case d'abord, tous jours confondus : une
+  // séance sans jour ne doit pas la leur voler (relecture du 18/10). Les
+  // séances sans jour viennent ensuite, dans l'ordre du document, et prennent
+  // le premier jour qui a encore une case libre.
+  const prises = new Set<string>()
+  const clePrise = (rang: number, creneau: number) => `${rang}:${creneau}`
+  const caseLibre = (regle: RegleAppliquee, rang: number) =>
+    jours[rang].creneaux.findIndex((c, i) => estCaseDeRegle(c, regle) && !prises.has(clePrise(rang, i)))
+  const rangees = new Map<SeanceProgression, { jour: number; creneau: number }>()
+  for (const datee of [true, false]) {
+    for (const { s, regle } of candidates) {
+      if ((s.jour !== null) !== datee) continue
+      const jour = s.jour !== null
+        ? s.jour - 1
+        : jourDuCarnet(regle, jours, (rang, creneau) => !prises.has(clePrise(rang, creneau)))
+      const creneau = jour >= 0 ? caseLibre(regle, jour) : -1
+      if (creneau >= 0) prises.add(clePrise(jour, creneau))
+      rangees.set(s, { jour, creneau })
+    }
+  }
+  for (const { s, regle } of candidates) duCarnet.set(s, { regle, ...rangees.get(s)! })
 
   const notions = notionsDeLaSemaine(
     jours, progression, p => datees.includes(p) || anciennes.includes(p), precedente, index,
@@ -425,13 +464,12 @@ export function genererCahierJournal(
     const { creneaux, progressionDe } = jours[indexJour]
     const aPlacer: SeancePlacer[] = []
 
-    // Le carnet d'abord : chaque séance qu'il range prend la première case
-    // libre qui porte le nom de sa règle ; sinon elle part à placer.
+    // Le carnet d'abord : chaque séance qu'il range prend la case qui lui a été
+    // réservée (voir plus haut) ; sans case libre elle part à placer.
     const parRegle = new Map<number, string>()
-    for (const [s, { regle, jour: rang }] of duCarnet) {
+    for (const [s, { jour: rang, creneau }] of duCarnet) {
       if (rang === -1 ? indexJour !== 0 : rang !== indexJour) continue
-      const i = rang === -1 ? -1 : creneaux.findIndex((c, j) => !parRegle.has(j) && estCaseDeRegle(c, regle))
-      if (i >= 0) parRegle.set(i, s.libelle)
+      if (creneau >= 0) parRegle.set(creneau, s.libelle)
       else aPlacer.push({ libelle: s.libelle, origine: s.jour === null ? 'semaine' : null })
     }
 

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { resultat, type Resultat } from '@/lib/resultat'
 import {
-  casesDisponibles, lireReglesCompletes, preparerRegle, type CaseDisponible,
+  casesDisponibles, lireReglesCompletes, preparerRegle, tableAbsente, type CaseDisponible,
 } from '@/lib/regles-rangement'
 import type { JourSemaine, RegleRangement } from '@/types'
 
@@ -15,13 +15,6 @@ import type { JourSemaine, RegleRangement } from '@/types'
 type Client = Awaited<ReturnType<typeof createClient>>
 
 const CARNET_PAS_PRET = 'Le carnet de rangement n’est pas encore prêt. Il sera disponible très bientôt.'
-
-/** La table n'existe pas encore en base (migration 031 pas appliquée). */
-function tableAbsente(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false
-  return error.code === '42P01' || error.code === 'PGRST205'
-    || /does not exist|schema cache/i.test(error.message ?? '')
-}
 
 async function maClasse(): Promise<{ supabase: Client; classId: string }> {
   const supabase = await createClient()

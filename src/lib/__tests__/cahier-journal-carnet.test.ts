@@ -94,6 +94,7 @@ describe('les séances', () => {
     const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Fluence', 'APC')])
     expect(aPlacer(j)).toContain('mardi:Fluence : texte 1')
     expect(dans(jour(j, 'vendredi'), 'APC')).toBe('Fluence : texte 2')
+    expect(dans(jour(j, 'mardi'), 'Ateliers de français')).not.toContain('Fluence : texte 1')
   })
   it('la règle passe en premier : elle prend la case, la séance à son nom part à placer', () => {
     const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Fluence', 'Phonologie encodage décodage')])
@@ -103,5 +104,104 @@ describe('les séances', () => {
   it('la phonologie sans règle reste à sa place', () => {
     const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Fluence', 'Ateliers de français')])
     expect(dans(jour(j, 'lundi'), 'Phonologie encodage décodage')).toBe('Phonologie : le son a')
+  })
+})
+
+const fr = (seances: SeanceProgression[], items: string[] = []): ProgressionMatiere =>
+  ({ methode_id: null, matiere: 'francais', items, pages: null, mots_exemple: [], seances })
+const arts = (items: string[]): ProgressionMatiere =>
+  ({ methode_id: null, matiere: 'arts', items, pages: null, mots_exemple: [] })
+const FLU = (jourDuDoc: number | null, n: number): SeanceProgression =>
+  ({ jour: jourDuDoc, domaine: '', libelle: `Fluence : texte ${n}` })
+
+describe('une séance datée l’emporte sur une séance sans jour (F1)', () => {
+  it('la séance du lundi garde la case du lundi, la séance sans jour prend le mardi', () => {
+    const j = genererCahierJournal(EDT, [fr([FLU(null, 2), FLU(1, 1)])], undefined, [regle('Fluence', 'Ateliers de français')])
+    expect(dans(jour(j, 'lundi'), 'Ateliers de français')).toBe('Fluence : texte 1')
+    expect(dans(jour(j, 'mardi'), 'Ateliers de français')).toBe('Fluence : texte 2')
+    expect(aPlacer(j)).toEqual([])
+  })
+  it('la séance sans jour reste rangée une seule fois, ordre du document inversé', () => {
+    const j = genererCahierJournal(EDT, [fr([FLU(1, 1), FLU(null, 2)])], undefined, [regle('Fluence', 'Ateliers de français')])
+    expect(dans(jour(j, 'lundi'), 'Ateliers de français')).toBe('Fluence : texte 1')
+    expect(dans(jour(j, 'mardi'), 'Ateliers de français')).toBe('Fluence : texte 2')
+    expect(aPlacer(j)).toEqual([])
+  })
+  it('toutes les cases prises : la séance sans jour retombe sur le premier jour qui a la case, à placer', () => {
+    const j = genererCahierJournal(EDT, [fr([FLU(1, 1), FLU(2, 3), FLU(3, 4), FLU(4, 5), FLU(null, 2)])], undefined,
+      [regle('Fluence', 'Ateliers de français')])
+    expect(aPlacer(j)).toEqual(['lundi:Fluence : texte 2'])
+  })
+})
+
+describe('le jour préféré sans la case (F3)', () => {
+  const SANS_MUSIQUE_MARDI = EDT.filter(x => !(x.jour === 'mardi' && x.matiere === 'Musique'))
+  it('une notion va dans la première case de la semaine', () => {
+    const j = genererCahierJournal(SANS_MUSIQUE_MARDI, PROGRESSION, undefined, [regle('Chant', 'Musique', 'mardi')])
+    expect(dans(jour(j, 'jeudi'), 'Musique')).toBe(CHANT)
+    expect(aPlacer(j)).not.toContain(`lundi:${CHANT}`)
+  })
+  it('une séance sans jour aussi', () => {
+    const j = genererCahierJournal(SANS_MUSIQUE_MARDI, PROGRESSION, undefined, [regle('Fluence', 'Musique', 'mardi')])
+    expect(dans(jour(j, 'jeudi'), 'Musique')).toBe('Fluence : texte 2')
+    expect(aPlacer(j)).not.toContain('lundi:Fluence : texte 2')
+  })
+  it('un jour préféré qui n’est pas un jour d’école (mercredi) : la séance sans jour est rangée une fois', () => {
+    const j = genererCahierJournal(EDT, [fr([FLU(null, 2), FLU(2, 1)])], undefined, [regle('Fluence', 'Ateliers de français', 'mercredi')])
+    expect(dans(jour(j, 'lundi'), 'Ateliers de français')).toBe('Fluence : texte 2')
+    expect(j.filter(x => dans(x, 'Ateliers de français') === 'Fluence : texte 2')).toHaveLength(1)
+    expect(aPlacer(j)).toEqual([])
+  })
+  it('une notion avec un jour préféré qui n’est pas un jour d’école : la première case de la semaine', () => {
+    const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Chant', 'Musique', 'mercredi')])
+    expect(dans(jour(j, 'mardi'), 'Musique')).toBe(CHANT)
+    expect(dans(jour(j, 'jeudi'), 'Musique')).toBe('Musique')
+  })
+})
+
+describe('une notion du carnet dans une case qui montre déjà autre chose (F2)', () => {
+  it('case nourrie par une séance datée : séance, puis notion', () => {
+    const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Chant', 'Phonologie encodage décodage')])
+    expect(dans(jour(j, 'lundi'), 'Phonologie encodage décodage')).toBe(`Phonologie : le son a
+${CHANT}`)
+  })
+  it('case nourrie par une séance datée, aucune séance ce jour-là : la notion seule', () => {
+    const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Chant', 'Phonologie encodage décodage')])
+    expect(dans(jour(j, 'jeudi'), 'Phonologie encodage décodage')).toBe(CHANT)
+  })
+  it('case de l’ancien remplissage (Jour N) : les lignes du jour, puis la notion', () => {
+    const edt = [c('lundi', 1, 'Français'), c('mardi', 1, 'Français')]
+    const prog = [fr([], ['Jour 1 : Lecture p. 3', 'Jour 2 : Dictée']), arts([CHANT])]
+    const j = genererCahierJournal(edt, prog, undefined, [regle('Chant', 'Français')])
+    expect(dans(jour(j, 'lundi'), 'Français')).toBe(`Lecture p. 3
+${CHANT}`)
+    expect(dans(jour(j, 'mardi'), 'Français')).toBe(`Dictée
+${CHANT}`)
+  })
+  it('case du français sans jours (option B) : les lignes de la semaine, puis la notion', () => {
+    const edt = [c('lundi', 1, 'Français')]
+    const j = genererCahierJournal(edt, [fr([], ['Lecture 1', 'Lecture 2']), arts([CHANT])], undefined, [regle('Chant', 'Français')])
+    expect(dans(jour(j, 'lundi'), 'Français')).toBe(`Lecture 1
+Lecture 2
+${CHANT}`)
+  })
+  it('séance du carnet dans une case qui montre des notions : séance, puis notions', () => {
+    const j = genererCahierJournal(EDT, PROGRESSION, undefined, [regle('Fluence', 'Arts plastiques', 'jeudi')])
+    expect(dans(jour(j, 'jeudi'), 'Arts plastiques')).toBe(`Fluence : texte 2
+${ARTS}`)
+  })
+})
+
+describe('des règles qui ne concernent pas le français (F2e)', () => {
+  const HORS_SUJET = [regle('Chant', 'Musique'), regle('Danse', 'EPS', 'jeudi')]
+  it('le français sans jours (option B) reste identique', () => {
+    const prog = [fr([], ['Lecture 1', 'Lecture 2'])]
+    expect(genererCahierJournal(EDT, prog, undefined, HORS_SUJET)).toEqual(genererCahierJournal(EDT, prog))
+  })
+  it('un « Jour 5 » sur une semaine de quatre jours reste identique', () => {
+    const prog = [fr([FLU(1, 1), FLU(5, 5)])]
+    const avec = genererCahierJournal(EDT, prog, undefined, HORS_SUJET)
+    expect(avec).toEqual(genererCahierJournal(EDT, prog))
+    expect(aPlacer(avec)).toContain('vendredi:Fluence : texte 5')
   })
 })

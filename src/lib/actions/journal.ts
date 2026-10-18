@@ -1,7 +1,7 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 import { genererCahierJournal } from '@/lib/cahier-journal'
-import { lireRegles } from '@/lib/regles-rangement'
+import { lireRegles, tableAbsente } from '@/lib/regles-rangement'
 import { validerContenuJournal } from '@/lib/cahier-journal-edition'
 import { resultat, type Resultat } from '@/lib/resultat'
 import { JourJournal } from '@/types'
@@ -39,7 +39,8 @@ type Contexte = Awaited<ReturnType<typeof contexteJournal>>
  * Deux lectures sont facultatives et ne bloquent jamais le cahier :
  * - la semaine d'avant (une notion qui continue, voir `placerNotionsDuJour`) ;
  * - le carnet de rangement (migration 031). Illisible, par exemple avant que
- *   la migration soit passée, il compte pour vide : le cahier est alors
+ *   la migration soit passée, il compte pour vide (et une panne autre que la
+ *   table absente est signalée par un avertissement) : le cahier est alors
  *   exactement celui d'avant le carnet.
  */
 async function fabriquerJournal({ supabase, semaine }: Contexte) {
@@ -54,10 +55,16 @@ async function fabriquerJournal({ supabase, semaine }: Contexte) {
       .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
     supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
       .eq('class_id', semaine.class_id).eq('numero', semaine.numero - 1),
-    supabase.from('regles_rangement').select('type, creneau, jour').eq('class_id', semaine.class_id),
+    supabase.from('regles_rangement').select('type, creneau, jour').eq('class_id', semaine.class_id)
+      .order('updated_at', { ascending: false }),
   ])
   if (edtError || progressionError) {
     throw new Error('Les données nécessaires au cahier journal n’ont pas pu être chargées.')
+  }
+  // Une vraie panne de lecture (pas la table absente) ne bloque pas le cahier,
+  // mais ne passe pas non plus sous silence : le code et le message suffisent.
+  if (reglesError && !tableAbsente(reglesError)) {
+    console.warn('Carnet de rangement illisible, cahier journal fabriqué sans règle :', reglesError.code, reglesError.message)
   }
   return genererCahierJournal(
     edt ?? [], progression ?? [],

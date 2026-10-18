@@ -64,6 +64,13 @@ export function estCaseDeRegle(c: CreneauHoraire, r: RegleAppliquee): boolean {
   return c.type === 'cours' && sansAccents(c.matiere) === sansAccents(r.creneau)
 }
 
+/** La table n'existe pas encore en base (migration 031 pas appliquée). */
+export function tableAbsente(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return error.code === '42P01' || error.code === 'PGRST205'
+    || /does not exist|schema cache/i.test(error.message ?? '')
+}
+
 /**
  * Les règles lues en base, sans jamais faire échouer le cahier journal : une
  * ligne mal formée est écartée, un jour illisible devient « aucun jour ».

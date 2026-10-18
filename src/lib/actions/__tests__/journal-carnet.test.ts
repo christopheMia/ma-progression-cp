@@ -4,11 +4,13 @@ import type { CreneauHoraire, ProgressionMatiere } from '@/types'
 type Reponse = { data: unknown; error: unknown }
 const mockReponses: Record<string, Reponse> = {}
 const mockEcritures: { table: string; geste: string }[] = []
+const mockOrdres: { table: string; colonne: unknown; options: unknown }[] = []
 
 function mockRequete(table: string) {
   const reponse = () => mockReponses[table] ?? { data: null, error: null }
   const q: Record<string, unknown> = {}
-  for (const m of ['select', 'eq', 'order', 'limit']) q[m] = () => q
+  for (const m of ['select', 'eq', 'limit']) q[m] = () => q
+  q.order = (colonne: unknown, options: unknown) => { mockOrdres.push({ table, colonne, options }); return q }
   q.single = async () => reponse()
   q.maybeSingle = async () => reponse()
   q.insert = async () => { mockEcritures.push({ table, geste: 'insert' }); return { error: null } }
@@ -39,6 +41,8 @@ const PROGRESSION: ProgressionMatiere[] = [
 beforeEach(() => {
   for (const k of Object.keys(mockReponses)) delete mockReponses[k]
   mockEcritures.length = 0
+  mockOrdres.length = 0
+  jest.restoreAllMocks()
   mockReponses.semaines = { data: { id: 's1', class_id: 'classe', numero: 3 }, error: null }
   mockReponses.cahier_journal = { data: null, error: null }
   mockReponses.emploi_du_temps = { data: EDT, error: null }
@@ -67,5 +71,32 @@ describe('le cahier journal et le carnet de rangement', () => {
     if (!r.ok) throw new Error(r.message)
     expect(r.valeur.find(j => j.jour === 'jeudi')!.seances[0].deroulement).toBe('Chant : L’Europe')
     expect(mockEcritures).toEqual([{ table: 'cahier_journal', geste: 'upsert' }])
+  })
+
+  it('les règles sont lues de la plus récemment modifiée à la plus ancienne (la première l’emporte)', async () => {
+    mockReponses.regles_rangement = { data: [], error: null }
+    await genererOuChargerJournal('s1')
+    expect(mockOrdres).toContainEqual({ table: 'regles_rangement', colonne: 'updated_at', options: { ascending: false } })
+  })
+
+  it('une vraie panne de lecture du carnet est signalée dans les journaux, sans bloquer le cahier', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mockReponses.regles_rangement = { data: null, error: { code: '57014', message: 'canceling statement due to timeout' } }
+    const r = await genererOuChargerJournal('s1')
+    expect(r).toEqual({ ok: true, valeur: genererCahierJournal(EDT, PROGRESSION, PROGRESSION) })
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0].join(' '))).toContain('57014')
+    expect(String(warn.mock.calls[0].join(' '))).toContain('canceling statement due to timeout')
+  })
+
+  it.each([
+    [{ code: 'PGRST205', message: 'Could not find the table in the schema cache' }],
+    [{ code: '42P01', message: 'x' }],
+    [{ message: 'relation "regles_rangement" does not exist' }],
+  ])('table absente (%j) : aucun avertissement', async (erreur) => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mockReponses.regles_rangement = { data: null, error: erreur }
+    await genererOuChargerJournal('s1')
+    expect(warn).not.toHaveBeenCalled()
   })
 })
