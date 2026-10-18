@@ -30,6 +30,9 @@ export const TARIFS_USD_PAR_MTOK: Record<string, { input: number; output: number
   'claude-opus-4-8': { input: 5, output: 25 },
   'claude-opus-5': { input: 5, output: 25 },
   'claude-haiku-4-5': { input: 1, output: 5 },
+  // Tarif des prompts de moins de 100 000 jetons (0,50 / 2,50 au-delà) :
+  // « avec mes mots » envoie quelques centaines de jetons.
+  'claude-haiku-5-5': { input: 0.1, output: 0.5 },
 }
 
 /** Multiplicateurs de cache appliques au tarif d entree du modele. */

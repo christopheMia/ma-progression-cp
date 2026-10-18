@@ -3,6 +3,7 @@ import {
   MODELE_CHAT,
   MODELE_COURT,
   MODELE_IMPORT,
+  MODELE_REGLE,
   REFLEXION_ETEINTE,
 } from '../anthropic'
 import { TARIFS_USD_PAR_MTOK } from '../cout'
@@ -33,6 +34,7 @@ describe('modèles', () => {
     ['import', MODELE_IMPORT],
     ['chat', MODELE_CHAT],
     ['court', MODELE_COURT],
+    ['regle', MODELE_REGLE],
   ])('le modèle %s est au catalogue de tarifs', (_role, modele) => {
     expect(TARIFS_USD_PAR_MTOK[modele]).toBeDefined()
   })

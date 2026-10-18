@@ -1,3 +1,5 @@
+import type { CaseDisponible } from '@/lib/regles-rangement'
+
 const REGLE_EXHAUSTIVITE = `Procède en deux temps, sans rien oublier :
 1) Recense d'ABORD la liste complète des contenus du document (aucun ne doit manquer).
 2) Répartis ENSUITE ces contenus, semaine par semaine, dans l'ordre de l'année.
@@ -334,4 +336,34 @@ Règles pour "programmation" :
 - "nom" reprend le domaine exact et "items" chaque apprentissage de la case, sans répartition inventée par semaine.
 
 Réponds UNIQUEMENT via le format structuré imposé.`
+}
+
+/** « Avec mes mots » : une phrase de l'enseignante devient une règle de rangement. */
+export const SYSTEM_REGLE = `Tu aides une enseignante de CP à ranger son cahier journal.
+Elle te dit, avec ses mots, dans quelle case de son emploi du temps elle fait un type de séance.
+Tu rends une seule règle : le type de séance, la case, et le jour s'il est dit.
+
+- type : le type de séance dont elle parle, au singulier, avec une majuscule (« la fluence » donne « Fluence »). Si un type concerné t'est donné, reprends-le tel quel.
+- creneau : la case qu'elle nomme. Écris-la EXACTEMENT comme dans la liste de ses cases.
+- jour : le jour qu'elle dit (lundi à vendredi), sinon vide.
+- statut « regle » : la case qu'elle nomme est dans la liste, et existe ce jour-là s'il est dit.
+- statut « introuvable » : la case qu'elle nomme n'est pas dans la liste, ou pas ce jour-là. Mets dans creneau ce qu'elle a dit, et dans plus_proche le nom exact de la case de la liste qui ressemble le plus à ce qu'elle veut (vide si aucune).
+- statut « incompris » : sa phrase ne dit pas où ranger quelque chose.
+N'invente jamais une case qui n'est pas dans la liste.`
+
+export function userRegle(opts: { phrase: string; type?: string; cases: CaseDisponible[] }): string {
+  const jours = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
+  const lignes = jours.flatMap(j => {
+    const noms = opts.cases.filter(k => k.jours.includes(j)).map(k => k.nom)
+    return noms.length ? [`${j} : ${noms.join(', ')}`] : []
+  })
+  return [
+    'Ses cases, jour par jour :',
+    ...lignes,
+    '',
+    opts.type ? `Type concerné : ${opts.type}` : 'Type concerné : à lire dans sa phrase',
+    '',
+    'Sa phrase :',
+    opts.phrase,
+  ].join('\n')
 }

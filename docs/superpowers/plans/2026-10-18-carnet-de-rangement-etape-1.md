@@ -1444,7 +1444,7 @@ git commit -m "Carnet de rangement : actions serveur (cases, enregistrer, suppri
 - Create: `src/lib/ia/schema-regle.ts`
 - Test: `src/lib/ia/__tests__/schema-regle.test.ts`, et un cas ajouté au `test.each` de `src/lib/ia/__tests__/anthropic.test.ts` (AJOUT d'une ligne au tableau : aucun test existant n'est modifié dans son attente)
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 Dans `src/lib/ia/__tests__/anthropic.test.ts`, ajouter `MODELE_REGLE` à l'import et la ligne `['regle', MODELE_REGLE],` au tableau du `test.each` « le modèle %s est au catalogue de tarifs ».
 
@@ -1507,12 +1507,12 @@ describe('le schéma et les consignes', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/ia/__tests__/schema-regle.test.ts src/lib/ia/__tests__/anthropic.test.ts`
 Expected: FAIL (modules et exports absents).
 
-- [ ] **Step 3: Écrire le code**
+- [x] **Step 3: Écrire le code**
 
 `src/lib/ia/anthropic.ts`, après `MODELE_COURT` :
 
@@ -1627,12 +1627,12 @@ export function userRegle(opts: { phrase: string; type?: string; cases: CaseDisp
 }
 ```
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/lib/ia/__tests__`
 Expected: PASS, dont `cout.test.ts` et `prompts.test.ts` inchangés.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/ia/anthropic.ts src/lib/ia/cout.ts src/lib/ia/prompts.ts src/lib/ia/schema-regle.ts src/lib/ia/__tests__/schema-regle.test.ts src/lib/ia/__tests__/anthropic.test.ts

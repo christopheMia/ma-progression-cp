@@ -22,6 +22,13 @@ export const MODELE_CHAT = 'claude-sonnet-4-6'
 // partir d'un contexte déjà mâché ; payer un Sonnet pour ça n'achète rien.
 export const MODELE_COURT = 'claude-haiku-4-5'
 
+// « Avec mes mots » (carnet de rangement, 18/10/2026) : comprendre une phrase
+// courte et rendre une règle. Haiku 5.5 (vérifié le 18/10/2026 : 0,10 $ /
+// 0,50 $ le million de jetons, dix fois moins que Haiku 4.5). Sa réflexion est
+// active par défaut : la route la règle sur l'effort `low` et laisse de la
+// marge dans `max_tokens`, qui la compte.
+export const MODELE_REGLE = 'claude-haiku-5-5'
+
 /**
  * Réflexion étendue explicitement éteinte sur les routes d'import.
  *
