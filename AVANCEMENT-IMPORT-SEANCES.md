@@ -20,7 +20,7 @@ Branche `seances-taches-5-12`, **pas fusionnée, pas en ligne**. **Migration 031
 
 **Ce qui attend Christophe (rien fait sans son accord)** :
 1. ~~Appliquer la migration 031~~ FAIT le 18/10 au soir (voir plus haut).
-2. Essai réel sur la classe « Bac a sable » (jamais celle de Cécile) : ajouter « le chant c'est en musique le jeudi », vérifier la règle, régénérer une semaine qui a du chant, relever le coût de l'appel dans la jauge IA.
+2. **PROCHAINE ACTION (arrêt du 18/10 au soir, Christophe passe sur l'extension VS Code)** : essai réel PAS ENCORE FAIT. L'appli tourne déjà en local sur http://localhost:3100 (serveur lancé depuis ce dossier, donc sur cette branche) ; Christophe se connecte lui-même au compte de test `christophe.mialon+test@gmail.com` (mot de passe dans son gestionnaire, Claude ne le tape jamais). Puis essai sur la classe « Bac a sable » (jamais celle de Cécile) : ajouter « le chant c'est en musique le jeudi », vérifier la règle, régénérer une semaine qui a du chant, relever le coût de l'appel dans la jauge IA.
 3. Mise en ligne de la branche (avec le reste de `seances-taches-5-12`), puis régénérer avec Cécile ses semaines déjà ouvertes.
 
 **Suite** : plan de l'étape 2 (« Toujours ? » + « Autrement » depuis le cahier journal). Restent aussi les tâches 10 à 12 du chantier séances (voir « État des tâches »).
