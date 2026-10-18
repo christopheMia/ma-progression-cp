@@ -710,3 +710,20 @@ La fixture du lundi réel de Christophe porte des items datés SANS colonne
 aussi, et **les attentes du français vont changer**. Ces nouvelles valeurs sont à
 faire valider par Christophe, jamais à aligner en silence. Si un créneau de maths
 ou d'EMC bouge, c'est une régression, pas une attente à mettre à jour.
+
+## CADRAGE DE L'ÉCRAN D'ACCOMPAGNEMENT IA (18/10, en cours, skill brainstorming)
+
+Réponses de Christophe, au fil de l'eau :
+1. Le « tableau » construit avec l'enseignante = des **règles par type** (« Vocabulaire va dans Étude de la langue »), une quinzaine de lignes, construites une fois, réutilisées à chaque import ; l'IA ne redemande que pour un type jamais vu. Pas une case par séance.
+2. Ces règles valent pour **toutes les matières** (français, maths, EMC, arts ; ex. « Chant » vers « Musique » chez Cécile).
+Constat : aujourd'hui l'IA d'import ne voit PAS l'emploi du temps.
+3. Elle voit et corrige ces règles à **trois endroits** : à l'import (types nouveaux seulement), dans Paramètres (« Mon rangement »), et depuis le cahier journal (« toujours mettre la Fluence dans Ateliers ? »).
+4. Document sans jour : **la règle porte aussi un jour préféré** (« Fluence : Ateliers de français, le jeudi ») ; sans jour préféré, première case de ce type dans la semaine. L'IA propose les jours en lisant l'emploi du temps.
+5. Le tableau appartient **à chaque classe** (les noms de cases diffèrent d'une classe à l'autre ; plus tard, « reprendre le tableau d'une autre classe »).
+6. Dialogue : l'IA **propose le tableau rempli, puis pose 1 à 3 questions** à choix sur le même écran pour ce dont elle doute ; une seule validation (Valider / Plus tard).
+7. Approche **A** retenue : les règles s'appliquent quand le cahier journal se fabrique (corriger une règle suffit, pas de réimport, les données de Cécile marchent telles quelles). Ordre de consultation : règles, puis rangement automatique actuel, puis « à placer ».
+Découpage proposé (en attente de validation) : 1 table de règles + Paramètres « Mon rangement » (sans IA) ; 2 « toujours ? » depuis le cahier journal (sans IA) ; 3 l'IA construit le tableau à l'import (Sonnet, une fois) ; 4 l'IA donne un type aux lignes sans type (Haiku, un appel par document), remplace l'option B.
+8. Christophe (18/10) : « que ce soit à ce niveau ou à l'import quand on propose à l'utilisateur, s'il ne valide pas il faut l'aider à construire sa solution ». Donc chaque proposition = Oui / **Autrement** (l'appli l'accompagne pour construire SA règle) / Plus tard. Un refus n'est jamais un cul-de-sac. (Ordre des étapes 1-2-3-4 pas encore confirmé.)
+9. « Autrement » = **elle le dit avec ses mots** (« chez moi la fluence c'est le vendredi en APC ») ; l'IA légère en fait une règle et la montre (« J'ai compris : Fluence -> APC, le vendredi » ; C'est ça / Non, je réexplique). Si la case n'existe pas, l'IA le dit et propose la plus proche. (Christophe n'a retenu que cette option, pas la liste de cases ni « ça dépend » ni créer la case.)
+10. Plan validé par Christophe (« ok, le plan me va ») : carnet de rangement d'abord (étape 1), puis « Toujours ? » + « Autrement » avec ses mots depuis le cahier journal (2), l'IA propose le carnet à l'import (3), lignes sans type (4). Écrans présentés le 18/10 (Paramètres « Mon rangement », bandeau « Toujours ? » du cahier journal, bloc « Ton rangement » à l'import), validation en attente.
+11. Les trois écrans validés par Christophe (maquettes du 18/10) : Paramètres « Mon rangement » (type, case, jour, Modifier, « Ajouter une règle avec mes mots ») ; bandeau du cahier journal (Oui, toujours / Autrement / Juste cette fois, puis « J'ai compris : ... » C'est ça / Je réexplique) ; bloc d'import « Ton rangement » (types nouveaux, Oui / Autrement, une question à choix, Valider mon rangement / Plus tard).
