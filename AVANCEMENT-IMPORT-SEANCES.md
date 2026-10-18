@@ -48,7 +48,7 @@ Branche `seances-taches-5-12`, toujours **PAS fusionnée, PAS en ligne**. Christ
 
 **Attention mise en ligne** : les cahiers journaux DÉJÀ générés sont figés en base (`cahier_journal`). Il faudra régénérer ceux de Cécile (bouton Régénérer) pour qu'elle voie les nouvelles règles, avec son accord, car régénérer écrase ses retouches.
 
-**Reste** : traiter la relecture, commit, tâches 10 et 11, relecture finale de la branche, mise en ligne avec l'accord de Christophe. Puis cadrer l'écran d'accompagnement IA (skill brainstorming).
+**Reste** (mis à jour le 18/10 en fin d'après-midi) : relecture traitée et commitée (`378ea1c`). Écran d'accompagnement IA CADRÉ et VALIDÉ (« carnet de rangement », section CADRAGE en fin de fichier, conception `6007dd9`). Plan de l'étape 1 en cours d'écriture dans une session à part (« plan-carnet-etape1 »). Toujours à faire : tâches 10 et 11, relecture finale de la branche, mise en ligne avec l'accord de Christophe, puis régénérer avec Cécile ses semaines déjà ouvertes.
 
 ## POINT DE REPRISE DU 17/10, ~22 h (pause demandée par Christophe, fatigué)
 
