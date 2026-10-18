@@ -108,6 +108,14 @@ export type CreneauNotions = {
 export type NotionPlacee = { progression: number; rang: number }
 
 /**
+ * Pour une notion qui relève d'une règle du carnet de rangement : les rangs,
+ * dans les créneaux du jour, des cases où la règle la met (ensemble vide : pas
+ * ce jour-là). `undefined` : pas de règle, la notion se place par son nom.
+ * Calculé par `cahier-journal.ts`, qui connaît le jour et les règles.
+ */
+export type CasesDeRegle = (progression: number, rang: number) => Set<number> | undefined
+
+/**
  * Les notions de chaque créneau d'UN jour, dans l'ordre des créneaux.
  *
  * `notions[k]` est la liste des notions de la progression de rang k (vide pour
@@ -131,18 +139,27 @@ export type NotionPlacee = { progression: number; rang: number }
  * semaines, le créneau montre les siennes. `nouvelles[k][r]` dit si la notion
  * n'était pas dans la semaine précédente ; sans cette information, toutes
  * sont nouvelles.
+ *
+ * LE CARNET DE RANGEMENT (18/10/2026) passe en premier : une notion pour
+ * laquelle `casesDeRegle` répond va dans ces cases et nulle part ailleurs,
+ * même dans un créneau fermé aux notions ; elle ne se place ni par son nom, ni
+ * dans le créneau général. Sans `casesDeRegle`, rien ne change.
  */
 export function placerNotionsDuJour(
   creneaux: CreneauNotions[],
   notions: string[][],
   nouvelles: boolean[][] = notions.map(liste => liste.map(() => true)),
+  casesDeRegle?: CasesDeRegle,
 ): { parCreneau: NotionPlacee[][]; continuees: NotionPlacee[] } {
+  // Le carnet d'abord : les cases de la règle de chaque notion, s'il y en a une.
+  const regle = notions.map((liste, k) => liste.map((_, r) => casesDeRegle?.(k, r)))
   // Les notions d'une autre matière qu'un créneau partagé a écartées parce
   // qu'elles continuent (le poème déjà montré la semaine où il a commencé) :
   // l'appelant ne les met pas à placer chaque semaine.
   const continuees: NotionPlacee[] = []
-  const nommePour = creneaux.map(cr => {
-    const brut = notions.map(liste => liste.map(n => cr.ouvert && creneauNommePour(cr.nom, n)))
+  const parLeNom = (cr: CreneauNotions): boolean[][] => {
+    // Une notion du carnet ne se place jamais par son nom.
+    const brut = notions.map((liste, k) => liste.map((n, r) => !regle[k][r] && cr.ouvert && creneauNommePour(cr.nom, n)))
     if (!estCreneauPartage(cr.nom)) return brut
     // Sans progression (pas de ligne d'EMC cette semaine-là), tout ce qu'il
     // nomme est « d'une autre matière » : le poème n'entre que s'il est nouveau.
@@ -153,16 +170,19 @@ export function placerNotionsDuJour(
     }))
     return brut.map((liste, k) => liste.map((oui, r) =>
       oui && (autre(k) ? nouvelles[k][r] : !decouverte)))
-  })
+  }
+  const nommePour = creneaux.map((cr, i) => parLeNom(cr).map((liste, k) =>
+    liste.map((oui, r) => (regle[k][r] ? regle[k][r]!.has(i) : oui))))
   const aSonCreneau = notions.map((liste, k) =>
     liste.map((_, r) => nommePour.some(parProgression => parProgression[k][r])))
 
   const parCreneau = creneaux.map((cr, i) => {
-    if (!cr.ouvert) return []
     const ordre = cr.progression === null
       ? notions.map((_, k) => k)
       : [cr.progression, ...notions.map((_, k) => k).filter(k => k !== cr.progression)]
     return ordre.flatMap(k => notions[k].flatMap((_, rang): NotionPlacee[] => {
+      if (regle[k][rang]) return nommePour[i][k][rang] ? [{ progression: k, rang }] : []
+      if (!cr.ouvert) return []
       const general = cr.general && cr.progression === k && !aSonCreneau[k][rang]
       return nommePour[i][k][rang] || general ? [{ progression: k, rang }] : []
     }))

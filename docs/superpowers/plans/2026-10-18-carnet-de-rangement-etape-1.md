@@ -421,7 +421,7 @@ git commit -m "Carnet de rangement : quelle regle pour quelle seance ou notion"
 - Modify: `src/lib/notions-creneaux.ts` (`placerNotionsDuJour` et un type exporté)
 - Test: `src/lib/__tests__/notions-carnet.test.ts`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```ts
 import { placerNotionsDuJour, type CreneauNotions } from '../notions-creneaux'
@@ -473,12 +473,12 @@ describe('placerNotionsDuJour et le carnet', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/__tests__/notions-carnet.test.ts`
 Expected: le premier test PASSE (comportement d'aujourd'hui), les quatre autres ÉCHOUENT (le quatrième argument est ignoré : la notion va encore à son nom ou au général).
 
-- [ ] **Step 3: Écrire le code**
+- [x] **Step 3: Écrire le code**
 
 Dans `src/lib/notions-creneaux.ts`, ajouter avant `placerNotionsDuJour` :
 
@@ -543,12 +543,12 @@ export function placerNotionsDuJour(
 
 Pourquoi c'est identique sans carnet : `regle` ne contient que des `undefined`, donc `brut` est le même, `nommePour` aussi, et un créneau fermé rend toujours une liste vide.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/lib/__tests__/notions-carnet.test.ts src/lib/__tests__/cahier-journal-notions.test.ts`
 Expected: PASS, aucun test existant modifié.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/notions-creneaux.ts src/lib/__tests__/notions-carnet.test.ts
