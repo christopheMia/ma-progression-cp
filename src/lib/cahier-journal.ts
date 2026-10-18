@@ -7,6 +7,9 @@ import { lirePrefixeJour, lireSeances } from '@/lib/progression-seances'
 import { repartirSeances } from '@/lib/familles-seances'
 import { placerNotionsDuJour, type NotionPlacee } from '@/lib/notions-creneaux'
 import { sansAccents } from '@/data/trame-edt'
+import {
+  indexerRegles, regleDeNotion, regleDeSeance, estCaseDeRegle, type RegleAppliquee,
+} from '@/lib/regles-rangement'
 
 const JOURS_ORDRE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 
@@ -191,6 +194,29 @@ function itemsAnciens(p: ProgressionMatiere, indexJour: number, nbJours: number)
 }
 
 /**
+ * Une case qui reçoit, en plus de son contenu, des lignes venues d'ailleurs
+ * (le carnet de rangement). Un contenu qui n'est que le nom de la case
+ * s'efface devant elles ; sinon elles s'écrivent dessous, une par ligne.
+ */
+function avecLignes(contenu: string, ajout: string | undefined, nom: string): string {
+  if (!ajout) return contenu
+  return contenu === nom || contenu === '' ? ajout : `${contenu}\n${ajout}`
+}
+
+/**
+ * Le jour (rang dans la semaine d'école) où le carnet range une séance SANS
+ * jour : le jour préféré de la règle, sinon le premier jour qui a sa case.
+ * -1 : aucun.
+ */
+function jourDuCarnet(
+  regle: RegleAppliquee,
+  jours: { jour: string; creneaux: CreneauHoraire[] }[],
+): number {
+  if (regle.jour) return jours.findIndex(j => j.jour === regle.jour)
+  return jours.findIndex(j => j.creneaux.some(c => estCaseDeRegle(c, regle)))
+}
+
+/**
  * Les NOTIONS de toute la semaine, placées par le sens (décision de Christophe
  * du 17/10/2026, voir `src/lib/notions-creneaux.ts`) : chaque notion dans les
  * créneaux qui portent son nom, le reste au créneau général de sa matière, les
@@ -210,10 +236,11 @@ function itemsAnciens(p: ProgressionMatiere, indexJour: number, nbJours: number)
  * porte sur sa dernière notion à placer : rien n'est perdu.
  */
 function notionsDeLaSemaine(
-  jours: { creneaux: CreneauHoraire[]; progressionDe: (ProgressionMatiere | null)[] }[],
+  jours: { jour: string; creneaux: CreneauHoraire[]; progressionDe: (ProgressionMatiere | null)[] }[],
   progression: ProgressionMatiere[],
   horsNotions: (p: ProgressionMatiere) => boolean,
   precedente: ProgressionMatiere[] | undefined,
+  regles: Map<string, RegleAppliquee>,
 ): { textes: Map<number, string>[]; sansCreneau: SeancePlacer[] } {
   const notions = progression.map(p => (horsNotions(p) ? [] : p.items.filter(n => typeof n === 'string' && n.trim() !== '')))
   // Une notion déjà là la semaine précédente, à l'identique, continue (un poème
@@ -231,7 +258,18 @@ function notionsDeLaSemaine(
   const montrees = notions.map(liste => liste.map(() => false))
   const rangDe = (p: ProgressionMatiere | null) => (p ? progression.indexOf(p) : null)
 
-  const placements = jours.map(({ creneaux, progressionDe }) => {
+  // Le carnet de rangement passe en premier (conception du 18/10/2026) : une
+  // notion dont le type a une règle va dans la case de la règle, chaque jour
+  // où elle existe, ou seulement le jour préféré.
+  const regleDe = notions.map(liste => liste.map(n => regleDeNotion(n, regles)))
+
+  const placements = jours.map(({ jour, creneaux, progressionDe }) => {
+    const casesDeRegle = (k: number, rang: number) => {
+      const r = regleDe[k][rang]
+      if (!r) return undefined
+      if (r.jour && r.jour !== jour) return new Set<number>()
+      return new Set(creneaux.flatMap((c, i) => (estCaseDeRegle(c, r) ? [i] : [])))
+    }
     const { parCreneau, continuees } = placerNotionsDuJour(creneaux.map((c, i) => {
       const p = progressionDe[i]
       return {
@@ -240,7 +278,7 @@ function notionsDeLaSemaine(
         general: p ? estCreneauGenerique(c.matiere, p) : false,
         ouvert: c.type !== 'routine' && !(p && horsNotions(p)),
       }
-    }), notions, nouvelles)
+    }), notions, nouvelles, casesDeRegle)
     for (const liste of parCreneau) {
       for (const n of liste) {
         placees[n.progression][n.rang] = true
@@ -325,11 +363,17 @@ function notionsDeLaSemaine(
  * sert seulement à reconnaître une notion qui continue (même poème), pour le
  * créneau partagé « EMC / Poésie » (`placerNotionsDuJour`). Sans elle, toute
  * notion est nouvelle.
+ *
+ * `regles` est le carnet de rangement de la classe (conception du 18/10/2026),
+ * appliqué EN PREMIER : une séance ou une notion dont le type a une règle va
+ * dans la case de la règle, ou à placer si elle n'y trouve pas de place ; le
+ * reste suit le rangement ci-dessus. Carnet vide : cahier journal identique.
  */
 export function genererCahierJournal(
   emploiDuTemps: CreneauHoraire[],
   progression: ProgressionMatiere[],
   precedente?: ProgressionMatiere[],
+  regles: RegleAppliquee[] = [],
 ): JourJournal[] {
   const parJour = new Map<string, CreneauHoraire[]>()
   for (const c of emploiDuTemps) {
@@ -357,22 +401,46 @@ export function genererCahierJournal(
     const creneaux = [...(parJour.get(jour) ?? [])].sort((a, b) => a.ordre - b.ordre)
     const progressionDe = creneaux.map(c =>
       c.type === 'routine' ? null : progressionPourCreneau(c, progression))
-    return { creneaux, progressionDe }
+    return { jour, creneaux, progressionDe }
   })
+
+  // Le carnet de rangement, et les séances datées qu'il range, avec le jour
+  // où il les range. Un « Jour 5 » sur une semaine de quatre jours garde le
+  // rangement d'aujourd'hui : il part à placer avec sa mention d'origine.
+  const index = indexerRegles(regles)
+  const duCarnet = new Map<SeanceProgression, { regle: RegleAppliquee; jour: number }>()
+  for (const p of datees) {
+    for (const s of lues.get(p) ?? []) {
+      const regle = regleDeSeance(s, index)
+      if (!regle || (s.jour !== null && s.jour > joursEcole.length)) continue
+      duCarnet.set(s, { regle, jour: s.jour !== null ? s.jour - 1 : jourDuCarnet(regle, jours) })
+    }
+  }
+
   const notions = notionsDeLaSemaine(
-    jours, progression, p => datees.includes(p) || anciennes.includes(p), precedente,
+    jours, progression, p => datees.includes(p) || anciennes.includes(p), precedente, index,
   )
 
   return joursEcole.map((jour, indexJour): JourJournal => {
     const { creneaux, progressionDe } = jours[indexJour]
     const aPlacer: SeancePlacer[] = []
 
+    // Le carnet d'abord : chaque séance qu'il range prend la première case
+    // libre qui porte le nom de sa règle ; sinon elle part à placer.
+    const parRegle = new Map<number, string>()
+    for (const [s, { regle, jour: rang }] of duCarnet) {
+      if (rang === -1 ? indexJour !== 0 : rang !== indexJour) continue
+      const i = rang === -1 ? -1 : creneaux.findIndex((c, j) => !parRegle.has(j) && estCaseDeRegle(c, regle))
+      if (i >= 0) parRegle.set(i, s.libelle)
+      else aPlacer.push({ libelle: s.libelle, origine: s.jour === null ? 'semaine' : null })
+    }
+
     // Par progression datée : chaque séance du jour va dans le créneau qui
     // porte son nom, ou nulle part. Ce qui reste part à placer.
     const placees = new Map<number, SeanceProgression>()
     for (const p of datees) {
-      const indices = creneaux.flatMap((_, i) => (progressionDe[i] === p ? [i] : []))
-      const duJour = (lues.get(p) ?? []).filter(s => s.jour === indexJour + 1)
+      const indices = creneaux.flatMap((_, i) => (progressionDe[i] === p && !parRegle.has(i) ? [i] : []))
+      const duJour = (lues.get(p) ?? []).filter(s => s.jour === indexJour + 1 && !duCarnet.has(s))
       const { parCreneau, restantes } = repartirSeances(
         indices.map(i => creneaux[i].matiere), duJour, nom => estCreneauGenerique(nom, p),
       )
@@ -392,17 +460,24 @@ export function genererCahierJournal(
       if (c.type === 'routine') return { ...base, deroulement: '' }
 
       const p = progressionDe[i]
+      const notionsIci = notions.textes[indexJour].get(i)
+      let contenu: string
       // Sans progression, il peut encore porter le nom d'une notion (17/10).
-      if (!p) return { ...base, deroulement: notions.textes[indexJour].get(i) ?? c.matiere }
-      if (anciennes.includes(p)) {
-        return { ...base, deroulement: itemsAnciens(p, indexJour, joursEcole.length) || c.matiere }
-      }
-      if (!datees.includes(p)) {
+      if (!p) contenu = notionsIci ?? c.matiere
+      else if (anciennes.includes(p)) {
+        // Une case de l'ancien remplissage ne reçoit des notions que du carnet.
+        contenu = avecLignes(itemsAnciens(p, indexJour, joursEcole.length) || c.matiere, notionsIci, c.matiere)
+      } else if (!datees.includes(p)) {
         // Un créneau sans notion (un rituel) affiche son nom.
-        return { ...base, deroulement: notions.textes[indexJour].get(i) ?? c.matiere }
+        contenu = notionsIci ?? c.matiere
+      } else {
+        // Un créneau sans séance affiche son nom, jamais une case vide (31/07).
+        contenu = avecLignes(placees.get(i)?.libelle ?? c.matiere, notionsIci, c.matiere)
       }
-      // Un créneau sans séance affiche son nom, jamais une case vide (31/07).
-      return { ...base, deroulement: placees.get(i)?.libelle ?? c.matiere }
+      // La séance que le carnet a posée ici passe devant le reste.
+      const duCarnetIci = parRegle.get(i)
+      if (!duCarnetIci) return { ...base, deroulement: contenu }
+      return { ...base, deroulement: contenu === c.matiere ? duCarnetIci : `${duCarnetIci}\n${contenu}` }
     })
 
     // Les séances hors des jours d'école : rien n'est empilé, rien n'est perdu.
@@ -415,7 +490,7 @@ export function genererCahierJournal(
         }
         // Une séance sans jour dans un document qui date les autres paraît une
         // seule fois, le premier jour, et surtout pas répétée sur chaque jour.
-        if (s.jour === null && indexJour === 0) {
+        if (s.jour === null && indexJour === 0 && !duCarnet.has(s)) {
           aPlacer.push({ libelle: s.libelle, origine: 'semaine' })
         }
       }

@@ -567,7 +567,7 @@ git commit -m "Carnet de rangement : les notions acceptent les cases du carnet"
 
 Rappel de la conception (« Comment le cahier journal s'en sert ») : séance datée, première case libre de ce nom ce jour-là (le jour du document l'emporte) ; séance sans jour, jour préféré sinon premier jour qui a la case, une fois ; notion, la case chaque jour où elle existe, ou seulement le jour préféré ; case absente : à placer. Pas de règle : rangement d'aujourd'hui. Les lignes anciennes (« Jour N » sans séances, option B) ne relèvent pas du carnet à l'étape 1.
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```ts
 import { genererCahierJournal } from '../cahier-journal'
@@ -679,14 +679,14 @@ describe('les séances', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/lib/__tests__/cahier-journal-carnet.test.ts`
 Expected: FAIL sur les tests « notions » et « séances » (le quatrième argument est ignoré). Les deux tests « carnet vide » passent déjà : c'est voulu, ils gardent la non-régression.
 
 Si le test « sans carnet, la fluence et le chant partent à placer » ÉCHOUE, s'arrêter : le constat de départ n'est pas celui de la conception, le signaler avant d'écrire du code.
 
-- [ ] **Step 3: Écrire le code**
+- [x] **Step 3: Écrire le code**
 
 Dans `src/lib/cahier-journal.ts` :
 
@@ -845,7 +845,7 @@ Dans le corps :
 
 Pourquoi c'est identique sans carnet : `index` est vide, donc `duCarnet` et `parRegle` aussi ; `notionsIci` n'existe jamais pour une case fermée aux notions (la tâche 3 le garantit) ; chaque branche rend exactement l'ancienne valeur.
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/lib/__tests__/cahier-journal-carnet.test.ts`
 Expected: PASS.
@@ -854,7 +854,7 @@ Expected: PASS pour les sept fichiers `cahier-journal*`, aucun test existant mod
 Run: `npx tsc --noEmit`
 Expected: aucune sortie.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/cahier-journal.ts src/lib/__tests__/cahier-journal-carnet.test.ts
