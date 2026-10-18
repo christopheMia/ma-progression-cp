@@ -2107,7 +2107,7 @@ git commit -m "Carnet de rangement : composant Avec mes mots"
 - Create: `src/components/parametres/MonRangementEditor.tsx`
 - Test: `src/components/parametres/__tests__/MonRangementEditor.test.tsx`
 
-- [ ] **Step 1: Écrire les tests qui échouent**
+- [x] **Step 1: Écrire les tests qui échouent**
 
 ```tsx
 /**
@@ -2179,12 +2179,12 @@ it('carnet pas encore installé : un message, rien d’autre', () => {
 })
 ```
 
-- [ ] **Step 2: Vérifier qu'ils échouent**
+- [x] **Step 2: Vérifier qu'ils échouent**
 
 Run: `npx jest src/components/parametres/__tests__/MonRangementEditor.test.tsx`
 Expected: FAIL, module introuvable.
 
-- [ ] **Step 3: Écrire le composant**
+- [x] **Step 3: Écrire le composant**
 
 ```tsx
 'use client'
@@ -2343,12 +2343,12 @@ function EditeurRegle({ regle, cases, onEnregistree, onSupprimee }: {
 
 `estRegleSansCase(g, cases)` reçoit un groupe : il a bien `creneau` et `jour`, c'est le type attendu (`Pick<RegleRangement, 'creneau' | 'jour'>`).
 
-- [ ] **Step 4: Vérifier**
+- [x] **Step 4: Vérifier**
 
 Run: `npx jest src/components/parametres`
 Expected: PASS, dont les tests existants du dossier inchangés.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/parametres/MonRangementEditor.tsx src/components/parametres/__tests__/MonRangementEditor.test.tsx
