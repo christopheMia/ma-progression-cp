@@ -30,7 +30,27 @@
 
 **DEMANDE DE CHRISTOPHE (17/10, ~18 h 25), CODÉE le soir même, PAS en ligne** (`SectionRepliable` et `SommaireParametres` dans `src/components/parametres/`, boutons Réduire/Ouvrir, Tout réduire/Tout ouvrir, état mémorisé dans le navigateur, contenu gardé monté ; 909 tests verts) : dans Paramètres, pouvoir **réduire chaque section avec un bouton** (précisé : un vrai bouton visible, pas seulement un clic sur le titre), et un **sommaire cliquable** en haut pour aller directement à la bonne section (« il faut scroller pour arriver au bon endroit, c'est long »). La page (`src/app/(app)/parametres/page.tsx`) a déjà un `id` et `scroll-mt-24` sur chaque section. Piège connu : une ancre `#section` se perd sur une page qui a un `loading.tsx` (fiche mémoire `cp-ancres-loading-tsx`), et cette page en a un.
 
-## POINT DE REPRISE DU 17/10, ~22 h : LIRE EN PREMIER (pause demandée par Christophe, fatigué)
+## POINT DE REPRISE DU 18/10, après-midi : LIRE EN PREMIER
+
+Branche `seances-taches-5-12`, toujours **PAS fusionnée, PAS en ligne**. Christophe a dit « oui, on corrige la branche avec les réponses de Cécile et l'option B ». Fait, relu par Opus (aucune régression sur les vraies données de Cécile), ses remarques corrigées :
+
+| Fait | Preuve |
+|---|---|
+| Simulation sur les VRAIES cases et notions de Cécile (lues en base, lecture seule ; ses cases ne sont reliées à AUCUNE méthode) | semaines 1, 2, 12, 21 : avant correctif, « Calcul : additions » allait dans Calcul mental, et « EMC / Poésie » montrait poésie ET EMC chaque lundi |
+| Noms des cases : correspondance EXACTE (« Calcul mental » n'est plus « Calcul », « Flash maths » n'est plus « Maths », « Lecture-écriture » n'est plus « Écriture ») | `creneauNommePour` de `src/lib/notions-creneaux.ts` ; simulation : addition dans Mathématiques |
+| « EMC / Poésie » : la poésie seule la semaine d'un NOUVEAU poème, l'EMC les autres lundis ; le poème qui continue ne part pas à placer | `placerNotionsDuJour` (créneau partagé = nom avec « / »), `genererCahierJournal(edt, progression, precedente)` ; `actions/journal.ts` charge la semaine d'avant |
+| Option B : le français qui ne date rien garde l'ancien remplissage | `estFrancaisSansJours` dans `cahier-journal.ts` ; les 2 tests du repli rendus à leur intention |
+| Export Word : une ligne par notion | `paragraphesDe` dans `export-word.ts` |
+| Relecture Opus traitée | GRAVE : une EMC qui continue disparaissait sans être signalée chez une enseignante sans case « EMC » à part, maintenant à placer. Aussi : case partagée sans ligne d'EMC, semaine d'avant facultative (n'empêche plus le cahier), apostrophes typographiques, pages perdues, option B limitée au vrai « francais », case « Histoire, géographie » de la trame par défaut (avant sans virgule, elle ne recevait plus ses notions ; seules les nouvelles classes sont concernées) |
+| Tests | **1071 sur 1071**, `tsc` muet ; tâche 7 (lundi réel) revue avec les réponses de Cécile, plus aucun échec voulu ; un test sur son vrai emploi du temps sans méthode, deux semaines |
+
+**Non traité, à savoir** : « Chant » et « Écoute musicale » (5 semaines sur 36) partent à placer, la case « Musique » du jeudi ne porte pas leur nom. Arts : aucune notion « découverte d'une œuvre » dans les données de Cécile (sa case « je découvre une œuvre » est un rituel caché), rien à faire.
+
+**Attention mise en ligne** : les cahiers journaux DÉJÀ générés sont figés en base (`cahier_journal`). Il faudra régénérer ceux de Cécile (bouton Régénérer) pour qu'elle voie les nouvelles règles, avec son accord, car régénérer écrase ses retouches.
+
+**Reste** : traiter la relecture, commit, tâches 10 et 11, relecture finale de la branche, mise en ligne avec l'accord de Christophe. Puis cadrer l'écran d'accompagnement IA (skill brainstorming).
+
+## POINT DE REPRISE DU 17/10, ~22 h (pause demandée par Christophe, fatigué)
 
 Tout est sur la branche `seances-taches-5-12`, poussée sur GitHub, **PAS fusionnée, PAS en ligne**. Cécile n'a rien de nouveau. En ligne : seulement ce qui l'était à 18 h 46 (fiche de semaine lisible `7b78dfd` est sur `main`, poussée, PAS déployée).
 
@@ -51,6 +71,13 @@ Tout est sur la branche `seances-taches-5-12`, poussée sur GitHub, **PAS fusion
 
 **Questions pour Christophe (en mots simples, une par ligne) :**
 1. Le français sans jours (sommaire d'un manuel) doit-il suivre la même règle, ou garder l'ancien remplissage tant qu'il n'a pas de jours ?
+   - **Idée de Christophe (18/10, matin), pas encore tranchée** : demander à l'enseignante dans quelle catégorie ranger ses séances, puis les placer correctement. Proposition de Claude : à l'import, l'IA propose une catégorie par ligne, l'enseignante valide ou corrige sur un seul écran groupé, avec « Plus tard » pour passer (jamais bloquée) ; en attendant, l'ancien remplissage (option B) s'applique. Rien n'est fait en silence, donc compatible avec la règle « pas de placement par devinette ». **Validé sur le principe par Christophe le 18/10 : « l'IA doit servir à ça pour accompagner l'utilisateur ».** Ordre proposé (à confirmer) : B pour la mise en ligne de la branche, puis l'écran d'accompagnement. Précisé ensuite : l'IA demande comment s'adapter au style de documents de chaque enseignante puis construit en conséquence, rien de figé ; coût en IA accepté. À prévoir : retenir les réponses (par classe ou par méthode) pour ne pas redemander à chaque import, et vérifier l'effet sur la jauge IA. Modèle (demande de Christophe : adapté sans être trop cher) : piste Haiku, un seul appel groupé par document (jamais un par ligne), à départager contre Sonnet sur un essai réel en classe de test ; vérifier les prix et les versions récentes (Haiku 5.5, Sonnet 5.5) au moment de coder, l'appli utilise aujourd'hui Sonnet 5 et Haiku 4.5 (`src/lib/ia/anthropic.ts`). **Précision de Christophe ensuite** : il faut de la réflexion pour aider à construire le bon tableau selon les informations de l'enseignante. Proposition de Claude, en deux temps : (1) construire le tableau avec elle, une fois (à la création de classe ou au premier import d'un manuel), modèle qui réfléchit (Sonnet) ; (2) le rangement répétitif ensuite, sur ce tableau déjà construit, modèle léger (Haiku). Piège connu : la réflexion de Sonnet 5 est activée par défaut, la régler volontairement (fiche mémoire `cp-chantier-modeles-31juillet`). Chantier à cadrer (skill brainstorming) avant d'écrire du code.
+*(18/10 : questions 2 à 5 envoyées à Cécile par mail le 18/10 à 9 h 28.)*
+**RÉPONSES DE CÉCILE (mail du 18/10, 11 h 35), font foi :**
+- Q2, Arts visuels : la case ne reçoit PAS tout. Seule la **production** va dans la case Arts visuels ; la **découverte d'une œuvre** va dans la case « Découvrir une œuvre » (le mardi). Donc une règle par le nom, pas « tout dans la seule case ».
+- Q3 : « Calcul : poser une addition » va dans **Mathématiques**, pas dans Calcul mental. Corriger l'effet de bord n° 4 de la relecture (« Calcul : » ne doit pas viser « Calcul mental »).
+- Q4 : les rituels (flash maths, Chaque jour compte) **gardent seulement leur nom**. Confirme le comportement actuel.
+- Q5 : la case du lundi « EMC / Poésie » montre la **poésie les semaines où on la découvre**, l'**EMC les autres lundis**. Ni « les deux », ni « seulement l'EMC » : dépend de la semaine. Les 2 tests voulus en échec de `cahier-journal-lundi-reel.test.ts` sont à revoir avec cette règle.
 2. Quand une matière n'a qu'une seule case dans la journée (« Arts visuels »), cette case reçoit-elle toutes ses notions ? (avis du relecteur : oui, c'est la correction la plus simple pour une nouvelle enseignante)
 3. « Calcul : poser une addition » : dans « Calcul mental » ou dans « Mathématiques » ?
 4. Les rituels (« flash maths », « Chaque jour compte ») ne reçoivent-ils jamais rien ?

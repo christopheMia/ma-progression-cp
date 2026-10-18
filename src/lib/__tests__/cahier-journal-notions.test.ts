@@ -320,3 +320,196 @@ describe('domaine d’une notion et nom de créneau', () => {
     expect(creneauNommePour('Mathématiques', 'Les nombres jusqu’à 10')).toBe(false)
   })
 })
+
+/**
+ * Les réponses de Cécile du 18/10/2026 (mail « 4 petites questions pour
+ * l'appli »), sur son vrai emploi du temps : ses cases ne sont reliées à
+ * aucune méthode, et « EMC / Poésie » n'existe que le lundi.
+ */
+describe('réponses de Cécile du 18/10', () => {
+  const CALCUL_POSE = 'Calcul : Additions et soustractions avec le matériel de numération'
+
+  it('« poser une addition c’est des mathématiques pas du calcul mental »', () => {
+    expect(creneauNommePour('Calcul mental', CALCUL_POSE)).toBe(false)
+    const [lundi] = genererCahierJournal(
+      [c('lundi', 0, 'Mathématiques'), c('lundi', 1, 'Calcul mental')],
+      [notions('maths', [CALCUL_POSE, CALCUL])],
+    )
+    expect(dans(lundi, 'Mathématiques')).toBe(CALCUL_POSE)
+    expect(dans(lundi, 'Calcul mental')).toBe(CALCUL)
+  })
+
+  it('un mot de plus dans le nom de la case désigne une autre activité', () => {
+    expect(creneauNommePour('Flash maths', 'Maths : les doubles')).toBe(false)
+    expect(creneauNommePour('Lecture-écriture', 'Écriture : les boucles')).toBe(false)
+    expect(creneauNommePour('Espace et géométrie', 'Géométrie : le carré')).toBe(true)
+  })
+
+  it('« Arts plastiques » ne reçoit que la production, pas la poésie ni la musique', () => {
+    const arts = notions('arts', [POESIE, ARTS_PLASTIQUES, "Chant : L'Europe"])
+    const [mardi] = genererCahierJournal([c('mardi', 0, 'Arts plastiques')], [arts])
+    expect(dans(mardi, 'Arts plastiques')).toBe(ARTS_PLASTIQUES)
+  })
+
+  describe('« EMC / Poésie » : la poésie la semaine où on la découvre, l’EMC les autres lundis', () => {
+    const EDT = [c('lundi', 0, 'EMC / Poésie'), c('vendredi', 0, 'EMC')]
+    const IDENTITE = "EMC/EVARS/PHARE : L'identité"
+    const POEME_2 = "Poésie : Poésie sur l'automne : Mois d'automne"
+
+    it('semaine d’un nouveau poème : le poème seul, l’EMC le vendredi', () => {
+      const [lundi, vendredi] = genererCahierJournal(EDT, [
+        notions('emc', [HISTOIRE, IDENTITE]), notions('arts', [POEME_2, ARTS_PLASTIQUES]),
+      ], [notions('arts', [POESIE])])
+      expect(dans(lundi, 'EMC / Poésie')).toBe(POEME_2)
+      expect(dans(vendredi, 'EMC')).toBe(lignes(HISTOIRE, IDENTITE))
+    })
+
+    it('semaine où le poème continue : l’EMC, et le poème ne part pas à placer', () => {
+      const [lundi] = genererCahierJournal(EDT, [
+        notions('emc', [IDENTITE]), notions('arts', [POESIE]),
+      ], [notions('arts', [POESIE])])
+      expect(dans(lundi, 'EMC / Poésie')).toBe(IDENTITE)
+      expect(lundi.aPlacer ?? []).toEqual([])
+    })
+
+    it('poème qui continue et pas d’EMC : la case garde son nom', () => {
+      const [lundi] = genererCahierJournal(EDT, [
+        notions('emc', [HISTOIRE]), notions('arts', [POESIE]),
+      ], [notions('arts', [POESIE])])
+      expect(dans(lundi, 'EMC / Poésie')).toBe('EMC / Poésie')
+      expect(lundi.aPlacer ?? []).toEqual([])
+    })
+
+    it('sans la semaine précédente (semaine 1), le poème est nouveau', () => {
+      const [lundi] = genererCahierJournal(EDT, [notions('emc', [IDENTITE]), notions('arts', [POESIE])])
+      expect(dans(lundi, 'EMC / Poésie')).toBe(POESIE)
+    })
+  })
+})
+
+/**
+ * Option B, décision de Christophe du 18/10/2026 : le français qui ne date
+ * rien (le sommaire d'un manuel, chez une nouvelle enseignante) garde l'ancien
+ * remplissage en attendant l'écran d'accompagnement par l'IA. La relecture du
+ * 17/10 avait montré que, sinon, tout son français partait à placer le lundi.
+ */
+describe('option B : le français sans jours garde l’ancien remplissage', () => {
+  const manuel: ProgressionMatiere = {
+    methode_id: null, matiere: 'francais', pages: 'p.4-5', mots_exemple: [],
+    items: ['Découvrir le son a', 'Lire des syllabes'],
+  }
+
+  it('chaque case de français reçoit le manuel de la semaine, une ligne par item', () => {
+    const [lundi] = genererCahierJournal(
+      [c('lundi', 0, 'Phonologie'), c('lundi', 1, 'Lecture'), c('lundi', 2, 'Mathématiques')],
+      [manuel, notions('maths', [NUMERATION])],
+    )
+    for (const cas of ['Phonologie', 'Lecture']) {
+      const [premiere, seconde] = dans(lundi, cas).split('\n')
+      expect(premiere).toBe('Découvrir le son a')
+      expect(seconde).toMatch(/^Lire des syllabes .* p\.4-5$/)
+    }
+    expect(dans(lundi, 'Mathématiques')).toBe(NUMERATION)
+    expect(lundi.aPlacer ?? []).toEqual([])
+  })
+
+  it('le français qui date ses séances garde le placement par le sens', () => {
+    const date: ProgressionMatiere = { ...manuel, seances: [{ jour: 1, domaine: '', libelle: 'Geste d’écriture' }] }
+    const [lundi] = genererCahierJournal([c('lundi', 0, 'Ecriture'), c('lundi', 1, 'Lecture')], [date])
+    expect(dans(lundi, 'Ecriture')).toBe('Geste d’écriture')
+    expect(dans(lundi, 'Lecture')).toBe('Lecture')
+  })
+})
+
+/** Relecture Opus du 18/10/2026 : les cas que la première version laissait passer. */
+describe('créneau partagé : relecture du 18/10', () => {
+  const IDENTITE = "EMC/EVARS/PHARE : L'identité"
+  const POEME_2 = "Poésie : Poésie sur l'automne : Mois d'automne"
+
+  it('sans autre case d’EMC, l’EMC qui continue part à placer la semaine d’un nouveau poème', () => {
+    const [lundi] = genererCahierJournal([c('lundi', 0, 'EMC / Poésie')], [
+      notions('emc', [IDENTITE]), notions('arts', [POEME_2]),
+    ], [notions('emc', [IDENTITE]), notions('arts', [POESIE])])
+    expect(dans(lundi, 'EMC / Poésie')).toBe(POEME_2)
+    expect(lundi.aPlacer).toEqual([{ libelle: IDENTITE, origine: 'semaine' }])
+  })
+
+  it('une semaine sans ligne d’EMC, le poème qui continue ne revient pas chaque lundi', () => {
+    const [lundi] = genererCahierJournal([c('lundi', 0, 'EMC / Poésie')], [
+      notions('arts', [POESIE]),
+    ], [notions('arts', [POESIE])])
+    expect(dans(lundi, 'EMC / Poésie')).toBe('EMC / Poésie')
+    expect(lundi.aPlacer ?? []).toEqual([])
+  })
+
+  it('le même poème avec une apostrophe différente reste le même poème', () => {
+    const [lundi] = genererCahierJournal([c('lundi', 0, 'EMC / Poésie'), c('vendredi', 0, 'EMC')], [
+      notions('emc', [IDENTITE]), notions('arts', ['Poésie : L’éléphant']),
+    ], [notions('arts', ["Poésie : L'éléphant"])])
+    expect(dans(lundi, 'EMC / Poésie')).toBe(IDENTITE)
+  })
+
+  it('la semaine d’avant se lit par la matière écrite avant la matière reconnue', () => {
+    const precedente = [notions('Musique', ['Poésie : autre chose']), notions('arts', [POESIE])]
+    const [lundi] = genererCahierJournal([c('lundi', 0, 'EMC / Poésie'), c('vendredi', 0, 'EMC')], [
+      notions('emc', [IDENTITE]), notions('arts', [POESIE]),
+    ], precedente)
+    expect(dans(lundi, 'EMC / Poésie')).toBe(IDENTITE)
+  })
+
+  it('« Arts plastiques » : la poésie et le chant partent à placer une seule fois', () => {
+    const arts = notions('arts', [POESIE, ARTS_PLASTIQUES, "Chant : L'Europe"])
+    const journal = genererCahierJournal([c('mardi', 0, 'Arts plastiques'), c('vendredi', 0, 'Arts plastiques')], [arts])
+    expect(journal.flatMap(j => (j.aPlacer ?? []).map(a => a.libelle))).toEqual([POESIE, "Chant : L'Europe"])
+  })
+
+  it('la case « Histoire, géographie » de la trame par défaut reçoit ses deux notions', () => {
+    const [lundi] = genererCahierJournal([c('lundi', 0, 'Histoire, géographie')], [
+      notions('emc', [HISTOIRE, GEOGRAPHIE]),
+    ])
+    expect(dans(lundi, 'Histoire, géographie')).toBe(lignes(HISTOIRE, GEOGRAPHIE))
+  })
+})
+
+/**
+ * Le vrai emploi du temps de Cécile tel qu'il est en base le 18/10/2026 :
+ * AUCUNE case reliée à une méthode. Lundi et vendredi, sur deux semaines.
+ */
+describe('Cécile, cases sans méthode, deux semaines', () => {
+  const sans = (jour: Jour, ordre: number, matiere: string) => c(jour, ordre, matiere, null)
+  const EDT = [
+    sans('lundi', 8, 'Flash maths'), sans('lundi', 9, 'Mathématiques'), sans('lundi', 10, 'Calcul mental'),
+    sans('lundi', 13, 'EPS'), sans('lundi', 14, 'Histoire, géographie, sciences et technologie'),
+    sans('lundi', 17, 'EMC / Poésie'),
+    sans('vendredi', 67, 'Flash maths'), sans('vendredi', 68, 'Mathématiques'), sans('vendredi', 69, 'Problème'),
+    sans('vendredi', 70, 'Calcul mental'), sans('vendredi', 82, 'EMC'), sans('vendredi', 85, 'Arts plastiques'),
+  ]
+  const IDENTITE = "EMC/EVARS/PHARE : L'identité"
+  const S1 = [
+    notions('maths', [NUMERATION, PROBLEMES, CALCUL]),
+    notions('emc', [HISTOIRE, GEOGRAPHIE, IDENTITE]),
+    notions('arts', [POESIE, ARTS_PLASTIQUES]),
+    notions('eps', ['Activités : Course longue']),
+  ]
+  const S2 = [S1[0], notions('emc', [HISTOIRE, IDENTITE]), S1[2], S1[3]]
+
+  it('semaine 1 (nouveau poème) : chaque case reçoit ce qu’elle nomme', () => {
+    const [lundi, vendredi] = genererCahierJournal(EDT, S1, [])
+    expect(dans(lundi, 'Mathématiques')).toBe(lignes(NUMERATION, PROBLEMES))
+    expect(dans(lundi, 'Calcul mental')).toBe(CALCUL)
+    expect(dans(lundi, 'Flash maths')).toBe('Flash maths')
+    expect(dans(lundi, 'EPS')).toBe('Activités : Course longue')
+    expect(dans(lundi, 'Histoire, géographie, sciences et technologie')).toBe(lignes(HISTOIRE, GEOGRAPHIE))
+    expect(dans(lundi, 'EMC / Poésie')).toBe(POESIE)
+    expect(dans(vendredi, 'Problème')).toBe(PROBLEMES)
+    expect(dans(vendredi, 'EMC')).toBe(lignes(HISTOIRE, GEOGRAPHIE, IDENTITE))
+    expect(dans(vendredi, 'Arts plastiques')).toBe(ARTS_PLASTIQUES)
+    expect(lundi.aPlacer ?? []).toEqual([])
+  })
+
+  it('semaine 2 (le poème continue) : le lundi « EMC / Poésie » montre l’EMC', () => {
+    const [lundi] = genererCahierJournal(EDT, S2, S1)
+    expect(dans(lundi, 'EMC / Poésie')).toBe(IDENTITE)
+    expect(lundi.aPlacer ?? []).toEqual([])
+  })
+})

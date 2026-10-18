@@ -116,6 +116,47 @@ function estAncienneLigneDatee(p: ProgressionMatiere): boolean {
 }
 
 /**
+ * Vrai pour une progression de FRANÇAIS qui ne date rien : ni séance avec un
+ * jour, ni item « Jour N ». C'est le sommaire d'un manuel, typiquement chez
+ * une nouvelle enseignante.
+ *
+ * DÉCISION DE CHRISTOPHE DU 18/10/2026 (option B). La règle des notions du
+ * 17/10 (« le créneau qui porte son nom ») avait été écrite pour les maths,
+ * l'EMC et les arts. Appliquée aussi à ce français-là, elle vidait le premier
+ * cahier journal d'une nouvelle enseignante : ses lignes de manuel n'ont pas de
+ * « Domaine : », aucun créneau n'est donc nommé pour elles, et tout partait à
+ * placer le lundi (relecture Opus de `822393b`). Personne n'avait décidé ça.
+ * Ce français garde donc l'ancien remplissage (`itemsAnciens` : toute la
+ * semaine dans chaque créneau de français, une ligne par item) EN ATTENDANT
+ * l'écran d'accompagnement : l'IA proposera une catégorie par ligne et
+ * l'enseignante validera sur un seul écran (principe validé le 18/10).
+ */
+function estFrancaisSansJours(p: ProgressionMatiere, seances: SeanceProgression[]): boolean {
+  // La matière enregistrée est le français lui-même (« francais » en base),
+  // pas une ligne personnalisée que la règle du français attraperait aussi
+  // (« Poésie », « Rituels ») : celles-là gardent le placement par leur nom.
+  return sansAccents(p.matiere) === 'francais'
+    && !porteDesSeancesDatees(seances)
+    && !estAncienneLigneDatee(p)
+}
+
+/**
+ * La ligne de la semaine précédente qui correspond à une progression : même
+ * méthode d'abord, puis même matière écrite, puis même matière reconnue. Le
+ * code seul pourrait confondre deux lignes (« arts » et une « Musique »
+ * personnalisée).
+ */
+function ligneDAvant(
+  precedente: ProgressionMatiere[] | undefined,
+  p: ProgressionMatiere,
+): ProgressionMatiere | undefined {
+  if (!precedente) return undefined
+  return (p.methode_id ? precedente.find(x => x.methode_id === p.methode_id) : undefined)
+    ?? precedente.find(x => x.matiere === p.matiere)
+    ?? trouverProgressionMatiere(precedente, p.matiere)
+}
+
+/**
  * Les pages et les mots d'une progression, à écrire après sa dernière notion.
  * Une seule fois par jour (voir `genererCahierJournal`), plus dans chaque
  * créneau de la matière.
@@ -172,13 +213,26 @@ function notionsDeLaSemaine(
   jours: { creneaux: CreneauHoraire[]; progressionDe: (ProgressionMatiere | null)[] }[],
   progression: ProgressionMatiere[],
   horsNotions: (p: ProgressionMatiere) => boolean,
+  precedente: ProgressionMatiere[] | undefined,
 ): { textes: Map<number, string>[]; sansCreneau: SeancePlacer[] } {
   const notions = progression.map(p => (horsNotions(p) ? [] : p.items.filter(n => typeof n === 'string' && n.trim() !== '')))
+  // Une notion déjà là la semaine précédente, à l'identique, continue (un poème
+  // appris sur plusieurs semaines) : elle n'entre pas dans un créneau partagé.
+  // Comparée sans accents ni ponctuation : une apostrophe typographique d'un
+  // côté et droite de l'autre ne fait pas un nouveau poème.
+  const nouvelles = notions.map((liste, k) => {
+    const avant = new Set((ligneDAvant(precedente, progression[k])?.items ?? [])
+      .filter(a => typeof a === 'string').map(a => sansAccents(a)))
+    return liste.map(n => !avant.has(sansAccents(n)))
+  })
+  // `placees` : écrite dans une case. `montrees` : placée, ou poème qui
+  // continue (déjà montré la semaine où il a commencé), donc pas à placer.
+  const placees = notions.map(liste => liste.map(() => false))
   const montrees = notions.map(liste => liste.map(() => false))
   const rangDe = (p: ProgressionMatiere | null) => (p ? progression.indexOf(p) : null)
 
   const placements = jours.map(({ creneaux, progressionDe }) => {
-    const parCreneau = placerNotionsDuJour(creneaux.map((c, i) => {
+    const { parCreneau, continuees } = placerNotionsDuJour(creneaux.map((c, i) => {
       const p = progressionDe[i]
       return {
         nom: c.matiere,
@@ -186,8 +240,16 @@ function notionsDeLaSemaine(
         general: p ? estCreneauGenerique(c.matiere, p) : false,
         ouvert: c.type !== 'routine' && !(p && horsNotions(p)),
       }
-    }), notions)
-    for (const liste of parCreneau) for (const n of liste) montrees[n.progression][n.rang] = true
+    }), notions, nouvelles)
+    for (const liste of parCreneau) {
+      for (const n of liste) {
+        placees[n.progression][n.rang] = true
+        montrees[n.progression][n.rang] = true
+      }
+    }
+    // Le poème qui continue a été montré la semaine où il a commencé, dans le
+    // créneau partagé qui le nomme : il ne part pas à placer chaque semaine.
+    for (const n of continuees) montrees[n.progression][n.rang] = true
     return parCreneau
   })
 
@@ -210,7 +272,9 @@ function notionsDeLaSemaine(
   const sansCreneau = notions.flatMap((liste, k): SeancePlacer[] => {
     const restantes = liste.filter((_, r) => !montrees[k][r])
     if (restantes.length === 0) return []
-    if (!montrees[k].some(Boolean)) restantes[restantes.length - 1] += pagesEtMots(progression[k])
+    // Aucune notion de la progression écrite dans une case : ses pages et ses
+    // mots suivent les notions à placer, sinon ils ne seraient écrits nulle part.
+    if (!placees[k].some(Boolean)) restantes[restantes.length - 1] += pagesEtMots(progression[k])
     return restantes.map(libelle => ({ libelle, origine: 'semaine' }))
   })
 
@@ -253,11 +317,19 @@ function notionsDeLaSemaine(
  * une notion par ligne, dans le créneau qui porte son nom, et plus toute la
  * semaine collée par des virgules dans chaque créneau de la matière. Les
  * anciennes lignes datées « Jour N » sans séances (`estAncienneLigneDatee`)
- * gardent leur découpage par jour, une ligne par item.
+ * gardent leur découpage par jour, une ligne par item, et le français qui ne
+ * date rien garde l'ancien remplissage (`estFrancaisSansJours`, option B du
+ * 18/10).
+ *
+ * `precedente` est la progression de la semaine d'avant, quand on l'a : elle
+ * sert seulement à reconnaître une notion qui continue (même poème), pour le
+ * créneau partagé « EMC / Poésie » (`placerNotionsDuJour`). Sans elle, toute
+ * notion est nouvelle.
  */
 export function genererCahierJournal(
   emploiDuTemps: CreneauHoraire[],
   progression: ProgressionMatiere[],
+  precedente?: ProgressionMatiere[],
 ): JourJournal[] {
   const parJour = new Map<string, CreneauHoraire[]>()
   for (const c of emploiDuTemps) {
@@ -276,7 +348,10 @@ export function genererCahierJournal(
     progression.map(p => [p, lireSeances(p.seances)]),
   )
   const datees = progression.filter(p => porteDesSeancesDatees(lues.get(p) ?? []))
-  const anciennes = progression.filter(p => !datees.includes(p) && estAncienneLigneDatee(p))
+  // Remplissage d'avant le 17/10 : anciennes lignes « Jour N », et français
+  // qui ne date rien (option B, `estFrancaisSansJours`).
+  const anciennes = progression.filter(p =>
+    !datees.includes(p) && (estAncienneLigneDatee(p) || estFrancaisSansJours(p, lues.get(p) ?? [])))
 
   const jours = joursEcole.map(jour => {
     const creneaux = [...(parJour.get(jour) ?? [])].sort((a, b) => a.ordre - b.ordre)
@@ -285,7 +360,7 @@ export function genererCahierJournal(
     return { creneaux, progressionDe }
   })
   const notions = notionsDeLaSemaine(
-    jours, progression, p => datees.includes(p) || anciennes.includes(p),
+    jours, progression, p => datees.includes(p) || anciennes.includes(p), precedente,
   )
 
   return joursEcole.map((jour, indexJour): JourJournal => {

@@ -1,4 +1,4 @@
-import { contient, mots } from '@/lib/familles-seances'
+import { mots } from '@/lib/familles-seances'
 import { domaineDe } from '@/lib/progression-seances'
 
 /**
@@ -21,14 +21,15 @@ import { domaineDe } from '@/lib/progression-seances'
  *
  * LE NOM, LITTÉRALEMENT. Le domaine d'une notion est ce qui précède ses
  * premiers deux points (`domaineDe`, la même lecture que les séances). Un
- * créneau est nommé pour une notion quand son nom ÉCRIT ce domaine en entier,
- * mots entiers, sans accents et sans la marque du pluriel (`mots`, la même
- * comparaison que `familles-seances.ts`) : « problème » écrit « Problèmes »,
- * « Histoire, géographie, sciences et technologie » écrit « Histoire »,
- * « Géographie » et « Sciences ». « Calcul » n'écrit pas « Calcul mental », et
- * « mathématiques » n'écrit pas « Numération ». Une barre oblique sépare des
- * domaines : « EMC/EVARS/PHARE » est nommé par « EMC ». Rien n'est deviné à
- * partir du sens d'un mot, seulement de ce que l'enseignante a tapé.
+ * créneau est nommé pour une notion quand l'un de ses noms EST ce domaine,
+ * sans accents et sans la marque du pluriel (`mots`, la même comparaison que
+ * `familles-seances.ts`) : « problème » est « Problèmes », « Histoire,
+ * géographie, sciences et technologie » énumère « Histoire », « Géographie »
+ * et « Sciences ». « Calcul mental » n'est pas « Calcul » (Cécile, 18/10 :
+ * poser une addition, c'est des mathématiques), « Flash maths » n'est pas
+ * « Maths », « mathématiques » n'est pas « Numération ». Une barre oblique
+ * sépare des domaines : « EMC/EVARS/PHARE » est nommé par « EMC ». Rien n'est
+ * deviné à partir du sens d'un mot, seulement de ce que l'enseignante a tapé.
  *
  * UNE NOTION PEUT PARAÎTRE DANS PLUSIEURS CRÉNEAUX D'UN JOUR. Une notion est
  * le contenu de la semaine, pas une séance qu'on fait une fois : si deux
@@ -43,18 +44,53 @@ import { domaineDe } from '@/lib/progression-seances'
  * matière, et c'est l'enseignante qui a écrit « Poésie » dans ce créneau. Seuls
  * les créneaux « ouverts » le peuvent : jamais une routine, jamais un créneau
  * de séances datées (« Ecriture » chez Cécile reçoit son geste d'écriture,
- * pas une notion d'arts nommée « Écriture »).
+ * pas une notion d'arts nommée « Écriture »). Et dans un créneau partagé, la
+ * notion d'une autre matière n'entre que la semaine où elle est nouvelle (voir
+ * `placerNotionsDuJour`).
  */
+
+/**
+ * Ce qui sépare plusieurs noms dans un nom de créneau ou un domaine :
+ * « Histoire, géographie, sciences et technologie », « EMC / Poésie »,
+ * « Etude de la langue : vocabulaire ou grammaire ». Le trait d'union n'en est
+ * pas un : « Lecture-écriture » est UN nom, pas « Lecture » et « Écriture ».
+ */
+const SEPARATEURS_DE_NOMS = /[,/;:+&()]|\s(?:et|ou)\s/i
+
+/** Les noms qu'écrit un texte, chacun passé par `mots` (accents, pluriel). */
+function nomsEcrits(texte: string): string[] {
+  return texte.split(SEPARATEURS_DE_NOMS).map(n => mots(n)).filter(n => /[a-z]/.test(n))
+}
 
 /** Les domaines d'une notion, tels qu'écrits : « EMC/EVARS/PHARE » en donne trois. */
 export function domainesNotion(notion: string): string[] {
   return domaineDe(notion).split('/').map(d => d.trim()).filter(d => /[a-z]/.test(mots(d)))
 }
 
-/** Vrai quand le nom du créneau écrit, en entier, l'un des domaines de la notion. */
+/**
+ * Vrai quand l'un des noms du créneau EST l'un des domaines de la notion, mot
+ * pour mot (accents et pluriel mis à part).
+ *
+ * Réponse de Cécile du 18/10/2026 : « poser une addition c'est des
+ * mathématiques pas du calcul mental ». Jusque-là, il suffisait que le nom du
+ * créneau CONTIENNE le domaine : « Calcul : ... » allait dans « Calcul
+ * mental », « Maths : ... » dans « Flash maths », « Écriture : ... » dans
+ * « Lecture-écriture ». Un mot de plus dans le nom (« mental », « flash »)
+ * désigne une autre activité. Désormais le nom doit être le domaine, ou l'un
+ * des noms qu'il énumère (« Histoire, géographie, sciences » écrit les trois).
+ */
 export function creneauNommePour(nomCreneau: string, notion: string): boolean {
-  const nom = mots(nomCreneau)
-  return domainesNotion(notion).some(d => contient(nom, mots(d)))
+  const noms = nomsEcrits(nomCreneau)
+  return domainesNotion(notion).some(d => nomsEcrits(d).some(n => noms.includes(n)))
+}
+
+/**
+ * Vrai pour un créneau PARTAGÉ entre deux activités qui alternent, écrit avec
+ * une barre oblique : « EMC / Poésie ». Une liste à virgules (« Histoire,
+ * géographie, sciences ») n'en est pas un : elle montre tout ce qu'elle nomme.
+ */
+export function estCreneauPartage(nomCreneau: string): boolean {
+  return nomCreneau.includes('/')
 }
 
 /** Un créneau du jour, vu depuis les notions. */
@@ -83,14 +119,45 @@ export type NotionPlacee = { progression: number; rang: number }
  * Ce qui n'a ni créneau à son nom ni créneau général ce jour-là n'est dans
  * aucune liste : c'est à l'appelant de vérifier, sur la semaine, que la
  * notion paraît un autre jour, ou de la mettre à placer.
+ *
+ * LE CRÉNEAU PARTAGÉ (« EMC / Poésie »), réponse de Cécile du 18/10/2026 :
+ * « il y a les semaines où on découvre la poésie, les autres lundis c'est de
+ * l'EMC ». Un poème s'apprend sur plusieurs semaines, et sa ligne revient à
+ * l'identique dans chacune. Donc, dans un créneau partagé alimenté par une
+ * progression (l'EMC), la notion d'une AUTRE progression (la poésie des arts)
+ * n'entre que la semaine où elle est nouvelle, et elle y entre seule : les
+ * notions de la progression du créneau lui laissent la place, et vont dans
+ * leurs autres créneaux (le vendredi « EMC ») ou à placer. Les autres
+ * semaines, le créneau montre les siennes. `nouvelles[k][r]` dit si la notion
+ * n'était pas dans la semaine précédente ; sans cette information, toutes
+ * sont nouvelles.
  */
-export function placerNotionsDuJour(creneaux: CreneauNotions[], notions: string[][]): NotionPlacee[][] {
-  const nommePour = creneaux.map(cr => notions.map(liste =>
-    liste.map(n => cr.ouvert && creneauNommePour(cr.nom, n))))
+export function placerNotionsDuJour(
+  creneaux: CreneauNotions[],
+  notions: string[][],
+  nouvelles: boolean[][] = notions.map(liste => liste.map(() => true)),
+): { parCreneau: NotionPlacee[][]; continuees: NotionPlacee[] } {
+  // Les notions d'une autre matière qu'un créneau partagé a écartées parce
+  // qu'elles continuent (le poème déjà montré la semaine où il a commencé) :
+  // l'appelant ne les met pas à placer chaque semaine.
+  const continuees: NotionPlacee[] = []
+  const nommePour = creneaux.map(cr => {
+    const brut = notions.map(liste => liste.map(n => cr.ouvert && creneauNommePour(cr.nom, n)))
+    if (!estCreneauPartage(cr.nom)) return brut
+    // Sans progression (pas de ligne d'EMC cette semaine-là), tout ce qu'il
+    // nomme est « d'une autre matière » : le poème n'entre que s'il est nouveau.
+    const autre = (k: number) => cr.progression === null || k !== cr.progression
+    const decouverte = brut.some((liste, k) => autre(k) && liste.some((oui, r) => oui && nouvelles[k][r]))
+    brut.forEach((liste, k) => liste.forEach((oui, r) => {
+      if (oui && autre(k) && !nouvelles[k][r]) continuees.push({ progression: k, rang: r })
+    }))
+    return brut.map((liste, k) => liste.map((oui, r) =>
+      oui && (autre(k) ? nouvelles[k][r] : !decouverte)))
+  })
   const aSonCreneau = notions.map((liste, k) =>
     liste.map((_, r) => nommePour.some(parProgression => parProgression[k][r])))
 
-  return creneaux.map((cr, i) => {
+  const parCreneau = creneaux.map((cr, i) => {
     if (!cr.ouvert) return []
     const ordre = cr.progression === null
       ? notions.map((_, k) => k)
@@ -100,4 +167,5 @@ export function placerNotionsDuJour(creneaux: CreneauNotions[], notions: string[
       return nommePour[i][k][rang] || general ? [{ progression: k, rang }] : []
     }))
   })
+  return { parCreneau, continuees }
 }

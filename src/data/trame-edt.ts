@@ -130,7 +130,7 @@ const LIGNES: LigneTrame[] = [
   { debut: '13:20', fin: '13:30', type: 'routine', commun: 'Accueil dans la cour' },
   { debut: '13:30', fin: '13:45', type: 'cours', commun: 'Chut je lis' },
   { debut: '13:45', fin: '14:15', type: 'cours', parJour: ['Lecture compréhension', "Production d'écrits", 'Lecture compréhension', "Production d'écrits"] },
-  { debut: '14:15', fin: '14:45', type: 'cours', parJour: ['Histoire géographie', 'Arts visuels', 'Sciences et technologie', 'Anglais'] },
+  { debut: '14:15', fin: '14:45', type: 'cours', parJour: ['Histoire, géographie', 'Arts visuels', 'Sciences et technologie', 'Anglais'] },
   { debut: '14:45', fin: '15:00', type: 'cours', parJour: ['Écriture', 'Vocabulaire', 'Écriture', 'Vocabulaire'] },
   { debut: '15:00', fin: '15:15', type: 'routine', commun: 'Récréation' },
   { debut: '15:15', fin: '15:45', type: 'cours', parJour: ['EPS', 'Anglais', 'EPS', 'Arts visuels'] },

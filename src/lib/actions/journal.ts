@@ -68,16 +68,26 @@ export async function genererOuChargerJournal(semaineId: string): Promise<Result
     if (existingError) throw new Error('Le cahier journal n’a pas pu être chargé.')
     if (existing) return validerContenuJournal(existing.contenu)
 
-    const [{ data: edt, error: edtError }, { data: progression, error: progressionError }] = await Promise.all([
+    const [
+      { data: edt, error: edtError },
+      { data: progression, error: progressionError },
+      { data: precedente, error: precedenteError },
+    ] = await Promise.all([
       supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
       supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
       .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
+      // La semaine d'avant, pour reconnaître une notion qui continue (un poème
+      // appris sur plusieurs semaines) : voir `placerNotionsDuJour`.
+      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
+      .eq('class_id', semaine.class_id).eq('numero', semaine.numero - 1),
     ])
     if (edtError || progressionError) {
       throw new Error('Les données nécessaires au cahier journal n’ont pas pu être chargées.')
     }
 
-    const contenu = genererCahierJournal(edt ?? [], progression ?? [])
+    // La semaine d'avant est facultative : si elle ne se lit pas, toutes les
+    // notions comptent comme nouvelles, et le cahier se fabrique quand même.
+    const contenu = genererCahierJournal(edt ?? [], progression ?? [], precedenteError ? undefined : precedente ?? [])
     const { error: insertError } = await supabase
       .from('cahier_journal')
       .insert({ semaine_id: semaineId, contenu })
@@ -117,16 +127,26 @@ export async function regenererJournal(semaineId: string): Promise<Resultat<Jour
   return resultat(async () => {
     const { supabase, semaine } = await contexteJournal(semaineId)
 
-    const [{ data: edt, error: edtError }, { data: progression, error: progressionError }] = await Promise.all([
+    const [
+      { data: edt, error: edtError },
+      { data: progression, error: progressionError },
+      { data: precedente, error: precedenteError },
+    ] = await Promise.all([
       supabase.from('emploi_du_temps').select('*').eq('class_id', semaine.class_id),
       supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple, seances')
       .eq('class_id', semaine.class_id).eq('numero', semaine.numero),
+      // La semaine d'avant, pour reconnaître une notion qui continue (un poème
+      // appris sur plusieurs semaines) : voir `placerNotionsDuJour`.
+      supabase.from('progression').select('methode_id, matiere, items, pages, mots_exemple')
+      .eq('class_id', semaine.class_id).eq('numero', semaine.numero - 1),
     ])
     if (edtError || progressionError) {
       throw new Error('Les données nécessaires au cahier journal n’ont pas pu être chargées.')
     }
 
-    const contenu = genererCahierJournal(edt ?? [], progression ?? [])
+    // La semaine d'avant est facultative : si elle ne se lit pas, toutes les
+    // notions comptent comme nouvelles, et le cahier se fabrique quand même.
+    const contenu = genererCahierJournal(edt ?? [], progression ?? [], precedenteError ? undefined : precedente ?? [])
     const { error } = await supabase.from('cahier_journal')
       .upsert({ semaine_id: semaineId, contenu, updated_at: new Date().toISOString() }, { onConflict: 'semaine_id' })
     if (error) throw new Error('Le cahier journal n’a pas pu être régénéré.')

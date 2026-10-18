@@ -140,14 +140,31 @@ describe('lundi réel de la semaine 1', () => {
     }
   })
 
-  test('les créneaux de maths reçoivent la progression de maths', () => {
-    for (const matiere of ['Chaque jour compte', 'flash maths', 'mathématiques', 'calcul mental']) {
-      expect(deroulementDe(matiere)).toContain('Nombres entiers jusqu’à 10')
-    }
+  // Revu le 18/10/2026 avec les réponses de Cécile : chaque notion de maths
+  // dans la case qui porte son nom, les rituels sous leur nom (« tu peux garder
+  // que le nom »), le reste dans « mathématiques ».
+  test('les créneaux de maths : chaque notion dans la case à son nom, les rituels sous leur nom', () => {
+    expect(deroulementDe('mathématiques')).toBe([
+      'Numération : Nombres entiers jusqu’à 10',
+      'Problèmes : Résoudre des problèmes additifs de type égalisation',
+    ].join('\n'))
+    expect(deroulementDe('calcul mental')).toBe("Calcul mental : Table d'addition les suivants")
+    expect(deroulementDe('Chaque jour compte')).toBe('Chaque jour compte')
+    expect(deroulementDe('flash maths')).toBe('flash maths')
   })
 
-  test('EMC / Poésie reçoit la ligne EMC', () => {
-    expect(deroulementDe('EMC / Poésie')).toContain('Repérer le mois de son anniversaire')
+  // Cécile, 18/10/2026 : « il y a les semaines où on découvre la poésie, les
+  // autres lundis c'est de l'EMC ». Ici, pas de progression d'arts : c'est un
+  // lundi d'EMC, la case montre la ligne d'EMC, pas l'histoire.
+  test('EMC / Poésie reçoit la ligne EMC un lundi sans nouveau poème', () => {
+    const poeme = 'Poésie : Poésie sur la rentrée : Trois escargots de Maurice Carême'
+    const arts = { methode_id: null, matiere: 'arts', pages: null, mots_exemple: [], items: [poeme] }
+    const lundiReel = genererCahierJournal(SEMAINE, [...PROGRESSION, arts], [arts])
+      .find(j => j.jour === 'lundi')!
+    const texte = lundiReel.seances.find(s => s.matiere === 'EMC / Poésie')!.deroulement
+    expect(texte).toContain("L'identité")
+    expect(texte).not.toContain(poeme)
+    expect(texte).not.toContain('Repérer le mois de son anniversaire')
   })
 
   /**

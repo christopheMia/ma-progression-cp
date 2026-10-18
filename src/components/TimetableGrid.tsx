@@ -16,7 +16,7 @@ function addMinutes(t: string, mins: number): string {
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'] as const
 const LABELS: Record<string, string> = { lundi: 'Lundi', mardi: 'Mardi', mercredi: 'Mercredi', jeudi: 'Jeudi', vendredi: 'Vendredi' }
 const LABELS_COURTS: Record<string, string> = { lundi: 'Lun', mardi: 'Mar', mercredi: 'Mer', jeudi: 'Jeu', vendredi: 'Ven' }
-const MATIERES = ['Appropriation des graphèmes', 'Écriture', 'Phonologie', 'Vocabulaire', 'Lecture-écriture', 'Lecture compréhension', "Production d'écrits", 'Chut je lis', 'Calcul mental', 'Mathématiques', 'Histoire géographie', 'Sciences et technologie', 'Arts visuels', 'EPS', 'Anglais', 'EMC']
+const MATIERES = ['Appropriation des graphèmes', 'Écriture', 'Phonologie', 'Vocabulaire', 'Lecture-écriture', 'Lecture compréhension', "Production d'écrits", 'Chut je lis', 'Calcul mental', 'Mathématiques', 'Histoire, géographie', 'Sciences et technologie', 'Arts visuels', 'EPS', 'Anglais', 'EMC']
 
 export type Creneau = {
   jour: string; heure_debut: string; heure_fin: string

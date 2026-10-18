@@ -19,6 +19,15 @@ function makeBorder() {
   return { style: BorderStyle.SINGLE, size: 1, color: '999999' }
 }
 
+/**
+ * Un paragraphe Word par ligne du texte. Depuis le 17/10/2026, une case du
+ * cahier journal peut porter plusieurs notions, une par ligne : un seul
+ * `TextRun` les collait toutes sur une ligne dans le document exporté.
+ */
+export function paragraphesDe(text: string, bold = false): Paragraph[] {
+  return text.split(/\r?\n/).map(ligne => new Paragraph({ children: [new TextRun({ text: ligne, bold, size: 20 })] }))
+}
+
 function makeCell(text: string, bold = false): TableCell {
   return new TableCell({
     borders: {
@@ -27,7 +36,7 @@ function makeCell(text: string, bold = false): TableCell {
       left: makeBorder(),
       right: makeBorder(),
     },
-    children: [new Paragraph({ children: [new TextRun({ text, bold, size: 20 })] })],
+    children: paragraphesDe(text, bold),
   })
 }
 

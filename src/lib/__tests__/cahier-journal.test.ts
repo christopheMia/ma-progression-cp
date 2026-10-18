@@ -26,17 +26,16 @@ describe('genererCahierJournal (lien par méthode)', () => {
     expect(s.deroulement).toBe('')
   })
 
-  // Depuis le 17/10/2026 (décision de Christophe), une notion ne va que dans
-  // un créneau qui porte son nom ou dans le créneau général de sa matière.
-  // « a » n'a pas de domaine et « Lecture » n'est pas « Français » : le créneau
-  // garde son nom, la notion et ses pages partent à placer, une fois.
-  test('un créneau relié à la méthode française, sans notion à son nom, garde son nom', () => {
+  // Le français qui ne date rien garde l'ancien remplissage (option B,
+  // décision de Christophe du 18/10/2026) : la règle des notions du 17/10 ne
+  // s'applique pas à lui.
+  test('un créneau relié à la méthode française est pré-rempli', () => {
     const edt = [creneau({ matiere: 'Lecture', methode_id: 'm-fr' })]
     const [lundi] = genererCahierJournal(edt, progression)
-    expect(lundi.seances[0].deroulement).toBe('Lecture')
-    expect(lundi.aPlacer?.[0].libelle).toContain('a')
-    expect(lundi.aPlacer?.[0].libelle).toContain('p.10-13')
-    expect(lundi.aPlacer?.[0].origine).toBe('semaine')
+    expect(lundi.seances[0].deroulement).toMatch(/^a /)
+    expect(lundi.seances[0].deroulement).toContain('p.10-13')
+    // Le manuel est dans la case : rien de français ne part à placer.
+    expect((lundi.aPlacer ?? []).some(a => a.libelle.includes('p.10-13'))).toBe(false)
   })
 
   test('un créneau relié à la méthode maths est pré-rempli', () => {
@@ -61,11 +60,15 @@ describe('genererCahierJournal (lien par méthode)', () => {
   test('repli : un créneau français non relié est rempli via le libellé', () => {
     // Cas du bug remonté par Cécile : progression enregistrée mais créneaux
     // jamais reliés manuellement à une méthode. Le journal doit se remplir.
-    // Depuis le 17/10, le créneau général de la matière reçoit les notions.
-    const edt = [creneau({ matiere: 'Français', methode_id: null })]
-    const s = genererCahierJournal(edt, progression)[0].seances[0]
-    expect(s.deroulement).toContain('a')
-    expect(s.deroulement).toContain('p.10-13')
+    // Rendu à son intention le 18/10/2026 : le 17/10, ce test avait été passé
+    // sur un créneau « Français » pour rester vert, et il cachait que le
+    // français d'une nouvelle enseignante partait tout entier à placer.
+    const edt = [creneau({ matiere: 'Appropriation des graphèmes', methode_id: null })]
+    const [lundi] = genererCahierJournal(edt, progression)
+    expect(lundi.seances[0].deroulement).toMatch(/^a /)
+    expect(lundi.seances[0].deroulement).toContain('p.10-13')
+    // Le manuel est dans la case : rien de français ne part à placer.
+    expect((lundi.aPlacer ?? []).some(a => a.libelle.includes('p.10-13'))).toBe(false)
   })
 
   test('repli : un créneau de calcul non relié reçoit la notion qui porte son nom', () => {
